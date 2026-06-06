@@ -1,0 +1,189 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Inter loaded via Google Fonts in index.html — fallback chain for offline/slow networks */
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+
+  /* KuberAI brand tokens */
+  --kuber-gold: #D4A017;
+  --kuber-gold-glow: rgba(212, 160, 23, 0.3);
+  --kuber-gold-subtle: rgba(212, 160, 23, 0.12);
+}
+
+/* Prevent text size adjustments on mobile */
+html {
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  /* Smooth scrolling for better UX */
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+  width: 100%;
+  transition: background-color 0.3s, color 0.3s;
+  /* Prevent overscroll bounce on iOS */
+  overscroll-behavior-y: none;
+  /* Improve font rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  width: 100%;
+  height: 100vh;
+  /* Use dvh for better mobile support */
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Safe area handling for notched devices */
+@supports (padding: max(0px)) {
+  .safe-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+}
+
+/* Gold shimmer — used on heading gradient text */
+@keyframes gold-shimmer {
+  0%   { background-position: 0% center; }
+  50%  { background-position: 100% center; }
+  100% { background-position: 0% center; }
+}
+.gold-shimmer {
+  background-image: linear-gradient(90deg, #D97706 0%, #FCD34D 30%, #F59E0B 50%, #FCD34D 70%, #D97706 100%);
+  background-size: 250% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gold-shimmer 5s ease infinite;
+}
+
+/* ── Ticker tape — scrolls market data strip ── */
+@keyframes ticker-slide {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.ticker-animate {
+  animation: ticker-slide 40s linear infinite;
+}
+.ticker-animate:hover {
+  animation-play-state: paused;
+}
+
+/* ── Pulse glow — gold ambient ring ── */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(212, 160, 23, 0); }
+  50%       { box-shadow: 0 0 20px 6px rgba(212, 160, 23, 0.18); }
+}
+.pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+/* ── Float — gentle vertical bob ── */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-7px); }
+}
+.float-animate {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* ── Border rotate — animated gradient border ── */
+@keyframes border-rotate {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ── Gold glow text ── */
+.gold-glow-text {
+  text-shadow:
+    0 0 16px rgba(212, 160, 23, 0.55),
+    0 0 36px rgba(212, 160, 23, 0.22);
+}
+
+/* ── Scan line sweep (background decoration) ── */
+@keyframes scan-sweep {
+  0%   { transform: translateY(-100%); opacity: 0; }
+  5%   { opacity: 0.6; }
+  95%  { opacity: 0.6; }
+  100% { transform: translateY(100vh); opacity: 0; }
+}
+.scan-line {
+  animation: scan-sweep 10s ease-in-out infinite;
+}
+
+/* ── Grid fade in ── */
+@keyframes grid-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Chip pop — entrance animation for suggestion chips ── */
+@keyframes chip-pop {
+  0%   { opacity: 0; transform: scale(0.9) translateY(6px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ── Sidebar active glow indicator ── */
+@keyframes status-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.8); }
+}
+.status-pulse {
+  animation: status-pulse 2s ease-in-out infinite;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+/* Mobile: thinner scrollbar */
+@media (max-width: 640px) {
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Dark Mode Scrollbar — warm dark gold tone */
+.dark ::-webkit-scrollbar-thumb {
+  background: #252520;
+  border-radius: 3px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #353528;
+}
+
+/* Light Mode Scrollbar */
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  /* slate-300 */
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+  /* slate-400 */
+}
