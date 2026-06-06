@@ -143,6 +143,19 @@ const BackgroundEffect = React.memo(() => {
                         opacity: 0.09,
                     }} />
 
+                    {/* Concentric rings — right-side hero decoration */}
+                    <div className="absolute" style={{ right: '12%', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+                        {[340, 520, 700].map((size, i) => (
+                            <div key={i} className="absolute rounded-full border"
+                                style={{
+                                    width: size, height: size,
+                                    top: '50%', left: '50%',
+                                    transform: 'translate(-50%, -50%)',
+                                    borderColor: `rgba(212,160,23,${0.07 - i * 0.018})`,
+                                }} />
+                        ))}
+                    </div>
+
                 </>
             )}
 
@@ -206,6 +219,19 @@ const BackgroundEffect = React.memo(() => {
                         backgroundSize: '60px 60px',
                         opacity: 0.06,
                     }} />
+
+                    {/* Concentric rings — right-side hero decoration */}
+                    <div className="absolute" style={{ right: '12%', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+                        {[340, 520, 700].map((size, i) => (
+                            <div key={i} className="absolute rounded-full border"
+                                style={{
+                                    width: size, height: size,
+                                    top: '50%', left: '50%',
+                                    transform: 'translate(-50%, -50%)',
+                                    borderColor: `rgba(212,160,23,${0.06 - i * 0.015})`,
+                                }} />
+                        ))}
+                    </div>
 
                 </>
             )}
