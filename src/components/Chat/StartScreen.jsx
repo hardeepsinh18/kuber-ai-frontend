@@ -146,14 +146,14 @@ const StartScreen = ({ onStartChat, responseMode, setResponseMode }) => {
                                             bg-white dark:bg-zinc-900
                                             border border-zinc-200 dark:border-zinc-700/80
                                             shadow-sm
-                                            focus-within:border-zinc-300 dark:focus-within:border-zinc-600
-                                            focus-within:shadow-[0_0_0_3px_rgba(212,160,23,0.07)]
+                                            focus-within:border-amber-300/70 dark:focus-within:border-amber-500/35
+                                            focus-within:shadow-[0_0_0_3px_rgba(212,160,23,0.14),0_1px_4px_rgba(212,160,23,0.08)]
                                             transition-all duration-200">
 
-                                {/* Gold top accent — appears on focus, not full border */}
+                                {/* Gold top accent — fully visible on focus */}
                                 <div className="h-[2px] bg-gradient-to-r
                                                 from-transparent via-amber-400 to-transparent
-                                                opacity-0 group-focus-within:opacity-40
+                                                opacity-0 group-focus-within:opacity-80
                                                 transition-opacity duration-300" />
 
                                 <div className="px-4 pt-3.5 pb-2">
