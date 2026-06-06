@@ -190,7 +190,7 @@ const BackgroundEffect = React.memo(() => {
                     }} />
 
                     {/* Layer 7 — Market Intelligence Network */}
-                    <IntelligenceMap stroke="#D4A017" opacity={0.065} />
+                    <IntelligenceMap stroke="#D4A017" opacity={0.13} />
 
                     {/* Layer 6 — Concentric intelligence rings (centered on search area) */}
                     <div className="absolute pointer-events-none"
@@ -201,7 +201,7 @@ const BackgroundEffect = React.memo(() => {
                                     width: size, height: size,
                                     top: '50%', left: '50%',
                                     transform: 'translate(-50%, -50%)',
-                                    borderColor: `rgba(212,160,23,${0.072 - i * 0.013})`,
+                                    borderColor: `rgba(212,160,23,${0.13 - i * 0.022})`,
                                 }} />
                         ))}
                     </div>
@@ -275,7 +275,7 @@ const BackgroundEffect = React.memo(() => {
                     }} />
 
                     {/* Layer 7 — Market Intelligence Network */}
-                    <IntelligenceMap stroke="#B8860B" opacity={0.048} />
+                    <IntelligenceMap stroke="#B8860B" opacity={0.10} />
 
                     {/* Layer 6 — Concentric intelligence rings */}
                     <div className="absolute pointer-events-none"
@@ -286,7 +286,7 @@ const BackgroundEffect = React.memo(() => {
                                     width: size, height: size,
                                     top: '50%', left: '50%',
                                     transform: 'translate(-50%, -50%)',
-                                    borderColor: `rgba(180,130,8,${0.060 - i * 0.010})`,
+                                    borderColor: `rgba(180,130,8,${0.10 - i * 0.016})`,
                                 }} />
                         ))}
                     </div>
