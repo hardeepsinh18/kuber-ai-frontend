@@ -34,18 +34,18 @@ const TRUST = [
 ];
 
 const SUGGESTIONS = [
-    { text: 'TCS fundamentals & valuation',  icon: TrendingUp },
-    { text: 'Is Reliance a buy right now?',  icon: BarChart2  },
-    { text: 'HDFC vs ICICI Bank comparison', icon: GitCompare },
-    { text: 'Mid-cap stocks with best ROE',  icon: Search     },
-    { text: 'Nifty 50 chart last 6 months',  icon: LineChart  },
-    { text: 'Top PSU stocks by dividend',    icon: Building2  },
+    { text: 'TCS fundamentals\n& valuation',      short: 'TCS fundamentals & valuation',   icon: BarChart2  },
+    { text: 'Is Reliance a\nbuy right now?',       short: 'Is Reliance a buy right now?',   icon: TrendingUp },
+    { text: 'HDFC vs ICICI\nBank comparison',      short: 'HDFC vs ICICI Bank comparison',  icon: GitCompare },
+    { text: 'Mid-cap stocks\nwith best ROE',       short: 'Mid-cap stocks with best ROE',   icon: Search     },
+    { text: 'Nifty 50 chart\nlast 6 months',       short: 'Nifty 50 chart last 6 months',   icon: LineChart  },
+    { text: 'Top PSU stocks\nby dividend',         short: 'Top PSU stocks by dividend',     icon: Building2  },
 ];
 
 const fadeUp = (delay = 0) => ({
-    initial:    { opacity: 0, y: 20 },
+    initial:    { opacity: 0, y: 18 },
     animate:    { opacity: 1, y: 0  },
-    transition: { duration: 0.55, delay, ease: [0.22, 1, 0.36, 1] },
+    transition: { duration: 0.5, delay, ease: [0.22, 1, 0.36, 1] },
 });
 
 const StartScreen = ({ onStartChat, responseMode, setResponseMode }) => {
@@ -96,7 +96,8 @@ const StartScreen = ({ onStartChat, responseMode, setResponseMode }) => {
                             <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full
                                              bg-zinc-100 dark:bg-zinc-800/80
                                              border border-zinc-200 dark:border-zinc-700
-                                             text-[11px] font-semibold tracking-wide text-zinc-500 dark:text-zinc-400">
+                                             text-[11px] font-semibold tracking-wide
+                                             text-zinc-500 dark:text-zinc-400">
                                 <span className="relative flex h-1.5 w-1.5">
                                     <span className="animate-ping absolute inset-0 rounded-full bg-emerald-400 opacity-75" />
                                     <span className="relative rounded-full h-1.5 w-1.5 bg-emerald-500 inline-flex" />
@@ -107,8 +108,8 @@ const StartScreen = ({ onStartChat, responseMode, setResponseMode }) => {
 
                         {/* Heading */}
                         <motion.h1 {...fadeUp(0.07)}
-                            className="text-[2rem] sm:text-[2.6rem] font-bold tracking-tight leading-[1.1]
-                                       text-zinc-900 dark:text-white mb-3">
+                            className="text-[2rem] sm:text-[2.6rem] font-bold tracking-tight
+                                       leading-[1.1] text-zinc-900 dark:text-white mb-3">
                             Ask anything about{' '}
                             <span className="gold-shimmer">Indian markets</span>
                         </motion.h1>
@@ -130,7 +131,8 @@ const StartScreen = ({ onStartChat, responseMode, setResponseMode }) => {
                                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full
                                                    bg-zinc-100 dark:bg-zinc-800/70
                                                    border border-zinc-200 dark:border-zinc-700/70
-                                                   text-[12px] font-medium text-zinc-600 dark:text-zinc-400">
+                                                   text-[12px] font-medium
+                                                   text-zinc-600 dark:text-zinc-400">
                                         <Icon size={12} className="text-kuber-gold" />
                                         {b.label}
                                     </span>
@@ -138,18 +140,21 @@ const StartScreen = ({ onStartChat, responseMode, setResponseMode }) => {
                             })}
                         </motion.div>
 
-                        {/* Input card */}
-                        <motion.div {...fadeUp(0.22)} className="w-full mb-5 group">
+                        {/* ── Input card ──────────────────────────────── */}
+                        <motion.div {...fadeUp(0.22)} className="w-full mb-6 group">
                             <div className="flex flex-col rounded-2xl overflow-hidden
                                             bg-white dark:bg-zinc-900
                                             border border-zinc-200 dark:border-zinc-700/80
                                             shadow-sm
-                                            focus-within:border-zinc-400 dark:focus-within:border-zinc-500
-                                            transition-colors duration-200">
+                                            focus-within:border-zinc-300 dark:focus-within:border-zinc-600
+                                            focus-within:shadow-[0_0_0_3px_rgba(212,160,23,0.07)]
+                                            transition-all duration-200">
 
-                                {/* Subtle top accent — only visible on focus, very light */}
-                                <div className="h-[1.5px] bg-gradient-to-r from-transparent via-amber-400/30 to-transparent
-                                                opacity-0 group-focus-within:opacity-100 transition-opacity duration-300" />
+                                {/* Gold top accent — appears on focus, not full border */}
+                                <div className="h-[2px] bg-gradient-to-r
+                                                from-transparent via-amber-400 to-transparent
+                                                opacity-0 group-focus-within:opacity-40
+                                                transition-opacity duration-300" />
 
                                 <div className="px-4 pt-3.5 pb-2">
                                     <input
@@ -166,7 +171,6 @@ const StartScreen = ({ onStartChat, responseMode, setResponseMode }) => {
                                 </div>
 
                                 <div className="flex items-center justify-between px-3 pb-3 pt-1">
-                                    {/* Mode toggle */}
                                     <div className="flex items-center gap-0.5 p-0.5 rounded-lg
                                                     bg-zinc-100 dark:bg-zinc-800">
                                         {MODES.map(mode => {
@@ -181,15 +185,13 @@ const StartScreen = ({ onStartChat, responseMode, setResponseMode }) => {
                                                             ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm'
                                                             : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300'
                                                     )}>
-                                                    <Icon size={11}
-                                                        className={active ? 'text-kuber-gold' : ''} />
+                                                    <Icon size={11} className={active ? 'text-kuber-gold' : ''} />
                                                     {mode.label}
                                                 </button>
                                             );
                                         })}
                                     </div>
 
-                                    {/* Send button */}
                                     <button onClick={send} disabled={!input.trim()} aria-label="Send"
                                         className="w-8 h-8 flex items-center justify-center rounded-full
                                                    bg-zinc-900 dark:bg-white text-white dark:text-zinc-900
@@ -203,37 +205,64 @@ const StartScreen = ({ onStartChat, responseMode, setResponseMode }) => {
                             </div>
                         </motion.div>
 
-                        {/* Suggestion chips */}
-                        <motion.div {...fadeUp(0.27)}
-                            className="flex flex-wrap justify-center gap-2">
-                            {SUGGESTIONS.map((s, i) => {
-                                const Icon = s.icon;
-                                return (
-                                    <motion.button key={s.text}
-                                        initial={{ opacity: 0, scale: 0.95 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        transition={{ duration: 0.3, delay: 0.3 + i * 0.05 }}
-                                        onClick={() => onStartChat(s.text, 'stock')}
-                                        className="group inline-flex items-center gap-2 px-3.5 py-2 rounded-full
-                                                   bg-zinc-50 dark:bg-zinc-800/60
-                                                   border border-zinc-200 dark:border-zinc-700/60
-                                                   text-[13px] text-zinc-600 dark:text-zinc-400
-                                                   hover:bg-zinc-100 dark:hover:bg-zinc-700/60
-                                                   hover:text-zinc-900 dark:hover:text-zinc-200
-                                                   hover:border-zinc-300 dark:hover:border-zinc-600
-                                                   transition-all duration-150 cursor-pointer">
-                                        <Icon size={13}
-                                            className="text-zinc-400 dark:text-zinc-500
-                                                       group-hover:text-kuber-gold transition-colors" />
-                                        {s.text}
-                                    </motion.button>
-                                );
-                            })}
+                        {/* ── Suggestion cards — 3 columns ─────────── */}
+                        <motion.div {...fadeUp(0.28)} className="w-full">
+                            <p className="text-[11px] font-semibold tracking-widest uppercase
+                                          text-zinc-400 dark:text-zinc-600 mb-3">
+                                Try asking
+                            </p>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                {SUGGESTIONS.map((s, i) => {
+                                    const Icon = s.icon;
+                                    return (
+                                        <motion.button key={s.short}
+                                            initial={{ opacity: 0, y: 8 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ duration: 0.35, delay: 0.32 + i * 0.055, ease: 'easeOut' }}
+                                            onClick={() => onStartChat(s.short, 'stock')}
+                                            className="group relative flex flex-col items-start gap-2.5
+                                                       p-3.5 rounded-xl text-left overflow-hidden
+                                                       bg-zinc-50 dark:bg-zinc-800/50
+                                                       border border-zinc-200 dark:border-zinc-700/60
+                                                       hover:-translate-y-0.5
+                                                       hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)]
+                                                       dark:hover:shadow-[0_4px_16px_rgba(0,0,0,0.3)]
+                                                       hover:border-amber-300/60 dark:hover:border-amber-500/20
+                                                       transition-all duration-200 cursor-pointer">
+
+                                            {/* Hover: subtle amber wash in corner */}
+                                            <div className="absolute top-0 right-0 w-16 h-16 rounded-bl-[3rem]
+                                                            bg-amber-400/0 group-hover:bg-amber-400/[0.07]
+                                                            dark:group-hover:bg-amber-400/[0.06]
+                                                            transition-colors duration-200 pointer-events-none" />
+
+                                            {/* Icon */}
+                                            <div className="w-7 h-7 flex items-center justify-center rounded-lg
+                                                            bg-zinc-200/80 dark:bg-zinc-700/60
+                                                            group-hover:bg-amber-100 dark:group-hover:bg-amber-500/15
+                                                            transition-colors duration-200">
+                                                <Icon size={14}
+                                                    className="text-zinc-500 dark:text-zinc-400
+                                                               group-hover:text-amber-600 dark:group-hover:text-amber-400
+                                                               transition-colors duration-200" />
+                                            </div>
+
+                                            {/* Text */}
+                                            <span className="text-[12px] leading-snug font-medium
+                                                             text-zinc-500 dark:text-zinc-400
+                                                             group-hover:text-zinc-800 dark:group-hover:text-zinc-200
+                                                             transition-colors duration-200 whitespace-pre-line">
+                                                {s.text}
+                                            </span>
+                                        </motion.button>
+                                    );
+                                })}
+                            </div>
                         </motion.div>
 
                         {/* Attribution */}
-                        <motion.p {...fadeUp(0.5)}
-                            className="mt-10 text-[11px] text-zinc-400 dark:text-zinc-600
+                        <motion.p {...fadeUp(0.55)}
+                            className="mt-8 text-[11px] text-zinc-400 dark:text-zinc-600
                                        tracking-wider uppercase font-medium">
                             By 72 Street · Built for Indian Investors
                         </motion.p>
