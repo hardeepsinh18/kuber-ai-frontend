@@ -683,16 +683,16 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 </div>
             )}
 
-            {/* ── Chat card ── */}
-            <div className="flex-1 overflow-hidden mx-4 mb-1 rounded-2xl p-[1px]
+            {/* ── Chat card — messages + input all inside one bordered card ── */}
+            <div className="flex-1 overflow-hidden mx-4 mb-3 rounded-2xl p-[1px]
                             bg-gradient-to-b from-amber-400/35 via-amber-500/10 to-amber-400/25
                             relative"
                  style={{ boxShadow: '0 0 20px rgba(212,160,23,0.08), 0 2px 32px rgba(0,0,0,0.55)' }}>
-            <div className="h-full rounded-[15px] overflow-hidden
-                            bg-white dark:bg-[#141414] relative">
+            <div className="h-full rounded-[15px] flex flex-col
+                            bg-white dark:bg-[#141414] relative overflow-hidden">
                 <div
                     ref={chatContainerRef}
-                    className="h-full overflow-y-auto pt-4 pb-4 custom-scrollbar"
+                    className="flex-1 overflow-y-auto pt-4 pb-2 custom-scrollbar"
                 >
                     {messages.map((msg) => (
                         <React.Fragment key={msg.id}>
@@ -763,31 +763,30 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                         </svg>
                     </button>
                 )}
+                {/* ── Input bar — inside the card at the bottom ── */}
+                <InputBar
+                    input={input}
+                    setInput={setInput}
+                    handleSend={() => handleSend()}
+                    onStopRequest={handleStopRequest}
+                    isLoading={isLoading}
+                    horizonQuestion={(() => {
+                        if (isLoading) return false;
+                        const lastAI = [...messages].reverse().find(m => m.role === 'ai');
+                        if (!lastAI?.content) return false;
+                        const plain = lastAI.content.replace(/\*+/g, '').replace(/_+/g, '');
+                        return /short\s*term.{0,40}or.{0,40}long\s*term|long\s*term.{0,40}or.{0,40}short\s*term/i.test(plain);
+                    })()}
+                    horizonSymbol={(() => {
+                        const lastAI = [...messages].reverse().find(m => m.role === 'ai');
+                        return lastAI?.metadata?.at_a_glance?.symbol
+                            || lastAI?.metadata?.symbols?.[0]
+                            || '';
+                    })()}
+                    onHorizonChoice={(q) => handleSend(q)}
+                />
             </div>
             </div>
-
-            {/* ── Input bar — flex-none at bottom ── */}
-            <InputBar
-                input={input}
-                setInput={setInput}
-                handleSend={() => handleSend()}
-                onStopRequest={handleStopRequest}
-                isLoading={isLoading}
-                horizonQuestion={(() => {
-                    if (isLoading) return false;
-                    const lastAI = [...messages].reverse().find(m => m.role === 'ai');
-                    if (!lastAI?.content) return false;
-                    const plain = lastAI.content.replace(/\*+/g, '').replace(/_+/g, '');
-                    return /short\s*term.{0,40}or.{0,40}long\s*term|long\s*term.{0,40}or.{0,40}short\s*term/i.test(plain);
-                })()}
-                horizonSymbol={(() => {
-                    const lastAI = [...messages].reverse().find(m => m.role === 'ai');
-                    return lastAI?.metadata?.at_a_glance?.symbol
-                        || lastAI?.metadata?.symbols?.[0]
-                        || '';
-                })()}
-                onHorizonChoice={(q) => handleSend(q)}
-            />
         </div>
     );
 };

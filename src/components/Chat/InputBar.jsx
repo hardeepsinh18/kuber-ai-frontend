@@ -38,12 +38,12 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
     };
 
     return (
-        <div className="px-4 pb-3 pt-1.5">
+        <div className="px-3 pb-3 pt-1">
             <div className="flex flex-col items-center w-full gap-1.5">
 
-                {/* Suggestion chips — shown when input empty and not loading */}
+                {/* Suggestion chips */}
                 {!input.trim() && !isLoading && (
-                    <div className="flex flex-wrap gap-2 justify-center w-full">
+                    <div className="flex flex-wrap gap-1.5 justify-center w-full">
                         {QUERIES.slice(0, 3).map(q => (
                             <button
                                 key={q}
@@ -65,21 +65,17 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
 
                 <div className="w-full relative group">
 
-                    {/* Ambient glow above */}
-                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-3/4 h-8 pointer-events-none"
-                        style={{ background: 'radial-gradient(ellipse at center, rgba(212,160,23,0.15) 0%, transparent 70%)' }} />
-
                     {/* Gradient border wrapper */}
-                    <div className="p-[1px] rounded-2xl transition-all duration-300
+                    <div className="p-[1px] rounded-xl transition-all duration-300
                                     bg-gradient-to-b from-amber-400/40 via-amber-500/10 to-amber-400/25
                                     focus-within:from-amber-400/70 focus-within:via-amber-500/25 focus-within:to-amber-400/55"
-                         style={{ boxShadow: '0 0 20px rgba(212,160,23,0.09), 0 2px 16px rgba(0,0,0,0.55)' }}>
+                         style={{ boxShadow: '0 0 16px rgba(212,160,23,0.10)' }}>
 
                     {/* Card */}
-                    <div className="relative flex flex-col rounded-[15px] overflow-hidden transition-all duration-300
-                                    bg-white dark:bg-[#141414]">
+                    <div className="relative flex flex-col rounded-[11px] overflow-hidden transition-all duration-300
+                                    bg-white dark:bg-[#1a1a1a]">
 
-                        {/* Gold top stripe — always visible */}
+                        {/* Gold top stripe */}
                         <div className="h-[2px] w-full bg-gradient-to-r from-transparent via-amber-400/55 to-transparent
                                         group-focus-within:via-amber-400/100 transition-all duration-500" />
 
