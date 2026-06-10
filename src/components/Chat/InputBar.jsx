@@ -38,7 +38,7 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
     };
 
     return (
-        <div className="pb-3 pt-1.5">
+        <div className="px-4 pb-3 pt-1.5">
             <div className="flex flex-col items-center w-full gap-1.5">
 
                 {/* Suggestion chips — shown when input empty and not loading */}

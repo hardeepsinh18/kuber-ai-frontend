@@ -652,7 +652,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
     }
 
     return (
-        <div className="flex flex-col h-full relative max-w-4xl mx-auto w-full px-3 md:px-4">
+        <div className="flex flex-col h-full relative">
             {/* ── Mode toggle — at top center ── */}
             <div className="flex-none flex justify-center items-center py-1.5 z-10">
                 <div className="flex items-center gap-0.5 p-0.5 rounded-md bg-zinc-100/90 dark:bg-zinc-800/70 shadow-sm">
@@ -677,14 +677,14 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             </div>
 
             {chatLoadError && (
-                <div className="flex items-center justify-between gap-2 mb-1 px-3 py-2 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 rounded-xl text-xs text-rose-700 dark:text-rose-400">
+                <div className="flex items-center justify-between gap-2 mx-4 mb-1 px-3 py-2 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 rounded-xl text-xs text-rose-700 dark:text-rose-400">
                     <span>⚠️ {chatLoadError}</span>
                     <button onClick={() => setChatLoadError(null)} className="text-rose-400 hover:text-rose-600 dark:hover:text-rose-300 flex-shrink-0">✕</button>
                 </div>
             )}
 
             {/* ── Chat card ── */}
-            <div className="flex-1 overflow-hidden mb-1 rounded-2xl p-[1px]
+            <div className="flex-1 overflow-hidden mx-4 mb-1 rounded-2xl p-[1px]
                             bg-gradient-to-b from-amber-400/35 via-amber-500/10 to-amber-400/25
                             relative"
                  style={{ boxShadow: '0 0 20px rgba(212,160,23,0.08), 0 2px 32px rgba(0,0,0,0.55)' }}>
