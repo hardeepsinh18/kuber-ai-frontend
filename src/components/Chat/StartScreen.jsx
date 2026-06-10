@@ -120,9 +120,9 @@ const StartScreen = ({ onStartChat, responseMode, setResponseMode }) => {
 
                     </motion.div>
 
-                    {/* Suggestion pills */}
+                    {/* Suggestion pills — 2-column grid matching reference */}
                     <motion.div {...fadeUp(0.14)}
-                        className="flex flex-wrap gap-2 justify-center">
+                        className="grid grid-cols-2 gap-2 w-full">
                         {QUERIES.map((q, i) => (
                             <motion.button
                                 key={q}
@@ -130,14 +130,14 @@ const StartScreen = ({ onStartChat, responseMode, setResponseMode }) => {
                                 animate={{ opacity: 1 }}
                                 transition={{ delay: 0.18 + i * 0.04, duration: 0.30 }}
                                 onClick={() => onStartChat(q, 'stock')}
-                                className="px-3 py-1.5 rounded-full text-[11.5px]
-                                           text-zinc-500 dark:text-zinc-400
-                                           bg-white/60 dark:bg-white/[0.04]
-                                           border border-zinc-200/70 dark:border-zinc-700/40
+                                className="px-3 py-2 rounded-full text-[11.5px] text-left
+                                           text-zinc-400 dark:text-zinc-400
+                                           bg-transparent dark:bg-transparent
+                                           border border-zinc-300/60 dark:border-zinc-700/60
                                            hover:text-zinc-900 dark:hover:text-zinc-200
-                                           hover:border-amber-300/70 dark:hover:border-amber-600/45
-                                           hover:bg-amber-50/80 dark:hover:bg-amber-950/20
-                                           transition-all duration-150">
+                                           hover:border-amber-400/60 dark:hover:border-amber-600/50
+                                           hover:bg-amber-50/60 dark:hover:bg-amber-950/15
+                                           transition-all duration-150 truncate">
                                 {q}
                             </motion.button>
                         ))}
