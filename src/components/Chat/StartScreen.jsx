@@ -46,7 +46,7 @@ const StartScreen = ({ onStartChat, responseMode, setResponseMode }) => {
                     {/* Headline */}
                     <motion.h1 {...fadeUp(0)}
                         className="text-center font-bold tracking-[-0.022em] leading-[1.22]
-                                   text-[1.2rem] sm:text-[1.55rem] mb-5">
+                                   text-[1.35rem] sm:text-[1.8rem] mb-5 -mt-6">
                         <span className="text-zinc-900 dark:text-white">Got a question about markets,</span><br />
                         <span className="text-zinc-500 dark:text-zinc-400">stocks or mutual funds?</span>
                     </motion.h1>
