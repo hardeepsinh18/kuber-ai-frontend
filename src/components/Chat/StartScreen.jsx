@@ -79,7 +79,7 @@ const StartScreen = ({ onStartChat, responseMode, setResponseMode }) => {
 
                                 {/* Bottom row: mode toggle + submit */}
                                 <div className="flex items-center justify-between px-3 pb-3 pt-1">
-                                    <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-zinc-100 dark:bg-zinc-800/80">
+                                    <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-zinc-200/80 dark:bg-zinc-900">
                                         {MODES.map((mode) => {
                                             const isActive = responseMode === mode.key;
                                             return (
@@ -88,11 +88,12 @@ const StartScreen = ({ onStartChat, responseMode, setResponseMode }) => {
                                                     type="button"
                                                     onClick={() => setResponseMode(mode.key)}
                                                     className={clsx(
-                                                        'px-3 py-1 rounded-md text-[11px] font-medium transition-all duration-200 select-none',
+                                                        'px-3 py-1 rounded-md text-[11px] font-semibold transition-all duration-200 select-none',
                                                         isActive
-                                                            ? 'bg-amber-500 text-black shadow-sm'
+                                                            ? 'text-black shadow-sm'
                                                             : 'text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300'
                                                     )}
+                                                    style={isActive ? { backgroundColor: '#D4A017' } : {}}
                                                 >
                                                     {mode.label}
                                                 </button>
@@ -105,13 +106,15 @@ const StartScreen = ({ onStartChat, responseMode, setResponseMode }) => {
                                         disabled={!input.trim()}
                                         aria-label="Send"
                                         className="w-8 h-8 rounded-full flex items-center justify-center
-                                                   bg-amber-500 hover:bg-amber-400 text-black
-                                                   shadow-[0_2px_10px_rgba(212,160,23,0.40)]
-                                                   hover:shadow-[0_4px_16px_rgba(212,160,23,0.58)]
+                                                   text-black
                                                    disabled:opacity-20 disabled:cursor-not-allowed
                                                    hover:scale-105 active:scale-95 disabled:hover:scale-100
-                                                   transition-all duration-150">
-                                        <ArrowUpRight size={14} strokeWidth={2.5} />
+                                                   transition-all duration-150"
+                                        style={{
+                                            backgroundColor: '#D4A017',
+                                            boxShadow: '0 2px 10px rgba(212,160,23,0.45)'
+                                        }}>
+                                        <ArrowUpRight size={15} strokeWidth={2.8} />
                                     </button>
                                 </div>
                             </div>

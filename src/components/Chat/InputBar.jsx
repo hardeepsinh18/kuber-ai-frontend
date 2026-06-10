@@ -134,13 +134,14 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
                                 ) : (
                                     <button onClick={handleSend} disabled={!input.trim()} aria-label="Send"
                                         className="w-7 h-7 flex items-center justify-center rounded-full
-                                                   transition-all duration-200 active:scale-95
-                                                   bg-amber-500 hover:bg-amber-400 text-black
+                                                   transition-all duration-200 active:scale-95 text-black
                                                    disabled:opacity-25 disabled:cursor-not-allowed
-                                                   shadow-[0_2px_8px_rgba(212,160,23,0.44)]
-                                                   hover:shadow-[0_4px_14px_rgba(212,160,23,0.62)]
-                                                   hover:scale-105 disabled:hover:scale-100">
-                                        <ArrowUpRight size={13} strokeWidth={2.5} />
+                                                   hover:scale-105 disabled:hover:scale-100"
+                                        style={{
+                                            backgroundColor: '#D4A017',
+                                            boxShadow: '0 2px 8px rgba(212,160,23,0.45)'
+                                        }}>
+                                        <ArrowUpRight size={13} strokeWidth={2.8} />
                                     </button>
                                 )}
                             </div>
