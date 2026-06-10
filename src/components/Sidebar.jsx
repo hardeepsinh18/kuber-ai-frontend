@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
-    Plus, MessageSquare, PanelLeftClose,
+    Plus, MessageSquare,
     Sun, Moon, LogIn, Trash2, Search, Pencil, Check,
-    BarChart3, TrendingUp,
+    TrendingUp,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useChatHistory } from '../context/ChatHistoryContext';
 import LoginModal from './Auth/LoginModal';
+import KuberLogo from './KuberLogo';
 
 const relativeTime = (ts) => {
     if (!ts) return '';
@@ -17,7 +18,7 @@ const relativeTime = (ts) => {
     if (isNaN(t.getTime())) return '';
     const diff = Date.now() - t.getTime();
     const m = Math.floor(diff / 60000);
-    if (m < 1) return 'just now';
+    if (m < 1) return 'now';
     if (m < 60) return `${m}m ago`;
     const h = Math.floor(m / 60);
     if (h < 24) return `${h}h ago`;
@@ -101,6 +102,8 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, showLogin = false, setSho
         if (e.key === 'Escape') { setEditingId(null); setEditingTitle(''); }
     };
 
+    const userInitials = (user?.user_metadata?.full_name || user?.email || 'G').slice(0, 2).toUpperCase();
+
     return (
         <>
             {/* Mobile overlay */}
@@ -115,84 +118,65 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, showLogin = false, setSho
 
             {/* Sidebar panel */}
             <div className={clsx(
-                'fixed md:static inset-y-0 left-0 z-40 flex flex-col transition-all duration-300 ease-in-out md:transform-none overflow-hidden border-r',
+                'flex flex-col transition-all duration-300 ease-in-out overflow-hidden border-r',
                 'bg-[#F5F4F0] border-zinc-200/70',
-                'dark:bg-[#111110] dark:border-zinc-800/40',
+                'dark:bg-[#0F0F0F] dark:border-zinc-800/40',
+                'fixed md:static inset-y-0 left-0 z-40 h-full',
                 isOpen
-                    ? 'translate-x-0 w-[min(280px,85vw)]'
-                    : '-translate-x-full md:translate-x-0 w-[min(280px,85vw)] md:w-0 md:border-none md:opacity-0'
+                    ? 'w-[min(200px,85vw)] translate-x-0 md:w-[200px]'
+                    : '-translate-x-full md:translate-x-0 w-[min(200px,85vw)] md:w-[52px]'
             )}>
 
-                {/* ── Header ── */}
-                <div className="px-4 py-4 flex items-center justify-between min-w-[280px]
-                                border-b border-zinc-200/70 dark:border-zinc-800/40
-                                bg-gradient-to-b from-amber-500/[0.04] to-transparent
-                                dark:from-amber-500/[0.06] dark:to-transparent">
-                    <NavLink to="/" className="flex items-center gap-3">
-                        {/* Logo icon with layered glow */}
-                        <div className="relative w-8 h-8 rounded-xl flex-shrink-0
-                                        bg-gradient-to-br from-amber-400 to-amber-600
-                                        flex items-center justify-center
-                                        shadow-[0_2px_14px_rgba(212,160,23,0.50)]">
-                            <BarChart3 size={16} className="text-black" strokeWidth={2.5} />
-                            <div className="absolute inset-0 rounded-xl ring-1 ring-amber-300/40 dark:ring-amber-400/30" />
-                        </div>
-                        <div className="flex flex-col leading-none gap-0.5">
-                            <span className="text-[13px] font-bold tracking-[0.1em] text-zinc-900 dark:text-white">
-                                KUBER AI
-                            </span>
-                            <span className="text-[9px] tracking-[0.2em] text-zinc-400 dark:text-zinc-600 font-medium uppercase">
-                                BY 72 STREET
-                            </span>
-                        </div>
-                    </NavLink>
+                {/* ── EXPANDED CONTENT ── */}
+                <div className={clsx(
+                    'flex flex-col flex-1 min-w-[200px] overflow-hidden',
+                    !isOpen && 'md:hidden'
+                )}>
+                    {/* ── Header ── */}
+                    <div className="px-3 py-2 flex items-center justify-between
+                                    border-b border-zinc-200/70 dark:border-zinc-800/40
+                                    flex-shrink-0">
+                        <NavLink to="/" className="flex items-center gap-2">
+                            <KuberLogo size={24} className="text-amber-400 flex-shrink-0" />
+                            <div className="flex flex-col leading-none gap-0.5">
+                                <span className="text-[11px] font-bold tracking-[0.06em] text-zinc-900 dark:text-white">
+                                    KUBER AI
+                                </span>
+                                <span className="text-[7px] tracking-[0.18em] text-zinc-400 dark:text-zinc-500 font-medium uppercase">
+                                    BY 72 STREET
+                                </span>
+                            </div>
+                        </NavLink>
 
-                    <button
-                        onClick={toggleSidebar}
-                        className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700
-                                   hover:bg-zinc-200/60
-                                   dark:text-zinc-600 dark:hover:text-zinc-300 dark:hover:bg-white/5
-                                   transition-colors"
-                        aria-label="Close sidebar"
-                    >
-                        <PanelLeftClose size={18} />
-                    </button>
-                </div>
+                        {/* Mobile close button */}
+                        <button
+                            onClick={toggleSidebar}
+                            className="md:hidden p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700
+                                       hover:bg-zinc-200/60 dark:text-zinc-600 dark:hover:text-zinc-300
+                                       dark:hover:bg-white/5 transition-colors"
+                            aria-label="Close sidebar"
+                        >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M18 6L6 18M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
 
-                <div className="flex-1 flex flex-col min-w-[280px] overflow-hidden">
-
-                    {/* ── New Chat ── */}
-                    {(!supabaseConfigured || isAuthenticated) && (
-                        <div className="px-3 mt-3 mb-2">
-                            <button
-                                onClick={onNewThread}
-                                className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-medium transition-all duration-200
-                                           text-zinc-500 border-zinc-200 bg-white/50
-                                           hover:text-amber-700 hover:border-amber-300/80 hover:bg-amber-50 hover:shadow-[0_2px_10px_rgba(212,160,23,0.10)]
-                                           dark:text-zinc-500 dark:border-zinc-700/50 dark:bg-white/[0.03]
-                                           dark:hover:text-amber-400 dark:hover:border-amber-600/30 dark:hover:bg-amber-500/5"
-                            >
-                                <Plus size={15} />
-                                New Chat
-                            </button>
-                        </div>
-                    )}
-
-                    {/* ── Search ── */}
-                    {(!supabaseConfigured || isAuthenticated) && (
-                        <div className="px-3 mb-3">
-                            <div className="flex items-center gap-2 px-3 py-2 rounded-xl border
-                                            bg-white/70 border-zinc-200 transition-all duration-200
-                                            focus-within:border-amber-300/60 focus-within:shadow-[0_0_0_2px_rgba(212,160,23,0.08)]
+                    <div className="flex flex-col flex-1 overflow-hidden">
+                        {/* ── Search ── */}
+                        <div className="px-2 mt-2 mb-1.5 flex-shrink-0">
+                            <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg border
+                                            bg-white/80 border-zinc-200 transition-all duration-200
+                                            focus-within:border-amber-300/60
                                             dark:bg-white/[0.04] dark:border-zinc-700/40
                                             dark:focus-within:border-amber-500/30">
-                                <Search size={12} className="text-zinc-400 flex-shrink-0" />
+                                <Search size={11} className="text-zinc-400 flex-shrink-0" />
                                 <input
                                     type="text"
                                     value={searchQuery}
                                     onChange={e => setSearchQuery(e.target.value)}
-                                    placeholder="Search chats..."
-                                    className="flex-1 bg-transparent text-xs outline-none border-none
+                                    placeholder="Search Chats"
+                                    className="flex-1 bg-transparent text-[11px] outline-none border-none
                                                text-zinc-600 placeholder:text-zinc-400
                                                dark:text-zinc-400 dark:placeholder:text-zinc-600"
                                 />
@@ -204,193 +188,282 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, showLogin = false, setSho
                                 )}
                             </div>
                         </div>
-                    )}
 
-                    {/* ── Chat list ── */}
-                    <div className="flex-1 overflow-y-auto custom-scrollbar px-3 pb-2">
-                        {isListLoading ? (
-                            <div className="space-y-1 pt-1">
-                                {[...Array(5)].map((_, i) => (
-                                    <div key={i}
-                                        className="h-8 rounded-lg bg-zinc-200/50 dark:bg-white/5 animate-pulse"
-                                        style={{ opacity: 1 - i * 0.15 }} />
-                                ))}
-                            </div>
-                        ) : filteredChats.length > 0 ? (
-                            <div className="mb-6">
-                                <p className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-600 mb-2 px-2 tracking-widest uppercase">
-                                    {searchQuery ? `Results (${filteredChats.length})` : 'Recent'}
-                                </p>
-                                <div className="space-y-0.5" role="list">
-                                    {filteredChats.map((chat) => (
-                                        <div key={chat.id} role="listitem"
-                                            className="group flex items-center gap-1 w-full rounded-xl
-                                                       hover:bg-white/80 dark:hover:bg-white/[0.06]
-                                                       hover:shadow-[0_1px_6px_rgba(0,0,0,0.05)]
-                                                       transition-all duration-150">
-                                            {editingId === chat.id ? (
-                                                <div className="flex-1 flex items-center gap-1 px-2 py-1">
-                                                    <input
-                                                        autoFocus
-                                                        value={editingTitle}
-                                                        onChange={e => setEditingTitle(e.target.value)}
-                                                        onBlur={() => commitRename(chat.id)}
-                                                        onKeyDown={e => handleRenameKeyDown(e, chat.id)}
-                                                        className="flex-1 text-sm bg-white dark:bg-zinc-900 border border-amber-400 rounded-lg px-2 py-1 outline-none text-zinc-800 dark:text-zinc-200"
-                                                    />
-                                                    <button onClick={() => commitRename(chat.id)}
-                                                        className="p-1 text-amber-600 dark:text-amber-500">
-                                                        <Check size={13} />
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                <>
-                                                    <button
-                                                        onClick={() => handleChatClick(chat.id)}
-                                                        onKeyDown={(e) => handleChatKeyDown(e, chat.id)}
-                                                        className="flex-1 min-w-0 text-left px-2 py-2 rounded-xl
-                                                                   text-[13px] truncate flex items-center gap-2
-                                                                   transition-colors
-                                                                   text-zinc-500 group-hover:text-zinc-800
-                                                                   dark:text-zinc-500 dark:group-hover:text-zinc-200"
-                                                    >
-                                                        <MessageSquare size={13}
-                                                            className="flex-shrink-0 text-zinc-300 dark:text-zinc-700
-                                                                       group-hover:text-amber-500/70 dark:group-hover:text-amber-600/70
-                                                                       transition-colors" />
-                                                        <span className="flex-1 truncate">{chat.title || 'New chat'}</span>
-                                                        {chat.updatedAt && (
-                                                            <span className="text-[10px] text-zinc-300 dark:text-zinc-700 flex-shrink-0">
-                                                                {relativeTime(chat.updatedAt)}
-                                                            </span>
-                                                        )}
-                                                    </button>
-                                                    <button
-                                                        onClick={(e) => startEditing(e, chat)}
-                                                        className="p-1.5 rounded-lg text-zinc-300 dark:text-zinc-700
-                                                                   hover:text-amber-600 dark:hover:text-amber-500
-                                                                   hover:bg-amber-50 dark:hover:bg-amber-500/10
-                                                                   opacity-0 group-hover:opacity-100 transition-all"
-                                                        title="Rename"
-                                                    >
-                                                        <Pencil size={12} />
-                                                    </button>
-                                                    {deleteChat && (
-                                                        <button
-                                                            onClick={(e) => handleDeleteClick(e, chat.id)}
-                                                            className={clsx(
-                                                                'p-1.5 rounded-lg transition-all opacity-0 group-hover:opacity-100',
-                                                                deletingId === chat.id
-                                                                    ? 'text-red-500 bg-red-50 dark:bg-red-900/20 opacity-100'
-                                                                    : 'text-zinc-300 dark:text-zinc-700 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'
-                                                            )}
-                                                            title={deletingId === chat.id ? 'Confirm delete' : 'Delete'}
-                                                        >
-                                                            <Trash2 size={13} />
-                                                        </button>
-                                                    )}
-                                                </>
-                                            )}
-                                        </div>
+                        {/* ── Chat list ── */}
+                        <div className="flex-1 overflow-y-auto custom-scrollbar px-2 pb-2">
+                            {isListLoading ? (
+                                <div className="space-y-1 pt-1">
+                                    {[...Array(5)].map((_, i) => (
+                                        <div key={i}
+                                            className="h-6 rounded-md bg-zinc-200/50 dark:bg-white/5 animate-pulse"
+                                            style={{ opacity: 1 - i * 0.15 }} />
                                     ))}
                                 </div>
-                            </div>
-                        ) : (
-                            <p className="px-2 py-4 text-xs text-zinc-400 dark:text-zinc-600">
-                                {searchQuery
-                                    ? 'No chats match.'
-                                    : (supabaseConfigured && !isAuthenticated)
-                                        ? 'Sign in to see history.'
-                                        : 'No chats yet. Start a conversation!'}
-                            </p>
-                        )}
-                    </div>
-
-                    {/* ── Footer ── */}
-                    <div className="p-4 border-t border-zinc-200/70 dark:border-zinc-800/40
-                                    bg-gradient-to-t from-amber-500/[0.03] to-transparent
-                                    dark:from-amber-500/[0.04] dark:to-transparent">
-
-                        {/* Theme toggle */}
-                        <div className="mb-4 flex items-center justify-between">
-                            <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-600 tracking-widest uppercase">
-                                Appearance
-                            </span>
-                            <button
-                                onClick={toggleTheme}
-                                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg
-                                           bg-zinc-200/60 dark:bg-white/5
-                                           text-zinc-500 dark:text-zinc-500
-                                           hover:text-amber-600 dark:hover:text-amber-400
-                                           hover:bg-amber-50 dark:hover:bg-amber-500/10
-                                           transition-all duration-200"
-                                aria-label="Toggle theme"
-                            >
-                                {theme === 'light'
-                                    ? <Sun size={13} />
-                                    : <Moon size={13} />}
-                                <span className="text-[11px] font-medium">
-                                    {theme === 'light' ? 'Light' : 'Dark'}
-                                </span>
-                            </button>
+                            ) : filteredChats.length > 0 ? (
+                                <div className="mb-4">
+                                    <div className="px-1.5 mb-1.5">
+                                        <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-600">
+                                            {searchQuery ? `Results · ${filteredChats.length}` : 'Chats'}
+                                        </span>
+                                    </div>
+                                    <div className="space-y-0.5" role="list">
+                                        {filteredChats.map((chat) => (
+                                            <div key={chat.id} role="listitem"
+                                                className="group flex items-center gap-0.5 w-full rounded-md
+                                                           hover:bg-white/80 dark:hover:bg-white/[0.06]
+                                                           transition-all duration-150">
+                                                {editingId === chat.id ? (
+                                                    <div className="flex-1 flex items-center gap-1 px-1.5 py-0.5">
+                                                        <input
+                                                            autoFocus
+                                                            value={editingTitle}
+                                                            onChange={e => setEditingTitle(e.target.value)}
+                                                            onBlur={() => commitRename(chat.id)}
+                                                            onKeyDown={e => handleRenameKeyDown(e, chat.id)}
+                                                            className="flex-1 text-xs bg-white dark:bg-zinc-900 border border-amber-400 rounded-md px-1.5 py-0.5 outline-none text-zinc-800 dark:text-zinc-200"
+                                                        />
+                                                        <button onClick={() => commitRename(chat.id)}
+                                                            className="p-0.5 text-amber-600 dark:text-amber-500">
+                                                            <Check size={11} />
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <button
+                                                            onClick={() => handleChatClick(chat.id)}
+                                                            onKeyDown={(e) => handleChatKeyDown(e, chat.id)}
+                                                            className="flex-1 min-w-0 text-left px-1.5 py-1.5 rounded-md
+                                                                       text-[11.5px] truncate flex items-center gap-1.5
+                                                                       transition-colors
+                                                                       text-zinc-700 dark:text-zinc-400
+                                                                       group-hover:text-zinc-900 dark:group-hover:text-zinc-200"
+                                                        >
+                                                            <span className="flex-1 truncate font-medium">{chat.title || 'New chat'}</span>
+                                                            {chat.updatedAt && (
+                                                                <span className="text-[10px] text-zinc-400 dark:text-zinc-600 flex-shrink-0">
+                                                                    {relativeTime(chat.updatedAt)}
+                                                                </span>
+                                                            )}
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => startEditing(e, chat)}
+                                                            className="p-1 rounded-md text-zinc-300 dark:text-zinc-700
+                                                                       hover:text-amber-600 dark:hover:text-amber-500
+                                                                       hover:bg-amber-50 dark:hover:bg-amber-500/10
+                                                                       opacity-0 group-hover:opacity-100 transition-all"
+                                                            title="Rename"
+                                                        >
+                                                            <Pencil size={10} />
+                                                        </button>
+                                                        {deleteChat && (
+                                                            <button
+                                                                onClick={(e) => handleDeleteClick(e, chat.id)}
+                                                                className={clsx(
+                                                                    'p-1 rounded-md transition-all opacity-0 group-hover:opacity-100',
+                                                                    deletingId === chat.id
+                                                                        ? 'text-red-500 bg-red-50 dark:bg-red-900/20 opacity-100'
+                                                                        : 'text-zinc-300 dark:text-zinc-700 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'
+                                                                )}
+                                                                title={deletingId === chat.id ? 'Confirm delete' : 'Delete'}
+                                                            >
+                                                                <Trash2 size={11} />
+                                                            </button>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : (
+                                <p className="px-2 py-4 text-xs text-zinc-400 dark:text-zinc-600">
+                                    {searchQuery
+                                        ? 'No chats match.'
+                                        : (supabaseConfigured && !isAuthenticated)
+                                            ? 'Sign in to see history.'
+                                            : 'No chats yet. Start a conversation!'}
+                                </p>
+                            )}
                         </div>
 
-                        {supabaseConfigured ? (
-                            isAuthenticated && user ? (
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 flex-shrink-0 rounded-full
-                                                    bg-gradient-to-br from-amber-400/80 to-amber-600/80
-                                                    border border-amber-300/40 dark:border-amber-700/40
-                                                    flex items-center justify-center
-                                                    text-xs font-bold text-black
-                                                    shadow-[0_2px_8px_rgba(212,160,23,0.30)]">
-                                        {(user.user_metadata?.full_name || user.email || '?').slice(0, 2).toUpperCase()}
+                        {/* ── Footer ── */}
+                        <div className="px-2 py-2 border-t border-zinc-200/70 dark:border-zinc-800/40 flex-shrink-0">
+
+                            {/* New Chat button */}
+                            {(!supabaseConfigured || isAuthenticated) && (
+                                <button
+                                    onClick={onNewThread}
+                                    className="w-full flex items-center justify-center gap-1 px-2 py-1.5 rounded-md
+                                               text-[10.5px] font-semibold transition-all duration-200 mb-2
+                                               bg-amber-400 text-zinc-900 hover:bg-amber-300
+                                               dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700
+                                               shadow-sm"
+                                >
+                                    <Plus size={10} />
+                                    + New Chat
+                                </button>
+                            )}
+
+                            {/* Theme toggle */}
+                            <div className="mb-2 flex items-center justify-between">
+                                <span className="text-[9px] font-semibold text-zinc-400 dark:text-zinc-600 tracking-widest uppercase">
+                                    Theme
+                                </span>
+                                <button
+                                    onClick={toggleTheme}
+                                    className="flex items-center gap-1 px-1.5 py-0.5 rounded
+                                               bg-zinc-200/60 dark:bg-white/5
+                                               text-zinc-500 dark:text-zinc-500
+                                               hover:text-amber-600 dark:hover:text-amber-400
+                                               hover:bg-amber-50 dark:hover:bg-amber-500/10
+                                               transition-all duration-200"
+                                    aria-label="Toggle theme"
+                                >
+                                    {theme === 'light'
+                                        ? <Sun size={9} />
+                                        : <Moon size={9} />}
+                                    <span className="text-[9px] font-medium">
+                                        {theme === 'light' ? 'Light' : 'Dark'}
+                                    </span>
+                                </button>
+                            </div>
+
+                            {supabaseConfigured ? (
+                                isAuthenticated && user ? (
+                                    <div className="flex items-center gap-1.5">
+                                        <div className="w-6 h-6 flex-shrink-0 rounded-full
+                                                        bg-amber-400
+                                                        flex items-center justify-center
+                                                        text-[9px] font-bold text-zinc-900">
+                                            {userInitials}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-[10px] font-medium text-zinc-700 dark:text-zinc-300 truncate">
+                                                {user.user_metadata?.full_name || user.email || 'User'}
+                                            </p>
+                                            <div className="flex items-center gap-0.5 mt-0.5">
+                                                <TrendingUp size={7} className="text-amber-500" />
+                                                <p className="text-[9px] text-amber-600 dark:text-amber-500 font-medium">Free Plan</p>
+                                            </div>
+                                        </div>
+                                        <button onClick={signOut}
+                                            className="text-[9px] text-zinc-400 hover:text-zinc-600 dark:text-zinc-600 dark:hover:text-zinc-400 transition-colors">
+                                            Sign out
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <button
+                                        onClick={() => setShowLogin(true)}
+                                        className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded-lg border text-[10.5px] font-medium transition-all duration-200
+                                                   border-amber-300 bg-amber-50 text-amber-700
+                                                   hover:bg-amber-100
+                                                   dark:border-amber-700/30 dark:bg-amber-500/8 dark:text-amber-400 dark:hover:bg-amber-500/15"
+                                    >
+                                        <LogIn size={11} />
+                                        Sign in to save chats
+                                    </button>
+                                )
+                            ) : (
+                                <div className="flex items-center gap-1.5">
+                                    <div className="w-6 h-6 flex-shrink-0 rounded-full
+                                                    bg-amber-400
+                                                    flex items-center justify-center text-[9px] font-bold text-zinc-900">
+                                        G
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-[13px] font-medium text-zinc-700 dark:text-zinc-300 truncate">
-                                            {user.user_metadata?.full_name || user.email || 'User'}
-                                        </p>
-                                        <div className="flex items-center gap-1 mt-0.5">
-                                            <TrendingUp size={9} className="text-amber-500" />
-                                            <p className="text-[11px] text-amber-600 dark:text-amber-500 font-medium">Free Plan</p>
+                                        <p className="text-[10px] font-medium text-zinc-700 dark:text-zinc-300">Guest</p>
+                                        <div className="flex items-center gap-0.5 mt-0.5">
+                                            <TrendingUp size={7} className="text-amber-500" />
+                                            <p className="text-[9px] text-amber-600 dark:text-amber-500 font-medium">Free Plan</p>
                                         </div>
                                     </div>
-                                    <button onClick={signOut}
-                                        className="text-xs text-zinc-400 hover:text-zinc-600 dark:text-zinc-600 dark:hover:text-zinc-400 transition-colors">
-                                        Sign out
-                                    </button>
                                 </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* ── COLLAPSED ICON STRIP (desktop only) ── */}
+                <div className={clsx(
+                    'flex-col items-center py-4 hidden h-full',
+                    !isOpen && 'md:flex'
+                )}>
+                    {/* Top section */}
+                    <NavLink to="/" className="mb-3">
+                        <KuberLogo size={28} className="text-amber-400" />
+                    </NavLink>
+
+                    <button
+                        onClick={toggleSidebar}
+                        className="p-2 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300
+                                   hover:bg-zinc-200/60 dark:hover:bg-white/5 transition-colors"
+                        title="Search chats"
+                    >
+                        <Search size={17} />
+                    </button>
+
+                    {/* Spacer */}
+                    <div className="flex-1" />
+
+                    {/* Bottom: New chat, theme toggle, avatar */}
+                    <div className="flex flex-col items-center gap-3 pb-2">
+                        {(!supabaseConfigured || isAuthenticated) && (
+                            <button
+                                onClick={onNewThread}
+                                title="New chat"
+                                className="w-10 h-10 flex items-center justify-center rounded-xl
+                                           bg-amber-400 hover:bg-amber-300 text-zinc-900
+                                           dark:bg-amber-500 dark:hover:bg-amber-400
+                                           transition-colors shadow-sm"
+                            >
+                                <Plus size={18} strokeWidth={2.5} />
+                            </button>
+                        )}
+
+                        <button
+                            onClick={toggleTheme}
+                            title={theme === 'light' ? 'Switch to dark' : 'Switch to light'}
+                            className="w-10 h-10 flex items-center justify-center rounded-xl
+                                       text-zinc-500 hover:text-amber-600 dark:hover:text-amber-400
+                                       hover:bg-amber-50 dark:hover:bg-amber-500/10
+                                       transition-colors"
+                        >
+                            {theme === 'light' ? <Sun size={17} /> : <Moon size={17} />}
+                        </button>
+
+                        {/* User avatar */}
+                        {supabaseConfigured ? (
+                            isAuthenticated && user ? (
+                                <button
+                                    onClick={signOut}
+                                    title="Sign out"
+                                    className="w-10 h-10 flex items-center justify-center rounded-full
+                                               bg-amber-400 text-zinc-900 text-xs font-bold
+                                               hover:bg-amber-300 transition-colors"
+                                >
+                                    {userInitials}
+                                </button>
                             ) : (
                                 <button
                                     onClick={() => setShowLogin(true)}
-                                    className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-medium transition-all duration-200
-                                               border-amber-300 bg-amber-50 text-amber-700
-                                               hover:bg-amber-100 hover:shadow-[0_2px_10px_rgba(212,160,23,0.18)]
-                                               dark:border-amber-700/30 dark:bg-amber-500/8 dark:text-amber-400 dark:hover:bg-amber-500/15"
+                                    title="Sign in"
+                                    className="w-10 h-10 flex items-center justify-center rounded-full
+                                               bg-zinc-200 dark:bg-zinc-800 text-zinc-500
+                                               hover:bg-amber-100 dark:hover:bg-amber-900/30
+                                               transition-colors"
                                 >
-                                    <LogIn size={15} />
-                                    Sign in to save chats
+                                    <LogIn size={16} />
                                 </button>
                             )
                         ) : (
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 flex-shrink-0 rounded-full
-                                                bg-gradient-to-br from-amber-400/70 to-amber-600/60
-                                                border border-amber-200 dark:border-amber-700/30
-                                                flex items-center justify-center text-xs font-bold text-black">
-                                    G
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-[13px] font-medium text-zinc-700 dark:text-zinc-300">Guest</p>
-                                    <div className="flex items-center gap-1 mt-0.5">
-                                        <TrendingUp size={9} className="text-amber-500" />
-                                        <p className="text-[11px] text-amber-600 dark:text-amber-500 font-medium">Free Plan</p>
-                                    </div>
-                                </div>
+                            <div className="w-10 h-10 flex items-center justify-center rounded-full
+                                            bg-amber-400 text-zinc-900 text-xs font-bold">
+                                G
                             </div>
                         )}
                     </div>
                 </div>
+
             </div>
 
             <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} />

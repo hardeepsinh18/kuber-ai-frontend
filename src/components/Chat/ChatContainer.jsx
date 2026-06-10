@@ -237,6 +237,11 @@ const generateThinkingSteps = (query, symbols = []) => {
 };
 
 
+const CHAT_MODES = [
+    { key: 'snap',    label: 'Quick'   },
+    { key: 'analyst', label: 'Analyst' },
+];
+
 // Stable unique ID generator — avoids Date.now() collisions
 const genId = () =>
     (typeof crypto !== 'undefined' && crypto.randomUUID)
@@ -257,7 +262,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
     const [processingTime, setProcessingTime] = useState(0); // Track processing time
     const [showScrollButton, setShowScrollButton] = useState(false); // Show scroll-to-bottom button
     const [responseMode, setResponseModeState] = useState(
-        () => localStorage.getItem('kuberai_mode') || 'analyst'
+        () => localStorage.getItem('kuberai_mode') || 'snap'
     );
 
     const setResponseMode = (mode) => {
@@ -647,110 +652,141 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
     }
 
     return (
-        <div className="flex flex-col h-full relative">
+        <div className="flex flex-col h-full relative max-w-4xl mx-auto w-full px-3 md:px-4">
+            {/* ── Mode toggle — at top center ── */}
+            <div className="flex-none flex justify-center items-center py-1.5 z-10">
+                <div className="flex items-center gap-0.5 p-0.5 rounded-md bg-zinc-100/90 dark:bg-zinc-800/70 shadow-sm">
+                    {CHAT_MODES.map((mode) => {
+                        const isActive = responseMode === mode.key;
+                        return (
+                            <button
+                                key={mode.key}
+                                type="button"
+                                onClick={() => setResponseMode(mode.key)}
+                                className={`flex items-center px-3 py-0.5 rounded text-[11px] font-medium transition-all duration-200 select-none ${
+                                    isActive
+                                        ? 'bg-amber-400 text-zinc-900 shadow-sm'
+                                        : 'text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300'
+                                }`}
+                            >
+                                {mode.label}
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+
             {chatLoadError && (
-                <div className="flex items-center justify-between gap-2 px-4 py-2.5 bg-rose-50 dark:bg-rose-950/30 border-b border-rose-200 dark:border-rose-800/50 text-sm text-rose-700 dark:text-rose-400">
+                <div className="flex items-center justify-between gap-2 mb-1 px-3 py-2 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 rounded-xl text-xs text-rose-700 dark:text-rose-400">
                     <span>⚠️ {chatLoadError}</span>
                     <button onClick={() => setChatLoadError(null)} className="text-rose-400 hover:text-rose-600 dark:hover:text-rose-300 flex-shrink-0">✕</button>
                 </div>
             )}
-            <div
-                ref={chatContainerRef}
-                className="flex-1 overflow-y-auto w-full px-0 pt-6 pb-32 android-lg:pb-36 sm:pb-36 custom-scrollbar"
-            >
-                {messages.map((msg, index) => (
-                    <React.Fragment key={msg.id}>
-                        {/* Show thinking paths before AI response */}
-                        {msg.role === 'ai' && msg.thinkingSteps && msg.thinkingSteps.length > 0 && (
-                            <ThinkingPaths
-                                steps={msg.thinkingSteps}
-                                isThinking={false}
-                                processingTime={msg.processingTime || 0}
+
+            {/* ── Chat card ── */}
+            <div className="flex-1 overflow-hidden mb-1 rounded-2xl p-[1px]
+                            bg-gradient-to-b from-amber-400/35 via-amber-500/10 to-amber-400/25
+                            relative"
+                 style={{ boxShadow: '0 0 20px rgba(212,160,23,0.08), 0 2px 32px rgba(0,0,0,0.55)' }}>
+            <div className="h-full rounded-[15px] overflow-hidden
+                            bg-white dark:bg-[#141414] relative">
+                <div
+                    ref={chatContainerRef}
+                    className="h-full overflow-y-auto pt-4 pb-4 custom-scrollbar"
+                >
+                    {messages.map((msg) => (
+                        <React.Fragment key={msg.id}>
+                            {msg.role === 'ai' && msg.thinkingSteps && msg.thinkingSteps.length > 0 && (
+                                <ThinkingPaths
+                                    steps={msg.thinkingSteps}
+                                    isThinking={false}
+                                    processingTime={msg.processingTime || 0}
+                                />
+                            )}
+
+                            {msg.role === 'ai' && (
+                                <SourcesPanel sourceDocuments={msg.sourceDocuments || []} />
+                            )}
+
+                            <MessageBubble
+                                role={msg.role}
+                                content={msg.content}
+                                isStreaming={msg.id === streamingMessageId}
+                                isLoading={isLoading}
+                                chartData={msg.chartData}
+                                metadata={msg.metadata}
+                                signal={msg.signal}
+                                patternSummary={msg.patternSummary}
+                                technicalSummary={msg.technicalSummary}
+                                indicatorsTable={msg.indicatorsTable}
+                                scoreCard={msg.scoreCard}
+                                suggestedFollowUps={msg.suggestedFollowUps}
+                                newsHeadlines={msg.newsHeadlines}
+                                onFollowUpClick={(text) => handleSend(text)}
+                                onStreamingDone={msg.id === streamingMessageId ? handleStreamingDone : undefined}
+                                messageId={msg.role === 'ai' ? msg.id : null}
+                                onFeedback={msg.role === 'ai' ? handleFeedback : null}
+                                responseMode={msg.role === 'ai' ? (msg.responseMode || null) : null}
                             />
-                        )}
+                        </React.Fragment>
+                    ))}
 
-                        {msg.role === 'ai' && (
-                            <SourcesPanel sourceDocuments={msg.sourceDocuments || []} />
-                        )}
+                    {showThinking && (
+                        <ThinkingPaths isThinking={true} />
+                    )}
 
-                        <MessageBubble
-                            role={msg.role}
-                            content={msg.content}
-                            isStreaming={msg.id === streamingMessageId}
-                            isLoading={isLoading}
-                            chartData={msg.chartData}
-                            metadata={msg.metadata}
-                            signal={msg.signal}
-                            patternSummary={msg.patternSummary}
-                            technicalSummary={msg.technicalSummary}
-                            indicatorsTable={msg.indicatorsTable}
-                            scoreCard={msg.scoreCard}
-                            suggestedFollowUps={msg.suggestedFollowUps}
-                            newsHeadlines={msg.newsHeadlines}
-                            onFollowUpClick={(text) => handleSend(text)}
-                            onStreamingDone={msg.id === streamingMessageId ? handleStreamingDone : undefined}
-                            messageId={msg.role === 'ai' ? msg.id : null}
-                            onFeedback={msg.role === 'ai' ? handleFeedback : null}
-                            responseMode={msg.role === 'ai' ? (msg.responseMode || null) : null}
-                        />
-                    </React.Fragment>
-                ))}
+                    <div ref={bottomRef} className="h-4" />
+                </div>
 
-                {/* Show thinking animation while loading */}
-                {showThinking && (
-                    <ThinkingPaths isThinking={true} />
+                {/* Scroll to bottom button — inside the card */}
+                {showScrollButton && (
+                    <button
+                        onClick={scrollToBottom}
+                        className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10
+                                   flex items-center justify-center w-9 h-9 rounded-full
+                                   bg-white/90 backdrop-blur
+                                   border border-zinc-200/80
+                                   shadow-sm hover:shadow-md
+                                   opacity-70 hover:opacity-100
+                                   transition-all duration-200 ease-out
+                                   hover:scale-105 active:scale-95
+                                   group"
+                        aria-label="Scroll to bottom"
+                    >
+                        <svg
+                            className="w-[18px] h-[18px] text-zinc-600/80 group-hover:text-zinc-900 transition-colors"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                        </svg>
+                    </button>
                 )}
-
-                {isLoading && !showThinking && (
-                    <div className="flex justify-start w-full mb-5 android-lg:mb-6 sm:mb-6 pl-10 android-lg:pl-12 sm:pl-12">
-                        <div className="flex items-center gap-1.5">
-                            <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                            <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                            <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce"></div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Spacer */}
-                <div ref={bottomRef} className="h-4" />
+            </div>
             </div>
 
-            {/* Scroll to Bottom Button - ChatGPT Style */}
-            {showScrollButton && (
-                <button
-                    onClick={scrollToBottom}
-                    className={`fixed bottom-[calc(6.25rem+env(safe-area-inset-bottom,0px))] left-1/2 -translate-x-1/2 z-[60]
-                               ${sidebarOpen ? 'md:left-[calc(50%+140px)]' : ''}
-                               flex items-center justify-center w-9 h-9 rounded-full
-                               bg-white/75 dark:bg-zinc-900/65 backdrop-blur
-                               border border-zinc-200/70 dark:border-white/10
-                               shadow-sm hover:shadow-md
-                               opacity-70 hover:opacity-100
-                               transition-all duration-200 ease-out
-                               hover:scale-105 active:scale-95
-                               group`}
-                    aria-label="Scroll to bottom"
-                >
-                    <svg 
-                        className="w-[18px] h-[18px] text-zinc-600/80 dark:text-zinc-300/80 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors" 
-                        fill="none" 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24"
-                    >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                    </svg>
-                </button>
-            )}
-
+            {/* ── Input bar — flex-none at bottom ── */}
             <InputBar
                 input={input}
                 setInput={setInput}
                 handleSend={() => handleSend()}
                 onStopRequest={handleStopRequest}
                 isLoading={isLoading}
-                sidebarOpen={sidebarOpen}
-                responseMode={responseMode}
-                setResponseMode={setResponseMode}
+                horizonQuestion={(() => {
+                    if (isLoading) return false;
+                    const lastAI = [...messages].reverse().find(m => m.role === 'ai');
+                    if (!lastAI?.content) return false;
+                    const plain = lastAI.content.replace(/\*+/g, '').replace(/_+/g, '');
+                    return /short\s*term.{0,40}or.{0,40}long\s*term|long\s*term.{0,40}or.{0,40}short\s*term/i.test(plain);
+                })()}
+                horizonSymbol={(() => {
+                    const lastAI = [...messages].reverse().find(m => m.role === 'ai');
+                    return lastAI?.metadata?.at_a_glance?.symbol
+                        || lastAI?.metadata?.symbols?.[0]
+                        || '';
+                })()}
+                onHorizonChoice={(q) => handleSend(q)}
             />
         </div>
     );

@@ -1,10 +1,11 @@
+import { clsx } from 'clsx';
+import { ChevronsLeft, ChevronsRight } from 'lucide-react';
 import BackgroundEffect from './BackgroundEffect';
 import Sidebar from './Sidebar';
-import { PanelLeft } from 'lucide-react';
 
 const Layout = ({ children, onNewThread, sidebarOpen, setSidebarOpen, showLogin, setShowLogin, chatList = [], loadChat, deleteChat }) => {
     return (
-        <div className="relative min-h-screen w-full overflow-hidden font-sans flex transition-colors duration-300 bg-[#FDFAF3] text-zinc-900 dark:bg-[#09090A] dark:text-zinc-100">
+        <div className="relative min-h-screen w-full overflow-hidden font-sans flex transition-colors duration-300 bg-[#F5F2E8] text-zinc-900 dark:bg-[#0A0A0A] dark:text-zinc-100">
             <BackgroundEffect />
 
             <Sidebar
@@ -18,20 +19,31 @@ const Layout = ({ children, onNewThread, sidebarOpen, setSidebarOpen, showLogin,
                 deleteChat={deleteChat}
             />
 
+            {/* Desktop sidebar toggle button — sits on the sidebar's right edge */}
+            <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className={clsx(
+                    'hidden md:flex fixed top-1/2 -translate-y-1/2 z-50 transition-all duration-300',
+                    'w-6 h-6 rounded-full items-center justify-center',
+                    'bg-zinc-100 dark:bg-zinc-800',
+                    'border border-zinc-300 dark:border-zinc-700',
+                    'shadow-sm hover:bg-amber-100 dark:hover:bg-amber-900/30',
+                    '-translate-x-1/2',
+                    sidebarOpen ? 'left-[200px]' : 'left-[52px]'
+                )}
+                aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+            >
+                {sidebarOpen
+                    ? <ChevronsLeft size={11} className="text-zinc-500 dark:text-zinc-400" />
+                    : <ChevronsRight size={11} className="text-zinc-500 dark:text-zinc-400" />}
+            </button>
+
+            {/* ── Main content column ── */}
             <div className="relative z-10 flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300">
-
-                {/* Mobile / Sidebar Toggle Header Trigger - Shows when Sidebar is CLOSED */}
-                <div className={`absolute top-4 android-lg:top-4 left-4 android-lg:left-4 z-50 transition-opacity duration-300 ${!sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-                    <button
-                        onClick={() => setSidebarOpen(true)}
-                        className="p-2 rounded-xl transition-colors text-zinc-400 hover:text-amber-600 hover:bg-amber-50 dark:text-zinc-500 dark:hover:text-amber-400 dark:hover:bg-amber-500/10 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm border border-zinc-200 dark:border-zinc-700/50 shadow-sm"
-                        title="Open Sidebar"
-                    >
-                        <PanelLeft size={20} className="android-lg:w-5 android-lg:h-5" />
-                    </button>
+                {/* Page content */}
+                <div className="flex-1 overflow-hidden relative">
+                    {children}
                 </div>
-
-                {children}
             </div>
         </div>
     );
