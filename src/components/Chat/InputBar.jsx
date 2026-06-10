@@ -65,19 +65,13 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
 
                 <div className="w-full relative group">
 
-                    {/* Gradient border wrapper */}
-                    <div className="p-[1px] rounded-xl transition-all duration-300
-                                    bg-gradient-to-b from-amber-400/40 via-amber-500/10 to-amber-400/25
-                                    focus-within:from-amber-400/70 focus-within:via-amber-500/25 focus-within:to-amber-400/55"
-                         style={{ boxShadow: '0 0 16px rgba(212,160,23,0.10)' }}>
+                    {/* Thin amber border — clean, matches reference */}
+                    <div className="p-[1px] rounded-xl transition-all duration-300"
+                         style={{ background: 'rgba(212,160,23,0.32)' }}>
 
                     {/* Card */}
                     <div className="relative flex flex-col rounded-[11px] overflow-hidden transition-all duration-300
                                     bg-white dark:bg-[#1a1a1a]">
-
-                        {/* Gold top stripe */}
-                        <div className="h-[2px] w-full bg-gradient-to-r from-transparent via-amber-400/55 to-transparent
-                                        group-focus-within:via-amber-400/100 transition-all duration-500" />
 
                         {/* Short / Long term quick-reply buttons */}
                         {horizonQuestion && onHorizonChoice && (

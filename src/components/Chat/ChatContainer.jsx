@@ -684,10 +684,8 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             )}
 
             {/* ── Chat card — messages + input all inside one bordered card ── */}
-            <div className="flex-1 overflow-hidden mx-4 mb-3 rounded-2xl p-[1px]
-                            bg-gradient-to-b from-amber-400/35 via-amber-500/10 to-amber-400/25
-                            relative"
-                 style={{ boxShadow: '0 0 20px rgba(212,160,23,0.08), 0 2px 32px rgba(0,0,0,0.55)' }}>
+            <div className="flex-1 overflow-hidden mx-4 mb-3 rounded-2xl p-[1px] relative"
+                 style={{ background: 'rgba(212,160,23,0.32)' }}>
             <div className="h-full rounded-[15px] flex flex-col
                             bg-white dark:bg-[#141414] relative overflow-hidden">
                 <div

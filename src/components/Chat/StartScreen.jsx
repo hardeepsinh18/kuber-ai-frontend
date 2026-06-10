@@ -55,21 +55,10 @@ const StartScreen = ({ onStartChat, responseMode, setResponseMode }) => {
                     {/* Input card */}
                     <motion.div {...fadeUp(0.08)} className="relative mb-4">
 
-                        {/* Ambient glow above the card */}
-                        <div className="absolute -top-5 left-1/2 -translate-x-1/2 w-3/4 h-10 pointer-events-none"
-                            style={{ background: 'radial-gradient(ellipse at center, rgba(212,160,23,0.18) 0%, transparent 70%)' }} />
-
-                        {/* Gradient border wrapper */}
-                        <div className="group relative p-[1px] rounded-2xl
-                                        bg-gradient-to-b from-amber-400/40 via-amber-500/10 to-amber-400/25
-                                        focus-within:from-amber-400/70 focus-within:via-amber-500/25 focus-within:to-amber-400/55
-                                        transition-all duration-300"
-                             style={{ boxShadow: '0 0 28px rgba(212,160,23,0.10), 0 4px 40px rgba(0,0,0,0.55)' }}>
+                        {/* Thin amber border wrapper — clean, not glowing */}
+                        <div className="group relative p-[1px] rounded-2xl transition-all duration-300"
+                             style={{ background: 'rgba(212,160,23,0.32)' }}>
                             <div className="rounded-[15px] bg-white dark:bg-[#141414] overflow-hidden">
-
-                                {/* Gold top stripe — always visible, brighter on focus */}
-                                <div className="h-[2px] bg-gradient-to-r from-transparent via-amber-400/55 to-transparent
-                                                group-focus-within:via-amber-400/100 transition-all duration-500" />
 
                                 <textarea
                                     ref={inputRef}
@@ -125,9 +114,6 @@ const StartScreen = ({ onStartChat, responseMode, setResponseMode }) => {
                             </div>
                         </div>
 
-                        {/* Ambient glow below the card */}
-                        <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 w-3/4 h-10 pointer-events-none"
-                            style={{ background: 'radial-gradient(ellipse at center, rgba(212,160,23,0.12) 0%, transparent 70%)' }} />
 
                     </motion.div>
 
