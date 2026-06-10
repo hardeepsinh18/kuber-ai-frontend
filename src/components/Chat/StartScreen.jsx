@@ -40,7 +40,7 @@ const StartScreen = ({ onStartChat, responseMode, setResponseMode }) => {
 
     return (
         <div className="flex flex-col h-full w-full overflow-hidden">
-            <div className="flex-1 flex flex-col items-center justify-center overflow-y-auto py-8 gap-6">
+            <div className="flex-1 flex flex-col items-center justify-center overflow-y-auto py-8 pb-[18vh] gap-6">
 
                 {/* Headline + Input card — narrower container */}
                 <div className="w-full max-w-[660px] px-4 sm:px-6">
@@ -48,7 +48,7 @@ const StartScreen = ({ onStartChat, responseMode, setResponseMode }) => {
                     {/* Headline */}
                     <motion.h1 {...fadeUp(0)}
                         className="text-center font-bold tracking-[-0.025em] leading-[1.18]
-                                   text-[1.65rem] sm:text-[2.1rem] mb-8">
+                                   text-[1.9rem] sm:text-[2.5rem] mb-8">
                         <span className="text-zinc-900 dark:text-white">Got a question about markets,</span><br />
                         <span className="text-zinc-500 dark:text-zinc-400">stocks or mutual funds?</span>
                     </motion.h1>
