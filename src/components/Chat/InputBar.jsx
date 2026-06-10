@@ -65,9 +65,12 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
 
                 <div className="w-full relative group">
 
-                    {/* Thin amber border — clean, matches reference */}
+                    {/* Thin amber border + outer glow */}
                     <div className="p-[1px] rounded-xl transition-all duration-300"
-                         style={{ background: 'rgba(212,160,23,0.32)' }}>
+                         style={{
+                             background: 'rgba(212,160,23,0.32)',
+                             boxShadow: '0 0 28px rgba(212,160,23,0.16), 0 0 60px rgba(212,160,23,0.07)'
+                         }}>
 
                     {/* Card */}
                     <div className="relative flex flex-col rounded-[11px] overflow-hidden transition-all duration-300

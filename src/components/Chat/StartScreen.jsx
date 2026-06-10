@@ -55,9 +55,12 @@ const StartScreen = ({ onStartChat, responseMode, setResponseMode }) => {
                     {/* Input card */}
                     <motion.div {...fadeUp(0.08)} className="relative mb-4">
 
-                        {/* Thin amber border wrapper — clean, not glowing */}
+                        {/* Thin amber border + outer glow matching reference */}
                         <div className="group relative p-[1px] rounded-2xl transition-all duration-300"
-                             style={{ background: 'rgba(212,160,23,0.32)' }}>
+                             style={{
+                                 background: 'rgba(212,160,23,0.32)',
+                                 boxShadow: '0 0 32px rgba(212,160,23,0.18), 0 0 80px rgba(212,160,23,0.08)'
+                             }}>
                             <div className="rounded-[15px] bg-white dark:bg-[#141414] overflow-hidden">
 
                                 <textarea
