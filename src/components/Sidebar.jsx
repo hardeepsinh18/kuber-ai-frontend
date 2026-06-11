@@ -122,42 +122,43 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, showLogin = false, setSho
                 'bg-[#F5F4F0] border-zinc-200/70',
                 'dark:bg-[#0F0F0F] dark:border-zinc-800/40',
                 'fixed md:static inset-y-0 left-0 z-40 h-full',
+                'rounded-br-2xl',
                 isOpen
-                    ? 'w-[min(200px,85vw)] translate-x-0 md:w-[200px]'
-                    : '-translate-x-full md:translate-x-0 w-[min(200px,85vw)] md:w-[52px]'
+                    ? 'w-[min(220px,85vw)] translate-x-0 md:w-[220px]'
+                    : '-translate-x-full md:translate-x-0 w-[min(220px,85vw)] md:w-[52px]'
             )}>
 
                 {/* ── EXPANDED CONTENT ── */}
                 <div className={clsx(
-                    'flex flex-col flex-1 min-w-[200px] overflow-hidden',
+                    'flex flex-col flex-1 min-w-[220px] overflow-hidden',
                     !isOpen && 'md:hidden'
                 )}>
                     {/* ── Header ── */}
-                    <div className="px-3 py-2 flex items-center justify-between
+                    <div className="px-4 py-3 flex items-center justify-between
                                     border-b border-zinc-200/70 dark:border-zinc-800/40
                                     flex-shrink-0">
-                        <NavLink to="/" className="flex items-center gap-2">
-                            <KuberLogo size={24} className="text-amber-400 flex-shrink-0" />
-                            <div className="flex flex-col leading-none gap-0.5">
-                                <span className="text-[11px] font-bold tracking-[0.06em] text-zinc-900 dark:text-white">
+                        <NavLink to="/" className="flex items-center gap-2.5">
+                            <KuberLogo size={34} className="text-amber-400 flex-shrink-0" />
+                            <div className="flex flex-col leading-none gap-1">
+                                <span className="text-[14px] font-bold tracking-[0.08em] text-zinc-900 dark:text-white">
                                     KUBER AI
                                 </span>
-                                <span className="text-[7px] tracking-[0.18em] text-zinc-400 dark:text-zinc-500 font-medium uppercase">
+                                <span className="text-[8.5px] tracking-[0.20em] text-zinc-400 dark:text-zinc-500 font-medium uppercase">
                                     BY 72 STREET
                                 </span>
                             </div>
                         </NavLink>
 
-                        {/* Mobile close button */}
+                        {/* Collapse button (desktop) + Mobile close */}
                         <button
                             onClick={toggleSidebar}
-                            className="md:hidden p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700
+                            className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700
                                        hover:bg-zinc-200/60 dark:text-zinc-600 dark:hover:text-zinc-300
                                        dark:hover:bg-white/5 transition-colors"
                             aria-label="Close sidebar"
                         >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M18 6L6 18M6 6l12 12" />
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M11 19l-7-7 7-7M18 19l-7-7 7-7" />
                             </svg>
                         </button>
                     </div>

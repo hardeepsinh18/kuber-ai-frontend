@@ -26,7 +26,7 @@ const Layout = ({ children, onNewThread, sidebarOpen, setSidebarOpen, showLogin,
                     'hidden md:flex fixed top-1/2 -translate-y-1/2 -translate-x-1/2 z-50 transition-all duration-300',
                     'w-11 h-11 rounded-full items-center justify-center',
                     'bg-[#0F0F0F]',
-                    sidebarOpen ? 'left-[200px]' : 'left-[52px]'
+                    sidebarOpen ? 'left-[220px]' : 'left-[52px]'
                 )}
                 aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
             >
