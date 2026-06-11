@@ -75,27 +75,6 @@ const StartScreen = ({ onStartChat, responseMode, setResponseMode }) => {
                                     autoFocus
                                 />
 
-                                {/* Suggestion pills inside card — full width, visible when input is empty */}
-                                {!input.trim() && (
-                                    <div className="flex flex-col gap-1.5 px-3 pb-2">
-                                        {QUERIES.map((q) => (
-                                            <button
-                                                key={q}
-                                                type="button"
-                                                onClick={() => { setInput(q); setTimeout(() => inputRef.current?.focus(), 0); }}
-                                                className="w-full text-left px-4 py-2.5 rounded-xl text-[13px] font-medium
-                                                           text-zinc-400 dark:text-zinc-400
-                                                           bg-transparent
-                                                           border border-zinc-200/50 dark:border-zinc-700/60
-                                                           hover:text-zinc-900 dark:hover:text-zinc-200
-                                                           hover:border-amber-400/60 dark:hover:border-amber-600/50
-                                                           hover:bg-amber-50/40 dark:hover:bg-amber-950/15
-                                                           transition-all duration-150">
-                                                {q}
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
 
                                 <div className="flex items-center justify-between px-3 pb-3 pt-1">
                                     <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-zinc-200/80 dark:bg-zinc-900">
@@ -136,6 +115,30 @@ const StartScreen = ({ onStartChat, responseMode, setResponseMode }) => {
                     </motion.div>
                 </div>
 
+                {/* Suggestion pills — wider container so 3 fit per row */}
+                <motion.div {...fadeUp(0.14)}
+                    className="w-full max-w-[900px] px-4 sm:px-6">
+                    <div className="flex flex-wrap gap-2.5 justify-center">
+                        {QUERIES.map((q, i) => (
+                            <motion.button
+                                key={q}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.18 + i * 0.04, duration: 0.30 }}
+                                onClick={() => onStartChat(q, 'stock')}
+                                className="px-5 py-2.5 rounded-2xl text-[12.5px] font-medium
+                                           text-zinc-400 dark:text-zinc-400
+                                           bg-transparent
+                                           border border-zinc-300/50 dark:border-zinc-700/70
+                                           hover:text-zinc-900 dark:hover:text-zinc-200
+                                           hover:border-amber-400/60 dark:hover:border-amber-600/50
+                                           hover:bg-amber-50/40 dark:hover:bg-amber-950/15
+                                           transition-all duration-150 whitespace-nowrap">
+                                {q}
+                            </motion.button>
+                        ))}
+                    </div>
+                </motion.div>
 
             </div>
         </div>
