@@ -149,16 +149,16 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, showLogin = false, setSho
                             </div>
                         </NavLink>
 
-                        {/* Collapse button (desktop) + Mobile close */}
+                        {/* Mobile close only */}
                         <button
                             onClick={toggleSidebar}
-                            className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700
+                            className="md:hidden p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700
                                        hover:bg-zinc-200/60 dark:text-zinc-600 dark:hover:text-zinc-300
                                        dark:hover:bg-white/5 transition-colors"
                             aria-label="Close sidebar"
                         >
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M11 19l-7-7 7-7M18 19l-7-7 7-7" />
+                                <path d="M18 6L6 18M6 6l12 12" />
                             </svg>
                         </button>
                     </div>
@@ -331,24 +331,24 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, showLogin = false, setSho
 
                             {supabaseConfigured ? (
                                 isAuthenticated && user ? (
-                                    <div className="flex items-center gap-1.5">
-                                        <div className="w-6 h-6 flex-shrink-0 rounded-full
-                                                        bg-amber-400
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-9 h-9 flex-shrink-0 rounded-full
                                                         flex items-center justify-center
-                                                        text-[9px] font-bold text-zinc-900">
+                                                        text-[13px] font-bold text-zinc-900"
+                                             style={{ backgroundColor: '#D4A017' }}>
                                             {userInitials}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-[10px] font-medium text-zinc-700 dark:text-zinc-300 truncate">
+                                            <p className="text-[12px] font-semibold text-zinc-700 dark:text-zinc-200 truncate">
                                                 {user.user_metadata?.full_name || user.email || 'User'}
                                             </p>
                                             <div className="flex items-center gap-0.5 mt-0.5">
-                                                <TrendingUp size={7} className="text-amber-500" />
-                                                <p className="text-[9px] text-amber-600 dark:text-amber-500 font-medium">Free Plan</p>
+                                                <TrendingUp size={8} className="text-amber-500" />
+                                                <p className="text-[10px] text-amber-500 font-medium">Free Plan</p>
                                             </div>
                                         </div>
                                         <button onClick={signOut}
-                                            className="text-[9px] text-zinc-400 hover:text-zinc-600 dark:text-zinc-600 dark:hover:text-zinc-400 transition-colors">
+                                            className="text-[10px] text-zinc-400 hover:text-zinc-600 dark:text-zinc-600 dark:hover:text-zinc-400 transition-colors">
                                             Sign out
                                         </button>
                                     </div>
@@ -365,17 +365,17 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, showLogin = false, setSho
                                     </button>
                                 )
                             ) : (
-                                <div className="flex items-center gap-1.5">
-                                    <div className="w-6 h-6 flex-shrink-0 rounded-full
-                                                    bg-amber-400
-                                                    flex items-center justify-center text-[9px] font-bold text-zinc-900">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-9 h-9 flex-shrink-0 rounded-full
+                                                    flex items-center justify-center text-[13px] font-bold text-zinc-900"
+                                         style={{ backgroundColor: '#D4A017' }}>
                                         G
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-[10px] font-medium text-zinc-700 dark:text-zinc-300">Guest</p>
+                                        <p className="text-[12px] font-semibold text-zinc-700 dark:text-zinc-200">Guest</p>
                                         <div className="flex items-center gap-0.5 mt-0.5">
-                                            <TrendingUp size={7} className="text-amber-500" />
-                                            <p className="text-[9px] text-amber-600 dark:text-amber-500 font-medium">Free Plan</p>
+                                            <TrendingUp size={8} className="text-amber-500" />
+                                            <p className="text-[10px] text-amber-500 font-medium">Free Plan</p>
                                         </div>
                                     </div>
                                 </div>
