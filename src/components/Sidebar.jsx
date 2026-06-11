@@ -411,24 +411,22 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, showLogin = false, setSho
                             <button
                                 onClick={onNewThread}
                                 title="New chat"
-                                className="w-10 h-10 flex items-center justify-center rounded-xl
-                                           bg-amber-400 hover:bg-amber-300 text-zinc-900
-                                           dark:bg-amber-500 dark:hover:bg-amber-400
-                                           transition-colors shadow-sm"
+                                className="w-11 h-11 flex items-center justify-center rounded-xl
+                                           text-zinc-900 transition-colors shadow-sm"
+                                style={{ backgroundColor: '#D4A017' }}
                             >
-                                <Plus size={18} strokeWidth={2.5} />
+                                <Plus size={20} strokeWidth={2.5} />
                             </button>
                         )}
 
                         <button
                             onClick={toggleTheme}
                             title={theme === 'light' ? 'Switch to dark' : 'Switch to light'}
-                            className="w-10 h-10 flex items-center justify-center rounded-xl
-                                       text-zinc-500 hover:text-amber-600 dark:hover:text-amber-400
-                                       hover:bg-amber-50 dark:hover:bg-amber-500/10
+                            className="w-8 h-8 flex items-center justify-center rounded-lg
+                                       text-zinc-400 hover:text-amber-400
                                        transition-colors"
                         >
-                            {theme === 'light' ? <Sun size={17} /> : <Moon size={17} />}
+                            {theme === 'light' ? <Sun size={18} /> : <Moon size={18} />}
                         </button>
 
                         {/* User avatar */}
@@ -437,9 +435,10 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, showLogin = false, setSho
                                 <button
                                     onClick={signOut}
                                     title="Sign out"
-                                    className="w-10 h-10 flex items-center justify-center rounded-full
-                                               bg-amber-400 text-zinc-900 text-xs font-bold
-                                               hover:bg-amber-300 transition-colors"
+                                    className="w-11 h-11 flex items-center justify-center rounded-full
+                                               text-zinc-900 text-[13px] font-bold
+                                               hover:brightness-110 transition-all"
+                                    style={{ backgroundColor: '#D4A017' }}
                                 >
                                     {userInitials}
                                 </button>
@@ -447,7 +446,7 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, showLogin = false, setSho
                                 <button
                                     onClick={() => setShowLogin(true)}
                                     title="Sign in"
-                                    className="w-10 h-10 flex items-center justify-center rounded-full
+                                    className="w-11 h-11 flex items-center justify-center rounded-full
                                                bg-zinc-200 dark:bg-zinc-800 text-zinc-500
                                                hover:bg-amber-100 dark:hover:bg-amber-900/30
                                                transition-colors"
@@ -456,8 +455,9 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, showLogin = false, setSho
                                 </button>
                             )
                         ) : (
-                            <div className="w-10 h-10 flex items-center justify-center rounded-full
-                                            bg-amber-400 text-zinc-900 text-xs font-bold">
+                            <div className="w-11 h-11 flex items-center justify-center rounded-full
+                                            text-zinc-900 text-[13px] font-bold"
+                                 style={{ backgroundColor: '#D4A017' }}>
                                 G
                             </div>
                         )}

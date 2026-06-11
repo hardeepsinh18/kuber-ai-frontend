@@ -24,18 +24,18 @@ const Layout = ({ children, onNewThread, sidebarOpen, setSidebarOpen, showLogin,
                 onClick={() => setSidebarOpen(!sidebarOpen)}
                 className={clsx(
                     'hidden md:flex fixed top-1/2 -translate-y-1/2 z-50 transition-all duration-300',
-                    'w-6 h-6 rounded-full items-center justify-center',
-                    'bg-zinc-100 dark:bg-zinc-800',
-                    'border border-zinc-300 dark:border-zinc-700',
-                    'shadow-sm hover:bg-amber-100 dark:hover:bg-amber-900/30',
+                    'w-9 h-9 rounded-xl items-center justify-center',
+                    'bg-zinc-800 dark:bg-zinc-700',
+                    'hover:bg-zinc-700 dark:hover:bg-zinc-600',
+                    'shadow-md',
                     '-translate-x-1/2',
                     sidebarOpen ? 'left-[200px]' : 'left-[52px]'
                 )}
                 aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
             >
                 {sidebarOpen
-                    ? <ChevronsLeft size={11} className="text-zinc-500 dark:text-zinc-400" />
-                    : <ChevronsRight size={11} className="text-zinc-500 dark:text-zinc-400" />}
+                    ? <ChevronsLeft size={15} className="text-zinc-300" />
+                    : <ChevronsRight size={15} className="text-zinc-300" />}
             </button>
 
             {/* ── Main content column ── */}
