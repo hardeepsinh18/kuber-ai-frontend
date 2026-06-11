@@ -300,7 +300,7 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, showLogin = false, setSho
                                                shadow-sm"
                                 >
                                     <Plus size={10} />
-                                    + New Chat
+                                    New Chat
                                 </button>
                             )}
 
