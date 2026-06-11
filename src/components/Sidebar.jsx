@@ -411,11 +411,14 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, showLogin = false, setSho
                             <button
                                 onClick={onNewThread}
                                 title="New chat"
-                                className="w-11 h-11 flex items-center justify-center rounded-xl
-                                           text-zinc-900 transition-colors shadow-sm"
-                                style={{ backgroundColor: '#D4A017' }}
+                                className="w-9 h-9 flex items-center justify-center rounded-xl
+                                           border border-zinc-700 dark:border-zinc-600
+                                           bg-zinc-900 dark:bg-zinc-900
+                                           text-zinc-300 hover:text-white
+                                           hover:border-zinc-500
+                                           transition-all duration-200"
                             >
-                                <Plus size={20} strokeWidth={2.5} />
+                                <Plus size={16} strokeWidth={2} />
                             </button>
                         )}
 
