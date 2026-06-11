@@ -43,20 +43,20 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
 
                 {/* Suggestion chips */}
                 {!input.trim() && (
-                    <div className="flex flex-wrap gap-1.5 justify-center w-full">
+                    <div className="flex flex-wrap gap-2 justify-center w-full">
                         {QUERIES.slice(0, 3).map(q => (
                             <button
                                 key={q}
                                 type="button"
                                 onClick={() => handleChipClick(q)}
-                                className="px-2.5 py-0.5 rounded-full text-[10.5px]
-                                           text-zinc-500 dark:text-zinc-500
-                                           bg-white/70 dark:bg-white/[0.04]
-                                           border border-zinc-200/80 dark:border-zinc-700/40
-                                           hover:text-zinc-900 dark:hover:text-zinc-200
-                                           hover:border-amber-300/70 dark:hover:border-amber-700/45
-                                           hover:bg-amber-50/80 dark:hover:bg-amber-950/20
-                                           transition-all duration-150 truncate max-w-[220px]">
+                                className="px-4 py-2 rounded-2xl text-[12.5px] font-medium
+                                           text-zinc-400 dark:text-zinc-300
+                                           bg-transparent
+                                           border border-zinc-300/50 dark:border-zinc-600/70
+                                           hover:text-zinc-900 dark:hover:text-zinc-100
+                                           hover:border-amber-400/60 dark:hover:border-amber-600/50
+                                           hover:bg-amber-50/40 dark:hover:bg-amber-950/15
+                                           transition-all duration-150 whitespace-nowrap">
                                 {q}
                             </button>
                         ))}
