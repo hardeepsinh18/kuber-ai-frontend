@@ -88,10 +88,10 @@ const StartScreen = ({ onStartChat, responseMode, setResponseMode }) => {
                                                     className={clsx(
                                                         'px-3 py-1 rounded-md text-[11px] font-semibold transition-all duration-200 select-none',
                                                         isActive
-                                                            ? 'text-black shadow-sm'
+                                                            ? 'text-white shadow-sm'
                                                             : 'text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300'
                                                     )}
-                                                    style={isActive ? { backgroundColor: '#D4A017' } : {}}
+                                                    style={isActive ? { backgroundColor: '#5e4f07' } : {}}
                                                 >
                                                     {mode.label}
                                                 </button>

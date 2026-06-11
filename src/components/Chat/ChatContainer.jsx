@@ -665,9 +665,10 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                                 onClick={() => setResponseMode(mode.key)}
                                 className={`flex items-center px-3 py-0.5 rounded text-[11px] font-medium transition-all duration-200 select-none ${
                                     isActive
-                                        ? 'bg-amber-400 text-zinc-900 shadow-sm'
+                                        ? 'text-white shadow-sm'
                                         : 'text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300'
                                 }`}
+                                style={isActive ? { backgroundColor: '#5e4f07' } : {}}
                             >
                                 {mode.label}
                             </button>
