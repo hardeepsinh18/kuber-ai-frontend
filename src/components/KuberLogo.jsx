@@ -13,17 +13,6 @@ const KuberLogo = ({ size = 36, className = '' }) => (
             </linearGradient>
         </defs>
 
-        {/* Trend line connecting circle tops */}
-        <polyline
-            points="20,32 50,19 80,9"
-            stroke="currentColor"
-            strokeOpacity="0.45"
-            strokeWidth="2"
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        />
-
         {/* Left stem + circle */}
         <rect x="17" y="39" width="6" height="21" rx="3" fill="url(#kl_stem)" />
         <circle cx="20" cy="32" r="7" fill="currentColor" />
