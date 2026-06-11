@@ -75,22 +75,22 @@ const StartScreen = ({ onStartChat, responseMode, setResponseMode }) => {
                                     autoFocus
                                 />
 
-                                {/* Suggestion pills inside card — visible when input is empty */}
+                                {/* Suggestion pills inside card — full width, visible when input is empty */}
                                 {!input.trim() && (
-                                    <div className="flex flex-wrap gap-2 px-3 pb-2 justify-start">
+                                    <div className="flex flex-col gap-1.5 px-3 pb-2">
                                         {QUERIES.map((q) => (
                                             <button
                                                 key={q}
                                                 type="button"
                                                 onClick={() => { setInput(q); setTimeout(() => inputRef.current?.focus(), 0); }}
-                                                className="px-5 py-2.5 rounded-2xl text-[12.5px] font-medium
+                                                className="w-full text-left px-4 py-2.5 rounded-xl text-[13px] font-medium
                                                            text-zinc-400 dark:text-zinc-400
                                                            bg-transparent
-                                                           border border-zinc-300/50 dark:border-zinc-700/70
+                                                           border border-zinc-200/50 dark:border-zinc-700/60
                                                            hover:text-zinc-900 dark:hover:text-zinc-200
                                                            hover:border-amber-400/60 dark:hover:border-amber-600/50
                                                            hover:bg-amber-50/40 dark:hover:bg-amber-950/15
-                                                           transition-all duration-150 whitespace-nowrap">
+                                                           transition-all duration-150">
                                                 {q}
                                             </button>
                                         ))}
