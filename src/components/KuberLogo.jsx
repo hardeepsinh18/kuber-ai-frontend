@@ -1,33 +1,46 @@
 const KuberLogo = ({ size = 36, className = '' }) => (
     <svg
         width={size}
-        height={Math.round(size * 50 / 44)}
-        viewBox="0 0 44 50"
-        fill="currentColor"
+        height={Math.round(size * 120 / 100)}
+        viewBox="0 0 100 120"
         xmlns="http://www.w3.org/2000/svg"
         className={className}
     >
-        {/* Left bar */}
-        <rect x="6" y="6" width="5" height="13" rx="2.5" />
-        {/* Center bar — tallest */}
-        <rect x="19.5" y="2" width="5" height="17" rx="2.5" />
-        {/* Right bar */}
-        <rect x="33" y="8" width="5" height="11" rx="2.5" />
+        <defs>
+            <linearGradient id="kl_stem" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="currentColor" stopOpacity="1" />
+                <stop offset="100%" stopColor="currentColor" stopOpacity="0.05" />
+            </linearGradient>
+        </defs>
 
-        {/* Dots at bar tops */}
-        <circle cx="8.5" cy="4" r="3" />
-        <circle cx="22" cy="0" r="3" />
-        <circle cx="35.5" cy="6.5" r="3" />
+        {/* Trend line connecting circle tops */}
+        <polyline
+            points="20,32 50,19 80,9"
+            stroke="currentColor"
+            strokeOpacity="0.45"
+            strokeWidth="2"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        />
+
+        {/* Left stem + circle */}
+        <rect x="17" y="39" width="6" height="21" rx="3" fill="url(#kl_stem)" />
+        <circle cx="20" cy="32" r="7" fill="currentColor" />
+
+        {/* Center stem + circle */}
+        <rect x="47" y="26" width="6" height="34" rx="3" fill="url(#kl_stem)" />
+        <circle cx="50" cy="19" r="7" fill="currentColor" />
+
+        {/* Right stem + circle */}
+        <rect x="77" y="16" width="6" height="44" rx="3" fill="url(#kl_stem)" />
+        <circle cx="80" cy="9" r="7" fill="currentColor" />
 
         {/* Pot rim */}
-        <rect x="3" y="20" width="38" height="5.5" rx="2.75" />
+        <path d="M7,62 L93,62 L88,72 L12,72 Z" fill="currentColor" />
 
-        {/* Pot body — wider at top, tapers to base */}
-        <path d="M6 26 L2 44 Q1.5 49 10 49 L34 49 Q42.5 49 42 44 L38 26 Z" />
-
-        {/* Decorative horizontal stripes */}
-        <rect x="3.5" y="33" width="37" height="2.5" rx="1.25" fill="rgba(0,0,0,0.18)" />
-        <rect x="4" y="40.5" width="36" height="2" rx="1" fill="rgba(0,0,0,0.13)" />
+        {/* Pot body */}
+        <path d="M14,76 L86,76 L96,96 L86,119 L14,119 L4,96 Z" fill="currentColor" />
     </svg>
 );
 
