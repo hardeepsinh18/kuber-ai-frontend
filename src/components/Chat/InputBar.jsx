@@ -42,7 +42,7 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
             <div className="flex flex-col items-center w-full gap-1.5">
 
                 {/* Suggestion chips */}
-                {!input.trim() && !isLoading && (
+                {!input.trim() && (
                     <div className="flex flex-wrap gap-1.5 justify-center w-full">
                         {QUERIES.slice(0, 3).map(q => (
                             <button
