@@ -93,12 +93,12 @@ export default function AuthPage() {
                 <div className="w-full rounded-2xl overflow-hidden"
                     style={{
                         background: 'rgba(14,11,1,0.90)',
-                        border: '1px solid rgba(253,212,5,0.18)',
+                        border: '1px solid rgba(253,212,5,0.38)',
                         backdropFilter: 'blur(20px)',
-                        boxShadow: '0 16px 48px rgba(0,0,0,0.5)',
+                        boxShadow: '0 16px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(253,212,5,0.10)',
                     }}>
 
-                    <div style={{ height: 3, background: 'linear-gradient(90deg, transparent, #FDD405 40%, #FDD405 60%, transparent)' }} />
+                    <div style={{ height: 3, background: 'linear-gradient(90deg, transparent 0%, #FDD405 30%, #FDD405 70%, transparent 100%)', opacity: 0.9 }} />
 
                     <form onSubmit={handleContinue} className="p-6 flex flex-col gap-4">
 

@@ -57,8 +57,8 @@ const StartScreen = ({ onStartChat, responseMode, setResponseMode }) => {
                     <motion.div {...fadeUp(0.08)}>
                         <div className="group relative p-[1px] rounded-2xl transition-all duration-300"
                              style={{
-                                 background: 'rgba(212,160,23,0.32)',
-                                 boxShadow: '0 0 32px rgba(212,160,23,0.18), 0 0 80px rgba(212,160,23,0.08)'
+                                 background: 'linear-gradient(135deg, #FDD405 0%, rgba(253,212,5,0.55) 50%, #FDD405 100%)',
+                                 boxShadow: '0 0 28px rgba(253,212,5,0.22), 0 0 60px rgba(253,212,5,0.10)'
                              }}>
                             <div className="rounded-[15px] bg-white dark:bg-[#141414] overflow-hidden">
                                 <textarea
@@ -88,10 +88,10 @@ const StartScreen = ({ onStartChat, responseMode, setResponseMode }) => {
                                                     className={clsx(
                                                         'px-3 py-1 rounded-md text-[11px] font-semibold transition-all duration-200 select-none',
                                                         isActive
-                                                            ? 'text-white shadow-sm'
+                                                            ? 'text-zinc-900 shadow-sm'
                                                             : 'text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300'
                                                     )}
-                                                    style={isActive ? { backgroundColor: '#5e4f07' } : {}}
+                                                    style={isActive ? { backgroundColor: '#FDD405' } : {}}
                                                 >
                                                     {mode.label}
                                                 </button>
@@ -106,7 +106,7 @@ const StartScreen = ({ onStartChat, responseMode, setResponseMode }) => {
                                                    disabled:opacity-20 disabled:cursor-not-allowed
                                                    hover:scale-105 active:scale-95 disabled:hover:scale-100
                                                    transition-all duration-150"
-                                        style={{ backgroundColor: '#D4A017', boxShadow: '0 2px 10px rgba(212,160,23,0.45)' }}>
+                                        style={{ backgroundColor: '#FDD405', boxShadow: '0 2px 10px rgba(253,212,5,0.45)' }}>
                                         <ArrowUpRight size={15} strokeWidth={2.8} />
                                     </button>
                                 </div>
@@ -131,7 +131,7 @@ const StartScreen = ({ onStartChat, responseMode, setResponseMode }) => {
                                            bg-transparent
                                            border border-zinc-300/50 dark:border-zinc-700/70
                                            hover:text-zinc-900 dark:hover:text-zinc-200
-                                           hover:border-amber-400/60 dark:hover:border-amber-600/50
+                                           hover:border-[#FDD405]/60 dark:hover:border-[#FDD405]/50
                                            hover:bg-amber-50/40 dark:hover:bg-amber-950/15
                                            transition-all duration-150 whitespace-nowrap">
                                 {q}

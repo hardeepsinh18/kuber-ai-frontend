@@ -51,8 +51,8 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
                     {/* Thin amber border + outer glow */}
                     <div className="p-[1px] rounded-xl transition-all duration-300"
                          style={{
-                             background: 'rgba(253,212,5,0.32)',
-                             boxShadow: '0 0 28px rgba(253,212,5,0.16), 0 0 60px rgba(253,212,5,0.07)'
+                             background: 'linear-gradient(135deg, #FDD405 0%, rgba(253,212,5,0.55) 50%, #FDD405 100%)',
+                             boxShadow: '0 0 24px rgba(253,212,5,0.20), 0 0 56px rgba(253,212,5,0.09)'
                          }}>
 
                     {/* Card */}
@@ -78,8 +78,8 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
                                                        bg-white/60 dark:bg-zinc-900/40
                                                        border border-zinc-200/70 dark:border-zinc-800/55
                                                        hover:text-zinc-900 dark:hover:text-zinc-200
-                                                       hover:border-[#FDD405]/70 dark:hover:border-amber-700/45
-                                                       hover:bg-amber-50/80 dark:hover:bg-amber-950/25
+                                                       hover:border-[#FDD405]/70 dark:hover:border-[#FDD405]/45
+                                                       hover:bg-amber-50/80 dark:hover:bg-[#FDD405]/10
                                                        transition-all duration-150">
                                             {label}
                                         </button>
