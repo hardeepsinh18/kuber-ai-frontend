@@ -6,17 +6,6 @@ const KuberLogo = ({ size = 36, className = '' }) => (
         xmlns="http://www.w3.org/2000/svg"
         className={className}
     >
-        {/* Connecting line between circles */}
-        <polyline
-            points="23,33 50,21 77,11"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeOpacity="0.45"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        />
-
         {/* Left stem + circle */}
         <rect x="19.5" y="39" width="7" height="21" rx="3.5" fill="currentColor" />
         <circle cx="23" cy="33" r="7.5" fill="currentColor" />
