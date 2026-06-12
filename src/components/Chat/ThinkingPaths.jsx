@@ -1,16 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
-import { BarChart2, ChevronDown, Cpu } from 'lucide-react';
+import { Cpu, ChevronDown } from 'lucide-react';
 import { clsx } from 'clsx';
 
 const ThinkingPaths = ({ steps = [], isThinking = true, className = '', processingTime = 0 }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [visibleSteps, setVisibleSteps] = useState([]);
+    const [currentStepIndex, setCurrentStepIndex] = useState(0);
     const [elapsed, setElapsed] = useState(0);
     const revealTimeoutsRef = useRef([]);
-    const timerRef = useRef(null);
     const startTimeRef = useRef(null);
+    const timerRef = useRef(null);
 
-    // Live timer while thinking
+    // Continuous timer — updates every 50ms using performance.now()
     useEffect(() => {
         if (isThinking) {
             startTimeRef.current = performance.now();
@@ -23,6 +24,17 @@ const ThinkingPaths = ({ steps = [], isThinking = true, className = '', processi
         }
         return () => clearInterval(timerRef.current);
     }, [isThinking]);
+
+    // Step index advances while thinking
+    useEffect(() => {
+        if (isThinking && steps.length > 0) {
+            setCurrentStepIndex(0);
+            const interval = setInterval(() => {
+                setCurrentStepIndex(prev => prev < steps.length - 1 ? prev + 1 : prev);
+            }, 800);
+            return () => clearInterval(interval);
+        }
+    }, [isThinking, steps.length]);
 
     // Reveal completed steps one by one
     useEffect(() => {
@@ -46,98 +58,89 @@ const ThinkingPaths = ({ steps = [], isThinking = true, className = '', processi
         };
     }, [steps, isThinking]);
 
+    const defaultThinkingSteps = [
+        'Analyzing query...',
+        'Extracting stock symbols...',
+        'Fetching market data...',
+        'Running technical analysis...',
+        'Calculating indicators...',
+        'Retrieving analyst views...',
+        'Compiling insights...',
+        'Finalizing response...',
+    ];
+
+    const activeSteps = isThinking ? defaultThinkingSteps : steps;
+    const currentStep = isThinking ? activeSteps[currentStepIndex] : null;
+    const displayTime = isThinking ? (elapsed / 1000).toFixed(1) : processingTime.toFixed(1);
+
     if (!isThinking && steps.length === 0) return null;
-
-    // While thinking — Analyzing card with live timer
-    if (isThinking) {
-        const secs = (elapsed / 1000).toFixed(1);
-        return (
-            <div className={clsx('w-full mb-4', className)}>
-                <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 md:px-8">
-                    <div className="inline-flex flex-col gap-1.5 px-4 py-3 rounded-xl
-                                    bg-zinc-50 border border-zinc-200
-                                    dark:bg-white/[0.04] dark:border-zinc-700/30">
-                        {/* Top row: icon + Analyzing + dots + timer */}
-                        <div className="flex items-center gap-2.5">
-                            <Cpu size={14} className="text-[#FDD405] flex-shrink-0" />
-                            <span className="text-[13px] font-semibold text-zinc-700 dark:text-zinc-200">
-                                Analyzing
-                            </span>
-                            {/* Animated dots */}
-                            <span className="flex items-center gap-[3px]">
-                                {[0, 1, 2].map(i => (
-                                    <span key={i}
-                                        className="w-[4px] h-[4px] rounded-full bg-[#FDD405]"
-                                        style={{
-                                            animation: 'dotBounce 1.2s ease-in-out infinite',
-                                            animationDelay: `${i * 0.2}s`,
-                                        }}
-                                    />
-                                ))}
-                            </span>
-                            {/* Live timer */}
-                            <span className="ml-1 text-[12px] font-mono font-medium tabular-nums"
-                                  style={{ color: '#FDD405' }}>
-                                {secs}s
-                            </span>
-                        </div>
-                        {/* Subtext */}
-                        <p className="text-[11.5px] text-zinc-400 dark:text-zinc-500 pl-[22px]">
-                            Analyzing query...
-                        </p>
-                    </div>
-                </div>
-                <style>{`
-                    @keyframes dotBounce {
-                        0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
-                        40% { transform: translateY(-4px); opacity: 1; }
-                    }
-                `}</style>
-            </div>
-        );
-    }
-
-    // After response — collapsible "Analysis steps" header
-    const displayTime = processingTime.toFixed(1);
 
     return (
         <div className={clsx('w-full mb-4 animate-in fade-in slide-in-from-bottom-2 duration-300', className)}>
-            <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 md:px-8">
+            <div className="w-full max-w-4xl mx-auto px-6">
                 <div
-                    className="rounded-xl border cursor-pointer transition-all duration-200
-                                bg-zinc-50 border-zinc-200 hover:bg-zinc-100
-                                dark:bg-white/[0.04] dark:border-zinc-700/30 dark:hover:bg-white/[0.07]"
-                    onClick={() => setIsExpanded(!isExpanded)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsExpanded(!isExpanded); } }}
-                    aria-expanded={isExpanded}
+                    className={clsx(
+                        'rounded-xl border transition-all duration-200',
+                        isThinking
+                            ? 'bg-amber-950/20 border-amber-800/30'
+                            : 'bg-zinc-900/30 border-zinc-700/40 cursor-pointer hover:bg-zinc-800/30'
+                    )}
+                    onClick={() => !isThinking && setIsExpanded(!isExpanded)}
+                    role={!isThinking ? 'button' : undefined}
+                    tabIndex={!isThinking ? 0 : undefined}
+                    onKeyDown={!isThinking ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsExpanded(!isExpanded); } } : undefined}
+                    aria-expanded={!isThinking ? isExpanded : undefined}
                 >
                     {/* Header */}
                     <div className="flex items-center justify-between px-4 py-2.5">
                         <div className="flex items-center gap-2.5">
-                            <BarChart2 size={13} className="text-zinc-400 dark:text-zinc-500" />
-                            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-500">
-                                Analysis steps
+                            <Cpu size={13} className={isThinking ? 'text-amber-500' : 'text-zinc-500'} />
+                            <span className={clsx(
+                                'text-xs font-medium',
+                                isThinking ? 'text-amber-400' : 'text-zinc-500'
+                            )}>
+                                {isThinking ? (
+                                    <span className="flex items-center gap-1.5">
+                                        Analyzing
+                                        <span className="flex gap-0.5">
+                                            <span className="w-1 h-1 bg-amber-500 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                                            <span className="w-1 h-1 bg-amber-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                                            <span className="w-1 h-1 bg-amber-500 rounded-full animate-bounce" />
+                                        </span>
+                                    </span>
+                                ) : 'Analysis steps'}
                             </span>
-                            <span className="text-[11px] font-medium px-2 py-0.5 rounded-md
-                                             bg-amber-100 text-amber-700
-                                             dark:bg-amber-950/40 dark:text-[#FDD405]">
-                                Answered in {displayTime}s
-                            </span>
-                        </div>
-                        <ChevronDown
-                            size={14}
-                            className={clsx(
-                                'text-zinc-400 dark:text-zinc-500 transition-transform duration-200',
-                                isExpanded && 'rotate-180'
+                            {/* Timer — shown while thinking and after */}
+                            {(isThinking || processingTime > 0) && (
+                                <span className="text-[11px] font-mono font-semibold tabular-nums"
+                                      style={{ color: '#FDD405' }}>
+                                    {displayTime}s
+                                </span>
                             )}
-                        />
+                        </div>
+                        {!isThinking && (
+                            <ChevronDown
+                                size={14}
+                                className={clsx(
+                                    'text-zinc-400 dark:text-zinc-500 transition-transform duration-200',
+                                    isExpanded && 'rotate-180'
+                                )}
+                            />
+                        )}
                     </div>
 
+                    {/* Active step while thinking */}
+                    {isThinking && currentStep && (
+                        <div className="px-4 pb-3 border-t border-amber-900/30">
+                            <p className="pt-2.5 text-xs text-amber-400/80 leading-relaxed">
+                                {currentStep}
+                            </p>
+                        </div>
+                    )}
+
                     {/* Steps list when expanded */}
-                    {isExpanded && visibleSteps.length > 0 && (
-                        <ul className="px-4 pb-3 border-t border-zinc-200 dark:border-zinc-700/25 pt-2.5 space-y-1.5">
+                    {isExpanded && !isThinking && visibleSteps.length > 0 && (
+                        <ul className="px-4 pb-3 border-t border-zinc-100 dark:border-zinc-800/40 pt-2.5 space-y-1.5">
                             {visibleSteps.map((step, index) => (
                                 <li
                                     key={index}
