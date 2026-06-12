@@ -51,8 +51,8 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
                     {/* Thin amber border + outer glow */}
                     <div className="p-[1px] rounded-xl transition-all duration-300"
                          style={{
-                             background: 'linear-gradient(135deg, #FDD405 0%, rgba(253,212,5,0.55) 50%, #FDD405 100%)',
-                             boxShadow: '0 0 24px rgba(253,212,5,0.20), 0 0 56px rgba(253,212,5,0.09)'
+                             background: 'linear-gradient(135deg, rgba(253,212,5,0.55) 0%, rgba(253,212,5,0.25) 50%, rgba(253,212,5,0.55) 100%)',
+                             boxShadow: '0 0 20px rgba(253,212,5,0.12), 0 0 50px rgba(253,212,5,0.06)'
                          }}>
 
                     {/* Card */}

@@ -57,8 +57,8 @@ const StartScreen = ({ onStartChat, responseMode, setResponseMode }) => {
                     <motion.div {...fadeUp(0.08)}>
                         <div className="group relative p-[1px] rounded-2xl transition-all duration-300"
                              style={{
-                                 background: 'linear-gradient(135deg, #FDD405 0%, rgba(253,212,5,0.55) 50%, #FDD405 100%)',
-                                 boxShadow: '0 0 28px rgba(253,212,5,0.22), 0 0 60px rgba(253,212,5,0.10)'
+                                 background: 'linear-gradient(135deg, rgba(253,212,5,0.55) 0%, rgba(253,212,5,0.25) 50%, rgba(253,212,5,0.55) 100%)',
+                                 boxShadow: '0 0 20px rgba(253,212,5,0.12), 0 0 50px rgba(253,212,5,0.06)'
                              }}>
                             <div className="rounded-[15px] bg-white dark:bg-[#141414] overflow-hidden">
                                 <textarea
