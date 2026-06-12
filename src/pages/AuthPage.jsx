@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import KuberLogo from '../components/KuberLogo';
 
 const GoogleIcon = () => (
@@ -16,6 +17,8 @@ const GoogleIcon = () => (
 export default function AuthPage() {
     const navigate = useNavigate();
     const { signInWithEmail, signInWithGoogle, isAuthenticated, supabaseConfigured } = useAuth();
+    const { theme } = useTheme();
+    const isDark = theme === 'dark';
 
     const [email,   setEmail]   = useState('');
     const [phone,   setPhone]   = useState('');
@@ -56,15 +59,33 @@ export default function AuthPage() {
         } finally { setLoading(false); }
     };
 
-    return (
-        <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#0A0A0A] px-4 py-10 relative overflow-hidden">
+    // Theme-aware styles
+    const bg         = isDark ? '#0A0A0A' : '#F5F2E8';
+    const cardBg     = isDark ? 'rgba(14,11,1,0.90)' : 'rgba(255,252,240,0.92)';
+    const inputBg    = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)';
+    const inputColor = isDark ? '#fff' : '#111';
+    const textMain   = isDark ? '#fff' : '#111';
+    const textSub    = isDark ? 'rgba(161,161,170,1)' : 'rgba(82,82,91,1)';
+    const labelColor = isDark ? 'rgba(113,113,122,1)' : 'rgba(82,82,91,1)';
+    const dividerBg  = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)';
+    const orColor    = isDark ? 'rgba(82,82,91,1)' : 'rgba(113,113,122,1)';
+    const googleBg   = isDark ? '#fff' : '#fff';
 
-            {/* Background */}
+    return (
+        <div className="min-h-screen w-full flex flex-col items-center justify-center px-4 py-10 relative overflow-hidden"
+             style={{ backgroundColor: bg }}>
+
+            {/* Background video */}
             <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className="absolute inset-0 bg-[#0A0A0A]" />
-                <video src="/bg-dark.mp4" autoPlay loop muted playsInline
-                    className="absolute inset-0 w-full h-full object-cover opacity-40" />
-                <div className="absolute inset-0 bg-black/25" />
+                <div className="absolute inset-0" style={{ backgroundColor: bg }} />
+                <video
+                    key={theme}
+                    src={isDark ? '/bg-dark.mp4' : '/bg-light.mp4'}
+                    autoPlay loop muted playsInline
+                    className="absolute inset-0 w-full h-full object-cover"
+                    style={{ opacity: isDark ? 0.40 : 0.55 }}
+                />
+                <div className="absolute inset-0" style={{ backgroundColor: isDark ? 'rgba(0,0,0,0.25)' : 'rgba(245,242,232,0.30)' }} />
             </div>
 
             {/* Content */}
@@ -78,24 +99,26 @@ export default function AuthPage() {
                 <div className="flex items-center gap-3 mb-6">
                     <KuberLogo size={36} className="text-[#FDD405]" />
                     <div>
-                        <p className="text-[18px] font-black text-white leading-none tracking-tight">KUBER AI</p>
-                        <p className="text-[10px] text-zinc-500 tracking-widest uppercase mt-0.5">by 72 Street</p>
+                        <p className="text-[18px] font-black leading-none tracking-tight" style={{ color: textMain }}>KUBER AI</p>
+                        <p className="text-[10px] tracking-widest uppercase mt-0.5" style={{ color: labelColor }}>by 72 Street</p>
                     </div>
                 </div>
 
                 {/* Heading */}
-                <h1 className="text-[24px] font-bold text-white text-center leading-snug mb-1">
+                <h1 className="text-[24px] font-bold text-center leading-snug mb-1" style={{ color: textMain }}>
                     Hi! I'm <span style={{ color: '#FDD405' }}>Kuber AI</span>
                 </h1>
-                <p className="text-zinc-400 text-[13px] text-center mb-7">I bring clarity to market decisions.</p>
+                <p className="text-[13px] text-center mb-7" style={{ color: textSub }}>I bring clarity to market decisions.</p>
 
                 {/* Card */}
                 <div className="w-full rounded-2xl overflow-hidden"
                     style={{
-                        background: 'rgba(14,11,1,0.90)',
+                        background: cardBg,
                         border: '1px solid rgba(253,212,5,0.38)',
                         backdropFilter: 'blur(20px)',
-                        boxShadow: '0 16px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(253,212,5,0.10)',
+                        boxShadow: isDark
+                            ? '0 16px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(253,212,5,0.10)'
+                            : '0 16px 48px rgba(0,0,0,0.12), 0 0 0 1px rgba(253,212,5,0.10)',
                     }}>
 
                     <div style={{ height: 3, background: 'linear-gradient(90deg, transparent 0%, #FDD405 30%, #FDD405 70%, transparent 100%)', opacity: 0.9 }} />
@@ -104,7 +127,7 @@ export default function AuthPage() {
 
                         {/* Email */}
                         <div>
-                            <label className="block text-[11px] font-semibold text-zinc-500 uppercase tracking-widest mb-2">
+                            <label className="block text-[11px] font-semibold uppercase tracking-widest mb-2" style={{ color: labelColor }}>
                                 Email address
                             </label>
                             <input
@@ -116,9 +139,9 @@ export default function AuthPage() {
                                 autoFocus
                                 style={{
                                     width: '100%', padding: '11px 14px', boxSizing: 'border-box',
-                                    background: 'rgba(255,255,255,0.05)',
+                                    background: inputBg,
                                     border: '1px solid rgba(253,212,5,0.20)',
-                                    borderRadius: 10, color: '#fff', fontSize: 14, outline: 'none',
+                                    borderRadius: 10, color: inputColor, fontSize: 14, outline: 'none',
                                 }}
                                 onFocus={e => e.target.style.borderColor = 'rgba(253,212,5,0.60)'}
                                 onBlur={e => e.target.style.borderColor = 'rgba(253,212,5,0.20)'}
@@ -127,28 +150,28 @@ export default function AuthPage() {
 
                         {/* Phone */}
                         <div>
-                            <label className="block text-[11px] font-semibold text-zinc-500 uppercase tracking-widest mb-2">
-                                Phone <span className="normal-case font-normal text-zinc-700">(optional)</span>
+                            <label className="block text-[11px] font-semibold uppercase tracking-widest mb-2" style={{ color: labelColor }}>
+                                Phone <span className="normal-case font-normal" style={{ color: isDark ? '#3f3f46' : '#a1a1aa' }}>(optional)</span>
                             </label>
                             <div style={{
                                 display: 'flex', alignItems: 'center',
-                                background: 'rgba(255,255,255,0.05)',
+                                background: inputBg,
                                 border: '1px solid rgba(253,212,5,0.20)',
                                 borderRadius: 10, overflow: 'hidden',
                             }}
                                 onFocusCapture={e => e.currentTarget.style.borderColor = 'rgba(253,212,5,0.60)'}
                                 onBlurCapture={e => e.currentTarget.style.borderColor = 'rgba(253,212,5,0.20)'}>
-                                <span style={{ padding: '11px 10px 11px 14px', fontSize: 14, color: '#71717a', borderRight: '1px solid rgba(253,212,5,0.12)', flexShrink: 0 }}>+91</span>
+                                <span style={{ padding: '11px 10px 11px 14px', fontSize: 14, color: labelColor, borderRight: '1px solid rgba(253,212,5,0.12)', flexShrink: 0 }}>+91</span>
                                 <input type="tel" value={phone}
                                     onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                                     placeholder="98765 43210"
-                                    style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: 14, padding: '11px 14px' }}
+                                    style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: inputColor, fontSize: 14, padding: '11px 14px' }}
                                 />
                             </div>
                         </div>
 
                         {error && (
-                            <p className="text-[12px] text-red-400 bg-red-950/20 border border-red-800/30 px-3 py-2 rounded-lg">
+                            <p style={{ fontSize: 12, color: '#f87171', background: 'rgba(127,29,29,0.15)', border: '1px solid rgba(153,27,27,0.3)', borderRadius: 8, padding: '8px 12px' }}>
                                 {error}
                             </p>
                         )}
@@ -168,17 +191,18 @@ export default function AuthPage() {
                         </button>
 
                         {/* Divider */}
-                        <div className="flex items-center gap-3">
-                            <div className="flex-1 h-px bg-white/[0.07]" />
-                            <span className="text-[11px] text-zinc-600">or</span>
-                            <div className="flex-1 h-px bg-white/[0.07]" />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <div style={{ flex: 1, height: 1, background: dividerBg }} />
+                            <span style={{ fontSize: 11, color: orColor }}>or</span>
+                            <div style={{ flex: 1, height: 1, background: dividerBg }} />
                         </div>
 
                         {/* Google */}
                         <button type="button" onClick={handleGoogle} disabled={loading}
                             style={{
-                                width: '100%', padding: '12px', background: '#fff',
-                                border: 'none', borderRadius: 10, fontSize: 13.5, fontWeight: 600,
+                                width: '100%', padding: '12px', background: googleBg,
+                                border: isDark ? 'none' : '1px solid rgba(0,0,0,0.10)',
+                                borderRadius: 10, fontSize: 13.5, fontWeight: 600,
                                 color: '#1a1a1a', cursor: loading ? 'not-allowed' : 'pointer',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
                                 opacity: loading ? 0.6 : 1,
@@ -188,16 +212,16 @@ export default function AuthPage() {
                         </button>
 
                         {/* Checkbox */}
-                        <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', userSelect: 'none' }}>
                             <div onClick={() => setUpdates(v => !v)} style={{
                                 width: 17, height: 17, borderRadius: 5, flexShrink: 0, marginTop: 2, cursor: 'pointer',
                                 background: updates ? '#FDD405' : 'transparent',
-                                border: updates ? 'none' : '1.5px solid #52525b',
+                                border: updates ? 'none' : `1.5px solid ${isDark ? '#52525b' : '#a1a1aa'}`,
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                             }}>
                                 {updates && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l3 3 5-6" stroke="#000" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                             </div>
-                            <span className="text-[12px] text-zinc-500 leading-relaxed">
+                            <span style={{ fontSize: 12, color: textSub, lineHeight: 1.6 }}>
                                 Get updates from 72 Street on SMS &amp; WhatsApp
                             </span>
                         </label>
@@ -205,18 +229,18 @@ export default function AuthPage() {
                 </div>
 
                 {/* Terms */}
-                <p className="text-center text-[11px] text-zinc-600 mt-4 leading-relaxed">
+                <p style={{ textAlign: 'center', fontSize: 11, color: labelColor, marginTop: 16, lineHeight: 1.7 }}>
                     By continuing you agree to our{' '}
-                    <span className="text-zinc-500 underline cursor-pointer">Terms of Service</span>
+                    <span style={{ color: textSub, textDecoration: 'underline', cursor: 'pointer' }}>Terms of Service</span>
                     {' '}and{' '}
-                    <span className="text-zinc-500 underline cursor-pointer">Privacy Policy</span>
+                    <span style={{ color: textSub, textDecoration: 'underline', cursor: 'pointer' }}>Privacy Policy</span>
                 </p>
 
                 {/* Footer */}
-                <div className="flex items-center gap-2 mt-6 opacity-50">
-                    <span className="text-[11px] text-zinc-500">Powered by</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 24, opacity: 0.5 }}>
+                    <span style={{ fontSize: 11, color: textSub }}>Powered by</span>
                     <KuberLogo size={13} className="text-[#FDD405]" />
-                    <span className="text-[11px] font-black text-[#FDD405] tracking-widest">72 STREET</span>
+                    <span style={{ fontSize: 11, fontWeight: 900, color: '#FDD405', letterSpacing: '0.15em' }}>72 STREET</span>
                 </div>
             </motion.div>
 
