@@ -19,25 +19,26 @@ const Layout = ({ children, onNewThread, sidebarOpen, setSidebarOpen, showLogin,
                 deleteChat={deleteChat}
             />
 
-            {/* Desktop sidebar toggle — circle straddling sidebar's right edge */}
+            {/* Sidebar toggle — true D-shape semicircle, overlaps sidebar border by 1px to hide the line */}
             <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
                 className={clsx(
-                    'hidden md:flex fixed top-1/2 -translate-y-1/2 -translate-x-1/2 z-50 transition-all duration-300',
-                    'w-11 h-11 rounded-full items-center justify-center',
-                    'bg-[#0F0F0F]',
-                    sidebarOpen ? 'left-[220px]' : 'left-[52px]'
+                    'hidden md:flex fixed top-1/2 -translate-y-1/2 z-50 transition-all duration-300',
+                    'w-6 h-12 rounded-r-full items-center justify-center',
+                    'bg-[#EDEAE0] dark:bg-[#1a1a1a]',
+                    'border-t border-r border-b border-zinc-300/60 dark:border-zinc-800',
+                    'hover:bg-[#E3DFD4] dark:hover:bg-[#222]',
+                    sidebarOpen ? 'left-[219px]' : 'left-[51px]'
                 )}
                 aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
             >
                 {sidebarOpen
-                    ? <ChevronsLeft size={18} className="text-zinc-300" />
-                    : <ChevronsRight size={18} className="text-zinc-300" />}
+                    ? <ChevronsLeft size={11} className="text-zinc-500 dark:text-zinc-500" />
+                    : <ChevronsRight size={11} className="text-zinc-500 dark:text-zinc-500" />}
             </button>
 
             {/* ── Main content column ── */}
             <div className="relative z-10 flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300">
-                {/* Page content */}
                 <div className="flex-1 overflow-hidden relative">
                     {children}
                 </div>
