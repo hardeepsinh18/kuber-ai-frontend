@@ -1,28 +1,33 @@
 const KuberLogo = ({ size = 36, className = '' }) => (
     <svg
         width={size}
-        height={Math.round(size * 125 / 100)}
-        viewBox="0 0 100 125"
+        height={Math.round(size * 50 / 44)}
+        viewBox="0 0 44 50"
+        fill="currentColor"
         xmlns="http://www.w3.org/2000/svg"
         className={className}
     >
-        {/* Left stem + circle */}
-        <rect x="19.5" y="39" width="7" height="21" rx="3.5" fill="currentColor" />
-        <circle cx="23" cy="33" r="7.5" fill="currentColor" />
+        {/* Left bar */}
+        <rect x="6" y="6" width="5" height="13" rx="2.5" />
+        {/* Center bar — tallest */}
+        <rect x="19.5" y="2" width="5" height="17" rx="2.5" />
+        {/* Right bar */}
+        <rect x="33" y="8" width="5" height="11" rx="2.5" />
 
-        {/* Center stem + circle */}
-        <rect x="46.5" y="27" width="7" height="33" rx="3.5" fill="currentColor" />
-        <circle cx="50" cy="21" r="7.5" fill="currentColor" />
+        {/* Dots at bar tops */}
+        <circle cx="8.5" cy="4" r="3" />
+        <circle cx="22" cy="0" r="3" />
+        <circle cx="35.5" cy="6.5" r="3" />
 
-        {/* Right stem + circle */}
-        <rect x="73.5" y="17" width="7" height="43" rx="3.5" fill="currentColor" />
-        <circle cx="77" cy="11" r="7.5" fill="currentColor" />
+        {/* Pot rim */}
+        <rect x="3" y="20" width="38" height="5.5" rx="2.75" />
 
-        {/* Pot rim — narrower */}
-        <path d="M20,62 L80,62 L76,72 L24,72 Z" fill="currentColor" />
+        {/* Pot body — wider at top, tapers to base */}
+        <path d="M6 26 L2 44 Q1.5 49 10 49 L34 49 Q42.5 49 42 44 L38 26 Z" />
 
-        {/* Pot body — narrower hexagonal */}
-        <path d="M24,75 L76,75 L87,96 L78,122 L22,122 L13,96 Z" fill="currentColor" />
+        {/* Decorative horizontal stripes */}
+        <rect x="3.5" y="33" width="37" height="2.5" rx="1.25" fill="rgba(0,0,0,0.18)" />
+        <rect x="4" y="40.5" width="36" height="2" rx="1" fill="rgba(0,0,0,0.13)" />
     </svg>
 );
 
