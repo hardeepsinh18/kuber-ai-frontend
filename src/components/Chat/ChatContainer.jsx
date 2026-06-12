@@ -8,6 +8,7 @@ import SourcesPanel from './SourcesPanel';
 import { useAuth } from '../../context/AuthContext';
 import { useChatHistory } from '../../context/ChatHistoryContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useChatMode } from '../../context/ChatModeContext';
 
 // API Base URL - unset = same-origin (Vercel proxies /api/* to AWS).
 // Supports both Vite and Next-style env names for deployment safety.
@@ -253,6 +254,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
     const { chatId: routeChatIdParam } = useParams();
     const { accessToken } = useAuth();
     const { theme } = useTheme();
+    const { setChatActive } = useChatMode();
     const { messages, setMessages, ensureCurrentChat, loadChat, currentChatId, isChatLoading, chatLoadError, setChatLoadError } = useChatHistory();
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -653,12 +655,13 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
         return <StartScreen onStartChat={handleStartChat} responseMode={responseMode} setResponseMode={setResponseMode} />;
     }
 
-    const chatBg = theme === 'dark'
-        ? 'linear-gradient(160deg, rgba(253,212,5,0.04) 0%, transparent 45%), #121315'
-        : 'linear-gradient(160deg, rgba(253,212,5,0.07) 0%, transparent 45%), #F5F2E8';
+    useEffect(() => {
+        setChatActive(messages.length > 0);
+        return () => setChatActive(false);
+    }, [messages.length, setChatActive]);
 
     return (
-        <div className="flex flex-col h-full relative" style={{ background: chatBg }}>
+        <div className="flex flex-col h-full relative">
             {chatLoadError && (
                 <div className="flex items-center justify-between gap-2 mx-4 mb-1 px-3 py-2 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 rounded-xl text-xs text-rose-700 dark:text-rose-400">
                     <span>⚠️ {chatLoadError}</span>

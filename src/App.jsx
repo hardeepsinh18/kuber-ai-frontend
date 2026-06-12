@@ -9,6 +9,7 @@ import AuthPage from './pages/AuthPage';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import { ChatHistoryProvider, useChatHistory } from './context/ChatHistoryContext';
+import { ChatModeProvider } from './context/ChatModeContext';
 import { AdminGuard } from './components/Admin/AdminGuard';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 
@@ -90,6 +91,7 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <ChatHistoryProvider>
+          <ChatModeProvider>
           {!splashDone && <SplashScreen onDone={handleSplashDone} />}
           <BrowserRouter>
             <Routes>
@@ -97,6 +99,7 @@ function App() {
               <Route path="/*" element={<AppContent />} />
             </Routes>
           </BrowserRouter>
+          </ChatModeProvider>
         </ChatHistoryProvider>
       </AuthProvider>
     </ThemeProvider>
