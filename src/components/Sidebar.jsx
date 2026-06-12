@@ -36,7 +36,7 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, showLogin = false, setSho
     const handleSignOut = async () => {
         await signOut();
         newChat();
-        navigate('/', { replace: true });
+        navigate('/login', { replace: true });
     };
     const [searchQuery, setSearchQuery] = useState('');
     const [editingId, setEditingId] = useState(null);
