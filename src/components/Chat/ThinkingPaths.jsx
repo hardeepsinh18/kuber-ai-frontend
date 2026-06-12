@@ -1,8 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { Cpu, ChevronDown } from 'lucide-react';
 import { clsx } from 'clsx';
+import { useTheme } from '../../context/ThemeContext';
 
 const ThinkingPaths = ({ steps = [], isThinking = true, className = '', processingTime = 0 }) => {
+    const { theme } = useTheme();
+    const isDark = theme === 'dark';
     const [isExpanded, setIsExpanded] = useState(false);
     const [visibleSteps, setVisibleSteps] = useState([]);
     const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -73,15 +76,15 @@ const ThinkingPaths = ({ steps = [], isThinking = true, className = '', processi
             <div className="w-full max-w-4xl mx-auto px-6">
 
                 {isThinking ? (
-                    /* ── Thinking state: #FDD405 themed card ── */
+                    /* ── Thinking state card ── */
                     <div className="rounded-xl" style={{
-                        background: 'rgba(253,212,5,0.07)',
-                        border: '1px solid rgba(253,212,5,0.28)',
+                        background: isDark ? 'rgba(253,212,5,0.07)' : 'rgba(253,212,5,0.15)',
+                        border: isDark ? '1px solid rgba(253,212,5,0.28)' : '1px solid rgba(253,212,5,0.55)',
                     }}>
                         {/* Header */}
                         <div className="flex items-center gap-2.5 px-4 py-2.5">
-                            <Cpu size={13} style={{ color: '#FDD405', flexShrink: 0 }} />
-                            <span className="flex items-center gap-1.5 text-xs font-medium" style={{ color: '#FDD405' }}>
+                            <Cpu size={13} style={{ color: isDark ? '#FDD405' : '#111', flexShrink: 0 }} />
+                            <span className="flex items-center gap-1.5 text-xs font-medium" style={{ color: isDark ? '#FDD405' : '#111' }}>
                                 Analyzing
                                 <span className="flex gap-[3px]">
                                     {['-0.3s', '-0.15s', '0s'].map((delay, i) => (
@@ -90,14 +93,14 @@ const ThinkingPaths = ({ steps = [], isThinking = true, className = '', processi
                                     ))}
                                 </span>
                             </span>
-                            <span className="text-[12px] font-mono font-bold tabular-nums" style={{ color: '#FDD405' }}>
+                            <span className="text-[12px] font-mono font-bold tabular-nums" style={{ color: isDark ? '#FDD405' : '#111' }}>
                                 {displayTime}s
                             </span>
                         </div>
                         {/* Current step */}
                         {currentStep && (
-                            <div className="px-4 pb-3" style={{ borderTop: '1px solid rgba(253,212,5,0.15)' }}>
-                                <p className="pt-2.5 text-xs leading-relaxed" style={{ color: 'rgba(253,212,5,0.65)' }}>
+                            <div className="px-4 pb-3" style={{ borderTop: isDark ? '1px solid rgba(253,212,5,0.15)' : '1px solid rgba(253,212,5,0.3)' }}>
+                                <p className="pt-2.5 text-xs leading-relaxed" style={{ color: isDark ? 'rgba(253,212,5,0.65)' : '#444' }}>
                                     {currentStep}
                                 </p>
                             </div>
