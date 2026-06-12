@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
 import KuberLogo from './KuberLogo';
+import { useTheme } from '../context/ThemeContext';
 
 const SplashScreen = ({ onDone }) => {
     const [fading, setFading] = useState(false);
+    const { theme } = useTheme();
+    const isDark = theme === 'dark';
 
     useEffect(() => {
         const fadeTimer = setTimeout(() => setFading(true), 1600);
@@ -17,17 +20,17 @@ const SplashScreen = ({ onDone }) => {
         <div
             className="fixed inset-0 z-[9999] flex flex-col items-center justify-center"
             style={{
-                background: '#1A1A18',
+                background: isDark ? '#1A1A18' : '#F5F2E8',
                 opacity: fading ? 0 : 1,
                 transition: 'opacity 0.6s ease',
                 pointerEvents: fading ? 'none' : 'auto',
             }}
         >
             <div className="flex flex-col items-center gap-6">
-                <KuberLogo size={110} className="text-amber-400" />
+                <KuberLogo size={110} className="text-[#FDD405]" />
                 <span
-                    className="text-white font-bold tracking-[0.22em] text-2xl"
-                    style={{ letterSpacing: '0.22em' }}
+                    className="font-bold tracking-[0.22em] text-2xl"
+                    style={{ letterSpacing: '0.22em', color: isDark ? '#fff' : '#111' }}
                 >
                     KUBER AI
                 </span>
