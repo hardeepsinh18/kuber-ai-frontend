@@ -641,6 +641,11 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
         }
     };
 
+    useEffect(() => {
+        setChatActive(messages.length > 0);
+        return () => setChatActive(false);
+    }, [messages.length, setChatActive]);
+
     if (messages.length === 0 && isChatLoading) {
         return (
             <div className="flex flex-col gap-5 p-6 max-w-3xl mx-auto w-full pt-10">
@@ -654,11 +659,6 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
     if (messages.length === 0) {
         return <StartScreen onStartChat={handleStartChat} responseMode={responseMode} setResponseMode={setResponseMode} />;
     }
-
-    useEffect(() => {
-        setChatActive(messages.length > 0);
-        return () => setChatActive(false);
-    }, [messages.length, setChatActive]);
 
     return (
         <div className="flex flex-col h-full relative">
