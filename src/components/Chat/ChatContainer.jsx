@@ -674,7 +674,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                     ref={chatContainerRef}
                     className="flex-1 overflow-y-auto pt-4 pb-2 custom-scrollbar"
                 >
-                    {messages.map((msg) => (
+                    {messages.filter(msg => msg && msg.role).map((msg) => (
                         <React.Fragment key={msg.id}>
                             {msg.role === 'ai' && msg.thinkingSteps && msg.thinkingSteps.length > 0 && (
                                 <ThinkingPaths
@@ -690,7 +690,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
 
                             <MessageBubble
                                 role={msg.role}
-                                content={msg.content}
+                                content={typeof msg.content === 'string' ? msg.content : String(msg.content ?? '')}
                                 isStreaming={msg.id === streamingMessageId}
                                 isLoading={isLoading}
                                 chartData={msg.chartData}

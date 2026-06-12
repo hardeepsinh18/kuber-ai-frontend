@@ -523,12 +523,17 @@ const KuberScoreCard = ({ scoreCard }) => {
                                 };
                                 return (
                                     <div className="space-y-0 mb-2">
-                                        {Object.entries(sigs).map(([key, {score, label}]) => (
-                                            <div key={key} className="flex items-center justify-between py-1.5 border-b border-zinc-100 dark:border-zinc-800/50 last:border-0">
-                                                <span className="text-xs text-zinc-500 dark:text-zinc-400 w-36 flex-shrink-0">{SIG_LABELS[key] || key}</span>
-                                                <span className={`text-xs font-medium ${ratingColor(score)}`}>{label}</span>
-                                            </div>
-                                        ))}
+                                        {Object.entries(sigs).map(([key, entry]) => {
+                                            if (!entry || typeof entry !== 'object') return null;
+                                            const score = entry.score ?? 0;
+                                            const label = typeof entry.label === 'string' ? entry.label : '—';
+                                            return (
+                                                <div key={key} className="flex items-center justify-between py-1.5 border-b border-zinc-100 dark:border-zinc-800/50 last:border-0">
+                                                    <span className="text-xs text-zinc-500 dark:text-zinc-400 w-36 flex-shrink-0">{SIG_LABELS[key] || key}</span>
+                                                    <span className={`text-xs font-medium ${ratingColor(score)}`}>{label}</span>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 );
                             })()}
@@ -610,11 +615,12 @@ const KuberScoreCard = ({ scoreCard }) => {
                                                 : key === 'cfo_pat'     ? `${Number(val).toFixed(2)}x`
                                                 : `${Number(val).toFixed(1)}%`)
                                                 : undefined;
+                                            const safeLabel = typeof ratingLabel === 'string' ? ratingLabel : '—';
                                             return (
                                                 <ModuleRow
                                                     key={key}
                                                     label={displayName}
-                                                    value={ratingLabel ?? '—'}
+                                                    value={safeLabel}
                                                     note={note}
                                                 />
                                             );

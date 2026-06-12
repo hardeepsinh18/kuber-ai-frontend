@@ -206,7 +206,14 @@ export function ChatHistoryProvider({ children }) {
         syncedMessageCountRef.current = 0;
         // Always prefer localStorage first — it has rich fields (thinkingSteps, newsHeadlines,
         // suggestedFollowUps, chartData, etc.) that the backend does not return directly.
-        const localMsgs = chatStorage.getChatMessages(id);
+        const rawLocalMsgs = chatStorage.getChatMessages(id);
+        const localMsgs = rawLocalMsgs
+            .filter(m => m != null && m.role)
+            .map(m => ({
+                ...m,
+                id: m.id ?? (crypto.randomUUID?.() ?? `msg_${Date.now()}_${Math.random().toString(36).slice(2)}`),
+                content: typeof m.content === 'string' ? m.content : String(m.content ?? ''),
+            }));
         if (localMsgs.length > 0) {
             setMessages(localMsgs);
             syncedMessageCountRef.current = localMsgs.length;
