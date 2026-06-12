@@ -11,7 +11,12 @@ const QUERIES = [
     'Top PSU stocks by dividend yield',
 ];
 
-const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horizonQuestion = false, horizonSymbol = '', onHorizonChoice }) => {
+const MODES = [
+    { key: 'snap', label: 'Quick' },
+    { key: 'analyst', label: 'Analyst' },
+];
+
+const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horizonQuestion = false, horizonSymbol = '', onHorizonChoice, responseMode, setResponseMode }) => {
     const inputRef = useRef(null);
 
     const autoResize = useCallback((el) => {
@@ -38,38 +43,16 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
     };
 
     return (
-        <div className="px-3 pb-3 pt-1">
-            <div className="flex flex-col items-center w-full gap-1.5">
-
-                {/* Suggestion chips */}
-                {!input.trim() && (
-                    <div className="flex flex-wrap gap-2 justify-center w-full">
-                        {QUERIES.slice(0, 3).map(q => (
-                            <button
-                                key={q}
-                                type="button"
-                                onClick={() => handleChipClick(q)}
-                                className="px-4 py-2 rounded-2xl text-[12.5px] font-medium
-                                           text-zinc-400 dark:text-zinc-300
-                                           bg-transparent
-                                           border border-zinc-300/50 dark:border-zinc-600/70
-                                           hover:text-zinc-900 dark:hover:text-zinc-100
-                                           hover:border-amber-400/60 dark:hover:border-amber-600/50
-                                           hover:bg-amber-50/40 dark:hover:bg-amber-950/15
-                                           transition-all duration-150 whitespace-nowrap">
-                                {q}
-                            </button>
-                        ))}
-                    </div>
-                )}
+        <div className="px-4 pb-10 pt-2">
+            <div className="w-full max-w-3xl mx-auto">
 
                 <div className="w-full relative group">
 
                     {/* Thin amber border + outer glow */}
                     <div className="p-[1px] rounded-xl transition-all duration-300"
                          style={{
-                             background: 'rgba(212,160,23,0.32)',
-                             boxShadow: '0 0 28px rgba(212,160,23,0.16), 0 0 60px rgba(212,160,23,0.07)'
+                             background: 'rgba(253,212,5,0.32)',
+                             boxShadow: '0 0 28px rgba(253,212,5,0.16), 0 0 60px rgba(253,212,5,0.07)'
                          }}>
 
                     {/* Card */}
@@ -95,7 +78,7 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
                                                        bg-white/60 dark:bg-zinc-900/40
                                                        border border-zinc-200/70 dark:border-zinc-800/55
                                                        hover:text-zinc-900 dark:hover:text-zinc-200
-                                                       hover:border-amber-300/70 dark:hover:border-amber-700/45
+                                                       hover:border-[#FDD405]/70 dark:hover:border-amber-700/45
                                                        hover:bg-amber-50/80 dark:hover:bg-amber-950/25
                                                        transition-all duration-150">
                                             {label}
@@ -105,7 +88,8 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
                             </div>
                         )}
 
-                        <div className="flex items-end pl-4 pr-2 pt-2.5 pb-2.5">
+                        {/* Textarea row */}
+                        <div className="px-4 pt-3 pb-1">
                             <textarea
                                 ref={inputRef}
                                 rows={1}
@@ -120,9 +104,30 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
                                            dark:text-white dark:placeholder:text-zinc-500"
                                 autoFocus
                             />
+                        </div>
+
+                        {/* Bottom row: mode toggle left, send right */}
+                        <div className="flex items-center justify-between px-2 pb-2">
+                            {responseMode !== undefined && setResponseMode ? (
+                                <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-zinc-200/80 dark:bg-zinc-900">
+                                    {MODES.map((mode) => {
+                                        const isActive = responseMode === mode.key;
+                                        return (
+                                            <button key={mode.key} type="button" onClick={() => setResponseMode(mode.key)}
+                                                className={clsx(
+                                                    'px-3 py-1 rounded-md text-[11px] font-semibold transition-all duration-200 select-none',
+                                                    isActive ? 'text-zinc-900 shadow-sm' : 'text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300'
+                                                )}
+                                                style={isActive ? { backgroundColor: '#FDD405' } : {}}>
+                                                {mode.label}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            ) : <div />}
 
                             {/* Send / Stop */}
-                            <div className="flex-shrink-0 ml-2">
+                            <div className="flex-shrink-0">
                                 {isLoading ? (
                                     <button onClick={onStopRequest} aria-label="Stop"
                                         className="w-7 h-7 flex items-center justify-center rounded-full
@@ -138,8 +143,8 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
                                                    disabled:opacity-25 disabled:cursor-not-allowed
                                                    hover:scale-105 disabled:hover:scale-100"
                                         style={{
-                                            backgroundColor: '#D4A017',
-                                            boxShadow: '0 2px 8px rgba(212,160,23,0.45)'
+                                            backgroundColor: '#FDD405',
+                                            boxShadow: '0 2px 8px rgba(253,212,5,0.45)'
                                         }}>
                                         <ArrowUpRight size={13} strokeWidth={2.8} />
                                     </button>

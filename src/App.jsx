@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import ChatContainer from './components/Chat/ChatContainer';
 import AuthGate from './components/Auth/AuthGate';
 import ErrorBoundary from './components/ErrorBoundary';
+import SplashScreen from './components/SplashScreen';
+import AuthPage from './pages/AuthPage';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import { ChatHistoryProvider, useChatHistory } from './context/ChatHistoryContext';
@@ -49,7 +51,7 @@ function AppContent() {
           <Route
             path="/chat/:chatId"
             element={
-              <AuthGate setShowLogin={setShowLogin}>
+              <AuthGate>
                 <ErrorBoundary>
                   <ChatContainer sidebarOpen={sidebarOpen} routeChatId />
                 </ErrorBoundary>
@@ -59,7 +61,7 @@ function AppContent() {
           <Route
             path="/"
             element={
-              <AuthGate setShowLogin={setShowLogin}>
+              <AuthGate>
                 <ErrorBoundary>
                   <ChatContainer sidebarOpen={sidebarOpen} />
                 </ErrorBoundary>
@@ -81,12 +83,19 @@ function AppContent() {
 }
 
 function App() {
+  const [splashDone, setSplashDone] = useState(false);
+  const handleSplashDone = useCallback(() => setSplashDone(true), []);
+
   return (
     <ThemeProvider>
       <AuthProvider>
         <ChatHistoryProvider>
+          {!splashDone && <SplashScreen onDone={handleSplashDone} />}
           <BrowserRouter>
-            <AppContent />
+            <Routes>
+              <Route path="/login" element={<AuthPage />} />
+              <Route path="/*" element={<AppContent />} />
+            </Routes>
           </BrowserRouter>
         </ChatHistoryProvider>
       </AuthProvider>

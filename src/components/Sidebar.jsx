@@ -30,8 +30,14 @@ const relativeTime = (ts) => {
 const Sidebar = ({ isOpen, toggleSidebar, onNewThread, showLogin = false, setShowLogin = () => {}, chatList = [], loadChat, deleteChat }) => {
     const { theme, toggleTheme } = useTheme();
     const { user, isAuthenticated, signOut, supabaseConfigured } = useAuth();
-    const { renameChat, isListLoading } = useChatHistory();
+    const { renameChat, isListLoading, newChat } = useChatHistory();
     const navigate = useNavigate();
+
+    const handleSignOut = async () => {
+        await signOut();
+        newChat();
+        navigate('/', { replace: true });
+    };
     const [searchQuery, setSearchQuery] = useState('');
     const [editingId, setEditingId] = useState(null);
     const [editingTitle, setEditingTitle] = useState('');
@@ -118,11 +124,12 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, showLogin = false, setSho
 
             {/* Sidebar panel */}
             <div className={clsx(
-                'flex flex-col transition-all duration-300 ease-in-out overflow-hidden border-r',
-                'bg-[#F5F4F0] border-zinc-200/70',
-                'dark:bg-[#0F0F0F] dark:border-zinc-800/40',
-                'fixed md:static inset-y-0 left-0 z-40 h-full',
-                'rounded-br-2xl',
+                'flex flex-col transition-all duration-300 ease-in-out overflow-hidden',
+                'border-r border-t border-b',
+                'bg-[#E8E5DC] border-zinc-300/80',
+                'dark:bg-[#1a1a1a] dark:border-zinc-700/50',
+                'fixed md:static inset-y-0 left-0 z-40 h-full md:h-auto md:my-2',
+                'rounded-tr-2xl rounded-br-2xl',
                 isOpen
                     ? 'w-[min(220px,85vw)] translate-x-0 md:w-[220px]'
                     : '-translate-x-full md:translate-x-0 w-[min(220px,85vw)] md:w-[52px]'
@@ -138,7 +145,7 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, showLogin = false, setSho
                                     border-b border-zinc-200/70 dark:border-zinc-800/40
                                     flex-shrink-0">
                         <NavLink to="/" className="flex items-center gap-2.5">
-                            <KuberLogo size={34} className="text-amber-400 flex-shrink-0" />
+                            <KuberLogo size={34} className="text-[#FDD405] flex-shrink-0" />
                             <div className="flex flex-col leading-none gap-1">
                                 <span className="text-[14px] font-bold tracking-[0.08em] text-zinc-900 dark:text-white">
                                     KUBER AI
@@ -168,9 +175,9 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, showLogin = false, setSho
                         <div className="px-2 mt-2 mb-1.5 flex-shrink-0">
                             <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg border
                                             bg-white/80 border-zinc-200 transition-all duration-200
-                                            focus-within:border-amber-300/60
+                                            focus-within:border-[#FDD405]/60
                                             dark:bg-white/[0.04] dark:border-zinc-700/40
-                                            dark:focus-within:border-amber-500/30">
+                                            dark:focus-within:border-[#FDD405]/30">
                                 <Search size={11} className="text-zinc-400 flex-shrink-0" />
                                 <input
                                     type="text"
@@ -221,10 +228,10 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, showLogin = false, setSho
                                                             onChange={e => setEditingTitle(e.target.value)}
                                                             onBlur={() => commitRename(chat.id)}
                                                             onKeyDown={e => handleRenameKeyDown(e, chat.id)}
-                                                            className="flex-1 text-xs bg-white dark:bg-zinc-900 border border-amber-400 rounded-md px-1.5 py-0.5 outline-none text-zinc-800 dark:text-zinc-200"
+                                                            className="flex-1 text-xs bg-white dark:bg-zinc-900 border border-[#FDD405] rounded-md px-1.5 py-0.5 outline-none text-zinc-800 dark:text-zinc-200"
                                                         />
                                                         <button onClick={() => commitRename(chat.id)}
-                                                            className="p-0.5 text-amber-600 dark:text-amber-500">
+                                                            className="p-0.5 text-amber-600 dark:text-[#FDD405]">
                                                             <Check size={11} />
                                                         </button>
                                                     </div>
@@ -249,7 +256,7 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, showLogin = false, setSho
                                                         <button
                                                             onClick={(e) => startEditing(e, chat)}
                                                             className="p-1 rounded-md text-zinc-300 dark:text-zinc-700
-                                                                       hover:text-amber-600 dark:hover:text-amber-500
+                                                                       hover:text-amber-600 dark:hover:text-[#FDD405]
                                                                        hover:bg-amber-50 dark:hover:bg-amber-500/10
                                                                        opacity-0 group-hover:opacity-100 transition-all"
                                                             title="Rename"
@@ -288,98 +295,55 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, showLogin = false, setSho
                         </div>
 
                         {/* ── Footer ── */}
-                        <div className="px-2 py-2 border-t border-zinc-200/70 dark:border-zinc-800/40 flex-shrink-0">
+                        <div className="px-3 py-3 border-t border-zinc-200/70 dark:border-zinc-800/40 flex-shrink-0 space-y-3">
 
                             {/* New Chat button */}
                             {(!supabaseConfigured || isAuthenticated) && (
                                 <button
                                     onClick={onNewThread}
-                                    className="w-full flex items-center justify-center gap-1 px-2 py-1.5 rounded-md
-                                               text-[10.5px] font-semibold transition-all duration-200 mb-2
-                                               bg-amber-400 text-zinc-900 hover:bg-amber-300
-                                               dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700
-                                               shadow-sm"
+                                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl
+                                               text-[11px] font-semibold transition-all duration-200
+                                               bg-[#FDD405] text-zinc-900 hover:bg-[#e8c304] shadow-sm"
                                 >
-                                    <Plus size={10} />
+                                    <Plus size={11} />
                                     New Chat
                                 </button>
                             )}
 
-                            {/* Theme toggle */}
-                            <div className="mb-2 flex items-center justify-between">
-                                <span className="text-[9px] font-semibold text-zinc-400 dark:text-zinc-600 tracking-widest uppercase">
-                                    Theme
-                                </span>
+                            {/* Theme toggle switch */}
+                            <div className="flex items-center justify-between px-1">
+                                <span className="text-[11px] text-zinc-500 dark:text-zinc-400">Theme</span>
                                 <button
                                     onClick={toggleTheme}
-                                    className="flex items-center gap-1 px-1.5 py-0.5 rounded
-                                               bg-zinc-200/60 dark:bg-white/5
-                                               text-zinc-500 dark:text-zinc-500
-                                               hover:text-amber-600 dark:hover:text-amber-400
-                                               hover:bg-amber-50 dark:hover:bg-amber-500/10
-                                               transition-all duration-200"
+                                    className="relative w-10 h-[22px] rounded-full overflow-hidden transition-colors duration-200 flex-shrink-0"
+                                    style={{ backgroundColor: theme === 'light' ? '#FDD405' : '#52525b' }}
                                     aria-label="Toggle theme"
                                 >
-                                    {theme === 'light'
-                                        ? <Sun size={9} />
-                                        : <Moon size={9} />}
-                                    <span className="text-[9px] font-medium">
-                                        {theme === 'light' ? 'Light' : 'Dark'}
-                                    </span>
+                                    <span
+                                        className="absolute top-[3px] left-0 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200"
+                                        style={{ transform: `translateX(${theme === 'dark' ? '3px' : '21px'})` }}
+                                    />
                                 </button>
                             </div>
 
-                            {supabaseConfigured ? (
-                                isAuthenticated && user ? (
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-9 h-9 flex-shrink-0 rounded-full
-                                                        flex items-center justify-center
-                                                        text-[13px] font-bold text-zinc-900"
-                                             style={{ backgroundColor: '#D4A017' }}>
-                                            {userInitials}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-[12px] font-semibold text-zinc-700 dark:text-zinc-200 truncate">
-                                                {user.user_metadata?.full_name || user.email || 'User'}
-                                            </p>
-                                            <div className="flex items-center gap-0.5 mt-0.5">
-                                                <TrendingUp size={8} className="text-amber-500" />
-                                                <p className="text-[10px] text-amber-500 font-medium">Free Plan</p>
-                                            </div>
-                                        </div>
-                                        <button onClick={signOut}
-                                            className="text-[10px] text-zinc-400 hover:text-zinc-600 dark:text-zinc-600 dark:hover:text-zinc-400 transition-colors">
-                                            Sign out
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <button
-                                        onClick={() => setShowLogin(true)}
-                                        className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded-lg border text-[10.5px] font-medium transition-all duration-200
-                                                   border-amber-300 bg-amber-50 text-amber-700
-                                                   hover:bg-amber-100
-                                                   dark:border-amber-700/30 dark:bg-amber-500/8 dark:text-amber-400 dark:hover:bg-amber-500/15"
-                                    >
-                                        <LogIn size={11} />
-                                        Sign in to save chats
-                                    </button>
-                                )
-                            ) : (
-                                <div className="flex items-center gap-2">
-                                    <div className="w-9 h-9 flex-shrink-0 rounded-full
-                                                    flex items-center justify-center text-[13px] font-bold text-zinc-900"
-                                         style={{ backgroundColor: '#D4A017' }}>
-                                        G
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-[12px] font-semibold text-zinc-700 dark:text-zinc-200">Guest</p>
-                                        <div className="flex items-center gap-0.5 mt-0.5">
-                                            <TrendingUp size={8} className="text-amber-500" />
-                                            <p className="text-[10px] text-amber-500 font-medium">Free Plan</p>
-                                        </div>
+                            {/* Profile row — always visible */}
+                            <div className="flex items-center justify-between px-1">
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-[12px] font-semibold text-zinc-800 dark:text-zinc-100 truncate leading-tight">
+                                        {isAuthenticated && user
+                                            ? (user.user_metadata?.full_name || user.email?.split('@')[0] || 'User')
+                                            : 'Guest'}
+                                    </p>
+                                    <div className="flex items-center gap-1 mt-0.5">
+                                        <TrendingUp size={8} className="text-[#FDD405] flex-shrink-0" />
+                                        <span className="text-[10px] text-[#FDD405] font-medium">Free Plan</span>
                                     </div>
                                 </div>
-                            )}
+                                <button onClick={handleSignOut}
+                                    className="text-[10.5px] text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300 transition-colors flex-shrink-0 ml-2">
+                                    Sign out
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -391,7 +355,7 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, showLogin = false, setSho
                 )}>
                     {/* Top section */}
                     <NavLink to="/" className="mb-3">
-                        <KuberLogo size={28} className="text-amber-400" />
+                        <KuberLogo size={28} className="text-[#FDD405]" />
                     </NavLink>
 
                     <button
@@ -413,42 +377,42 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, showLogin = false, setSho
                                 onClick={onNewThread}
                                 title="New chat"
                                 className="w-9 h-9 flex items-center justify-center rounded-xl
-                                           border border-zinc-700 dark:border-zinc-600
-                                           bg-zinc-900 dark:bg-zinc-900
-                                           text-zinc-300 hover:text-white
-                                           hover:border-zinc-500
-                                           transition-all duration-200"
+                                           bg-[#FDD405] text-zinc-900 hover:bg-[#e8c304]
+                                           transition-all duration-200 shadow-sm"
                             >
-                                <Plus size={16} strokeWidth={2} />
+                                <Plus size={16} strokeWidth={2.5} />
                             </button>
                         )}
 
+                        {/* iOS toggle — same as expanded footer */}
                         <button
                             onClick={toggleTheme}
                             title={theme === 'light' ? 'Switch to dark' : 'Switch to light'}
-                            className="w-8 h-8 flex items-center justify-center rounded-lg
-                                       text-zinc-400 hover:text-amber-400
-                                       transition-colors"
+                            className="relative w-10 h-[22px] rounded-full overflow-hidden transition-colors duration-200 flex-shrink-0"
+                            style={{ backgroundColor: theme === 'light' ? '#FDD405' : '#52525b' }}
                         >
-                            {theme === 'light' ? <Sun size={18} /> : <Moon size={18} />}
+                            <span
+                                className="absolute top-[3px] left-0 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200"
+                                style={{ transform: `translateX(${theme === 'dark' ? '3px' : '21px'})` }}
+                            />
                         </button>
 
                         {/* User avatar */}
                         {supabaseConfigured ? (
                             isAuthenticated && user ? (
                                 <button
-                                    onClick={signOut}
+                                    onClick={handleSignOut}
                                     title="Sign out"
                                     className="w-11 h-11 flex items-center justify-center rounded-full
                                                text-zinc-900 text-[13px] font-bold
                                                hover:brightness-110 transition-all"
-                                    style={{ backgroundColor: '#D4A017' }}
+                                    style={{ backgroundColor: '#FDD405' }}
                                 >
                                     {userInitials}
                                 </button>
                             ) : (
                                 <button
-                                    onClick={() => setShowLogin(true)}
+                                    onClick={() => navigate('/login')}
                                     title="Sign in"
                                     className="w-11 h-11 flex items-center justify-center rounded-full
                                                bg-zinc-200 dark:bg-zinc-800 text-zinc-500
@@ -461,7 +425,7 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, showLogin = false, setSho
                         ) : (
                             <div className="w-11 h-11 flex items-center justify-center rounded-full
                                             text-zinc-900 text-[13px] font-bold"
-                                 style={{ backgroundColor: '#D4A017' }}>
+                                 style={{ backgroundColor: '#FDD405' }}>
                                 G
                             </div>
                         )}

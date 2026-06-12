@@ -81,7 +81,7 @@ const SignalCard = ({ signal }) => {
         },
         HOLD: {
             outer: 'bg-amber-50/70 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/40',
-            badge: 'bg-amber-500 text-white',
+            badge: 'bg-[#FDD405] text-white',
             label: 'text-amber-700 dark:text-amber-300',
             bar: 'bg-amber-500',
             icon: Minus,
@@ -92,7 +92,7 @@ const SignalCard = ({ signal }) => {
 
     const riskBadge = {
         low: 'text-emerald-600 dark:text-emerald-400 bg-emerald-100/80 dark:bg-emerald-950/40',
-        medium: 'text-amber-600 dark:text-amber-400 bg-amber-100/70 dark:bg-amber-950/30',
+        medium: 'text-amber-600 dark:text-[#FDD405] bg-amber-100/70 dark:bg-amber-950/30',
         high: 'text-rose-600 dark:text-rose-400 bg-rose-100/80 dark:bg-rose-950/40',
     };
 
@@ -372,7 +372,7 @@ const IndicatorsTable = ({ rows, asOfDate }) => {
 const scoreColor = (score, max) => {
     const pct = (score / max) * 100;
     if (pct >= 70) return 'text-emerald-600 dark:text-emerald-400';
-    if (pct >= 45) return 'text-amber-600 dark:text-amber-400';
+    if (pct >= 45) return 'text-amber-600 dark:text-[#FDD405]';
     return 'text-rose-600 dark:text-rose-400';
 };
 const scoreBg = (score, max) => {
@@ -518,7 +518,7 @@ const KuberScoreCard = ({ scoreCard }) => {
                                 };
                                 const ratingColor = (s) => {
                                     if (s >= 4) return 'text-emerald-600 dark:text-emerald-400';
-                                    if (s === 3) return 'text-amber-600 dark:text-amber-400';
+                                    if (s === 3) return 'text-amber-600 dark:text-[#FDD405]';
                                     return 'text-rose-600 dark:text-rose-400';
                                 };
                                 return (
@@ -657,6 +657,52 @@ const KuberScoreCard = ({ scoreCard }) => {
     );
 };
 
+// ─── Inline choice buttons for "short term or long term?" questions ───────────
+// Strip markdown bold/italic markers before testing so **short term** still matches
+const hasHorizonQuestion = (text) => {
+    if (!text) return false;
+    const plain = text.replace(/\*+/g, '').replace(/_+/g, '');
+    return /short\s*term.{0,40}or.{0,40}long\s*term|long\s*term.{0,40}or.{0,40}short\s*term/i.test(plain);
+};
+
+const HorizonChoice = ({ symbol, onChoice }) => {
+    const base = symbol ? `${symbol} ` : '';
+    return (
+        <div className="flex flex-wrap gap-3 mt-5 mb-2">
+            <button
+                type="button"
+                onClick={() => onChoice(`${base}short term trading — entry, target, stop loss`)}
+                className="flex items-center gap-2 px-6 py-3 rounded-2xl
+                           bg-gradient-to-r from-[#FDD405] to-[#FDD405]
+                           text-black font-bold text-[14px]
+                           shadow-[0_2px_18px_rgba(253,212,5,0.40)]
+                           hover:shadow-[0_4px_28px_rgba(253,212,5,0.60)]
+                           hover:from-[#FDD405] hover:to-[#FDD405]/80
+                           hover:scale-[1.03] active:scale-[0.97]
+                           transition-all duration-150">
+                <span>⚡</span>
+                Short Term
+            </button>
+            <button
+                type="button"
+                onClick={() => onChoice(`${base}long term investment — fundamentals, growth outlook`)}
+                className="flex items-center gap-2 px-6 py-3 rounded-2xl
+                           bg-zinc-800/70 dark:bg-zinc-800/80
+                           border border-zinc-600/60 dark:border-zinc-700/60
+                           text-zinc-200 dark:text-zinc-200
+                           font-bold text-[14px]
+                           hover:bg-amber-950/50 dark:hover:bg-amber-950/40
+                           hover:border-amber-600/50
+                           hover:text-amber-300
+                           hover:scale-[1.03] active:scale-[0.97]
+                           transition-all duration-150">
+                <span>🏛️</span>
+                Long Term
+            </button>
+        </div>
+    );
+};
+
 const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, chartData = null, metadata = {}, signal = null, patternSummary = null, technicalSummary = null, indicatorsTable = null, scoreCard = null, suggestedFollowUps = null, newsHeadlines = null, onFollowUpClick = null, onStreamingDone = null, messageId = null, onFeedback = null, responseMode = null }) => {
     const isUser = role === 'user';
 
@@ -741,7 +787,11 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
             {isUser ? (
                 // User query — right-aligned pill
                 <div className="w-full max-w-4xl mx-auto mb-8 flex justify-end px-4 sm:px-6">
-                    <div className="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-indigo-500/15 to-purple-500/15 dark:from-indigo-500/25 dark:to-purple-500/25 rounded-full text-[15px] font-medium text-zinc-800 dark:text-zinc-200 shadow-sm border border-indigo-200/30 dark:border-indigo-700/30">
+                    <div className="inline-flex items-center px-5 py-2.5
+                                    bg-[#FDD405]
+                                    rounded-2xl text-[15px] font-medium
+                                    text-zinc-900
+                                    shadow-[0_2px_12px_rgba(253,212,5,0.35)]">
                         {textToDisplay}
                     </div>
                 </div>
@@ -889,7 +939,7 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                                             <span className={clsx('mt-[7px] w-2 h-2 rounded-full flex-shrink-0', dotColor)} />
                                             <div className="flex-1 min-w-0">
                                                 {h?.url ? (
-                                                    <a href={h.url} target="_blank" rel="noopener noreferrer" className="text-sm text-zinc-800 dark:text-zinc-200 hover:text-indigo-600 dark:hover:text-indigo-400 leading-snug line-clamp-2 transition-colors hover:underline">
+                                                    <a href={h.url} target="_blank" rel="noopener noreferrer" className="text-sm text-zinc-800 dark:text-zinc-200 hover:text-amber-700 dark:hover:text-[#FDD405] leading-snug line-clamp-2 transition-colors hover:underline">
                                                         {h.title || 'Untitled'}
                                                     </a>
                                                 ) : (
@@ -981,7 +1031,7 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                                         <code className={clsx(
                                             "px-1.5 py-0.5 rounded-md text-[0.9em] font-mono",
                                             asTicker
-                                                ? "bg-indigo-100 dark:bg-indigo-900/40 text-indigo-800 dark:text-indigo-200 font-semibold"
+                                                ? "bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 font-semibold"
                                                 : "bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200"
                                         )}>
                                             {children}
@@ -1017,13 +1067,13 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                                         href={href}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="text-indigo-600 dark:text-indigo-400 underline decoration-indigo-400/50 dark:decoration-indigo-500/50 underline-offset-2 hover:decoration-indigo-600 dark:hover:decoration-indigo-400 transition-colors"
+                                        className="text-amber-700 dark:text-[#FDD405] underline decoration-amber-400/50 dark:decoration-amber-500/50 underline-offset-2 hover:decoration-amber-700 dark:hover:decoration-amber-400 transition-colors"
                                     >
                                         {children}
                                     </a>
                                 ),
                                 blockquote: ({ children }) => (
-                                    <blockquote className="border-l-4 border-indigo-500 dark:border-indigo-400 pl-4 py-2 my-5 rounded-r-lg bg-indigo-50/80 dark:bg-indigo-950/30 text-zinc-800 dark:text-zinc-200 not-italic font-medium">
+                                    <blockquote className="border-l-4 border-[#FDD405] dark:border-[#FDD405] pl-4 py-2 my-5 rounded-r-lg bg-amber-50/60 dark:bg-amber-950/20 text-zinc-800 dark:text-zinc-200 not-italic font-medium">
                                         {children}
                                     </blockquote>
                                 ),
@@ -1035,7 +1085,7 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                                     </div>
                                 ),
                                 thead: ({ children }) => (
-                                    <thead className="bg-indigo-50/80 dark:bg-indigo-950/30">
+                                    <thead className="bg-amber-50/60 dark:bg-amber-950/20">
                                         {children}
                                     </thead>
                                 ),
@@ -1055,7 +1105,7 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                                     );
                                 },
                                 th: ({ children }) => (
-                                    <th className="px-4 py-3 text-left text-[14px] font-semibold text-zinc-900 dark:text-zinc-100 border-b border-indigo-200/50 dark:border-indigo-800/50">
+                                    <th className="px-4 py-3 text-left text-[14px] font-semibold text-zinc-900 dark:text-zinc-100 border-b border-amber-200/50 dark:border-amber-800/40">
                                         {children}
                                     </th>
                                 ),
@@ -1117,7 +1167,7 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                                   <span className="before:content-['·'] before:mr-2.5">
                                     Price {new Date(metadata.data_fetched_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
                                     {metadata.price_stale && metadata.price_age_seconds && (
-                                      <span className="ml-1 text-amber-500">({Math.round(metadata.price_age_seconds)}s delay)</span>
+                                      <span className="ml-1 text-[#FDD405]">({Math.round(metadata.price_age_seconds)}s delay)</span>
                                     )}
                                   </span>
                                 )}
@@ -1141,7 +1191,7 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                                             if (!isLoading) onFollowUpClick(label);
                                         }}
                                         disabled={isLoading}
-                                        className="px-3.5 py-1.5 text-[13px] rounded-xl bg-white dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-200 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 hover:text-indigo-700 dark:hover:text-indigo-300 border border-zinc-200 dark:border-zinc-700 hover:border-indigo-200 dark:hover:border-indigo-800/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                                        className="px-3.5 py-1.5 text-[13px] rounded-xl bg-white dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-200 hover:bg-amber-50 dark:hover:bg-amber-950/20 hover:text-amber-800 dark:hover:text-amber-300 border border-zinc-200 dark:border-zinc-700 hover:border-[#FDD405]/60 dark:hover:border-amber-700/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                                     >
                                         {label}
                                     </button>
@@ -1157,8 +1207,8 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                                 <span className={clsx(
                                     "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border",
                                     responseMode === 'snap'
-                                        ? "bg-amber-50 border-amber-200 text-amber-600 dark:bg-amber-900/20 dark:border-amber-700 dark:text-amber-400"
-                                        : "bg-indigo-50 border-indigo-200 text-indigo-500 dark:bg-indigo-900/20 dark:border-indigo-700 dark:text-indigo-400"
+                                        ? "bg-amber-50 border-amber-200 text-amber-600 dark:bg-amber-900/20 dark:border-amber-700 dark:text-[#FDD405]"
+                                        : "bg-zinc-100 border-zinc-200 text-zinc-500 dark:bg-zinc-800/60 dark:border-zinc-700 dark:text-zinc-400"
                                 )}>
                                     {responseMode === 'snap' ? '⚡ Snap' : '🔍 Analyst'}
                                 </span>

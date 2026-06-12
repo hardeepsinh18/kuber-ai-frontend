@@ -653,30 +653,6 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
 
     return (
         <div className="flex flex-col h-full relative">
-            {/* ── Mode toggle — at top center ── */}
-            <div className="flex-none flex justify-center items-center py-1.5 z-10">
-                <div className="flex items-center gap-0.5 p-0.5 rounded-md bg-zinc-100/90 dark:bg-zinc-800/70 shadow-sm">
-                    {CHAT_MODES.map((mode) => {
-                        const isActive = responseMode === mode.key;
-                        return (
-                            <button
-                                key={mode.key}
-                                type="button"
-                                onClick={() => setResponseMode(mode.key)}
-                                className={`flex items-center px-3 py-0.5 rounded text-[11px] font-medium transition-all duration-200 select-none ${
-                                    isActive
-                                        ? 'text-white shadow-sm'
-                                        : 'text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300'
-                                }`}
-                                style={isActive ? { backgroundColor: '#5e4f07' } : {}}
-                            >
-                                {mode.label}
-                            </button>
-                        );
-                    })}
-                </div>
-            </div>
-
             {chatLoadError && (
                 <div className="flex items-center justify-between gap-2 mx-4 mb-1 px-3 py-2 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 rounded-xl text-xs text-rose-700 dark:text-rose-400">
                     <span>⚠️ {chatLoadError}</span>
@@ -684,14 +660,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 </div>
             )}
 
-            {/* ── Chat card — messages + input all inside one bordered card ── */}
-            <div className="flex-1 overflow-hidden mx-4 mb-3 rounded-2xl p-[1px] relative"
-                 style={{
-                     background: 'rgba(212,160,23,0.32)',
-                     boxShadow: '0 0 32px rgba(212,160,23,0.16), 0 0 80px rgba(212,160,23,0.07)'
-                 }}>
-            <div className="h-full rounded-[15px] flex flex-col
-                            bg-white dark:bg-[#141414] relative overflow-hidden">
+            <div className="flex-1 overflow-hidden flex flex-col relative">
                 <div
                     ref={chatContainerRef}
                     className="flex-1 overflow-y-auto pt-4 pb-2 custom-scrollbar"
@@ -772,6 +741,8 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                     handleSend={() => handleSend()}
                     onStopRequest={handleStopRequest}
                     isLoading={isLoading}
+                    responseMode={responseMode}
+                    setResponseMode={setResponseMode}
                     horizonQuestion={(() => {
                         if (isLoading) return false;
                         const lastAI = [...messages].reverse().find(m => m.role === 'ai');
@@ -787,7 +758,6 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                     })()}
                     onHorizonChoice={(q) => handleSend(q)}
                 />
-            </div>
             </div>
         </div>
     );
