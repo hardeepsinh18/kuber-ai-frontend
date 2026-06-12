@@ -1,35 +1,39 @@
 const KuberLogo = ({ size = 36, className = '' }) => (
     <svg
         width={size}
-        height={Math.round(size * 120 / 100)}
-        viewBox="0 0 100 120"
+        height={Math.round(size * 125 / 100)}
+        viewBox="0 0 100 125"
         xmlns="http://www.w3.org/2000/svg"
         className={className}
     >
-        <defs>
-            <linearGradient id="kl_stem" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="currentColor" stopOpacity="1" />
-                <stop offset="100%" stopColor="currentColor" stopOpacity="0.05" />
-            </linearGradient>
-        </defs>
+        {/* Connecting line between circles */}
+        <polyline
+            points="23,33 50,21 77,11"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeOpacity="0.45"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        />
 
         {/* Left stem + circle */}
-        <rect x="17" y="39" width="6" height="21" rx="3" fill="url(#kl_stem)" />
-        <circle cx="20" cy="32" r="7" fill="currentColor" />
+        <rect x="19.5" y="39" width="7" height="21" rx="3.5" fill="currentColor" />
+        <circle cx="23" cy="33" r="7.5" fill="currentColor" />
 
         {/* Center stem + circle */}
-        <rect x="47" y="26" width="6" height="34" rx="3" fill="url(#kl_stem)" />
-        <circle cx="50" cy="19" r="7" fill="currentColor" />
+        <rect x="46.5" y="27" width="7" height="33" rx="3.5" fill="currentColor" />
+        <circle cx="50" cy="21" r="7.5" fill="currentColor" />
 
         {/* Right stem + circle */}
-        <rect x="77" y="16" width="6" height="44" rx="3" fill="url(#kl_stem)" />
-        <circle cx="80" cy="9" r="7" fill="currentColor" />
+        <rect x="73.5" y="17" width="7" height="43" rx="3.5" fill="currentColor" />
+        <circle cx="77" cy="11" r="7.5" fill="currentColor" />
 
-        {/* Pot rim */}
-        <path d="M7,62 L93,62 L88,72 L12,72 Z" fill="currentColor" />
+        {/* Pot rim — narrower */}
+        <path d="M20,62 L80,62 L76,72 L24,72 Z" fill="currentColor" />
 
-        {/* Pot body */}
-        <path d="M14,76 L86,76 L96,96 L86,119 L14,119 L4,96 Z" fill="currentColor" />
+        {/* Pot body — narrower hexagonal */}
+        <path d="M24,75 L76,75 L87,96 L78,122 L22,122 L13,96 Z" fill="currentColor" />
     </svg>
 );
 
