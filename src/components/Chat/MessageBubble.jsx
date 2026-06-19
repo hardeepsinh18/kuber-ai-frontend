@@ -321,46 +321,22 @@ const IndicatorsTable = ({ rows, asOfDate }) => {
                             </tr>
                         </thead>
                         <tbody>
-                            {rows.map((row, i) => {
-                                const isGreen = row.bullish === true;
-                                const isRed   = row.bullish === false;
-                                const signalColor = isGreen
-                                    ? 'text-emerald-600 dark:text-emerald-400'
-                                    : isRed
-                                        ? 'text-rose-600 dark:text-rose-400'
-                                        : 'text-zinc-500 dark:text-zinc-400';
-                                const dot = isGreen ? '●' : isRed ? '●' : '○';
-                                const dotColor = isGreen
-                                    ? 'text-emerald-500'
-                                    : isRed
-                                        ? 'text-rose-500'
-                                        : 'text-zinc-300 dark:text-zinc-600';
-
-                                // Light separator before MACD group
-                                const isSectionBreak = row.indicator === 'MACD' || row.indicator === 'RSI 14' || row.indicator === 'ATR 14';
-
-                                return (
+                            {rows.map((row, i) => (
                                     <tr
                                         key={i}
-                                        className={clsx(
-                                            'border-b border-zinc-100 dark:border-zinc-800/60 last:border-0',
-                                            isSectionBreak && i > 0 && 'border-t border-zinc-200/60 dark:border-zinc-700/40',
-                                            'hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors'
-                                        )}
+                                        className="border-b border-zinc-800/60 last:border-0 hover:bg-zinc-800/20 transition-colors"
                                     >
-                                        <td className="px-4 py-2 font-medium text-zinc-700 dark:text-zinc-200 whitespace-nowrap">
+                                        <td className="px-4 py-2.5 font-medium text-zinc-200 whitespace-nowrap">
                                             {row.indicator}
                                         </td>
-                                        <td className="px-4 py-2 text-right font-mono text-zinc-800 dark:text-zinc-100 whitespace-nowrap">
+                                        <td className="px-4 py-2.5 text-right font-mono text-white whitespace-nowrap">
                                             {row.value || '—'}
                                         </td>
-                                        <td className={clsx('px-4 py-2 whitespace-nowrap', signalColor)}>
-                                            <span className={clsx('mr-1.5 text-xs', dotColor)}>{dot}</span>
+                                        <td className="px-4 py-2.5 text-zinc-300 whitespace-nowrap">
                                             {row.signal || '—'}
                                         </td>
                                     </tr>
-                                );
-                            })}
+                            ))}
                         </tbody>
                     </table>
                 </div>

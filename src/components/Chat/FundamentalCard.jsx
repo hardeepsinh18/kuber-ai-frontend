@@ -151,9 +151,9 @@ const ROEViz = ({ roe }) => {
                     </svg>
                     <span className="text-[9px] text-zinc-500">PER YEAR</span>
                 </div>
-                <div className="w-11 h-11 rounded-full bg-emerald-950/50 border-2 border-emerald-500 flex flex-col items-center justify-center">
+                <div className="w-14 h-14 rounded-full bg-emerald-950/50 border-2 border-emerald-500 flex flex-col items-center justify-center">
                     <span className="text-sm font-bold text-emerald-400 leading-none">₹{profit}</span>
-                    <span className="text-[7px] text-emerald-500 text-center leading-none mt-0.5">BACK</span>
+                    <span className="text-[7px] text-emerald-500 text-center leading-tight mt-0.5">PROFIT{'\n'}BACK</span>
                 </div>
             </div>
         </div>
@@ -161,22 +161,25 @@ const ROEViz = ({ roe }) => {
 };
 
 /* ─── Small circular gauge (ROCE) ───────────────────────────────────────── */
-const SmallGauge = ({ value, sublabel, size = 82 }) => {
+const SmallGauge = ({ value, sublabel, size = 88 }) => {
     const pct = Math.min(100, Math.max(0, value || 0));
-    const r = 32, cx = 40, cy = 40, circ = 2 * Math.PI * r;
+    const r = 32, cx = 40, cy = 42, circ = 2 * Math.PI * r;
     const filled = (pct / 100) * circ;
-    const color = pct >= 70 ? '#22c55e' : pct >= 45 ? '#FDD405' : '#ef4444';
+    const color = '#FDD405';
     return (
         <div className="flex flex-col items-center gap-1">
-            <svg viewBox="0 0 80 80" width={size} height={size}>
+            <svg viewBox="0 0 80 88" width={size} height={size}>
                 <circle cx={cx} cy={cy} r={r} fill="none" stroke="#27282d" strokeWidth={8} />
                 <circle cx={cx} cy={cy} r={r} fill="none" stroke={color} strokeWidth={8}
                     strokeDasharray={`${filled} ${circ}`} strokeLinecap="round"
                     transform={`rotate(-90 ${cx} ${cy})`} />
-                <text x={cx} y={cy - 3} textAnchor="middle" fill="#fff"
+                <text x={cx} y={cy - 2} textAnchor="middle" fill="#fff"
                     fontSize={17} fontWeight="700" fontFamily="Inter,sans-serif">{Math.round(pct)}%</text>
+                {sublabel && (
+                    <text x={cx} y={cy + 13} textAnchor="middle" fill="#9ca3af"
+                        fontSize={7} fontFamily="Inter,sans-serif" letterSpacing="0.5">{sublabel.toUpperCase()}</text>
+                )}
             </svg>
-            {sublabel && <p className="text-[9px] text-zinc-500 text-center uppercase tracking-wide leading-tight px-1">{sublabel}</p>}
         </div>
     );
 };
@@ -218,23 +221,23 @@ const ProfitSliceBar = ({ netMargin }) => {
             <p className="text-[9px] text-zinc-500 text-center uppercase tracking-wide mb-2">
                 From Every ₹100 of Sales
             </p>
-            <div className="flex rounded-lg overflow-hidden h-7 w-full">
-                {cost > 0 && (
-                    <div className="flex items-center justify-center text-[10px] font-semibold text-zinc-400 bg-zinc-800"
-                         style={{ width: `${cost}%` }}>
-                        ₹{cost}
-                    </div>
-                )}
+            <div className="flex rounded-lg overflow-hidden h-8 w-full">
                 {profit > 0 && (
-                    <div className="flex items-center justify-center text-[10px] font-semibold text-white bg-emerald-600"
+                    <div className="flex items-center justify-center text-[11px] font-bold text-white bg-emerald-600"
                          style={{ width: `${profit}%` }}>
                         ₹{profit}
                     </div>
                 )}
+                {cost > 0 && (
+                    <div className="flex items-center justify-center text-[11px] font-semibold text-zinc-400 bg-zinc-800"
+                         style={{ width: `${cost}%` }}>
+                        ₹{cost}
+                    </div>
+                )}
             </div>
-            <div className="flex justify-between text-[9px] text-zinc-500 mt-1">
-                <span>Costs</span>
-                <span className="text-emerald-400">Profit</span>
+            <div className="flex justify-between text-[9px] mt-1">
+                <span className="text-emerald-400 font-semibold">PROFIT</span>
+                <span className="text-zinc-500">COSTS & TAX</span>
             </div>
         </div>
     );
@@ -385,8 +388,9 @@ const FinancialScoreCard = ({ fund, symbol }) => {
                     )}
                     {roce != null && (
                         <MetricCard title="Capital muscle" subtitle="RETURN ON CAPITAL" badge={roceLabel}
+                            bottomLabel="Benchmark 20%"
                             bottomValue={`${roce}%`}>
-                            <SmallGauge value={roce} size={82} sublabel="5-year capital efficiency" />
+                            <SmallGauge value={roce} size={88} sublabel="ROCE" />
                         </MetricCard>
                     )}
                     {margin != null && (
