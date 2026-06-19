@@ -287,25 +287,25 @@ const IndicatorsTable = ({ rows, asOfDate }) => {
         : null;
 
     return (
-        <div className="mt-4 border border-zinc-200 dark:border-zinc-700/50 rounded-xl overflow-hidden dark:bg-zinc-950">
+        <div className="mt-4 border border-zinc-200 dark:border-zinc-700/50 rounded-xl overflow-hidden bg-white dark:bg-zinc-950">
             {/* Toggle header */}
             <button
                 onClick={() => setOpen(o => !o)}
-                className="w-full flex items-center justify-between px-4 py-2.5 bg-[#FDD405] hover:bg-[#FDD405]/90 transition-colors text-left"
+                className="w-full flex items-center justify-between px-4 py-2.5 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-left"
             >
                 <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-black tracking-wide uppercase">
+                    <span className="text-xs font-semibold text-zinc-900 dark:text-white tracking-wide uppercase">
                         Technical Indicators
                     </span>
                     {dateLabel && (
-                        <span className="text-xs text-black/60">
+                        <span className="text-xs text-zinc-500 dark:text-zinc-400">
                             as of {dateLabel}
                         </span>
                     )}
                 </div>
                 {open
-                    ? <ChevronUp size={14} className="text-black/70 flex-shrink-0" />
-                    : <ChevronDown size={14} className="text-black/70 flex-shrink-0" />
+                    ? <ChevronUp size={14} className="text-zinc-500 dark:text-zinc-400 flex-shrink-0" />
+                    : <ChevronDown size={14} className="text-zinc-500 dark:text-zinc-400 flex-shrink-0" />
                 }
             </button>
 
@@ -634,9 +634,9 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                     {/* ── News headlines ──────────────────────────────── */}
                     {relevantNews.length > 0 && (
                         <div className="mb-5 rounded-xl border border-zinc-200 dark:border-zinc-700/50 overflow-hidden">
-                            <div className="flex items-center justify-between px-4 py-2.5 bg-[#FDD405] border-b border-[#FDD405]/80">
-                                <h4 className="text-[11px] font-semibold text-black uppercase tracking-wide">Recent News</h4>
-                                <span className="text-[11px] text-black/60">{relevantNews.length} headline{relevantNews.length > 1 ? 's' : ''}</span>
+                            <div className="flex items-center justify-between px-4 py-2.5 bg-zinc-100 dark:bg-zinc-800 border-b border-zinc-200 dark:border-zinc-700/50">
+                                <h4 className="text-[11px] font-semibold text-zinc-900 dark:text-white uppercase tracking-wide">Recent News</h4>
+                                <span className="text-[11px] text-zinc-500 dark:text-zinc-400">{relevantNews.length} headline{relevantNews.length > 1 ? 's' : ''}</span>
                             </div>
                             <ul>
                                 {relevantNews.map((h, i) => {

@@ -20,14 +20,14 @@ const RatingBadge = ({ label, className }) => {
     return (
         <span className={clsx(
             'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border whitespace-nowrap flex-shrink-0',
-            good    ? 'bg-zinc-900 border-emerald-700/40 text-emerald-300' :
-            neutral ? 'bg-zinc-900 border-amber-700/40  text-amber-300'   :
-                      'bg-zinc-900 border-rose-700/40   text-rose-300',
+            good    ? 'bg-emerald-50 dark:bg-zinc-900 border-emerald-500/50 dark:border-emerald-700/40 text-emerald-700 dark:text-emerald-300' :
+            neutral ? 'bg-amber-50 dark:bg-zinc-900 border-amber-500/50 dark:border-amber-700/40 text-amber-700 dark:text-amber-300' :
+                      'bg-rose-50 dark:bg-zinc-900 border-rose-500/50 dark:border-rose-700/40 text-rose-700 dark:text-rose-300',
             className
         )}>
             <span className={clsx(
                 'w-1.5 h-1.5 rounded-full flex-shrink-0',
-                good ? 'bg-emerald-400' : neutral ? 'bg-amber-400' : 'bg-rose-400'
+                good ? 'bg-emerald-500' : neutral ? 'bg-amber-500' : 'bg-rose-500'
             )} />
             {label}
         </span>
@@ -37,12 +37,12 @@ const RatingBadge = ({ label, className }) => {
 /* ─── Metric card shell ──────────────────────────────────────────────────── */
 const MetricCard = ({ title, subtitle, badge, children, bottomLabel, bottomValue, className }) => (
     <div className={clsx(
-        'bg-zinc-900 rounded-xl border border-zinc-700/50 p-3 flex flex-col',
+        'bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-700/50 p-3 flex flex-col',
         className
     )}>
         <div className="flex items-start justify-between mb-2 gap-2">
             <div className="min-w-0">
-                <p className="text-sm font-semibold text-white leading-none">{title}</p>
+                <p className="text-sm font-semibold text-zinc-900 dark:text-white leading-none">{title}</p>
                 {subtitle && <p className="text-[10px] text-zinc-500 uppercase tracking-wide mt-0.5">{subtitle}</p>}
             </div>
             {badge && <RatingBadge label={badge} />}
@@ -51,9 +51,9 @@ const MetricCard = ({ title, subtitle, badge, children, bottomLabel, bottomValue
             {children}
         </div>
         {(bottomLabel || bottomValue) && (
-            <div className="flex items-end justify-between pt-2 border-t border-zinc-700/50 mt-2 gap-2">
+            <div className="flex items-end justify-between pt-2 border-t border-zinc-200 dark:border-zinc-700/50 mt-2 gap-2">
                 {bottomLabel && <span className="text-[10px] text-zinc-500 leading-tight">{bottomLabel}</span>}
-                {bottomValue && <span className="text-sm font-bold text-white flex-shrink-0">{bottomValue}</span>}
+                {bottomValue && <span className="text-sm font-bold text-zinc-900 dark:text-white flex-shrink-0">{bottomValue}</span>}
             </div>
         )}
     </div>
@@ -368,17 +368,17 @@ const FinancialScoreCard = ({ fund, symbol }) => {
     if (!hasCards) return null;
 
     return (
-        <div className="mt-4 border border-zinc-700/50 rounded-xl overflow-hidden bg-zinc-950">
+        <div className="mt-4 border border-zinc-200 dark:border-zinc-700/50 rounded-xl overflow-hidden bg-white dark:bg-zinc-950">
             <button
                 onClick={() => setOpen(o => !o)}
-                className="w-full flex items-center justify-between px-4 py-3 bg-[#FDD405] hover:bg-[#FDD405]/90 transition-colors text-left"
+                className="w-full flex items-center justify-between px-4 py-3 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-left"
             >
-                <span className="text-sm font-semibold text-black">Financial Score Card</span>
-                {open ? <ChevronUp size={15} className="text-black/70 flex-shrink-0" />
-                      : <ChevronDown size={15} className="text-black/70 flex-shrink-0" />}
+                <span className="text-sm font-semibold text-zinc-900 dark:text-white">Financial Score Card</span>
+                {open ? <ChevronUp size={15} className="text-zinc-500 dark:text-zinc-400 flex-shrink-0" />
+                      : <ChevronDown size={15} className="text-zinc-500 dark:text-zinc-400 flex-shrink-0" />}
             </button>
             {open && (
-                <div className="p-3 grid grid-cols-1 xs:grid-cols-2 gap-3 bg-zinc-950">
+                <div className="p-3 grid grid-cols-1 xs:grid-cols-2 gap-3 bg-zinc-50 dark:bg-zinc-950">
                     {pe != null && (
                         <MetricCard title="Price tag" subtitle="P/E RATIO" badge={peLabel}
                             bottomLabel={`You pay ~${Math.round(pe)} yrs of profit`}
@@ -469,17 +469,17 @@ const FiveYearScoreCard = ({ fund }) => {
     if (!hasAny) return null;
 
     return (
-        <div className="mt-4 border border-zinc-700/50 rounded-xl overflow-hidden bg-zinc-950">
+        <div className="mt-4 border border-zinc-200 dark:border-zinc-700/50 rounded-xl overflow-hidden bg-white dark:bg-zinc-950">
             <button
                 onClick={() => setOpen(o => !o)}
-                className="w-full flex items-center justify-between px-4 py-3 bg-[#FDD405] hover:bg-[#FDD405]/90 transition-colors text-left"
+                className="w-full flex items-center justify-between px-4 py-3 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-left"
             >
-                <span className="text-sm font-semibold text-black">5 Year Financial Score Card</span>
-                {open ? <ChevronUp size={15} className="text-black/70 flex-shrink-0" />
-                      : <ChevronDown size={15} className="text-black/70 flex-shrink-0" />}
+                <span className="text-sm font-semibold text-zinc-900 dark:text-white">5 Year Financial Score Card</span>
+                {open ? <ChevronUp size={15} className="text-zinc-500 dark:text-zinc-400 flex-shrink-0" />
+                      : <ChevronDown size={15} className="text-zinc-500 dark:text-zinc-400 flex-shrink-0" />}
             </button>
             {open && (
-                <div className="p-3 grid grid-cols-1 xs:grid-cols-2 gap-3 bg-zinc-950">
+                <div className="p-3 grid grid-cols-1 xs:grid-cols-2 gap-3 bg-zinc-50 dark:bg-zinc-950">
                     {hist.revenue_cr?.length > 0 && (
                         <MetricCard title="Revenue" subtitle="TOP LINE · ₹ CR"
                             badge={hist.revenue_cagr ? `+${hist.revenue_cagr}% CAGR` : null}
@@ -620,35 +620,35 @@ export const PatternDetectionSection = ({ patternSummary }) => {
     if (!hasContent) return null;
 
     return (
-        <div className="mt-4 border border-zinc-700/50 rounded-xl overflow-hidden bg-zinc-950">
+        <div className="mt-4 border border-zinc-200 dark:border-zinc-700/50 rounded-xl overflow-hidden bg-white dark:bg-zinc-950">
             <button
                 onClick={() => setOpen(o => !o)}
-                className="w-full flex items-center justify-between px-4 py-3 bg-[#FDD405] hover:bg-[#FDD405]/90 transition-colors text-left"
+                className="w-full flex items-center justify-between px-4 py-3 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-left"
             >
-                <span className="text-sm font-semibold text-black">Pattern Detection & Resistance Alert</span>
-                {open ? <ChevronUp size={15} className="text-black/70 flex-shrink-0" />
-                      : <ChevronDown size={15} className="text-black/70 flex-shrink-0" />}
+                <span className="text-sm font-semibold text-zinc-900 dark:text-white">Pattern Detection & Resistance Alert</span>
+                {open ? <ChevronUp size={15} className="text-zinc-500 dark:text-zinc-400 flex-shrink-0" />
+                      : <ChevronDown size={15} className="text-zinc-500 dark:text-zinc-400 flex-shrink-0" />}
             </button>
             {open && (
-                <div className="p-4 bg-zinc-950">
+                <div className="p-4 bg-zinc-50 dark:bg-zinc-950">
                     {summary && (
-                        <p className="text-sm text-zinc-300 leading-relaxed mb-4">{summary}</p>
+                        <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed mb-4">{summary}</p>
                     )}
                     {candlesticks.length > 0 && (
                         <div className="grid grid-cols-2 gap-3">
                             {candlesticks.slice(0, 4).map((name, i) => (
-                                <div key={i} className="bg-zinc-900 border border-zinc-700/50 rounded-xl p-3">
+                                <div key={i} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700/50 rounded-xl p-3">
                                     {resistance != null && (
                                         <div className="flex justify-end mb-1">
-                                            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-950/50 border border-rose-700/40 text-[10px] font-semibold text-rose-300">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-rose-400 flex-shrink-0" />
+                                            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/50 border border-rose-300 dark:border-rose-700/40 text-[10px] font-semibold text-rose-600 dark:text-rose-300">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 dark:bg-rose-400 flex-shrink-0" />
                                                 Resist ₹{Number(resistance).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                                             </span>
                                         </div>
                                     )}
                                     <CandleChart patternName={name} />
-                                    <div className="border-t border-zinc-700/40 pt-2 mt-1">
-                                        <p className="text-xs font-semibold text-white text-center">{name}</p>
+                                    <div className="border-t border-zinc-200 dark:border-zinc-700/40 pt-2 mt-1">
+                                        <p className="text-xs font-semibold text-zinc-900 dark:text-white text-center">{name}</p>
                                     </div>
                                 </div>
                             ))}
