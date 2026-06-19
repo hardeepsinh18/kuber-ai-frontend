@@ -412,6 +412,12 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
         handleSend(initialInput);
     };
 
+    // Scanner results go directly into chat as an assistant message — no LLM call.
+    const handleScannerResult = useCallback(async (content) => {
+        await ensureCurrentChat();
+        setMessages(prev => [...prev, { id: genId(), role: 'assistant', content }]);
+    }, [ensureCurrentChat, setMessages]);
+
     const handleSend = async (manualInput = null) => {
         const textToSend = manualInput !== null ? manualInput : input;
         const normalized = textToSend.trim();
@@ -657,7 +663,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
     }
 
     if (messages.length === 0) {
-        return <StartScreen onStartChat={handleStartChat} responseMode={responseMode} setResponseMode={setResponseMode} />;
+        return <StartScreen onStartChat={handleStartChat} onScannerResult={handleScannerResult} responseMode={responseMode} setResponseMode={setResponseMode} />;
     }
 
     return (
@@ -760,6 +766,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                     isLoading={isLoading}
                     responseMode={responseMode}
                     setResponseMode={setResponseMode}
+                    onScannerResult={handleScannerResult}
 
                     horizonQuestion={(() => {
                         if (isLoading) return false;

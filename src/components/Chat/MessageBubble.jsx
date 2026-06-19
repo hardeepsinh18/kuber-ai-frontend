@@ -120,8 +120,8 @@ const SignalCard = ({ signal }) => {
                 <div className={clsx('h-full rounded-full transition-all duration-700', c.bar)} style={{ width: `${confidence}%` }} />
             </div>
 
-            {/* Entry / Target / Stop-Loss row */}
-            {(signal.ideal_entry != null || signal.target != null || signal.stop_loss != null) && (
+            {/* Entry / Target / Stop-Loss row — hidden */}
+            {false && (signal.ideal_entry != null || signal.target != null || signal.stop_loss != null) && (
                 <div className="flex flex-wrap gap-5 mb-3">
                     {signal.ideal_entry != null && (
                         <div>

@@ -60,18 +60,17 @@ const CATEGORY_COLORS = {
     'Bearish Candlestick Patterns': 'text-rose-400',
 };
 
-// Format raw JSON results into a readable chat message
+// Format scanner results as a plain numbered list — no LLM follow-up
 function formatResults(name, results, universe, seconds) {
     if (results.length === 0) {
-        return `**${name}** scanner found no matching stocks in ${universe} today.\n\nThis could indicate low market activity for this pattern, or a cautious market environment. What does the absence of this signal typically mean?`;
+        return `**${name}** found no matching stocks in ${universe} today (scanned in ${seconds}s).`;
     }
 
-    // Pick the most informative columns for the summary line
     const keyMetric = (r) => {
-        if (r['Breakout_%'] != null)   return ` (+${r['Breakout_%']}%)`;
-        if (r['Gap_Up_%'] != null)     return ` (gap +${r['Gap_Up_%']}%)`;
-        if (r['Gap_Down_%'] != null)   return ` (gap -${r['Gap_Down_%']}%)`;
-        if (r['Chg_%'] != null)        return ` (${r['Chg_%'] >= 0 ? '+' : ''}${r['Chg_%']}%)`;
+        if (r['Breakout_%'] != null)   return ` +${r['Breakout_%']}%`;
+        if (r['Gap_Up_%'] != null)     return ` gap +${r['Gap_Up_%']}%`;
+        if (r['Gap_Down_%'] != null)   return ` gap -${r['Gap_Down_%']}%`;
+        if (r['Chg_%'] != null)        return ` ${r['Chg_%'] >= 0 ? '+' : ''}${r['Chg_%']}%`;
         if (r['RSI'] != null)          return ` RSI ${r['RSI']}`;
         if (r['PE'] != null)           return ` P/E ${r['PE']}`;
         if (r['ROE_%'] != null)        return ` ROE ${r['ROE_%']}%`;
@@ -82,16 +81,13 @@ function formatResults(name, results, universe, seconds) {
         return '';
     };
 
-    const shown = results.slice(0, 20);
-    const stockList = shown.map(r => `**${r.Symbol}**${keyMetric(r)}`).join(' · ');
-    const more = results.length > 20 ? ` _(and ${results.length - 20} more)_` : '';
+    const rows = results.map((r, i) => `${i + 1}. **${r.Symbol}**${keyMetric(r)}`).join('\n');
 
     return [
-        `**${name}** scanner found **${results.length} stocks** in ${universe} today (scanned in ${seconds}s):`,
+        `## ${name} — ${results.length} stocks found`,
+        `_${universe} · scanned in ${seconds}s_`,
         '',
-        stockList + more,
-        '',
-        `Which of these look most interesting, and what does the ${name} pattern signal about their near-term outlook?`,
+        rows,
     ].join('\n');
 }
 
@@ -105,6 +101,7 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
     const [scannerName, setScannerName] = useState('');
     const [elapsed, setElapsed]         = useState(0);
     const [error, setError]             = useState('');
+    const [universe, setUniverse]       = useState('nifty500');  // "nifty500" | "all_nse"
 
     // Clean up poll interval on unmount
     useEffect(() => () => clearInterval(pollRef.current), []);
@@ -137,7 +134,7 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
             const resp = await fetch(SCANNER_ENDPOINT, {
                 method:  'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body:    JSON.stringify({ scanner: name }),
+                body:    JSON.stringify({ scanner: name, universe }),
             });
             if (!resp.ok) {
                 const err = await resp.json().catch(() => ({}));
@@ -210,9 +207,33 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                             Stock Scanners
                         </h2>
                         <p className="text-[12px] text-zinc-400 dark:text-zinc-500 mt-0.5">
-                            Live scans on top 200 NSE stocks — real data, not AI guesses
+                            Live scans · real data, not AI guesses
                         </p>
                     </div>
+
+                    {/* Universe toggle */}
+                    <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-zinc-100 dark:bg-zinc-900 mr-2">
+                        {[
+                            { key: 'nifty500', label: 'Nifty 500' },
+                            { key: 'all_nse',  label: 'All NSE'   },
+                        ].map(({ key, label }) => (
+                            <button
+                                key={key}
+                                type="button"
+                                disabled={scanning}
+                                onClick={() => setUniverse(key)}
+                                className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all duration-200 select-none disabled:opacity-50
+                                    ${universe === key
+                                        ? 'text-zinc-900 shadow-sm'
+                                        : 'text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300'
+                                    }`}
+                                style={universe === key ? { backgroundColor: '#FDD405' } : {}}
+                            >
+                                {label}
+                            </button>
+                        ))}
+                    </div>
+
                     <button
                         onClick={onClose}
                         disabled={scanning}
@@ -228,7 +249,7 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                                     bg-white/90 dark:bg-[#161616]/90 rounded-2xl">
                         <Loader2 size={28} className="animate-spin text-indigo-500" />
                         <p className="text-[14px] font-medium text-zinc-700 dark:text-zinc-200">
-                            Running <span className="text-indigo-500">{scannerName}</span> on top 200 stocks…
+                            Running <span className="text-indigo-500">{scannerName}</span> on {universe === 'nifty500' ? 'Nifty 500' : 'All NSE'} stocks…
                         </p>
                         <p className="text-[12px] text-zinc-400 dark:text-zinc-500">
                             Downloading live price data · {elapsed > 0 ? `${elapsed}s elapsed` : 'starting…'}

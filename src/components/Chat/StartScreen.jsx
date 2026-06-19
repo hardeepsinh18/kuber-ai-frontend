@@ -1,6 +1,8 @@
 import { useState, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
+import { ScanLine } from 'lucide-react';
+import ScannerPanel from './ScannerPanel';
 
 const QUERIES = [
     'Show me TCS fundamentals and valuation',
@@ -22,8 +24,9 @@ const fadeUp = (delay = 0) => ({
     transition: { duration: 0.5, delay, ease: [0.22, 1, 0.36, 1] },
 });
 
-const StartScreen = ({ onStartChat, responseMode, setResponseMode }) => {
+const StartScreen = ({ onStartChat, onScannerResult, responseMode, setResponseMode }) => {
     const [input, setInput] = useState('');
+    const [scannerOpen, setScannerOpen] = useState(false);
     const inputRef = useRef(null);
 
     const autoResize = useCallback((el) => {
@@ -38,6 +41,7 @@ const StartScreen = ({ onStartChat, responseMode, setResponseMode }) => {
     };
 
     return (
+        <>
         <div className="flex flex-col h-full w-full overflow-hidden">
             <div className="flex-1 flex flex-col items-center justify-center overflow-y-auto py-8 gap-6">
 
@@ -98,6 +102,19 @@ const StartScreen = ({ onStartChat, responseMode, setResponseMode }) => {
                                         })}
                                     </div>
                                     <button
+                                        type="button"
+                                        onClick={() => setScannerOpen(true)}
+                                        className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-semibold
+                                                   text-zinc-500 dark:text-zinc-400
+                                                   hover:text-zinc-900 dark:hover:text-zinc-100
+                                                   border border-zinc-300/60 dark:border-zinc-700/60
+                                                   hover:border-[#FDD405]/60 dark:hover:border-[#FDD405]/50
+                                                   hover:bg-amber-50/40 dark:hover:bg-amber-950/15
+                                                   transition-all duration-150">
+                                        <ScanLine size={12} />
+                                        Scanners
+                                    </button>
+                                    <button
                                         onClick={send}
                                         disabled={!input.trim()}
                                         aria-label="Send"
@@ -145,6 +162,14 @@ const StartScreen = ({ onStartChat, responseMode, setResponseMode }) => {
 
             </div>
         </div>
+
+        {scannerOpen && (
+            <ScannerPanel
+                onSelectScanner={onScannerResult || ((msg) => onStartChat(msg, 'stock'))}
+                onClose={() => setScannerOpen(false)}
+            />
+        )}
+    </>
     );
 };
 
