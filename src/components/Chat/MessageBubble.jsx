@@ -793,7 +793,7 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                                     </blockquote>
                                 ),
                                 table: ({ children }) => (
-                                    <div className="my-6 overflow-x-auto rounded-xl border border-[#FDD405] bg-white dark:bg-zinc-900/30 shadow-sm">
+                                    <div className="my-6 overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900/30 shadow-sm">
                                         <table className="min-w-full border-collapse">
                                             {children}
                                         </table>

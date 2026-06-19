@@ -368,7 +368,7 @@ const FinancialScoreCard = ({ fund, symbol }) => {
     if (!hasCards) return null;
 
     return (
-        <div className="mt-4 border border-[#FDD405] rounded-xl overflow-hidden bg-white dark:bg-zinc-950">
+        <div className="mt-4 border border-zinc-200 dark:border-zinc-700/50 rounded-xl overflow-hidden bg-white dark:bg-zinc-950">
             <button
                 onClick={() => setOpen(o => !o)}
                 className="w-full flex items-center justify-between px-4 py-3 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-left"
@@ -469,7 +469,7 @@ const FiveYearScoreCard = ({ fund }) => {
     if (!hasAny) return null;
 
     return (
-        <div className="mt-4 border border-[#FDD405] rounded-xl overflow-hidden bg-white dark:bg-zinc-950">
+        <div className="mt-4 border border-zinc-200 dark:border-zinc-700/50 rounded-xl overflow-hidden bg-white dark:bg-zinc-950">
             <button
                 onClick={() => setOpen(o => !o)}
                 className="w-full flex items-center justify-between px-4 py-3 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-left"
@@ -620,7 +620,7 @@ export const PatternDetectionSection = ({ patternSummary }) => {
     if (!hasContent) return null;
 
     return (
-        <div className="mt-4 border border-[#FDD405] rounded-xl overflow-hidden bg-white dark:bg-zinc-950">
+        <div className="mt-4 border border-zinc-200 dark:border-zinc-700/50 rounded-xl overflow-hidden bg-white dark:bg-zinc-950">
             <button
                 onClick={() => setOpen(o => !o)}
                 className="w-full flex items-center justify-between px-4 py-3 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-left"
