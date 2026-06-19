@@ -287,7 +287,7 @@ const IndicatorsTable = ({ rows, asOfDate }) => {
         : null;
 
     return (
-        <div className="mt-4 border border-zinc-200/70 dark:border-zinc-700/50 rounded-xl overflow-hidden">
+        <div className="mt-4 border border-zinc-200 dark:border-zinc-700/50 rounded-xl overflow-hidden dark:bg-zinc-950">
             {/* Toggle header */}
             <button
                 onClick={() => setOpen(o => !o)}
@@ -324,15 +324,15 @@ const IndicatorsTable = ({ rows, asOfDate }) => {
                             {rows.map((row, i) => (
                                     <tr
                                         key={i}
-                                        className="border-b border-zinc-800/60 last:border-0 hover:bg-zinc-800/20 transition-colors"
+                                        className="border-b border-zinc-200 dark:border-zinc-800/60 last:border-0 hover:bg-zinc-50 dark:hover:bg-zinc-800/20 transition-colors"
                                     >
-                                        <td className="px-4 py-2.5 font-medium text-zinc-200 whitespace-nowrap">
+                                        <td className="px-4 py-2.5 font-medium text-zinc-800 dark:text-zinc-200 whitespace-nowrap">
                                             {row.indicator}
                                         </td>
-                                        <td className="px-4 py-2.5 text-right font-mono text-white whitespace-nowrap">
+                                        <td className="px-4 py-2.5 text-right font-mono text-zinc-900 dark:text-white whitespace-nowrap">
                                             {row.value || '—'}
                                         </td>
-                                        <td className="px-4 py-2.5 text-zinc-300 whitespace-nowrap">
+                                        <td className="px-4 py-2.5 text-zinc-600 dark:text-zinc-300 whitespace-nowrap">
                                             {row.signal || '—'}
                                         </td>
                                     </tr>

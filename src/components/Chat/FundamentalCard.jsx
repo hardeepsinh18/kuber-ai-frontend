@@ -37,7 +37,7 @@ const RatingBadge = ({ label, className }) => {
 /* ─── Metric card shell ──────────────────────────────────────────────────── */
 const MetricCard = ({ title, subtitle, badge, children, bottomLabel, bottomValue, className }) => (
     <div className={clsx(
-        'bg-zinc-900/60 rounded-xl border border-zinc-700/40 p-3 flex flex-col',
+        'bg-zinc-900 rounded-xl border border-zinc-700/50 p-3 flex flex-col',
         className
     )}>
         <div className="flex items-start justify-between mb-2 gap-2">
@@ -51,7 +51,7 @@ const MetricCard = ({ title, subtitle, badge, children, bottomLabel, bottomValue
             {children}
         </div>
         {(bottomLabel || bottomValue) && (
-            <div className="flex items-end justify-between pt-2 border-t border-zinc-700/40 mt-2 gap-2">
+            <div className="flex items-end justify-between pt-2 border-t border-zinc-700/50 mt-2 gap-2">
                 {bottomLabel && <span className="text-[10px] text-zinc-500 leading-tight">{bottomLabel}</span>}
                 {bottomValue && <span className="text-sm font-bold text-white flex-shrink-0">{bottomValue}</span>}
             </div>
@@ -251,38 +251,45 @@ const PeerRankCard = ({ peers, group, rank }) => {
     const myRank = rank ?? (foundIdx >= 0 ? foundIdx + 1 : 1);
 
     return (
-        <MetricCard
-            title="Peer rank"
-            subtitle={`VS ${group || 'SECTOR'}`}
-            badge={`#${myRank}`}
-            className="border-[#FDD405]/20 bg-[#FDD405]/5"
-            bottomLabel={`Best in peer set: ${sorted[0]?.score}`}
-        >
-            <div className="w-full space-y-2 pt-1">
+        <div className="bg-[#FDD405] rounded-xl border border-[#FDD405]/40 p-3 flex flex-col">
+            <div className="flex items-start justify-between mb-2 gap-2">
+                <div className="min-w-0">
+                    <p className="text-sm font-semibold text-black leading-none">Peer rank</p>
+                    <p className="text-[10px] text-black/60 uppercase tracking-wide mt-0.5">VS {group || 'SECTOR'}</p>
+                </div>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border whitespace-nowrap flex-shrink-0 bg-black/15 border-black/20 text-black">
+                    <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-emerald-700" />
+                    #{myRank}
+                </span>
+            </div>
+            <div className="flex-1 w-full space-y-2 pt-1 min-h-[60px]">
                 {sorted.map((p) => (
                     <div key={p.name || p.symbol} className="flex items-center gap-2">
                         <span className={clsx(
                             'text-[10px] w-24 flex-shrink-0 truncate',
-                            p.is_self ? 'font-bold text-white' : 'text-zinc-400'
+                            p.is_self ? 'font-bold text-black' : 'text-black/60'
                         )}>
                             {p.name || p.symbol}
                         </span>
-                        <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                        <div className="flex-1 h-1.5 bg-black/15 rounded-full overflow-hidden">
                             <div
-                                className={clsx('h-full rounded-full', p.is_self ? 'bg-[#FDD405]' : 'bg-zinc-600')}
+                                className={clsx('h-full rounded-full', p.is_self ? 'bg-black' : 'bg-black/30')}
                                 style={{ width: `${((p.score || 0) / maxScore) * 100}%` }}
                             />
                         </div>
                         <span className={clsx(
                             'text-[10px] w-5 text-right flex-shrink-0',
-                            p.is_self ? 'font-bold text-white' : 'text-zinc-500'
+                            p.is_self ? 'font-bold text-black' : 'text-black/60'
                         )}>
                             {p.score}
                         </span>
                     </div>
                 ))}
             </div>
-        </MetricCard>
+            <div className="flex items-end pt-2 border-t border-black/20 mt-2">
+                <span className="text-[10px] text-black/60 leading-tight">Best in peer set: {sorted[0]?.score}</span>
+            </div>
+        </div>
     );
 };
 
@@ -361,7 +368,7 @@ const FinancialScoreCard = ({ fund, symbol }) => {
     if (!hasCards) return null;
 
     return (
-        <div className="mt-4 border border-zinc-700/50 rounded-xl overflow-hidden">
+        <div className="mt-4 border border-zinc-700/50 rounded-xl overflow-hidden bg-zinc-950">
             <button
                 onClick={() => setOpen(o => !o)}
                 className="w-full flex items-center justify-between px-4 py-3 bg-[#FDD405] hover:bg-[#FDD405]/90 transition-colors text-left"
@@ -371,7 +378,7 @@ const FinancialScoreCard = ({ fund, symbol }) => {
                       : <ChevronDown size={15} className="text-black/70 flex-shrink-0" />}
             </button>
             {open && (
-                <div className="p-3 grid grid-cols-1 xs:grid-cols-2 gap-3 bg-zinc-900/20">
+                <div className="p-3 grid grid-cols-1 xs:grid-cols-2 gap-3 bg-zinc-950">
                     {pe != null && (
                         <MetricCard title="Price tag" subtitle="P/E RATIO" badge={peLabel}
                             bottomLabel={`You pay ~${Math.round(pe)} yrs of profit`}
@@ -462,7 +469,7 @@ const FiveYearScoreCard = ({ fund }) => {
     if (!hasAny) return null;
 
     return (
-        <div className="mt-4 border border-zinc-700/50 rounded-xl overflow-hidden">
+        <div className="mt-4 border border-zinc-700/50 rounded-xl overflow-hidden bg-zinc-950">
             <button
                 onClick={() => setOpen(o => !o)}
                 className="w-full flex items-center justify-between px-4 py-3 bg-[#FDD405] hover:bg-[#FDD405]/90 transition-colors text-left"
@@ -472,7 +479,7 @@ const FiveYearScoreCard = ({ fund }) => {
                       : <ChevronDown size={15} className="text-black/70 flex-shrink-0" />}
             </button>
             {open && (
-                <div className="p-3 grid grid-cols-1 xs:grid-cols-2 gap-3 bg-zinc-900/20">
+                <div className="p-3 grid grid-cols-1 xs:grid-cols-2 gap-3 bg-zinc-950">
                     {hist.revenue_cr?.length > 0 && (
                         <MetricCard title="Revenue" subtitle="TOP LINE · ₹ CR"
                             badge={hist.revenue_cagr ? `+${hist.revenue_cagr}% CAGR` : null}
@@ -613,7 +620,7 @@ export const PatternDetectionSection = ({ patternSummary }) => {
     if (!hasContent) return null;
 
     return (
-        <div className="mt-4 border border-zinc-700/50 rounded-xl overflow-hidden">
+        <div className="mt-4 border border-zinc-700/50 rounded-xl overflow-hidden bg-zinc-950">
             <button
                 onClick={() => setOpen(o => !o)}
                 className="w-full flex items-center justify-between px-4 py-3 bg-[#FDD405] hover:bg-[#FDD405]/90 transition-colors text-left"
@@ -623,14 +630,14 @@ export const PatternDetectionSection = ({ patternSummary }) => {
                       : <ChevronDown size={15} className="text-black/70 flex-shrink-0" />}
             </button>
             {open && (
-                <div className="p-4 bg-zinc-900/20">
+                <div className="p-4 bg-zinc-950">
                     {summary && (
                         <p className="text-sm text-zinc-300 leading-relaxed mb-4">{summary}</p>
                     )}
                     {candlesticks.length > 0 && (
                         <div className="grid grid-cols-2 gap-3">
                             {candlesticks.slice(0, 4).map((name, i) => (
-                                <div key={i} className="bg-zinc-900/60 border border-zinc-700/40 rounded-xl p-3">
+                                <div key={i} className="bg-zinc-900 border border-zinc-700/50 rounded-xl p-3">
                                     {resistance != null && (
                                         <div className="flex justify-end mb-1">
                                             <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-950/50 border border-rose-700/40 text-[10px] font-semibold text-rose-300">
@@ -681,7 +688,7 @@ export default function FundamentalScoreCard({ scoreCard, symbol }) {
             {Array.isArray(tech?.commentary) && tech.commentary.length > 0 && (
                 <div className="mt-4 space-y-1.5">
                     {tech.commentary.map((c, i) => (
-                        <div key={i} className="flex items-start gap-2 text-sm text-zinc-300 leading-relaxed">
+                        <div key={i} className="flex items-start gap-2 text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">
                             <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-zinc-500 flex-shrink-0" />
                             {c}
                         </div>
