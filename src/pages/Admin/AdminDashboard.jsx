@@ -28,7 +28,7 @@ const StatCard = ({ icon: Icon, label, value, sub, color = 'indigo' }) => {
     const colors = {
         indigo: 'bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400',
         emerald: 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400',
-        amber: 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400',
+        amber: 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-[#FDD405]',
         rose: 'bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400',
     };
     return (
@@ -76,7 +76,7 @@ const OverviewTab = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5">
                     <h3 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-4 flex items-center gap-2">
-                        <Zap size={14} className="text-amber-500" /> Top Intents Today
+                        <Zap size={14} className="text-[#FDD405]" /> Top Intents Today
                     </h3>
                     <div className="space-y-2">
                         {data.top_intents.map((item) => {
@@ -293,7 +293,7 @@ const QueryLogsTab = () => {
                                         </td>
                                         <td className="px-4 py-3 text-zinc-500 text-xs whitespace-nowrap">{q.llm_model_used || '—'}</td>
                                         <td className="px-4 py-3 text-xs whitespace-nowrap">
-                                            <span className={clsx(q.response_time_ms > 5000 ? 'text-rose-600 dark:text-rose-400' : q.response_time_ms > 2000 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400')}>
+                                            <span className={clsx(q.response_time_ms > 5000 ? 'text-rose-600 dark:text-rose-400' : q.response_time_ms > 2000 ? 'text-amber-600 dark:text-[#FDD405]' : 'text-emerald-600 dark:text-emerald-400')}>
                                                 {fmtMs(q.response_time_ms)}
                                             </span>
                                         </td>

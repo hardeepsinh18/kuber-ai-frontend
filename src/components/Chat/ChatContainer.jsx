@@ -677,11 +677,15 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                     {messages.filter(msg => msg && msg.role).map((msg) => (
                         <React.Fragment key={msg.id}>
                             {msg.role === 'ai' && msg.thinkingSteps && msg.thinkingSteps.length > 0 && (
-                                <ThinkingPaths
-                                    steps={msg.thinkingSteps}
-                                    isThinking={false}
-                                    processingTime={msg.processingTime || 0}
-                                />
+                                <div className="px-4 pb-2">
+                                    <div className="w-full max-w-3xl mx-auto">
+                                        <ThinkingPaths
+                                            steps={msg.thinkingSteps}
+                                            isThinking={false}
+                                            processingTime={msg.processingTime || 0}
+                                        />
+                                    </div>
+                                </div>
                             )}
 
                             {msg.role === 'ai' && (
@@ -712,7 +716,11 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                     ))}
 
                     {showThinking && (
-                        <ThinkingPaths isThinking={true} />
+                        <div className="px-4 pb-2">
+                            <div className="w-full max-w-3xl mx-auto">
+                                <ThinkingPaths isThinking={true} />
+                            </div>
+                        </div>
                     )}
 
                     <div ref={bottomRef} className="h-4" />
@@ -752,6 +760,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                     isLoading={isLoading}
                     responseMode={responseMode}
                     setResponseMode={setResponseMode}
+
                     horizonQuestion={(() => {
                         if (isLoading) return false;
                         const lastAI = [...messages].reverse().find(m => m.role === 'ai');

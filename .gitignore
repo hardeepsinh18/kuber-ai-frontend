@@ -61,3 +61,5 @@ logs-viewer/
 # Backend has its own .git; uncomment to ignore when using as submodule
 # KuberAI-backend/
 .worktrees/
+
+.vercel

@@ -148,6 +148,24 @@ body {
   animation: status-pulse 2s ease-in-out infinite;
 }
 
+/* ── Ember orb drift animations ── */
+@keyframes ember-drift-a {
+  0%, 100% { transform: translate(0px,   0px)  scale(1);    }
+  25%       { transform: translate(28px,  18px) scale(1.06); }
+  50%       { transform: translate(8px,   36px) scale(0.95); }
+  75%       { transform: translate(-18px, 8px)  scale(1.02); }
+}
+@keyframes ember-drift-b {
+  0%, 100% { transform: translate(0px,   0px)   scale(1);    }
+  33%       { transform: translate(-36px, -12px) scale(1.05); }
+  66%       { transform: translate(18px,  28px)  scale(0.97); }
+}
+@keyframes ember-drift-c {
+  0%, 100% { transform: translate(0px,   0px)   scale(1);    }
+  40%       { transform: translate(22px,  -18px) scale(1.04); }
+  80%       { transform: translate(-12px, 14px)  scale(0.98); }
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

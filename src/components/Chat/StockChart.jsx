@@ -49,7 +49,15 @@ const findDate = (targetDate, dates) => {
     }, null);
 };
 
-const StockChart = ({ chartData, symbol, className, patternOverlays = null }) => {
+const fmtVolLocal = (v) => {
+    if (!v || v <= 0) return null;
+    if (v >= 1e7) return `${(v / 1e7).toFixed(1)}Cr`;
+    if (v >= 1e5) return `${(v / 1e5).toFixed(1)}L`;
+    if (v >= 1000) return `${(v / 1000).toFixed(1)}K`;
+    return String(v);
+};
+
+const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAGlance = null }) => {
     const [chartType, setChartType] = useState('area'); // 'line', 'area', 'candle'
 
     if (!chartData) return null;
@@ -411,43 +419,36 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null }) =>
     };
 
     return (
-        <div className={clsx("w-full my-6 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900/50 p-4 sm:p-6", className)}>
+        <div className={clsx("w-full my-4 rounded-xl border border-zinc-200 dark:border-zinc-700/50 bg-white dark:bg-zinc-900/60 p-4", className)}>
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
                     <div className={clsx(
-                        "p-2 rounded-lg",
-                        isPositive 
-                            ? "bg-emerald-50 dark:bg-emerald-900/20" 
-                            : "bg-rose-50 dark:bg-rose-900/20"
+                        "p-1.5 rounded-lg",
+                        isPositive ? "bg-emerald-900/30" : "bg-rose-900/30"
                     )}>
-                        {isPositive ? (
-                            <TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                        ) : (
-                            <TrendingDown className="w-5 h-5 text-rose-600 dark:text-rose-400" />
-                        )}
+                        {isPositive
+                            ? <TrendingUp className="w-4 h-4 text-emerald-400" />
+                            : <TrendingDown className="w-4 h-4 text-rose-400" />
+                        }
                     </div>
                     <div>
-                        <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-                            {symbol || chart_metadata.description || 'Stock Chart'}
+                        <h3 className="text-sm font-bold text-zinc-900 dark:text-white leading-none">
+                            {symbol || chart_metadata.symbol || 'Chart'}
                         </h3>
-                        <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                            {chart_metadata.description || `${timeframe} chart`} • {chart_metadata.data_points || data.length} points
+                        <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                            {timeframe} chart • {chart_metadata.data_points || data.length} points
                         </p>
                     </div>
                 </div>
-                
-                {/* Price change indicator */}
-                <div className="flex items-center gap-2">
-                    <div className={clsx(
-                        "px-3 py-1.5 rounded-lg text-sm font-medium",
-                        isPositive
-                            ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400"
-                            : "bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400"
-                    )}>
-                        {isPositive ? '+' : ''}{priceChange.percent.toFixed(2)}%
-                    </div>
-                </div>
+                <span className={clsx(
+                    "px-2.5 py-1 rounded-lg text-sm font-semibold",
+                    isPositive
+                        ? "bg-emerald-900/30 text-emerald-400"
+                        : "bg-rose-900/30 text-rose-400"
+                )}>
+                    {isPositive ? '+' : ''}{priceChange.percent.toFixed(2)}%
+                </span>
             </div>
 
             {/* Chart type selector */}
@@ -459,8 +460,8 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null }) =>
                     className={clsx(
                         "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
                         chartType === 'area'
-                            ? "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400"
-                            : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                            ? "bg-[#FDD405] text-black font-semibold"
+                            : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/60"
                     )}
                 >
                     <Activity className="w-4 h-4" />
@@ -473,8 +474,8 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null }) =>
                     className={clsx(
                         "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
                         chartType === 'line'
-                            ? "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400"
-                            : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                            ? "bg-[#FDD405] text-black font-semibold"
+                            : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/60"
                     )}
                 >
                     <LineChartIcon className="w-4 h-4" />
@@ -487,8 +488,8 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null }) =>
                     className={clsx(
                         "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
                         chartType === 'candle'
-                            ? "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400"
-                            : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                            ? "bg-[#FDD405] text-black font-semibold"
+                            : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/60"
                     )}
                 >
                     <BarChart3 className="w-4 h-4" />
@@ -496,11 +497,31 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null }) =>
                 </button>
             </div>
 
-            {/* Chart */}
-            <div className="w-full h-[300px] sm:h-[400px]">
-                <ResponsiveContainer width="100%" height="100%">
-                    {renderChart()}
-                </ResponsiveContainer>
+            {/* Chart + Today's Market Stats side panel */}
+            <div className="flex gap-4">
+                <div className={clsx("h-[260px] sm:h-[340px]", atAGlance ? "flex-1" : "w-full")}>
+                    <ResponsiveContainer width="100%" height="100%">
+                        {renderChart()}
+                    </ResponsiveContainer>
+                </div>
+
+                {atAGlance && (
+                    <div className="w-40 xl:w-44 flex-shrink-0 bg-zinc-800/40 dark:bg-zinc-800/50 rounded-xl p-3 border border-zinc-700/40 self-start">
+                        <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wide mb-3">Today's Market Stats</p>
+                        {[
+                            atAGlance.high != null ? { label: 'High', value: `₹${Number(atAGlance.high).toLocaleString('en-IN', { maximumFractionDigits: 0 })}` } : null,
+                            atAGlance.low != null ? { label: 'Low', value: `₹${Number(atAGlance.low).toLocaleString('en-IN', { maximumFractionDigits: 0 })}` } : null,
+                            (atAGlance.high != null && atAGlance.low != null) ? { label: 'Range', value: `₹${Number(atAGlance.low).toLocaleString('en-IN', { maximumFractionDigits: 0 })} – ₹${Number(atAGlance.high).toLocaleString('en-IN', { maximumFractionDigits: 0 })}` } : null,
+                            atAGlance.volume > 0 ? { label: 'Vol', value: fmtVolLocal(atAGlance.volume) } : null,
+                            (atAGlance['52w_low'] != null && atAGlance['52w_high'] != null) ? { label: '52w', value: `₹${Number(atAGlance['52w_low']).toLocaleString('en-IN', { maximumFractionDigits: 0 })} – ₹${Number(atAGlance['52w_high']).toLocaleString('en-IN', { maximumFractionDigits: 0 })}` } : null,
+                        ].filter(Boolean).map(({ label, value }) => (
+                            <div key={label} className="flex justify-between items-start gap-1 mb-2 last:mb-0">
+                                <span className="text-[11px] text-zinc-500">{label}</span>
+                                <span className="text-[11px] text-zinc-200 font-medium text-right leading-tight">{value}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* Pattern badges */}

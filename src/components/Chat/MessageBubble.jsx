@@ -5,6 +5,7 @@ import remarkGfm from 'remark-gfm';
 import { TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp } from 'lucide-react';
 import { useStreamingText } from '../../hooks/useStreamingText';
 import StockChart from './StockChart';
+import FundamentalScoreCard, { PatternDetectionSection } from './FundamentalCard';
 
 const normalizeSymbol = (s) => {
     const raw = String(s || "").trim();
@@ -290,21 +291,21 @@ const IndicatorsTable = ({ rows, asOfDate }) => {
             {/* Toggle header */}
             <button
                 onClick={() => setOpen(o => !o)}
-                className="w-full flex items-center justify-between px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/60 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-left"
+                className="w-full flex items-center justify-between px-4 py-2.5 bg-[#FDD405] hover:bg-[#FDD405]/90 transition-colors text-left"
             >
                 <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-300 tracking-wide uppercase">
+                    <span className="text-xs font-semibold text-black tracking-wide uppercase">
                         Technical Indicators
                     </span>
                     {dateLabel && (
-                        <span className="text-xs text-zinc-400 dark:text-zinc-500">
+                        <span className="text-xs text-black/60">
                             as of {dateLabel}
                         </span>
                     )}
                 </div>
                 {open
-                    ? <ChevronUp size={14} className="text-zinc-400 dark:text-zinc-500 flex-shrink-0" />
-                    : <ChevronDown size={14} className="text-zinc-400 dark:text-zinc-500 flex-shrink-0" />
+                    ? <ChevronUp size={14} className="text-black/70 flex-shrink-0" />
+                    : <ChevronDown size={14} className="text-black/70 flex-shrink-0" />
                 }
             </button>
 
@@ -313,10 +314,10 @@ const IndicatorsTable = ({ rows, asOfDate }) => {
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm border-collapse">
                         <thead>
-                            <tr className="border-b border-zinc-200/60 dark:border-zinc-700/40 bg-zinc-50/50 dark:bg-zinc-800/30">
-                                <th className="text-left px-4 py-2 text-xs font-medium text-zinc-500 dark:text-zinc-400 w-28">Indicator</th>
-                                <th className="text-right px-4 py-2 text-xs font-medium text-zinc-500 dark:text-zinc-400 w-28">Value</th>
-                                <th className="text-left px-4 py-2 text-xs font-medium text-zinc-500 dark:text-zinc-400">Signal</th>
+                            <tr className="bg-[#FDD405]">
+                                <th className="text-left px-4 py-3 text-sm font-bold text-black w-28">Indicator</th>
+                                <th className="text-right px-4 py-3 text-sm font-bold text-black w-28">Value</th>
+                                <th className="text-left px-4 py-3 text-sm font-bold text-black">Signal</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -362,301 +363,6 @@ const IndicatorsTable = ({ rows, asOfDate }) => {
                             })}
                         </tbody>
                     </table>
-                </div>
-            )}
-        </div>
-    );
-};
-
-// ─── Kuber AI Score Card (Technical 0-100 + Fundamental 0-10) ────────────────
-const scoreColor = (score, max) => {
-    const pct = (score / max) * 100;
-    if (pct >= 70) return 'text-emerald-600 dark:text-emerald-400';
-    if (pct >= 45) return 'text-amber-600 dark:text-[#FDD405]';
-    return 'text-rose-600 dark:text-rose-400';
-};
-const scoreBg = (score, max) => {
-    const pct = (score / max) * 100;
-    if (pct >= 70) return 'bg-emerald-500';
-    if (pct >= 45) return 'bg-amber-500';
-    return 'bg-rose-500';
-};
-
-const ModuleRow = ({ label, value, note }) => (
-    <div className="flex items-center justify-between py-1.5 border-b border-zinc-100 dark:border-zinc-800/50 last:border-0">
-        <span className="text-xs text-zinc-500 dark:text-zinc-400 w-36 flex-shrink-0">{label}</span>
-        <span className="text-xs font-medium text-zinc-800 dark:text-zinc-200 flex-1 text-right">{value}</span>
-        {note && <span className="text-[10px] text-zinc-400 dark:text-zinc-500 ml-2 italic">{note}</span>}
-    </div>
-);
-
-const renderBold = (text) => {
-    if (!text) return null;
-    const parts = text.split(/\*\*(.*?)\*\*/g);
-    return parts.map((part, i) =>
-        i % 2 === 1
-            ? <strong key={i} className="font-semibold text-zinc-800 dark:text-zinc-100">{part}</strong>
-            : part
-    );
-};
-
-const KuberScoreCard = ({ scoreCard }) => {
-    const [open, setOpen] = React.useState(false);
-    const [showDetail, setShowDetail] = React.useState(false);
-    if (!scoreCard || (!scoreCard.technical && !scoreCard.fundamental)) return null;
-
-    const tech = scoreCard.technical;
-    const fund = scoreCard.fundamental;
-
-    const techScore  = tech?.score  ?? null;
-    const fundScore  = fund?.score  ?? null;
-    const techLabel  = tech?.label  ?? '';
-    const fundLabel  = fund?.label  ?? '';
-
-    return (
-        <div className="mt-4 border border-zinc-200/70 dark:border-zinc-700/50 rounded-xl overflow-hidden">
-            {/* Toggle header */}
-            <button
-                onClick={() => setOpen(o => !o)}
-                className="w-full flex items-center justify-between px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/60 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-left"
-            >
-                <div className="flex items-center gap-3 flex-wrap">
-                    <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-300 tracking-wide uppercase">
-                        Kuber AI Score
-                    </span>
-                    {techScore !== null && (
-                        <span className={clsx('text-xs font-bold', scoreColor(techScore, 100))}>
-                            T: {techScore}/100
-                            <span className="font-normal ml-1 text-zinc-400 dark:text-zinc-500">· {techLabel}</span>
-                        </span>
-                    )}
-                    {fundScore !== null && (
-                        <span className={clsx('text-xs font-bold', scoreColor(fundScore, 100))}>
-                            F: {fundScore}/100
-                            <span className="font-normal ml-1 text-zinc-400 dark:text-zinc-500">· {fundLabel}</span>
-                        </span>
-                    )}
-                </div>
-                {open
-                    ? <ChevronUp size={14} className="text-zinc-400 dark:text-zinc-500 flex-shrink-0" />
-                    : <ChevronDown size={14} className="text-zinc-400 dark:text-zinc-500 flex-shrink-0" />
-                }
-            </button>
-
-            {open && (
-                <div className="divide-y divide-zinc-100 dark:divide-zinc-800/40">
-
-                    {/* ── Narrative story (always shown when open) ──────── */}
-                    {tech?.narrative && (
-                        <div className="px-4 py-3">
-                            <p className="text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed">
-                                {renderBold(tech.narrative)}
-                            </p>
-                            {/* Fundamental commentary blended in */}
-                            {Array.isArray(fund?.commentary) && fund.commentary.length > 0 && (
-                                <div className="mt-2 pt-2 border-t border-zinc-100 dark:border-zinc-800/40">
-                                    <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                                        {fund.commentary.map((c, i) => (
-                                            <span key={i}>{i > 0 && ' · '}{c}</span>
-                                        ))}
-                                    </p>
-                                </div>
-                            )}
-                            {/* Toggle for detailed breakdown */}
-                            <button
-                                onClick={() => setShowDetail(d => !d)}
-                                className="mt-3 flex items-center gap-1 text-xs text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
-                            >
-                                {showDetail
-                                    ? <><ChevronUp size={12} /> Hide detailed breakdown</>
-                                    : <><ChevronDown size={12} /> View detailed breakdown</>
-                                }
-                            </button>
-                        </div>
-                    )}
-
-                    {/* ── Detailed table (shown only when toggled) ──────── */}
-                    {(!tech?.narrative || showDetail) && (<>
-
-                    {/* ── Technical Engine ──────────────────────────────── */}
-                    {tech && (
-                        <div className="px-4 py-3">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                                    Technical Engine
-                                </span>
-                                <div className="flex items-center gap-2">
-                                    <span className={clsx('text-sm font-bold', scoreColor(tech.score, 100))}>
-                                        {tech.score}/100
-                                    </span>
-                                    <span className="text-xs text-zinc-400 dark:text-zinc-500">{tech.label}</span>
-                                </div>
-                            </div>
-                            {/* Score bar */}
-                            <div className="h-1.5 bg-zinc-200/80 dark:bg-zinc-700/60 rounded-full overflow-hidden mb-3">
-                                <div
-                                    className={clsx('h-full rounded-full transition-all duration-700', scoreBg(tech.score, 100))}
-                                    style={{ width: `${tech.score}%` }}
-                                />
-                            </div>
-
-                            {/* v2.2 Signal Ratings table */}
-                            {tech.modules?.v22_signals && (() => {
-                                const sigs = tech.modules.v22_signals;
-                                const SIG_LABELS = {
-                                    ema_stack:       'EMA Stack',
-                                    price_structure: 'Price Structure',
-                                    breakout:        'Breakout Quality',
-                                    volume_context:  'Volume Context',
-                                    rsi:             'RSI',
-                                    macd:            'MACD',
-                                    volatility:      'Volatility (ATR)',
-                                    weekly_trend:    'Weekly Trend',
-                                    sentiment:       'Market Sentiment',
-                                    risk_flags:      'Risk Flags',
-                                    sma_regime:      'SMA Regime',
-                                };
-                                const ratingColor = (s) => {
-                                    if (s >= 4) return 'text-emerald-600 dark:text-emerald-400';
-                                    if (s === 3) return 'text-amber-600 dark:text-[#FDD405]';
-                                    return 'text-rose-600 dark:text-rose-400';
-                                };
-                                return (
-                                    <div className="space-y-0 mb-2">
-                                        {Object.entries(sigs).map(([key, entry]) => {
-                                            if (!entry || typeof entry !== 'object') return null;
-                                            const score = entry.score ?? 0;
-                                            const label = typeof entry.label === 'string' ? entry.label : '—';
-                                            return (
-                                                <div key={key} className="flex items-center justify-between py-1.5 border-b border-zinc-100 dark:border-zinc-800/50 last:border-0">
-                                                    <span className="text-xs text-zinc-500 dark:text-zinc-400 w-36 flex-shrink-0">{SIG_LABELS[key] || key}</span>
-                                                    <span className={`text-xs font-medium ${ratingColor(score)}`}>{label}</span>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                );
-                            })()}
-
-                            {/* Context rows (market structure, entry zone etc.) */}
-                            {tech.modules && !tech.modules.v22_signals && (
-                                <div className="space-y-0">
-                                    <ModuleRow label="Market Structure" value={tech.modules.m1_structure_label || tech.modules.m1_structure}
-                                        note={[tech.modules.m1_cross, tech.modules.m1_sma_bias].filter(Boolean).join(' · ') || undefined} />
-                                    <ModuleRow label="Breakout Status"  value={tech.modules.m3_breakout} />
-                                    <ModuleRow label="Volume"           value={tech.modules.m4_participation} note={tech.modules.m4_volume_ratio} />
-                                    <ModuleRow label="Volatility"       value={tech.modules.m5_volatility} />
-                                    <ModuleRow label="Risk Level"       value={tech.modules.m6_risk_level}
-                                        note={tech.modules.m6_risk_flags?.length ? tech.modules.m6_risk_flags.join(', ') : undefined} />
-                                    <ModuleRow label="RSI"              value={tech.modules.rsi_label || '—'} note={tech.modules.rsi_value != null ? `${tech.modules.rsi_value}` : undefined} />
-                                    <ModuleRow label="MACD"             value={tech.modules.macd_label || '—'} note={tech.modules.macd_value != null ? `Line ${tech.modules.macd_value}` : undefined} />
-                                    <ModuleRow label="Weekly Trend"     value={tech.weekly_bias || '—'} />
-                                </div>
-                            )}
-
-                            {/* Commentary */}
-                            {Array.isArray(tech.commentary) && tech.commentary.length > 0 && (
-                                <ul className="mt-3 space-y-1 border-t border-zinc-100 dark:border-zinc-800/40 pt-2">
-                                    {tech.commentary.map((c, i) => (
-                                        <li key={i} className="flex items-start gap-2 text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                                            <span className="mt-1 w-1 h-1 rounded-full flex-shrink-0 bg-zinc-400" />
-                                            <span>{c}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                        </div>
-                    )}
-
-                    {/* ── Fundamental Engine ────────────────────────────── */}
-                    {fund && (
-                        <div className="px-4 py-3">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                                    Fundamental Engine
-                                </span>
-                                <div className="flex items-center gap-2">
-                                    <span className={clsx('text-sm font-bold', scoreColor(fund.score, 100))}>
-                                        {fund.score}/100
-                                    </span>
-                                    <span className="text-xs text-zinc-400 dark:text-zinc-500">{fund.label}</span>
-                                </div>
-                            </div>
-                            {/* Score bar */}
-                            <div className="h-1.5 bg-zinc-200/80 dark:bg-zinc-700/60 rounded-full overflow-hidden mb-3">
-                                <div
-                                    className={clsx('h-full rounded-full transition-all duration-700', scoreBg(fund.score, 100))}
-                                    style={{ width: `${fund.score}%` }}
-                                />
-                            </div>
-
-                            {/* Ratio table — v3.0 rulebook */}
-                            {fund.ratios && (() => {
-                                const RATIO_LABELS = {
-                                    roce:             'ROCE',
-                                    roe:              'ROE',
-                                    revenue_growth:   'Revenue Growth',
-                                    eps_growth:       'EPS Growth',
-                                    ebitda_margin:    'EBITDA Margin',
-                                    cfo_pat:          'CFO/PAT',
-                                    fcf_margin:       'FCF Margin',
-                                    promoter_holding: 'Promoter Holding',
-                                    peg_ratio:        'PEG Ratio',
-                                    debt_equity:      'Debt/Equity',
-                                };
-                                return (
-                                    <div className="space-y-0">
-                                        {Object.entries(fund.ratios).map(([key, entry]) => {
-                                            const [val, , ratingLabel] = Array.isArray(entry) ? entry : [null, null, entry];
-                                            const displayName = RATIO_LABELS[key] || key;
-                                            const note = val !== null && val !== undefined
-                                                ? (key === 'debt_equity' ? `${Number(val).toFixed(2)}x`
-                                                : key === 'peg_ratio'   ? `PEG ${Number(val).toFixed(2)}`
-                                                : key === 'cfo_pat'     ? `${Number(val).toFixed(2)}x`
-                                                : `${Number(val).toFixed(1)}%`)
-                                                : undefined;
-                                            const safeLabel = typeof ratingLabel === 'string' ? ratingLabel : '—';
-                                            return (
-                                                <ModuleRow
-                                                    key={key}
-                                                    label={displayName}
-                                                    value={safeLabel}
-                                                    note={note}
-                                                />
-                                            );
-                                        })}
-                                    </div>
-                                );
-                            })()}
-
-                            {/* Data coverage badge */}
-                            {fund.data_coverage && (
-                                <p className="mt-2 text-[10px] text-zinc-400 dark:text-zinc-500 text-right italic">
-                                    {fund.data_coverage} with data
-                                </p>
-                            )}
-
-                            {/* Commentary */}
-                            {fund.commentary && typeof fund.commentary === 'string' && (
-                                <p className="mt-3 text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed border-t border-zinc-100 dark:border-zinc-800/40 pt-2">
-                                    {fund.commentary}
-                                </p>
-                            )}
-                            {Array.isArray(fund.commentary) && fund.commentary.length > 0 && (
-                                <ul className="mt-3 space-y-1 border-t border-zinc-100 dark:border-zinc-800/40 pt-2">
-                                    {fund.commentary.map((c, i) => (
-                                        <li key={i} className="flex items-start gap-2 text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                                            <span className="mt-1 w-1 h-1 rounded-full flex-shrink-0 bg-zinc-400" />
-                                            <span>{c}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                        </div>
-                    )}
-
-                    </>)}
-
                 </div>
             )}
         </div>
@@ -793,12 +499,19 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
             {isUser ? (
                 // User query — right-aligned pill
                 <div className="w-full max-w-4xl mx-auto mb-8 flex justify-end px-4 sm:px-6">
-                    <div className="inline-flex items-center px-5 py-2.5
+                    <div className="relative inline-flex items-center px-4 py-1.5
                                     bg-[#FDD405]
-                                    rounded-2xl text-[15px] font-medium
+                                    text-[13px] font-medium
                                     text-zinc-900
-                                    shadow-[0_2px_12px_rgba(253,212,5,0.35)]">
+                                    shadow-[0_2px_12px_rgba(253,212,5,0.35)]"
+                         style={{ borderRadius: '18px 18px 0 18px' }}>
                         {textToDisplay}
+                        <svg
+                            style={{ position: 'absolute', bottom: 0, right: '-9px', display: 'block' }}
+                            width="10" height="16" viewBox="0 0 10 16" fill="none"
+                        >
+                            <path d="M0 0 C0 10 8 14 10 16 L0 16 Z" fill="#FDD405"/>
+                        </svg>
                     </div>
                 </div>
             ) : (
@@ -827,37 +540,52 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                         const volStr = fmtVol(aag.volume);
                         const mcapStr = fmtMcap(aag.market_cap);
                         return (
-                            <div className="mb-4 rounded-xl border border-zinc-200/60 dark:border-zinc-700/60 bg-zinc-50 dark:bg-zinc-900/50 overflow-hidden">
-                                {/* Main row: symbol, price, change */}
-                                <div className="flex flex-wrap items-center gap-3 px-4 pt-3 pb-2">
-                                    <div className="flex flex-col mr-1">
-                                        {primarySymbolLabel && (
-                                            <span className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest leading-none mb-0.5">
-                                                {primarySymbolLabel}
-                                            </span>
-                                        )}
-                                        {companyName && (
-                                            <span className="text-[13px] font-medium text-zinc-600 dark:text-zinc-300 leading-none">
-                                                {companyName}
+                            <div className="mb-4 rounded-xl border border-zinc-200/60 dark:border-zinc-700/60 bg-zinc-50 dark:bg-zinc-900/60 overflow-hidden">
+                                {/* Main row: logo, name, price, change */}
+                                <div className="flex items-center gap-3 px-4 pt-3 pb-3">
+                                    {/* Company logo / letter avatar */}
+                                    <div className="w-10 h-10 rounded-lg border border-zinc-200 dark:border-zinc-700/60 bg-white dark:bg-zinc-800 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                                        {aag.logo_url ? (
+                                            <img src={aag.logo_url} alt={primarySymbolLabel} className="w-full h-full object-contain p-1" />
+                                        ) : (
+                                            <span className="text-sm font-bold text-[#FDD405]">
+                                                {(companyName || primarySymbolLabel || '?').charAt(0).toUpperCase()}
                                             </span>
                                         )}
                                     </div>
-                                    {aag.price != null && (
-                                        <span className="text-[22px] font-bold text-zinc-900 dark:text-white leading-none">
-                                            ₹{Number(aag.price).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-                                        </span>
-                                    )}
-                                    {aag.change_percent != null && (
-                                        <span className={clsx(
-                                            'text-sm font-semibold px-2.5 py-1 rounded-lg leading-none',
-                                            aag.change_percent >= 0
-                                                ? 'text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/40'
-                                                : 'text-rose-700 dark:text-rose-300 bg-rose-100 dark:bg-rose-900/40'
-                                        )}>
-                                            {aag.change_percent >= 0 ? '▲ +' : '▼ '}
-                                            {Number(aag.change_percent).toFixed(2)}%
-                                        </span>
-                                    )}
+                                    {/* Name block */}
+                                    <div className="flex flex-col">
+                                        {companyName && (
+                                            <span className="text-sm font-semibold text-zinc-900 dark:text-white leading-none mb-0.5">
+                                                {companyName}
+                                            </span>
+                                        )}
+                                        {primarySymbolLabel && (
+                                            <span className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-none">
+                                                NSE: {primarySymbolLabel}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="flex-1" />
+                                    {/* Price + change */}
+                                    <div className="flex flex-col items-end">
+                                        {aag.price != null && (
+                                            <span className="text-[22px] font-bold text-zinc-900 dark:text-white leading-none">
+                                                ₹{Number(aag.price).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                                            </span>
+                                        )}
+                                        {aag.change_percent != null && (
+                                            <span className={clsx(
+                                                'text-sm font-medium leading-none mt-0.5',
+                                                aag.change_percent >= 0
+                                                    ? 'text-emerald-600 dark:text-emerald-400'
+                                                    : 'text-rose-600 dark:text-rose-400'
+                                            )}>
+                                                {aag.change_percent >= 0 ? '+' : ''}{Number(aag.change_percent).toFixed(2)}%{' '}
+                                                {aag.change_percent >= 0 ? '↑' : '↓'} today
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                                 {/* Secondary row: P/E, day range, volume, 52w, mcap */}
                                 {(aag.pe_ratio != null || aag.high != null || aag.low != null || volStr || aag['52w_high'] != null || mcapStr) && (
@@ -912,6 +640,7 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                                     chartData={cd}
                                     symbol={resolveChartSymbol(cd, idx)}
                                     patternOverlays={patternSummary}
+                                    atAGlance={metadata?.at_a_glance}
                                     className="mb-6"
                                 />
                             ))
@@ -920,6 +649,7 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                                 chartData={chartData}
                                 symbol={resolveChartSymbol(chartData, 0)}
                                 patternOverlays={patternSummary}
+                                atAGlance={metadata?.at_a_glance}
                                 className="mb-6"
                             />
                         )
@@ -928,9 +658,9 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                     {/* ── News headlines ──────────────────────────────── */}
                     {relevantNews.length > 0 && (
                         <div className="mb-5 rounded-xl border border-zinc-200 dark:border-zinc-700/50 overflow-hidden">
-                            <div className="flex items-center justify-between px-4 py-2.5 bg-zinc-50/80 dark:bg-zinc-800/60 border-b border-zinc-200 dark:border-zinc-700/50">
-                                <h4 className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Recent News</h4>
-                                <span className="text-[11px] text-zinc-400 dark:text-zinc-500">{relevantNews.length} headline{relevantNews.length > 1 ? 's' : ''}</span>
+                            <div className="flex items-center justify-between px-4 py-2.5 bg-[#FDD405] border-b border-[#FDD405]/80">
+                                <h4 className="text-[11px] font-semibold text-black uppercase tracking-wide">Recent News</h4>
+                                <span className="text-[11px] text-black/60">{relevantNews.length} headline{relevantNews.length > 1 ? 's' : ''}</span>
                             </div>
                             <ul>
                                 {relevantNews.map((h, i) => {
@@ -953,10 +683,13 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                                                         {h?.title || 'Untitled'}
                                                     </p>
                                                 )}
-                                                {h.source && (
-                                                    <span className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5 block">{h.source}</span>
-                                                )}
                                             </div>
+                                            {h.source && (
+                                                <div className="text-right flex-shrink-0 ml-2">
+                                                    <span className="text-[10px] text-zinc-400 dark:text-zinc-500 block leading-none mb-0.5">Source:</span>
+                                                    <span className="text-[11px] text-zinc-500 dark:text-zinc-400 block leading-none">{h.source}</span>
+                                                </div>
+                                            )}
                                         </li>
                                     );
                                 })}
@@ -1091,7 +824,7 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                                     </div>
                                 ),
                                 thead: ({ children }) => (
-                                    <thead className="bg-amber-50/60 dark:bg-amber-950/20">
+                                    <thead className="bg-[#FDD405]">
                                         {children}
                                     </thead>
                                 ),
@@ -1111,7 +844,7 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                                     );
                                 },
                                 th: ({ children }) => (
-                                    <th className="px-4 py-3 text-left text-[14px] font-semibold text-zinc-900 dark:text-zinc-100 border-b border-amber-200/50 dark:border-amber-800/40">
+                                    <th className="px-4 py-3 text-left text-[14px] font-bold text-black border-b border-black/10">
                                         {children}
                                     </th>
                                 ),
@@ -1145,9 +878,17 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                     {/* ── Post-text structured sections — hidden while streaming, fade in after ── */}
                     <div className={clsx('transition-opacity duration-500', cardsVisible ? 'opacity-100' : 'opacity-0 pointer-events-none')}>
 
-                    {/* ── Technical indicators + Pattern analysis ─────── */}
+                    {/* ── Technical indicators chips + support/resistance ── */}
                     {responseMode !== 'snap' && (
                         <TechnicalSection technicalSummary={technicalSummary} patternSummary={patternSummary} />
+                    )}
+
+                    {/* ── Fundamental score card (Health Score + Financial metrics) ── */}
+                    {responseMode !== 'snap' && (
+                        <FundamentalScoreCard
+                            scoreCard={scoreCard}
+                            symbol={primarySymbolLabel}
+                        />
                     )}
 
                     {/* ── Expandable indicators table (DB-backed) ──────── */}
@@ -1158,9 +899,9 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                         />
                     )}
 
-                    {/* ── Kuber AI Score Card (Technical + Fundamental) ── */}
-                    {responseMode !== 'snap' && (
-                        <KuberScoreCard scoreCard={scoreCard} />
+                    {/* ── Pattern Detection & Resistance Alert ─────────── */}
+                    {responseMode !== 'snap' && patternSummary && (
+                        <PatternDetectionSection patternSummary={patternSummary} />
                     )}
 
                     {/* ── Data sources footer ──────────────────────────── */}

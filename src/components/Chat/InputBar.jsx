@@ -1,5 +1,5 @@
 import { useRef, useEffect, useCallback } from 'react';
-import { ArrowUpRight, Square } from 'lucide-react';
+import { Square } from 'lucide-react';
 import { clsx } from 'clsx';
 
 const QUERIES = [
@@ -131,22 +131,30 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
                                 {isLoading ? (
                                     <button onClick={onStopRequest} aria-label="Stop"
                                         className="w-7 h-7 flex items-center justify-center rounded-full
-                                                   bg-red-500 hover:bg-red-600 text-white
-                                                   transition-all active:scale-95
-                                                   shadow-[0_2px_8px_rgba(239,68,68,0.40)]">
+                                                   transition-all active:scale-95 text-black
+                                                   hover:brightness-110"
+                                        style={{
+                                            backgroundColor: '#ffffff',
+                                            boxShadow: '0 2px 8px rgba(255,255,255,0.20)'
+                                        }}>
                                         <Square size={10} fill="currentColor" />
                                     </button>
                                 ) : (
                                     <button onClick={handleSend} disabled={!input.trim()} aria-label="Send"
-                                        className="w-7 h-7 flex items-center justify-center rounded-full
-                                                   transition-all duration-200 active:scale-95 text-black
+                                        className="w-9 h-9 flex items-center justify-center rounded-full
+                                                   bg-white dark:bg-[#111111]
+                                                   transition-all duration-200 active:scale-95
                                                    disabled:opacity-25 disabled:cursor-not-allowed
                                                    hover:scale-105 disabled:hover:scale-100"
                                         style={{
-                                            backgroundColor: '#FDD405',
-                                            boxShadow: '0 2px 8px rgba(253,212,5,0.45)'
+                                            border: '1px solid rgba(253,212,5,0.75)',
+                                            boxShadow: '0 0 6px 1px rgba(253,212,5,0.2)',
+                                            color: '#FDD405'
                                         }}>
-                                        <ArrowUpRight size={13} strokeWidth={2.8} />
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+                                            <line x1="5" y1="19" x2="19" y2="5"/>
+                                            <polyline points="8 5 19 5 19 16"/>
+                                        </svg>
                                     </button>
                                 )}
                             </div>

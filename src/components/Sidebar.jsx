@@ -335,8 +335,8 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, showLogin = false, setSho
                                             : 'Guest'}
                                     </p>
                                     <div className="flex items-center gap-1 mt-0.5">
-                                        <TrendingUp size={8} className="text-[#FDD405] flex-shrink-0" />
-                                        <span className="text-[10px] text-[#FDD405] font-medium">Free Plan</span>
+                                        <TrendingUp size={8} className="text-zinc-700 dark:text-[#FDD405] flex-shrink-0" />
+                                        <span className="text-[10px] text-zinc-700 dark:text-[#FDD405] font-medium">Free Plan</span>
                                     </div>
                                 </div>
                                 <button onClick={handleSignOut}

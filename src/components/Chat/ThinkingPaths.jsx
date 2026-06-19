@@ -3,7 +3,7 @@ import { Cpu, ChevronDown } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useTheme } from '../../context/ThemeContext';
 
-const ThinkingPaths = ({ steps = [], isThinking = true, className = '', processingTime = 0 }) => {
+const ThinkingPaths = ({ steps = [], isThinking = true, className = '', processingTime = 0, noPadding = false }) => {
     const { theme } = useTheme();
     const isDark = theme === 'dark';
     const [isExpanded, setIsExpanded] = useState(false);
@@ -72,8 +72,7 @@ const ThinkingPaths = ({ steps = [], isThinking = true, className = '', processi
     if (!isThinking && steps.length === 0) return null;
 
     return (
-        <div className={clsx('w-full mb-4 animate-in fade-in slide-in-from-bottom-2 duration-300', className)}>
-            <div className="w-full max-w-4xl mx-auto px-6">
+        <div className={clsx('animate-in fade-in slide-in-from-bottom-2 duration-300', className)}>
 
                 {isThinking ? (
                     /* ── Thinking state card ── */
@@ -147,7 +146,6 @@ const ThinkingPaths = ({ steps = [], isThinking = true, className = '', processi
                         )}
                     </div>
                 )}
-            </div>
         </div>
     );
 };

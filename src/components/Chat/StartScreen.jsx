@@ -1,6 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowUpRight } from 'lucide-react';
 import { clsx } from 'clsx';
 
 const QUERIES = [
@@ -102,12 +101,16 @@ const StartScreen = ({ onStartChat, responseMode, setResponseMode }) => {
                                         onClick={send}
                                         disabled={!input.trim()}
                                         aria-label="Send"
-                                        className="w-8 h-8 rounded-full flex items-center justify-center text-black
+                                        className="w-9 h-9 rounded-full flex items-center justify-center
+                                                   bg-white dark:bg-[#111111]
                                                    disabled:opacity-20 disabled:cursor-not-allowed
                                                    hover:scale-105 active:scale-95 disabled:hover:scale-100
                                                    transition-all duration-150"
-                                        style={{ backgroundColor: '#FDD405', boxShadow: '0 2px 10px rgba(253,212,5,0.45)' }}>
-                                        <ArrowUpRight size={15} strokeWidth={2.8} />
+                                        style={{ border: '1px solid rgba(253,212,5,0.75)', boxShadow: '0 0 6px 1px rgba(253,212,5,0.2)', color: '#FDD405' }}>
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+                                            <line x1="5" y1="19" x2="19" y2="5"/>
+                                            <polyline points="8 5 19 5 19 16"/>
+                                        </svg>
                                     </button>
                                 </div>
                             </div>

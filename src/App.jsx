@@ -12,6 +12,7 @@ import { ChatHistoryProvider, useChatHistory } from './context/ChatHistoryContex
 import { ChatModeProvider } from './context/ChatModeContext';
 import { AdminGuard } from './components/Admin/AdminGuard';
 import AdminDashboard from './pages/Admin/AdminDashboard';
+import PreviewPage from './pages/PreviewPage';
 
 function AppContent() {
   const navigate = useNavigate();
@@ -96,6 +97,7 @@ function App() {
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<AuthPage />} />
+              <Route path="/preview" element={<PreviewPage />} />
               <Route path="/*" element={<AppContent />} />
             </Routes>
           </BrowserRouter>
