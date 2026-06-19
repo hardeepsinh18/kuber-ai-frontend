@@ -291,21 +291,21 @@ const IndicatorsTable = ({ rows, asOfDate }) => {
             {/* Toggle header */}
             <button
                 onClick={() => setOpen(o => !o)}
-                className="w-full flex items-center justify-between px-4 py-2.5 bg-zinc-100 dark:bg-[#FDD405] hover:bg-zinc-200 dark:hover:bg-[#FDD405]/90 transition-colors text-left"
+                className="w-full flex items-center justify-between px-4 py-2.5 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-left"
             >
                 <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-zinc-900 dark:text-black tracking-wide uppercase">
+                    <span className="text-xs font-semibold text-zinc-900 dark:text-white tracking-wide uppercase">
                         Technical Indicators
                     </span>
                     {dateLabel && (
-                        <span className="text-xs text-zinc-500 dark:text-black/60">
+                        <span className="text-xs text-zinc-500 dark:text-zinc-400">
                             as of {dateLabel}
                         </span>
                     )}
                 </div>
                 {open
-                    ? <ChevronUp size={14} className="text-zinc-500 dark:text-black/70 flex-shrink-0" />
-                    : <ChevronDown size={14} className="text-zinc-500 dark:text-black/70 flex-shrink-0" />
+                    ? <ChevronUp size={14} className="text-zinc-500 dark:text-zinc-400 flex-shrink-0" />
+                    : <ChevronDown size={14} className="text-zinc-500 dark:text-zinc-400 flex-shrink-0" />
                 }
             </button>
 
