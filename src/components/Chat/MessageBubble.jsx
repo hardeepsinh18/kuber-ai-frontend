@@ -277,6 +277,49 @@ const TechnicalSection = ({ technicalSummary, patternSummary }) => {
     );
 };
 
+// ─── Collapsible Chart Section ───────────────────────────────────────────────
+const ChartSection = ({ chartData, resolveSymbol, patternSummary, atAGlance }) => {
+    const [open, setOpen] = React.useState(true);
+    if (!chartData) return null;
+
+    const charts = Array.isArray(chartData)
+        ? chartData.filter(cd => cd && !cd.error)
+        : chartData.error ? [] : [chartData];
+
+    if (charts.length === 0) return null;
+
+    const firstSymbol = charts[0]?.chart_metadata?.symbol
+        ? charts[0].chart_metadata.symbol.replace(/\.NS$|\.BO$|-EQ$/i, '')
+        : null;
+    const title = firstSymbol ? `${firstSymbol} Chart` : 'Stock Chart';
+
+    return (
+        <div className="mb-4 border border-zinc-200 dark:border-zinc-700/50 rounded-xl overflow-hidden bg-white dark:bg-zinc-950">
+            <button
+                onClick={() => setOpen(o => !o)}
+                className="w-full flex items-center justify-between px-4 py-3 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-left"
+            >
+                <span className="text-sm font-semibold text-zinc-900 dark:text-white">{title}</span>
+                {open ? <ChevronUp size={15} className="text-zinc-500 dark:text-zinc-400 flex-shrink-0" />
+                      : <ChevronDown size={15} className="text-zinc-500 dark:text-zinc-400 flex-shrink-0" />}
+            </button>
+            {open && (
+                <div>
+                    {charts.map((cd, idx) => (
+                        <StockChart
+                            key={cd?.chart_metadata?.symbol || idx}
+                            chartData={cd}
+                            symbol={resolveSymbol(cd, idx)}
+                            patternOverlays={patternSummary}
+                            atAGlance={atAGlance}
+                        />
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
+
 // ─── Expandable Indicators Table ─────────────────────────────────────────────
 const IndicatorsTable = ({ rows, asOfDate }) => {
     const [open, setOpen] = React.useState(false);
@@ -608,28 +651,12 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                     })()}
 
                     {/* ── Chart(s) ────────────────────────────────────── */}
-                    {chartData && (
-                        Array.isArray(chartData) ? (
-                            chartData.filter(cd => cd && !cd.error).map((cd, idx) => (
-                                <StockChart
-                                    key={cd?.chart_metadata?.symbol || resolveChartSymbol(cd, idx) || idx}
-                                    chartData={cd}
-                                    symbol={resolveChartSymbol(cd, idx)}
-                                    patternOverlays={patternSummary}
-                                    atAGlance={metadata?.at_a_glance}
-                                    className="mb-6"
-                                />
-                            ))
-                        ) : !chartData.error && (
-                            <StockChart
-                                chartData={chartData}
-                                symbol={resolveChartSymbol(chartData, 0)}
-                                patternOverlays={patternSummary}
-                                atAGlance={metadata?.at_a_glance}
-                                className="mb-6"
-                            />
-                        )
-                    )}
+                    <ChartSection
+                        chartData={chartData}
+                        resolveSymbol={resolveChartSymbol}
+                        patternSummary={patternSummary}
+                        atAGlance={metadata?.at_a_glance}
+                    />
 
                     {/* ── News headlines ──────────────────────────────── */}
                     {relevantNews.length > 0 && (
@@ -855,28 +882,22 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                     <div className={clsx('transition-opacity duration-500', cardsVisible ? 'opacity-100' : 'opacity-0 pointer-events-none')}>
 
                     {/* ── Technical indicators chips + support/resistance ── */}
-                    {responseMode !== 'snap' && (
-                        <TechnicalSection technicalSummary={technicalSummary} patternSummary={patternSummary} />
-                    )}
+                    <TechnicalSection technicalSummary={technicalSummary} patternSummary={patternSummary} />
 
                     {/* ── Fundamental score card (Health Score + Financial metrics) ── */}
-                    {responseMode !== 'snap' && (
-                        <FundamentalScoreCard
-                            scoreCard={scoreCard}
-                            symbol={primarySymbolLabel}
-                        />
-                    )}
+                    <FundamentalScoreCard
+                        scoreCard={scoreCard}
+                        symbol={primarySymbolLabel}
+                    />
 
                     {/* ── Expandable indicators table (DB-backed) ──────── */}
-                    {responseMode !== 'snap' && (
-                        <IndicatorsTable
-                            rows={indicatorsTable}
-                            asOfDate={metadata?.indicators_as_of}
-                        />
-                    )}
+                    <IndicatorsTable
+                        rows={indicatorsTable}
+                        asOfDate={metadata?.indicators_as_of}
+                    />
 
                     {/* ── Pattern Detection & Resistance Alert ─────────── */}
-                    {responseMode !== 'snap' && patternSummary && (
+                    {patternSummary && (
                         <PatternDetectionSection patternSummary={patternSummary} />
                     )}
 
