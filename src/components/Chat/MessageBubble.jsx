@@ -287,14 +287,14 @@ const IndicatorsTable = ({ rows, asOfDate }) => {
         : null;
 
     return (
-        <div className="mt-4 border border-zinc-200 dark:border-zinc-700/50 rounded-xl overflow-hidden bg-white dark:bg-zinc-950">
+        <div className="mt-4 border border-[#FDD405] rounded-xl overflow-hidden bg-white dark:bg-zinc-950">
             {/* Toggle header */}
             <button
                 onClick={() => setOpen(o => !o)}
-                className="w-full flex items-center justify-between px-4 py-2.5 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-left"
+                className="w-full flex items-center justify-between px-4 py-3 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-left"
             >
                 <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-zinc-900 dark:text-white tracking-wide uppercase">
+                    <span className="text-sm font-semibold text-zinc-900 dark:text-white">
                         Technical Indicators
                     </span>
                     {dateLabel && (
@@ -315,27 +315,27 @@ const IndicatorsTable = ({ rows, asOfDate }) => {
                     <table className="w-full text-sm border-collapse">
                         <thead>
                             <tr className="bg-[#FDD405]">
-                                <th className="text-left px-4 py-3 text-sm font-bold text-black w-28">Indicator</th>
-                                <th className="text-right px-4 py-3 text-sm font-bold text-black w-28">Value</th>
-                                <th className="text-left px-4 py-3 text-sm font-bold text-black">Signal</th>
+                                <th className="text-center px-4 py-3 text-sm font-bold text-black w-36">Indicator</th>
+                                <th className="text-center px-4 py-3 text-sm font-bold text-black w-36">Value</th>
+                                <th className="text-center px-4 py-3 text-sm font-bold text-black">Signal</th>
                             </tr>
                         </thead>
                         <tbody>
                             {rows.map((row, i) => (
-                                    <tr
-                                        key={i}
-                                        className="border-b border-zinc-200 dark:border-zinc-800/60 last:border-0 hover:bg-zinc-50 dark:hover:bg-zinc-800/20 transition-colors"
-                                    >
-                                        <td className="px-4 py-2.5 font-medium text-zinc-800 dark:text-zinc-200 whitespace-nowrap">
-                                            {row.indicator}
-                                        </td>
-                                        <td className="px-4 py-2.5 text-right font-mono text-zinc-900 dark:text-white whitespace-nowrap">
-                                            {row.value || '—'}
-                                        </td>
-                                        <td className="px-4 py-2.5 text-zinc-600 dark:text-zinc-300 whitespace-nowrap">
-                                            {row.signal || '—'}
-                                        </td>
-                                    </tr>
+                                <tr
+                                    key={i}
+                                    className="border-b border-[#FDD405] last:border-0 hover:bg-zinc-50 dark:hover:bg-zinc-800/20 transition-colors"
+                                >
+                                    <td className="px-4 py-3 font-medium text-zinc-800 dark:text-zinc-200 whitespace-nowrap text-center">
+                                        {row.indicator}
+                                    </td>
+                                    <td className="px-4 py-3 text-center font-mono text-zinc-900 dark:text-white whitespace-nowrap">
+                                        {row.value || '—'}
+                                    </td>
+                                    <td className="px-4 py-3 text-zinc-600 dark:text-zinc-300 whitespace-nowrap text-center">
+                                        {row.signal || '—'}
+                                    </td>
+                                </tr>
                             ))}
                         </tbody>
                     </table>
