@@ -371,11 +371,11 @@ const FinancialScoreCard = ({ fund, symbol }) => {
         <div className="mt-4 border border-zinc-200 dark:border-zinc-700/50 rounded-xl overflow-hidden bg-white dark:bg-zinc-950">
             <button
                 onClick={() => setOpen(o => !o)}
-                className="w-full flex items-center justify-between px-4 py-3 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-left"
+                className="w-full flex items-center justify-between px-4 py-3 bg-zinc-100 dark:bg-[#FDD405] hover:bg-zinc-200 dark:hover:bg-[#FDD405]/90 transition-colors text-left"
             >
-                <span className="text-sm font-semibold text-zinc-900 dark:text-white">Financial Score Card</span>
-                {open ? <ChevronUp size={15} className="text-zinc-500 dark:text-zinc-400 flex-shrink-0" />
-                      : <ChevronDown size={15} className="text-zinc-500 dark:text-zinc-400 flex-shrink-0" />}
+                <span className="text-sm font-semibold text-zinc-900 dark:text-black">Financial Score Card</span>
+                {open ? <ChevronUp size={15} className="text-zinc-500 dark:text-black/70 flex-shrink-0" />
+                      : <ChevronDown size={15} className="text-zinc-500 dark:text-black/70 flex-shrink-0" />}
             </button>
             {open && (
                 <div className="p-3 grid grid-cols-1 xs:grid-cols-2 gap-3 bg-zinc-50 dark:bg-zinc-950">
@@ -472,11 +472,11 @@ const FiveYearScoreCard = ({ fund }) => {
         <div className="mt-4 border border-zinc-200 dark:border-zinc-700/50 rounded-xl overflow-hidden bg-white dark:bg-zinc-950">
             <button
                 onClick={() => setOpen(o => !o)}
-                className="w-full flex items-center justify-between px-4 py-3 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-left"
+                className="w-full flex items-center justify-between px-4 py-3 bg-zinc-100 dark:bg-[#FDD405] hover:bg-zinc-200 dark:hover:bg-[#FDD405]/90 transition-colors text-left"
             >
-                <span className="text-sm font-semibold text-zinc-900 dark:text-white">5 Year Financial Score Card</span>
-                {open ? <ChevronUp size={15} className="text-zinc-500 dark:text-zinc-400 flex-shrink-0" />
-                      : <ChevronDown size={15} className="text-zinc-500 dark:text-zinc-400 flex-shrink-0" />}
+                <span className="text-sm font-semibold text-zinc-900 dark:text-black">5 Year Financial Score Card</span>
+                {open ? <ChevronUp size={15} className="text-zinc-500 dark:text-black/70 flex-shrink-0" />
+                      : <ChevronDown size={15} className="text-zinc-500 dark:text-black/70 flex-shrink-0" />}
             </button>
             {open && (
                 <div className="p-3 grid grid-cols-1 xs:grid-cols-2 gap-3 bg-zinc-50 dark:bg-zinc-950">
@@ -623,11 +623,11 @@ export const PatternDetectionSection = ({ patternSummary }) => {
         <div className="mt-4 border border-zinc-200 dark:border-zinc-700/50 rounded-xl overflow-hidden bg-white dark:bg-zinc-950">
             <button
                 onClick={() => setOpen(o => !o)}
-                className="w-full flex items-center justify-between px-4 py-3 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-left"
+                className="w-full flex items-center justify-between px-4 py-3 bg-zinc-100 dark:bg-[#FDD405] hover:bg-zinc-200 dark:hover:bg-[#FDD405]/90 transition-colors text-left"
             >
-                <span className="text-sm font-semibold text-zinc-900 dark:text-white">Pattern Detection & Resistance Alert</span>
-                {open ? <ChevronUp size={15} className="text-zinc-500 dark:text-zinc-400 flex-shrink-0" />
-                      : <ChevronDown size={15} className="text-zinc-500 dark:text-zinc-400 flex-shrink-0" />}
+                <span className="text-sm font-semibold text-zinc-900 dark:text-black">Pattern Detection & Resistance Alert</span>
+                {open ? <ChevronUp size={15} className="text-zinc-500 dark:text-black/70 flex-shrink-0" />
+                      : <ChevronDown size={15} className="text-zinc-500 dark:text-black/70 flex-shrink-0" />}
             </button>
             {open && (
                 <div className="p-4 bg-zinc-50 dark:bg-zinc-950">
