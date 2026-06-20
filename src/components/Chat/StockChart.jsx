@@ -61,10 +61,11 @@ const fmtVolLocal = (v) => {
 
 // Real candlestick layer rendered via Recharts Customized
 const CandleLayer = ({ xAxisMap, yAxisMap, data }) => {
-    const xAxis = xAxisMap?.[0];
-    const yAxis = yAxisMap?.[0];
-    if (!xAxis || !yAxis || !data?.length) return null;
-    const bandwidth = xAxis.bandwidth ? xAxis.bandwidth() : 8;
+    // Recharts may key maps by number 0 or string "0" — handle both
+    const xAxis = xAxisMap && (xAxisMap[0] ?? xAxisMap['0'] ?? Object.values(xAxisMap)[0]);
+    const yAxis = yAxisMap && (yAxisMap[0] ?? yAxisMap['0'] ?? Object.values(yAxisMap)[0]);
+    if (!xAxis?.scale || !yAxis?.scale || !data?.length) return null;
+    const bandwidth = typeof xAxis.bandwidth === 'function' ? xAxis.bandwidth() : 8;
     const halfW = Math.max(bandwidth * 0.38, 2);
     return (
         <g>
@@ -72,11 +73,14 @@ const CandleLayer = ({ xAxisMap, yAxisMap, data }) => {
                 if (point.open == null || point.close == null || point.high == null || point.low == null) return null;
                 const isBull = point.close >= point.open;
                 const color = isBull ? '#10b981' : '#ef4444';
-                const cx = (xAxis.scale(point.date) ?? 0) + bandwidth / 2;
+                const xPos = xAxis.scale(point.date);
+                if (xPos == null || isNaN(xPos)) return null;
+                const cx = xPos + bandwidth / 2;
                 const yH = yAxis.scale(point.high);
                 const yL = yAxis.scale(point.low);
                 const bodyTop = yAxis.scale(Math.max(point.open, point.close));
                 const bodyBot = yAxis.scale(Math.min(point.open, point.close));
+                if ([yH, yL, bodyTop, bodyBot].some(v => v == null || isNaN(v))) return null;
                 const bodyH = Math.max(Math.abs(bodyBot - bodyTop), 1);
                 return (
                     <g key={i}>
@@ -430,6 +434,11 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
             );
         } else {
             // Real candlestick chart using Customized layer
+            const allHL = data.flatMap(d => [d.high, d.low].filter(v => v != null));
+            const yMin = allHL.length ? Math.min(...allHL) : 'auto';
+            const yMax = allHL.length ? Math.max(...allHL) : 'auto';
+            const pad = allHL.length ? (yMax - yMin) * 0.04 : 0;
+            const candleDomain = allHL.length ? [yMin - pad, yMax + pad] : ['auto', 'auto'];
             return (
                 <ComposedChart {...commonProps}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" className="dark:stroke-zinc-700" opacity={0.5} />
@@ -441,7 +450,7 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                         tick={{ fill: '#6b7280' }}
                     />
                     <YAxis
-                        domain={['auto', 'auto']}
+                        domain={candleDomain}
                         stroke="#9ca3af"
                         className="text-xs"
                         tick={{ fill: '#6b7280' }}
@@ -450,6 +459,8 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                     <Tooltip content={<CustomTooltip />} />
                     {patternElements.areas}
                     {patternElements.lines}
+                    {/* Hidden line forces Recharts to initialise axis scales before CandleLayer renders */}
+                    <Line dataKey="close" stroke="transparent" dot={false} legendType="none" isAnimationActive={false} />
                     <Customized component={(props) => <CandleLayer {...props} data={data} />} />
                     {patternElements.dots}
                 </ComposedChart>
