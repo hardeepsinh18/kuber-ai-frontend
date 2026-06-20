@@ -425,11 +425,11 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                 <div className="flex items-center gap-2">
                     <div className={clsx(
                         "p-1.5 rounded-lg",
-                        isPositive ? "bg-emerald-900/30" : "bg-rose-900/30"
+                        isPositive ? "bg-emerald-100 dark:bg-emerald-900/30" : "bg-rose-100 dark:bg-rose-900/30"
                     )}>
                         {isPositive
-                            ? <TrendingUp className="w-4 h-4 text-emerald-400" />
-                            : <TrendingDown className="w-4 h-4 text-rose-400" />
+                            ? <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                            : <TrendingDown className="w-4 h-4 text-rose-600 dark:text-rose-400" />
                         }
                     </div>
                     <div>
@@ -444,8 +444,8 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                 <span className={clsx(
                     "px-2.5 py-1 rounded-lg text-sm font-semibold",
                     isPositive
-                        ? "bg-emerald-900/30 text-emerald-400"
-                        : "bg-rose-900/30 text-rose-400"
+                        ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
+                        : "bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400"
                 )}>
                     {isPositive ? '+' : ''}{priceChange.percent.toFixed(2)}%
                 </span>
@@ -506,8 +506,8 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                 </div>
 
                 {atAGlance && (
-                    <div className="w-40 xl:w-44 flex-shrink-0 bg-zinc-800/40 dark:bg-zinc-800/50 rounded-xl p-3 border border-zinc-700/40 self-start">
-                        <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wide mb-3">Today's Market Stats</p>
+                    <div className="w-40 xl:w-44 flex-shrink-0 bg-zinc-100 dark:bg-zinc-800/50 rounded-xl p-3 border border-zinc-200 dark:border-zinc-700/40 self-start">
+                        <p className="text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-3">Today's Market Stats</p>
                         {[
                             atAGlance.high != null ? { label: 'High', value: `₹${Number(atAGlance.high).toLocaleString('en-IN', { maximumFractionDigits: 0 })}` } : null,
                             atAGlance.low != null ? { label: 'Low', value: `₹${Number(atAGlance.low).toLocaleString('en-IN', { maximumFractionDigits: 0 })}` } : null,
@@ -516,8 +516,8 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                             (atAGlance['52w_low'] != null && atAGlance['52w_high'] != null) ? { label: '52w', value: `₹${Number(atAGlance['52w_low']).toLocaleString('en-IN', { maximumFractionDigits: 0 })} – ₹${Number(atAGlance['52w_high']).toLocaleString('en-IN', { maximumFractionDigits: 0 })}` } : null,
                         ].filter(Boolean).map(({ label, value }) => (
                             <div key={label} className="flex justify-between items-start gap-1 mb-2 last:mb-0">
-                                <span className="text-[11px] text-zinc-500">{label}</span>
-                                <span className="text-[11px] text-zinc-200 font-medium text-right leading-tight">{value}</span>
+                                <span className="text-[11px] text-zinc-500 dark:text-zinc-500">{label}</span>
+                                <span className="text-[11px] text-zinc-900 dark:text-zinc-200 font-medium text-right leading-tight">{value}</span>
                             </div>
                         ))}
                     </div>
