@@ -147,9 +147,9 @@ const StartScreen = ({ onStartChat, onScannerResult, responseMode, setResponseMo
                                 transition={{ delay: 0.18 + i * 0.04, duration: 0.30 }}
                                 onClick={() => onStartChat(q, 'stock')}
                                 className="px-5 py-2.5 rounded-2xl text-[12.5px] font-medium
-                                           text-zinc-400 dark:text-zinc-400
+                                           text-zinc-700 dark:text-zinc-400
                                            bg-transparent
-                                           border border-zinc-300/50 dark:border-zinc-700/70
+                                           border border-zinc-300 dark:border-zinc-700/70
                                            hover:text-zinc-900 dark:hover:text-zinc-200
                                            hover:border-[#FDD405]/60 dark:hover:border-[#FDD405]/50
                                            hover:bg-amber-50/40 dark:hover:bg-amber-950/15
