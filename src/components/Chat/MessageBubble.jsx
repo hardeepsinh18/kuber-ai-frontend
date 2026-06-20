@@ -294,7 +294,7 @@ const ChartSection = ({ chartData, resolveSymbol, patternSummary, atAGlance }) =
     const title = firstSymbol ? `${firstSymbol} Chart` : 'Stock Chart';
 
     return (
-        <div className="mb-4 border border-zinc-200 dark:border-zinc-700/50 rounded-xl overflow-hidden bg-white dark:bg-zinc-950">
+        <div className="mb-4 border border-zinc-200 dark:border-zinc-700/50 rounded-xl overflow-hidden bg-white dark:bg-[#1C1B15]">
             <button
                 onClick={() => setOpen(o => !o)}
                 className="w-full flex items-center justify-between px-4 py-3 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-left"
@@ -330,7 +330,7 @@ const IndicatorsTable = ({ rows, asOfDate }) => {
         : null;
 
     return (
-        <div className="mt-4 border border-zinc-200 dark:border-zinc-700/50 rounded-xl overflow-hidden bg-white dark:bg-zinc-950">
+        <div className="mt-4 border border-zinc-200 dark:border-zinc-700/50 rounded-xl overflow-hidden bg-white dark:bg-[#1C1B15]">
             {/* Toggle header */}
             <button
                 onClick={() => setOpen(o => !o)}
@@ -559,7 +559,7 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                         const volStr = fmtVol(aag.volume);
                         const mcapStr = fmtMcap(aag.market_cap);
                         return (
-                            <div className="mb-4 rounded-xl border border-zinc-200/60 dark:border-zinc-700/60 bg-zinc-50 dark:bg-zinc-900/60 overflow-hidden">
+                            <div className="mb-4 rounded-xl border border-zinc-200/60 dark:border-zinc-700/60 bg-zinc-50 dark:bg-[#1C1B15] overflow-hidden">
                                 {/* Main row: logo, name, price, change */}
                                 <div className="flex items-center gap-3 px-4 pt-3 pb-3">
                                     {/* Company logo / letter avatar */}
@@ -820,7 +820,7 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                                     </blockquote>
                                 ),
                                 table: ({ children }) => (
-                                    <div className="my-6 overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900/30 shadow-sm">
+                                    <div className="my-6 overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-[#1C1B15] shadow-sm">
                                         <table className="min-w-full border-collapse">
                                             {children}
                                         </table>
