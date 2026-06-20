@@ -6,6 +6,8 @@ import {
     Area,
     BarChart,
     Bar,
+    ComposedChart,
+    Customized,
     XAxis,
     YAxis,
     CartesianGrid,
@@ -16,7 +18,7 @@ import {
     ReferenceDot,
     ReferenceArea,
 } from 'recharts';
-import { TrendingUp, TrendingDown, Activity, Calendar, BarChart3, LineChart as LineChartIcon } from 'lucide-react';
+import { TrendingUp, TrendingDown, Activity, Calendar, BarChart3, BarChart2, LineChart as LineChartIcon } from 'lucide-react';
 import { clsx } from 'clsx';
 
 /**
@@ -57,8 +59,39 @@ const fmtVolLocal = (v) => {
     return String(v);
 };
 
+// Real candlestick layer rendered via Recharts Customized
+const CandleLayer = ({ xAxisMap, yAxisMap, data }) => {
+    const xAxis = xAxisMap?.[0];
+    const yAxis = yAxisMap?.[0];
+    if (!xAxis || !yAxis || !data?.length) return null;
+    const bandwidth = xAxis.bandwidth ? xAxis.bandwidth() : 8;
+    const halfW = Math.max(bandwidth * 0.38, 2);
+    return (
+        <g>
+            {data.map((point, i) => {
+                if (point.open == null || point.close == null || point.high == null || point.low == null) return null;
+                const isBull = point.close >= point.open;
+                const color = isBull ? '#10b981' : '#ef4444';
+                const cx = (xAxis.scale(point.date) ?? 0) + bandwidth / 2;
+                const yH = yAxis.scale(point.high);
+                const yL = yAxis.scale(point.low);
+                const bodyTop = yAxis.scale(Math.max(point.open, point.close));
+                const bodyBot = yAxis.scale(Math.min(point.open, point.close));
+                const bodyH = Math.max(Math.abs(bodyBot - bodyTop), 1);
+                return (
+                    <g key={i}>
+                        <line x1={cx} y1={yH} x2={cx} y2={yL} stroke={color} strokeWidth={1} />
+                        <rect x={cx - halfW} y={bodyTop} width={halfW * 2} height={bodyH}
+                              fill={isBull ? color + '44' : color} stroke={color} strokeWidth={1} />
+                    </g>
+                );
+            })}
+        </g>
+    );
+};
+
 const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAGlance = null }) => {
-    const [chartType, setChartType] = useState('area'); // 'line', 'area', 'candle'
+    const [chartType, setChartType] = useState('area'); // 'line', 'area', 'ohlc', 'candle'
 
     if (!chartData) return null;
     if (chartData.error) {
@@ -381,19 +414,33 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                     {patternElements.dots}
                 </AreaChart>
             );
-        } else {
-            // Candlestick approximation with bars (simplified)
+        } else if (chartType === 'ohlc') {
             return (
                 <BarChart {...commonProps}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" className="dark:stroke-zinc-700" opacity={0.5} />
-                    <XAxis 
-                        dataKey="date" 
+                    <XAxis dataKey="date" tickFormatter={formatDate} stroke="#9ca3af" tick={{ fill: '#6b7280' }} />
+                    <YAxis domain={['auto', 'auto']} stroke="#9ca3af" tick={{ fill: '#6b7280' }} tickFormatter={(v) => `₹${v.toFixed(0)}`} />
+                    <Tooltip content={<CustomTooltip />} />
+                    {patternElements.areas}
+                    {patternElements.lines}
+                    <Bar dataKey="high" fill="#10b981" opacity={0.5} animationDuration={800} />
+                    <Bar dataKey="low" fill="#ef4444" opacity={0.5} animationDuration={800} />
+                    {patternElements.dots}
+                </BarChart>
+            );
+        } else {
+            // Real candlestick chart using Customized layer
+            return (
+                <ComposedChart {...commonProps}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" className="dark:stroke-zinc-700" opacity={0.5} />
+                    <XAxis
+                        dataKey="date"
                         tickFormatter={formatDate}
                         stroke="#9ca3af"
                         className="text-xs"
                         tick={{ fill: '#6b7280' }}
                     />
-                    <YAxis 
+                    <YAxis
                         domain={['auto', 'auto']}
                         stroke="#9ca3af"
                         className="text-xs"
@@ -401,19 +448,11 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                         tickFormatter={(value) => `₹${value.toFixed(0)}`}
                     />
                     <Tooltip content={<CustomTooltip />} />
-                    <Bar 
-                        dataKey="high" 
-                        fill="#10b981"
-                        opacity={0.6}
-                        animationDuration={800}
-                    />
-                    <Bar 
-                        dataKey="low" 
-                        fill="#ef4444"
-                        opacity={0.6}
-                        animationDuration={800}
-                    />
-                </BarChart>
+                    {patternElements.areas}
+                    {patternElements.lines}
+                    <Customized component={(props) => <CandleLayer {...props} data={data} />} />
+                    {patternElements.dots}
+                </ComposedChart>
             );
         }
     };
@@ -482,8 +521,22 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                     Line
                 </button>
                 <button
+                    onClick={() => setChartType('ohlc')}
+                    aria-label="OHLC bar chart"
+                    aria-pressed={chartType === 'ohlc'}
+                    className={clsx(
+                        "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
+                        chartType === 'ohlc'
+                            ? "bg-[#FDD405] text-black font-semibold"
+                            : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/60"
+                    )}
+                >
+                    <BarChart3 className="w-4 h-4" />
+                    OHFL
+                </button>
+                <button
                     onClick={() => setChartType('candle')}
-                    aria-label="OHLC candlestick chart"
+                    aria-label="Candlestick chart"
                     aria-pressed={chartType === 'candle'}
                     className={clsx(
                         "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
@@ -492,8 +545,8 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                             : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/60"
                     )}
                 >
-                    <BarChart3 className="w-4 h-4" />
-                    OHLC
+                    <BarChart2 className="w-4 h-4" />
+                    Candles
                 </button>
             </div>
 
@@ -509,6 +562,7 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                     <div className="w-40 xl:w-44 flex-shrink-0 bg-zinc-100 dark:bg-zinc-800/50 rounded-xl p-3 border border-zinc-200 dark:border-zinc-700/40 self-start">
                         <p className="text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-3">Today's Market Stats</p>
                         {[
+                            atAGlance.open != null ? { label: 'Open', value: `₹${Number(atAGlance.open).toLocaleString('en-IN', { maximumFractionDigits: 0 })}` } : null,
                             atAGlance.high != null ? { label: 'High', value: `₹${Number(atAGlance.high).toLocaleString('en-IN', { maximumFractionDigits: 0 })}` } : null,
                             atAGlance.low != null ? { label: 'Low', value: `₹${Number(atAGlance.low).toLocaleString('en-IN', { maximumFractionDigits: 0 })}` } : null,
                             (atAGlance.high != null && atAGlance.low != null) ? { label: 'Range', value: `₹${Number(atAGlance.low).toLocaleString('en-IN', { maximumFractionDigits: 0 })} – ₹${Number(atAGlance.high).toLocaleString('en-IN', { maximumFractionDigits: 0 })}` } : null,
