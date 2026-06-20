@@ -37,7 +37,7 @@ const RatingBadge = ({ label, className }) => {
 /* ─── Metric card shell ──────────────────────────────────────────────────── */
 const MetricCard = ({ title, subtitle, badge, children, bottomLabel, bottomValue, className }) => (
     <div className={clsx(
-        'bg-white dark:bg-[#1C1B15] rounded-xl border border-[#FDD405] p-3 flex flex-col',
+        'bg-white dark:bg-zinc-900 rounded-xl border border-[#FDD405] p-3 flex flex-col',
         className
     )}>
         <div className="flex items-start justify-between mb-2 gap-2">
