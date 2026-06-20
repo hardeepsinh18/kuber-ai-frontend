@@ -254,85 +254,27 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
         );
     };
 
-    // Build pattern overlay elements for injection into any chart type
+    // Build pattern overlay elements — only clean horizontal support/resistance lines
     const patternElements = useMemo(() => {
-        if (process.env.NODE_ENV !== 'production') {
-            console.log('[StockChart] patternOverlays:', patternOverlays);
-        }
         if (!patternOverlays) return { lines: [], dots: [], areas: [], hasPatterns: false };
 
         const lines = [];
-        const dots = [];
-        const areas = [];
 
-        // Support / resistance lines from overlay_lines
+        // Only show simple overlay_lines (support/resistance) — no dots, no shaded areas
         (patternOverlays.overlay_lines || []).forEach((line, i) => {
             lines.push(
                 <ReferenceLine
                     key={`ol-${i}`}
                     y={line.price}
                     stroke={line.color}
-                    strokeDasharray={line.dash || '3 3'}
+                    strokeDasharray={line.dash || '4 3'}
                     strokeWidth={1.5}
                     label={{ value: line.label, position: 'insideTopRight', fill: line.color, fontSize: 10 }}
                 />
             );
         });
 
-        // Per-pattern drawings
-        (patternOverlays.chart_patterns_drawing || []).forEach((p, pi) => {
-            const d = p.drawing;
-            if (!d) return;
-
-            // Shaded region
-            if (d.region?.start_date && d.region?.end_date) {
-                const x1 = findDate(d.region.start_date, dates);
-                const x2 = findDate(d.region.end_date, dates);
-                if (x1 && x2) {
-                    areas.push(
-                        <ReferenceArea
-                            key={`area-${pi}`}
-                            x1={x1} x2={x2}
-                            fill={d.region.color}
-                            fillOpacity={1}
-                        />
-                    );
-                }
-            }
-
-            // Horizontal lines (neckline, target, resistance)
-            (d.h_lines || []).forEach((line, li) => {
-                lines.push(
-                    <ReferenceLine
-                        key={`hl-${pi}-${li}`}
-                        y={line.price}
-                        stroke={line.color}
-                        strokeDasharray={line.dash || '5 3'}
-                        strokeWidth={1.5}
-                        label={{ value: line.label, position: 'insideTopRight', fill: line.color, fontSize: 10 }}
-                    />
-                );
-            });
-
-            // Key point dots (head, shoulders, peaks, troughs)
-            (d.key_points || []).forEach((pt, ki) => {
-                const x = findDate(pt.date, dates);
-                if (!x) return;
-                dots.push(
-                    <ReferenceDot
-                        key={`dot-${pi}-${ki}`}
-                        x={x} y={pt.price}
-                        r={5}
-                        fill={pt.color}
-                        stroke="#fff"
-                        strokeWidth={1.5}
-                        label={{ value: pt.label, position: 'top', fill: pt.color, fontSize: 10, fontWeight: 600 }}
-                    />
-                );
-            });
-        });
-
-        return { lines, dots, areas, hasPatterns: lines.length > 0 || dots.length > 0 || areas.length > 0 };
+        return { lines, dots: [], areas: [], hasPatterns: lines.length > 0 };
     }, [patternOverlays, dates]);
 
     // Render different chart types
@@ -589,30 +531,6 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                 )}
             </div>
 
-            {/* Pattern badges */}
-            {patternElements.hasPatterns && patternOverlays?.chart_patterns_drawing?.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-4">
-                    {patternOverlays.chart_patterns_drawing.map((p, i) => (
-                        <span
-                            key={i}
-                            className={clsx(
-                                "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold",
-                                p.direction === 'bullish'
-                                    ? "bg-emerald-50 dark:bg-emerald-900/25 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800"
-                                    : "bg-rose-50 dark:bg-rose-900/25 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800"
-                            )}
-                        >
-                            <span className={p.direction === 'bullish' ? 'text-emerald-500' : 'text-rose-500'}>
-                                {p.direction === 'bullish' ? '▲' : '▼'}
-                            </span>
-                            {p.name}
-                            {p.target_projection && (
-                                <span className="opacity-70">→ ₹{p.target_projection.toLocaleString('en-IN')}</span>
-                            )}
-                        </span>
-                    ))}
-                </div>
-            )}
 
             {/* Footer info */}
             {chart_metadata.start_date && chart_metadata.end_date && (
