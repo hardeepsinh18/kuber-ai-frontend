@@ -637,7 +637,7 @@ export const PatternDetectionSection = ({ patternSummary }) => {
                     {candlesticks.length > 0 && (
                         <div className="grid grid-cols-2 gap-3">
                             {candlesticks.slice(0, 4).map((name, i) => (
-                                <div key={i} className="bg-white dark:bg-[#1C1B15] border border-[#FDD405] rounded-xl p-3">
+                                <div key={i} className="bg-white dark:bg-zinc-900 border border-[#FDD405] rounded-xl p-3">
                                     {resistance != null && (
                                         <div className="flex justify-end mb-1">
                                             <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/50 border border-rose-300 dark:border-rose-700/40 text-[10px] font-semibold text-rose-600 dark:text-rose-300">
