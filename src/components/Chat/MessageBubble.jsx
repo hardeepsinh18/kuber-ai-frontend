@@ -248,7 +248,7 @@ const TechnicalSection = ({ technicalSummary, patternSummary }) => {
 
 // ─── Collapsible Chart Section ───────────────────────────────────────────────
 const ChartSection = ({ chartData, resolveSymbol, patternSummary, atAGlance }) => {
-    const [open, setOpen] = React.useState(true);
+    const [open, setOpen] = React.useState(false);
     if (!chartData) return null;
 
     const charts = Array.isArray(chartData)

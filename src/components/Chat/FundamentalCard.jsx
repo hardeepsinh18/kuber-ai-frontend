@@ -339,7 +339,7 @@ const OverallHealthScore = ({ score, label, summary, ratingsSum }) => {
 
 /* ─── FINANCIAL SCORE CARD (collapsible 2-col grid) ─────────────────────── */
 const FinancialScoreCard = ({ fund, symbol }) => {
-    const [open, setOpen] = React.useState(true);
+    const [open, setOpen] = React.useState(false);
     const ratios = fund?.ratios ?? {};
     const hist   = fund?.historical ?? null;
     const years  = hist?.years ?? ['FY22', 'FY23', 'FY24', 'FY25', 'FY26'];
@@ -609,7 +609,7 @@ const CandleChart = ({ patternName }) => {
 
 /* ─── PATTERN DETECTION & RESISTANCE ALERT ───────────────────────────────── */
 export const PatternDetectionSection = ({ patternSummary }) => {
-    const [open, setOpen] = React.useState(true);
+    const [open, setOpen] = React.useState(false);
     if (!patternSummary) return null;
 
     const candlesticks = Array.isArray(patternSummary.candlestick) ? patternSummary.candlestick : [];
@@ -675,7 +675,7 @@ const computeRatings = (ratios) => {
 
 /* ─── Kuber AI Score Banner ──────────────────────────────────────────────── */
 const KuberScoreBanner = ({ horizon, tech, fund }) => {
-    const [showBreakdown, setShowBreakdown] = useState(true);
+    const [showBreakdown, setShowBreakdown] = useState(false);
     if (!horizon) return null;
 
     const { label, blended_score, weights, note } = horizon;
@@ -817,7 +817,7 @@ const SIG_PALETTE = {
 };
 
 const TechnicalScoreCard = ({ tech }) => {
-    const [open, setOpen] = useState(true);
+    const [open, setOpen] = useState(false);
     if (!tech) return null;
 
     const { score, label, weekly_bias, modules, risk_flags } = tech;
