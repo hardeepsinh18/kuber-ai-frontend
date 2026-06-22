@@ -673,6 +673,126 @@ const computeRatings = (ratios) => {
     return { strong, watch, risk };
 };
 
+/* ─── Kuber AI Score Banner ──────────────────────────────────────────────── */
+const KuberScoreBanner = ({ horizon, tech, fund }) => {
+    const [showBreakdown, setShowBreakdown] = useState(true);
+    if (!horizon) return null;
+
+    const { label, blended_score, weights, note } = horizon;
+    const score = blended_score ?? 0;
+
+    const scoreColor =
+        score >= 70 ? '#22c55e' :
+        score >= 50 ? '#FDD405' :
+        score >= 35 ? '#fb923c' : '#ef4444';
+
+    const verdict =
+        score >= 70 ? 'Strong Pick' :
+        score >= 55 ? 'Watchlist' :
+        score >= 40 ? 'Caution' : 'Avoid';
+
+    const isShort = label === 'Short Term';
+    const icon = isShort ? '⚡' : '📅';
+
+    // SVG circular gauge
+    const r = 34, cx = 44, cy = 44, circ = 2 * Math.PI * r;
+    const filled = (score / 100) * circ;
+
+    return (
+        <div className="mt-3 rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800">
+            {/* Top accent bar */}
+            <div className="h-[3px]" style={{ background: `linear-gradient(90deg, ${scoreColor}, ${scoreColor}40)` }} />
+
+            {/* Banner body */}
+            <div className="px-4 py-4 bg-zinc-50 dark:bg-zinc-900/60">
+                {/* Label row */}
+                <div className="flex items-center gap-2 mb-3">
+                    <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 dark:text-zinc-500">
+                        Kuber AI Score
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold"
+                          style={{ background: `${scoreColor}18`, color: scoreColor }}>
+                        {icon} {label}
+                    </span>
+                </div>
+
+                {/* Score row */}
+                <div className="flex items-center gap-4">
+                    {/* Circular gauge */}
+                    <div className="flex-shrink-0">
+                        <svg viewBox="0 0 88 88" width={80} height={80}>
+                            <circle cx={cx} cy={cy} r={r} fill="none"
+                                stroke="rgba(128,128,128,0.15)" strokeWidth={7} />
+                            <circle cx={cx} cy={cy} r={r} fill="none"
+                                stroke={scoreColor} strokeWidth={7}
+                                strokeDasharray={`${filled} ${circ}`} strokeLinecap="round"
+                                transform={`rotate(-90 ${cx} ${cy})`} />
+                            <text x={cx} y={cy - 3} textAnchor="middle"
+                                fill={scoreColor} fontSize={20} fontWeight="800"
+                                fontFamily="Inter,sans-serif">{score}</text>
+                            <text x={cx} y={cy + 11} textAnchor="middle"
+                                fill="rgba(128,128,128,0.7)" fontSize={9}
+                                fontFamily="Inter,sans-serif">/100</text>
+                        </svg>
+                    </div>
+
+                    {/* Text side */}
+                    <div className="flex-1 min-w-0">
+                        <div className="text-[18px] font-extrabold leading-tight mb-1"
+                             style={{ color: scoreColor }}>{verdict}</div>
+                        <div className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 mb-1.5">
+                            {label} Verdict
+                            <span className="text-zinc-400 dark:text-zinc-600 font-normal"> · {weights}</span>
+                        </div>
+                        {note && (
+                            <div className="text-[11px] text-zinc-500 dark:text-zinc-500 leading-relaxed">
+                                {note}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Component scores row */}
+                {(tech || fund) && (
+                    <div className="mt-3 pt-3 border-t border-zinc-200 dark:border-zinc-800 flex gap-3">
+                        {tech && (
+                            <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl"
+                                 style={{ background: 'rgba(128,128,128,0.06)' }}>
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Tech</span>
+                                <span className="text-[13px] font-bold ml-auto"
+                                      style={{ color: tech.score >= 70 ? '#22c55e' : tech.score >= 50 ? '#FDD405' : '#ef4444' }}>
+                                    {tech.score}/100
+                                </span>
+                            </div>
+                        )}
+                        {fund && fund.score != null && (
+                            <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl"
+                                 style={{ background: 'rgba(128,128,128,0.06)' }}>
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Fund</span>
+                                <span className="text-[13px] font-bold ml-auto"
+                                      style={{ color: (fund.score * 10) >= 70 ? '#22c55e' : (fund.score * 10) >= 50 ? '#FDD405' : '#ef4444' }}>
+                                    {Math.round(fund.score * 10)}/100
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Toggle */}
+                <button
+                    onClick={() => setShowBreakdown(o => !o)}
+                    className="mt-3 text-[11px] font-medium text-zinc-400 dark:text-zinc-500
+                               hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors">
+                    {showBreakdown ? 'Hide' : 'Show'} detailed breakdown ↕
+                </button>
+            </div>
+
+            {/* Breakdown — Technical Engine + Fundamental Engine */}
+            {showBreakdown && <div className="px-4 pb-4 bg-white dark:bg-[#111] space-y-0" data-breakdown />}
+        </div>
+    );
+};
+
 /* ─── Technical Score Card ───────────────────────────────────────────────── */
 const SIGNAL_NAMES = {
     price_structure: 'Price Structure',
@@ -795,8 +915,9 @@ const TechnicalScoreCard = ({ tech }) => {
 
 /* ─── DEFAULT EXPORT: composed full fundamental block ───────────────────── */
 export default function FundamentalScoreCard({ scoreCard, symbol }) {
-    const fund = scoreCard?.fundamental;
-    const tech = scoreCard?.technical;
+    const fund    = scoreCard?.fundamental;
+    const tech    = scoreCard?.technical;
+    const horizon = scoreCard?.horizon;
     if (!fund && !tech) return null;
 
     const ratingsSum = fund?.ratings_summary
@@ -804,14 +925,17 @@ export default function FundamentalScoreCard({ scoreCard, symbol }) {
 
     return (
         <>
-            {/* Technical Score Card */}
+            {/* Kuber AI Score — blended horizon banner (only when horizon query) */}
+            {horizon && <KuberScoreBanner horizon={horizon} tech={tech} fund={fund} />}
+
+            {/* Technical Engine */}
             {tech && <TechnicalScoreCard tech={tech} />}
 
-            {/* Overall Health Score (yellow banner) */}
+            {/* Fundamental Engine — health banner + metrics grid */}
             {fund?.score != null && (
                 <div className="mt-4">
                     <OverallHealthScore
-                        score={fund.score}
+                        score={fund.score * 10}
                         label={fund.label}
                         summary={fund.summary}
                         ratingsSum={ratingsSum}
@@ -819,10 +943,7 @@ export default function FundamentalScoreCard({ scoreCard, symbol }) {
                 </div>
             )}
 
-            {/* Financial Score Card */}
             {fund && <FinancialScoreCard fund={fund} symbol={symbol} />}
-
-            {/* 5 Year Financial Score Card */}
             {fund?.historical && <FiveYearScoreCard fund={fund} />}
         </>
     );
