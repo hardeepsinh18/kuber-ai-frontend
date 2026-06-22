@@ -734,7 +734,11 @@ export const PatternDetectionSection = ({ patternSummary, chartData = null }) =>
     const [open, setOpen] = React.useState(false);
     if (!patternSummary) return null;
 
-    const candlesticks = Array.isArray(patternSummary.candlestick) ? patternSummary.candlestick : [];
+    // Merge candlestick + chart patterns, deduplicate, cap at 4
+    const candlesticks = [
+        ...(Array.isArray(patternSummary.candlestick)     ? patternSummary.candlestick     : []),
+        ...(Array.isArray(patternSummary.chart_patterns)  ? patternSummary.chart_patterns  : []),
+    ].filter((name, i, arr) => arr.indexOf(name) === i);
     const summary      = patternSummary.summary;
     const resistance   = patternSummary.resistance;
     const support      = patternSummary.support;
