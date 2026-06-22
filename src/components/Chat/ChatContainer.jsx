@@ -723,14 +723,12 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                     {messages.filter(msg => msg && msg.role).map((msg) => (
                         <React.Fragment key={msg.id}>
                             {msg.role === 'ai' && msg.thinkingSteps && msg.thinkingSteps.length > 0 && (
-                                <div className="px-4 sm:px-6 md:px-8 pb-2">
-                                    <div className="w-full max-w-4xl mx-auto">
-                                        <ThinkingPaths
-                                            steps={msg.thinkingSteps}
-                                            isThinking={false}
-                                            processingTime={msg.processingTime || 0}
-                                        />
-                                    </div>
+                                <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 md:px-8 pb-2">
+                                    <ThinkingPaths
+                                        steps={msg.thinkingSteps}
+                                        isThinking={false}
+                                        processingTime={msg.processingTime || 0}
+                                    />
                                 </div>
                             )}
 
@@ -763,10 +761,8 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                     ))}
 
                     {showThinking && (
-                        <div className="px-4 sm:px-6 md:px-8 pb-2">
-                            <div className="w-full max-w-4xl mx-auto">
-                                <ThinkingPaths isThinking={true} />
-                            </div>
+                        <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 md:px-8 pb-2">
+                            <ThinkingPaths isThinking={true} />
                         </div>
                     )}
 
