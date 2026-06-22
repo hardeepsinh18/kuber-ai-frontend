@@ -484,7 +484,7 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                 {/* Footer */}
                 <div className="px-5 py-3 border-t border-zinc-100 dark:border-white/8 flex-shrink-0">
                     <p className="text-[11px] text-zinc-400 dark:text-zinc-600 text-center">
-                        Top 200 NSE stocks · Live yfinance data · Results in 60–120 seconds
+                        Nifty 500 or All NSE · Real market data · Top results by signal strength
                     </p>
                 </div>
             </div>
