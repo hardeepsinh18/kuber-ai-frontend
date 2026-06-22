@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
     LineChart,
     Line,
@@ -104,9 +104,23 @@ const CANDLE_RANGES = [
     { label: '1Y', bars: 252 },
 ];
 
+const BAR_PX = 11; // pixels per candle in scroll mode
+
 const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAGlance = null }) => {
     const [chartType, setChartType] = useState('area');
     const [candleRange, setCandleRange] = useState(66); // default 3M
+    const candleScrollRef = useRef(null);
+
+    // Auto-scroll to latest (right end) whenever candle view activates or range changes
+    useEffect(() => {
+        if (chartType !== 'candle') return;
+        const t = setTimeout(() => {
+            if (candleScrollRef.current) {
+                candleScrollRef.current.scrollLeft = candleScrollRef.current.scrollWidth;
+            }
+        }, 80);
+        return () => clearTimeout(t);
+    }, [chartType, candleRange, chartData]);
 
     if (!chartData) return null;
     if (chartData.error) {
@@ -541,10 +555,29 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
 
             {/* Chart + Today's Market Stats side panel */}
             <div className="flex gap-4">
-                <div className={clsx("h-[260px] sm:h-[340px]", atAGlance ? "flex-1" : "w-full")}>
-                    <ResponsiveContainer width="100%" height="100%">
-                        {renderChart()}
-                    </ResponsiveContainer>
+                <div className={clsx("h-[260px] sm:h-[340px] overflow-hidden", atAGlance ? "flex-1" : "w-full")}>
+                    {chartType === 'candle' ? (
+                        /* Scrollable candle container — each bar gets BAR_PX wide, scroll to latest */
+                        <div
+                            ref={candleScrollRef}
+                            className="h-full overflow-x-auto overflow-y-hidden"
+                            style={{ scrollbarWidth: 'thin', scrollbarColor: '#374151 transparent' }}
+                        >
+                            <div style={{
+                                width: `${Math.max(Math.min(data.length, candleRange) * BAR_PX, 400)}px`,
+                                minWidth: '100%',
+                                height: '100%',
+                            }}>
+                                <ResponsiveContainer width="100%" height="100%">
+                                    {renderChart()}
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    ) : (
+                        <ResponsiveContainer width="100%" height="100%">
+                            {renderChart()}
+                        </ResponsiveContainer>
+                    )}
                 </div>
 
                 {atAGlance && (
