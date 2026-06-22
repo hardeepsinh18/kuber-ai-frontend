@@ -442,8 +442,17 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
+                    {atAGlance?.logo_url ? (
+                        <img
+                            src={atAGlance.logo_url}
+                            alt={symbol}
+                            className="w-8 h-8 rounded-lg object-contain bg-white border border-zinc-200/60 dark:border-zinc-700/40 flex-shrink-0"
+                            onError={e => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'flex'; }}
+                        />
+                    ) : null}
                     <div className={clsx(
                         "p-1.5 rounded-lg",
+                        atAGlance?.logo_url ? "hidden" : "",
                         isPositive ? "bg-emerald-100 dark:bg-emerald-900/30" : "bg-rose-100 dark:bg-rose-900/30"
                     )}>
                         {isPositive
