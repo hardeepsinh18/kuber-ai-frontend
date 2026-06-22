@@ -770,8 +770,8 @@ const KuberScoreBanner = ({ horizon, tech, fund }) => {
                                  style={{ background: 'rgba(128,128,128,0.06)' }}>
                                 <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Fund</span>
                                 <span className="text-[13px] font-bold ml-auto"
-                                      style={{ color: (fund.score * 10) >= 70 ? '#22c55e' : (fund.score * 10) >= 50 ? '#FDD405' : '#ef4444' }}>
-                                    {Math.round(fund.score * 10)}/100
+                                      style={{ color: fund.score >= 70 ? '#22c55e' : fund.score >= 50 ? '#FDD405' : '#ef4444' }}>
+                                    {Math.round(fund.score)}/100
                                 </span>
                             </div>
                         )}
@@ -935,7 +935,7 @@ export default function FundamentalScoreCard({ scoreCard, symbol }) {
             {fund?.score != null && (
                 <div className="mt-4">
                     <OverallHealthScore
-                        score={fund.score * 10}
+                        score={fund.score}
                         label={fund.label}
                         summary={fund.summary}
                         ratingsSum={ratingsSum}
