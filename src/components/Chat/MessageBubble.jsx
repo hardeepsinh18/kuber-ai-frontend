@@ -325,11 +325,16 @@ const IndicatorsTable = ({ rows, asOfDate }) => {
             {open && (
                 <div className="px-3 pb-3 pt-2">
                     <div className="overflow-x-auto rounded-lg overflow-hidden border border-[#FDD405]">
-                        <table className="w-full text-[13px] border-collapse">
+                        <table className="w-full text-[13px] border-collapse table-fixed">
+                            <colgroup>
+                                <col className="w-1/4" />
+                                <col className="w-1/4" />
+                                <col className="w-1/2" />
+                            </colgroup>
                             <thead>
                                 <tr className="bg-[#FDD405]">
-                                    <th className="text-center px-4 py-2.5 text-[13px] font-bold text-black w-36">Indicator</th>
-                                    <th className="text-center px-4 py-2.5 text-[13px] font-bold text-black w-36">Value</th>
+                                    <th className="text-center px-4 py-2.5 text-[13px] font-bold text-black">Indicator</th>
+                                    <th className="text-center px-4 py-2.5 text-[13px] font-bold text-black">Value</th>
                                     <th className="text-center px-4 py-2.5 text-[13px] font-bold text-black">Signal</th>
                                 </tr>
                             </thead>
@@ -339,13 +344,13 @@ const IndicatorsTable = ({ rows, asOfDate }) => {
                                         key={i}
                                         className="border-b border-[#FDD405] last:border-0 hover:bg-zinc-50 dark:hover:bg-zinc-800/20 transition-colors"
                                     >
-                                        <td className="px-4 py-2 font-medium text-zinc-800 dark:text-zinc-200 whitespace-nowrap text-center">
+                                        <td className="px-4 py-2 font-medium text-zinc-800 dark:text-zinc-200 text-center">
                                             {row.indicator}
                                         </td>
-                                        <td className="px-4 py-2 text-center font-mono text-zinc-900 dark:text-white whitespace-nowrap">
+                                        <td className="px-4 py-2 text-center font-mono text-zinc-900 dark:text-white">
                                             {row.value || '—'}
                                         </td>
-                                        <td className="px-4 py-2 text-zinc-600 dark:text-zinc-300 whitespace-nowrap text-center">
+                                        <td className="px-4 py-2 text-zinc-600 dark:text-zinc-300 text-center">
                                             {row.signal || '—'}
                                         </td>
                                     </tr>
