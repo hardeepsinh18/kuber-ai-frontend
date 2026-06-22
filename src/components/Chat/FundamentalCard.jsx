@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     BarChart, Bar, LineChart, Line, Cell,
     XAxis, ResponsiveContainer,
@@ -673,6 +673,126 @@ const computeRatings = (ratios) => {
     return { strong, watch, risk };
 };
 
+/* ─── Technical Score Card ───────────────────────────────────────────────── */
+const SIGNAL_NAMES = {
+    price_structure: 'Price Structure',
+    ema_stack:       'EMA Stack',
+    breakout:        'Breakout',
+    volume_context:  'Volume',
+    rsi:             'RSI',
+    macd:            'MACD',
+    volatility:      'Volatility',
+    weekly_trend:    'Weekly Trend',
+    sentiment:       'Sentiment',
+    risk_flags:      'Risk Flags',
+    sma_regime:      'SMA Regime',
+};
+
+const SIG_PALETTE = {
+    Exceptional: { bg: 'rgba(34,197,94,0.10)',  color: '#22c55e' },
+    Strong:      { bg: 'rgba(74,222,128,0.08)',  color: '#4ade80' },
+    Average:     { bg: 'rgba(253,212,5,0.09)',   color: '#FDD405' },
+    Weak:        { bg: 'rgba(251,146,60,0.10)',  color: '#fb923c' },
+    Poor:        { bg: 'rgba(239,68,68,0.10)',   color: '#ef4444' },
+};
+
+const TechnicalScoreCard = ({ tech }) => {
+    const [open, setOpen] = useState(true);
+    if (!tech) return null;
+
+    const { score, label, weekly_bias, modules, risk_flags } = tech;
+    const signals = modules?.v22_signals || {};
+
+    const scoreColor =
+        score >= 70 ? '#22c55e' :
+        score >= 50 ? '#FDD405' :
+        score >= 35 ? '#fb923c' : '#ef4444';
+
+    const biasMap = {
+        WEEKLY_BULLISH: { text: '↑ Weekly Bullish', color: '#22c55e' },
+        WEEKLY_NEUTRAL: { text: '→ Weekly Neutral', color: '#FDD405' },
+        WEEKLY_BEARISH: { text: '↓ Weekly Bearish', color: '#ef4444' },
+    };
+    const bias = biasMap[weekly_bias] || { text: weekly_bias || '—', color: '#FDD405' };
+
+    return (
+        <div className="mt-3 rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800">
+            <button
+                onClick={() => setOpen(o => !o)}
+                className="w-full flex items-center justify-between px-4 py-3
+                           bg-zinc-50 dark:bg-zinc-900/80
+                           hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors">
+                <span className="text-sm font-semibold text-zinc-900 dark:text-white">Technical Score Card</span>
+                <span className="text-zinc-400 text-xs">{open ? '∧' : '∨'}</span>
+            </button>
+
+            {open && (
+                <div className="p-4 bg-white dark:bg-[#141414] space-y-3">
+
+                    {/* Score banner */}
+                    <div className="flex items-center justify-between p-3 rounded-xl"
+                         style={{ background: `${scoreColor}12`, border: `1.5px solid ${scoreColor}30` }}>
+                        <div>
+                            <div className="text-[10px] text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1">Technical Quality Score</div>
+                            <div className="text-3xl font-extrabold leading-none" style={{ color: scoreColor }}>{score}<span className="text-base font-semibold opacity-60">/100</span></div>
+                            <div className="text-xs font-bold mt-1" style={{ color: scoreColor }}>{label}</div>
+                        </div>
+                        <div className="flex flex-col items-end gap-2">
+                            <span className="text-[11px] px-2.5 py-1 rounded-full font-semibold"
+                                  style={{ background: `${bias.color}15`, color: bias.color }}>
+                                {bias.text}
+                            </span>
+                            {risk_flags?.length > 0 && (
+                                <span className="text-[11px] px-2.5 py-1 rounded-full font-semibold"
+                                      style={{ background: 'rgba(239,68,68,0.10)', color: '#ef4444' }}>
+                                    ⚠ {risk_flags.length} risk flag{risk_flags.length > 1 ? 's' : ''}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Signal tiles */}
+                    {Object.keys(signals).length > 0 && (
+                        <div className="grid grid-cols-2 gap-2">
+                            {Object.entries(signals).map(([key, sig]) => {
+                                const p = SIG_PALETTE[sig.label] || SIG_PALETTE.Average;
+                                return (
+                                    <div key={key}
+                                         className="flex items-center justify-between px-3 py-2.5 rounded-xl border border-zinc-100 dark:border-zinc-800/50"
+                                         style={{ background: p.bg }}>
+                                        <div>
+                                            <div className="text-[9px] uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-0.5">
+                                                {SIGNAL_NAMES[key] || key}
+                                            </div>
+                                            <div className="text-[11px] font-bold" style={{ color: p.color }}>{sig.label}</div>
+                                        </div>
+                                        <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-extrabold text-white flex-shrink-0"
+                                             style={{ backgroundColor: p.color }}>
+                                            {sig.score}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    {/* Risk flag list */}
+                    {risk_flags?.length > 0 && (
+                        <div className="space-y-1 pt-1">
+                            {risk_flags.map((f, i) => (
+                                <div key={i} className="flex items-start gap-2 text-[11px] text-rose-500 dark:text-rose-400">
+                                    <span className="mt-0.5 flex-shrink-0">⚠</span>
+                                    <span>{f}</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+};
+
 /* ─── DEFAULT EXPORT: composed full fundamental block ───────────────────── */
 export default function FundamentalScoreCard({ scoreCard, symbol }) {
     const fund = scoreCard?.fundamental;
@@ -684,17 +804,8 @@ export default function FundamentalScoreCard({ scoreCard, symbol }) {
 
     return (
         <>
-            {/* Technical commentary bullets */}
-            {Array.isArray(tech?.commentary) && tech.commentary.length > 0 && (
-                <div className="mt-4 space-y-1.5">
-                    {tech.commentary.map((c, i) => (
-                        <div key={i} className="flex items-start gap-2 text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">
-                            <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-zinc-500 flex-shrink-0" />
-                            {c}
-                        </div>
-                    ))}
-                </div>
-            )}
+            {/* Technical Score Card */}
+            {tech && <TechnicalScoreCard tech={tech} />}
 
             {/* Overall Health Score (yellow banner) */}
             {fund?.score != null && (
