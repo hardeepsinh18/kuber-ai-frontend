@@ -306,7 +306,7 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
     const renderChart = () => {
         const commonProps = {
             data,
-            margin: { top: 16, right: 24, left: 8, bottom: 16 },
+            margin: { top: 16, right: 24, left: 16, bottom: 24 },
         };
 
         if (chartType === 'line') {
