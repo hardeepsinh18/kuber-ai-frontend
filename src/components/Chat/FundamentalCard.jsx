@@ -790,19 +790,39 @@ const KuberScoreBanner = ({ horizon, tech, fund, ratingsSum, symbol }) => {
             {/* Breakdown — Technical Engine + Fundamental Engine */}
             {showBreakdown && (
                 <div className="px-4 pb-4 bg-white dark:bg-[#111]">
+                    {/* ── Technical Engine ── */}
                     {tech && <TechnicalScoreCard tech={tech} />}
-                    {fund?.score != null && (
-                        <div className="mt-4">
-                            <OverallHealthScore
-                                score={fund.score}
-                                label={fund.label}
-                                summary={fund.summary}
-                                ratingsSum={ratingsSum}
-                            />
+
+                    {/* ── Fundamental Engine ── */}
+                    {fund ? (
+                        <>
+                            {fund.score != null && (
+                                <div className="mt-4">
+                                    <OverallHealthScore
+                                        score={fund.score}
+                                        label={fund.label}
+                                        summary={fund.summary}
+                                        ratingsSum={ratingsSum}
+                                    />
+                                </div>
+                            )}
+                            <FinancialScoreCard fund={fund} symbol={symbol} />
+                            {fund.historical && <FiveYearScoreCard fund={fund} />}
+                        </>
+                    ) : (
+                        <div className="mt-3 rounded-xl border border-zinc-200 dark:border-zinc-800 px-4 py-5 flex items-start gap-3">
+                            <span className="text-lg flex-shrink-0">📊</span>
+                            <div>
+                                <p className="text-[13px] font-semibold text-zinc-700 dark:text-zinc-300 mb-0.5">
+                                    Fundamental data unavailable
+                                </p>
+                                <p className="text-[11px] text-zinc-400 dark:text-zinc-500 leading-relaxed">
+                                    No financial data could be fetched for this stock. The blended score above uses technical signals only.
+                                    Try asking about a Nifty 500 stock for full analysis.
+                                </p>
+                            </div>
                         </div>
                     )}
-                    {fund && <FinancialScoreCard fund={fund} symbol={symbol} />}
-                    {fund?.historical && <FiveYearScoreCard fund={fund} />}
                 </div>
             )}
         </div>
