@@ -674,7 +674,7 @@ const computeRatings = (ratios) => {
 };
 
 /* ─── Kuber AI Score Banner ──────────────────────────────────────────────── */
-const KuberScoreBanner = ({ horizon, tech, fund }) => {
+const KuberScoreBanner = ({ horizon, tech, fund, ratingsSum, symbol }) => {
     const [showBreakdown, setShowBreakdown] = useState(false);
     if (!horizon) return null;
 
@@ -788,7 +788,23 @@ const KuberScoreBanner = ({ horizon, tech, fund }) => {
             </div>
 
             {/* Breakdown — Technical Engine + Fundamental Engine */}
-            {showBreakdown && <div className="px-4 pb-4 bg-white dark:bg-[#111] space-y-0" data-breakdown />}
+            {showBreakdown && (
+                <div className="px-4 pb-4 bg-white dark:bg-[#111]">
+                    {tech && <TechnicalScoreCard tech={tech} />}
+                    {fund?.score != null && (
+                        <div className="mt-4">
+                            <OverallHealthScore
+                                score={fund.score}
+                                label={fund.label}
+                                summary={fund.summary}
+                                ratingsSum={ratingsSum}
+                            />
+                        </div>
+                    )}
+                    {fund && <FinancialScoreCard fund={fund} symbol={symbol} />}
+                    {fund?.historical && <FiveYearScoreCard fund={fund} />}
+                </div>
+            )}
         </div>
     );
 };
@@ -925,26 +941,35 @@ export default function FundamentalScoreCard({ scoreCard, symbol }) {
 
     return (
         <>
-            {/* Kuber AI Score — blended horizon banner (only when horizon query) */}
-            {horizon && <KuberScoreBanner horizon={horizon} tech={tech} fund={fund} />}
+            {horizon ? (
+                /* Horizon query — all detail lives inside the collapsible banner */
+                <KuberScoreBanner
+                    horizon={horizon}
+                    tech={tech}
+                    fund={fund}
+                    ratingsSum={ratingsSum}
+                    symbol={symbol}
+                />
+            ) : (
+                /* No horizon — show individual cards directly */
+                <>
+                    {tech && <TechnicalScoreCard tech={tech} />}
 
-            {/* Technical Engine */}
-            {tech && <TechnicalScoreCard tech={tech} />}
+                    {fund?.score != null && (
+                        <div className="mt-4">
+                            <OverallHealthScore
+                                score={fund.score}
+                                label={fund.label}
+                                summary={fund.summary}
+                                ratingsSum={ratingsSum}
+                            />
+                        </div>
+                    )}
 
-            {/* Fundamental Engine — health banner + metrics grid */}
-            {fund?.score != null && (
-                <div className="mt-4">
-                    <OverallHealthScore
-                        score={fund.score}
-                        label={fund.label}
-                        summary={fund.summary}
-                        ratingsSum={ratingsSum}
-                    />
-                </div>
+                    {fund && <FinancialScoreCard fund={fund} symbol={symbol} />}
+                    {fund?.historical && <FiveYearScoreCard fund={fund} />}
+                </>
             )}
-
-            {fund && <FinancialScoreCard fund={fund} symbol={symbol} />}
-            {fund?.historical && <FiveYearScoreCard fund={fund} />}
         </>
     );
 }
