@@ -311,10 +311,8 @@ const OverallHealthScore = ({ score, label, summary, ratingsSum }) => {
     const subColor   = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.45)';
     return (
         <div className="mb-4 rounded-xl p-4 flex items-center gap-4 border
-                        bg-zinc-900 border-zinc-700/50
-                        dark:bg-zinc-900 dark:border-zinc-700/50
-                        light:bg-zinc-100 light:border-zinc-200"
-             style={!isDark ? { background: '#f4f4f5', borderColor: '#e4e4e7' } : {}}>
+                        bg-zinc-100 border-zinc-200
+                        dark:bg-zinc-900 dark:border-zinc-700/50">
             <div className="flex-shrink-0">
                 <svg viewBox="0 0 84 84" width={80} height={80}>
                     <circle cx={cx} cy={cy} r={r} fill="none" stroke={trackColor} strokeWidth={8} />
