@@ -18,7 +18,7 @@ import {
     ReferenceDot,
     ReferenceArea,
 } from 'recharts';
-import { TrendingUp, TrendingDown, Activity, Calendar, BarChart3, BarChart2, LineChart as LineChartIcon } from 'lucide-react';
+import { TrendingUp, TrendingDown, Activity, Calendar, BarChart3, BarChart2, LineChart as LineChartIcon, ZoomIn, ZoomOut } from 'lucide-react';
 import { clsx } from 'clsx';
 
 /**
@@ -104,11 +104,15 @@ const CANDLE_RANGES = [
     { label: '1Y', bars: 252 },
 ];
 
-const BAR_PX = 11; // pixels per candle in scroll mode
+const MIN_BAR_PX = 6;
+const MAX_BAR_PX = 24;
+const DEFAULT_BAR_PX = 11;
 
 const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAGlance = null }) => {
     const [chartType, setChartType] = useState('area');
     const [candleRange, setCandleRange] = useState(66); // default 3M
+    const [barPx, setBarPx] = useState(DEFAULT_BAR_PX);
+    const [visibleCount, setVisibleCount] = useState(null); // null = show all data
     const candleScrollRef = useRef(null);
 
     // Auto-scroll to latest (right end) whenever candle view activates or range changes
@@ -120,7 +124,23 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
             }
         }, 80);
         return () => clearTimeout(t);
-    }, [chartType, candleRange, chartData]);
+    }, [chartType, candleRange, barPx, chartData]);
+
+    // Ctrl+wheel zoom on candle scroll container
+    useEffect(() => {
+        const el = candleScrollRef.current;
+        if (!el || chartType !== 'candle') return;
+        const onWheel = (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                e.preventDefault();
+                setBarPx(p => e.deltaY < 0
+                    ? Math.min(p + 2, MAX_BAR_PX)
+                    : Math.max(p - 2, MIN_BAR_PX));
+            }
+        };
+        el.addEventListener('wheel', onWheel, { passive: false });
+        return () => el.removeEventListener('wheel', onWheel);
+    }, [chartType]);
 
     if (!chartData) return null;
     if (chartData.error) {
@@ -169,6 +189,30 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
     }, [close]);
 
     const isPositive = priceChange.value >= 0;
+
+    // Zoomed data slice for Area / Line / OHFL views
+    const displayData = useMemo(() =>
+        visibleCount ? data.slice(-visibleCount) : data,
+        [data, visibleCount]
+    );
+
+    const zoomIn = () => {
+        if (chartType === 'candle') {
+            setBarPx(p => Math.min(p + 3, MAX_BAR_PX));
+        } else {
+            setVisibleCount(c => Math.max(Math.floor((c ?? data.length) * 0.6), 20));
+        }
+    };
+    const zoomOut = () => {
+        if (chartType === 'candle') {
+            setBarPx(p => Math.max(p - 3, MIN_BAR_PX));
+        } else {
+            setVisibleCount(c => {
+                const next = Math.min(Math.ceil((c ?? data.length) * 1.7), data.length);
+                return next >= data.length ? null : next;
+            });
+        }
+    };
 
     // Format date based on timeframe
     const formatDate = (date) => {
@@ -316,7 +360,7 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
     // Render different chart types
     const renderChart = () => {
         const commonProps = {
-            data,
+            data: chartType === 'candle' ? data : displayData,
             margin: { top: 16, right: 24, left: 16, bottom: 24 },
         };
 
@@ -538,25 +582,41 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                     Candles
                 </button>
 
-                {/* Range selector — only for candle view */}
-                {chartType === 'candle' && (
-                    <div className="flex items-center gap-1 ml-auto">
-                        {CANDLE_RANGES.map(({ label, bars }) => (
-                            <button
-                                key={label}
-                                onClick={() => setCandleRange(bars)}
-                                className={clsx(
-                                    "px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all",
-                                    candleRange === bars
-                                        ? "bg-zinc-800 text-white dark:bg-zinc-200 dark:text-black"
-                                        : "text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
-                                )}
-                            >
-                                {label}
-                            </button>
-                        ))}
+                <div className="flex items-center gap-1 ml-auto">
+                    {/* Range selector — candle only */}
+                    {chartType === 'candle' && CANDLE_RANGES.map(({ label, bars }) => (
+                        <button
+                            key={label}
+                            onClick={() => setCandleRange(bars)}
+                            className={clsx(
+                                "px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all",
+                                candleRange === bars
+                                    ? "bg-zinc-800 text-white dark:bg-zinc-200 dark:text-black"
+                                    : "text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+                            )}
+                        >
+                            {label}
+                        </button>
+                    ))}
+                    {/* Zoom controls — all chart types */}
+                    <div className="flex items-center gap-0.5 ml-1 border border-zinc-200 dark:border-zinc-700 rounded-lg overflow-hidden">
+                        <button
+                            onClick={zoomIn}
+                            title="Zoom in"
+                            className="p-1.5 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                        >
+                            <ZoomIn className="w-3.5 h-3.5" />
+                        </button>
+                        <div className="w-px h-4 bg-zinc-200 dark:bg-zinc-700" />
+                        <button
+                            onClick={zoomOut}
+                            title="Zoom out"
+                            className="p-1.5 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                        >
+                            <ZoomOut className="w-3.5 h-3.5" />
+                        </button>
                     </div>
-                )}
+                </div>
             </div>
 
             {/* Chart + Today's Market Stats side panel */}
@@ -572,7 +632,7 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                                 style={{ scrollbarWidth: 'thin', scrollbarColor: '#374151 transparent' }}
                             >
                                 <div style={{
-                                    width: `${Math.max(candleData.length * BAR_PX, 300)}px`,
+                                    width: `${Math.max(candleData.length * barPx, 300)}px`,
                                     minWidth: '100%',
                                     height: '100%',
                                 }}>
