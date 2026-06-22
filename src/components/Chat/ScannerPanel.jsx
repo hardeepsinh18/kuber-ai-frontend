@@ -241,7 +241,19 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                     const msg = formatResults(job.scanner, job.results, job.universe, job.duration_seconds);
                     setScanning(false);
                     setScanDone({ count: job.results.length, msg });
-                    setTimeout(() => { onSelectScanner(msg); onClose(); }, 1200);
+                    setTimeout(() => {
+                        onSelectScanner({
+                            type:      'scanner_results',
+                            raw:       job.results,
+                            formatted: msg,
+                            scanner:   job.scanner,
+                            emoji:     SCANNER_EMOJI[job.scanner] || '🔍',
+                            universe:  job.universe,
+                            count:     job.results.length,
+                            date:      job.scan_date || new Date().toISOString().split('T')[0],
+                        });
+                        onClose();
+                    }, 1200);
                 } else if (job.status === 'error') {
                     clearInterval(pollRef.current);
                     setError(`Scan error: ${job.error || 'Unknown error'}`);
@@ -376,7 +388,7 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                                 : 'No matches today'}
                         </p>
                         <p className="text-[12px] text-zinc-400 dark:text-zinc-500" style={{ animation: 'fadeIn 0.3s 0.25s ease-out both' }}>
-                            Adding to chat…
+                            Opening results panel…
                         </p>
                     </div>
                 )}

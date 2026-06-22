@@ -5,6 +5,7 @@ import InputBar from './InputBar';
 import StartScreen from './StartScreen';
 import ThinkingPaths from './ThinkingPaths';
 import SourcesPanel from './SourcesPanel';
+import ScannerDrawer from './ScannerDrawer';
 import { useAuth } from '../../context/AuthContext';
 import { useChatHistory } from '../../context/ChatHistoryContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -268,6 +269,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
     const [responseMode, setResponseModeState] = useState(
         () => localStorage.getItem('kuberai_mode') || 'snap'
     );
+    const [scannerDrawer, setScannerDrawer] = useState(null);
 
     const setResponseMode = (mode) => {
         localStorage.setItem('kuberai_mode', mode);
@@ -412,10 +414,15 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
         handleSend(initialInput);
     };
 
-    // Scanner results go directly into chat as an assistant message — no LLM call.
-    const handleScannerResult = useCallback(async (content) => {
-        await ensureCurrentChat();
-        setMessages(prev => [...prev, { id: genId(), role: 'assistant', content, isScannerResult: true }]);
+    // Scanner results open the slide-in drawer; fallback to chat for legacy plain-text results.
+    const handleScannerResult = useCallback(async (data) => {
+        if (data?.type === 'scanner_results') {
+            setScannerDrawer(data);
+        } else {
+            const content = typeof data === 'string' ? data : (data?.formatted || '');
+            await ensureCurrentChat();
+            setMessages(prev => [...prev, { id: genId(), role: 'assistant', content, isScannerResult: true }]);
+        }
     }, [ensureCurrentChat, setMessages]);
 
     const handleSend = async (manualInput = null) => {
@@ -663,10 +670,29 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
     }
 
     if (messages.length === 0) {
-        return <StartScreen onStartChat={handleStartChat} onScannerResult={handleScannerResult} responseMode={responseMode} setResponseMode={setResponseMode} />;
+        return (
+            <>
+                <StartScreen onStartChat={handleStartChat} onScannerResult={handleScannerResult} responseMode={responseMode} setResponseMode={setResponseMode} />
+                {scannerDrawer && (
+                    <ScannerDrawer
+                        data={scannerDrawer}
+                        onAnalyze={(sym) => handleSend(`Analyze ${sym}`)}
+                        onClose={() => setScannerDrawer(null)}
+                    />
+                )}
+            </>
+        );
     }
 
     return (
+        <>
+        {scannerDrawer && (
+            <ScannerDrawer
+                data={scannerDrawer}
+                onAnalyze={(sym) => handleSend(`Analyze ${sym}`)}
+                onClose={() => setScannerDrawer(null)}
+            />
+        )}
         <div className="flex flex-col h-full relative">
             {chatLoadError && (
                 <div className="flex items-center justify-between gap-2 mx-4 mb-1 px-3 py-2 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 rounded-xl text-xs text-rose-700 dark:text-rose-400">
@@ -786,6 +812,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 />
             </div>
         </div>
+        </>
     );
 };
 
