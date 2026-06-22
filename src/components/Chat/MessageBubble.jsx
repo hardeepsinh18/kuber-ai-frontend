@@ -303,7 +303,7 @@ const IndicatorsTable = ({ rows, asOfDate }) => {
             {/* Toggle header */}
             <button
                 onClick={() => setOpen(o => !o)}
-                className="w-full flex items-center justify-between px-4 py-3 bg-white dark:bg-[#1C1B15] hover:bg-amber-50/30 dark:hover:bg-zinc-800/30 transition-colors text-left"
+                className="w-full flex items-center justify-between px-4 py-3 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-left"
             >
                 <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-zinc-900 dark:text-white">
