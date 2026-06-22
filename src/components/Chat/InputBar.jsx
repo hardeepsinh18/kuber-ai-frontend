@@ -67,7 +67,8 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
                             <div className="flex gap-3 px-4 pt-3 pb-1 justify-center">
                                 {['Short Term', 'Long Term'].map((label) => {
                                     const isShort = label === 'Short Term';
-                                    const sym = horizonSymbol ? `${horizonSymbol} ` : '';
+                                    const cleanSymbol = horizonSymbol ? horizonSymbol.replace(/\.(NS|BO|BSE)$/i, '').replace(/-EQ$/i, '').replace(/^(NSE:|BSE:)/i, '') : '';
+                                    const sym = cleanSymbol ? `${cleanSymbol} ` : '';
                                     const query = isShort
                                         ? `${sym}short term trading — entry, target, stop loss`
                                         : `${sym}long term investment — fundamentals, growth outlook`;
