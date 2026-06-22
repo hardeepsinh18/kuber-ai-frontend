@@ -112,7 +112,7 @@ const ScannerDrawer = ({ data, onAnalyze, onClose }) => {
                                         )}
                                     </div>
                                     <button
-                                        onClick={() => { onAnalyze(sym); onClose(); }}
+                                        onClick={() => onAnalyze(sym)}
                                         className="flex items-center gap-1 ml-2 px-2.5 py-1 rounded-lg
                                                    text-[11px] font-semibold flex-shrink-0
                                                    text-zinc-400 dark:text-zinc-500
