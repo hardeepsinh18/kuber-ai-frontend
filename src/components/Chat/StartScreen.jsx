@@ -80,40 +80,43 @@ const StartScreen = ({ onStartChat, onScannerResult, responseMode, setResponseMo
 
 
                                 <div className="flex items-center justify-between px-3 pb-3 pt-1">
-                                    <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-zinc-200/80 dark:bg-zinc-900">
-                                        {MODES.map((mode) => {
-                                            const isActive = responseMode === mode.key;
-                                            return (
-                                                <button
-                                                    key={mode.key}
-                                                    type="button"
-                                                    onClick={() => setResponseMode(mode.key)}
-                                                    className={clsx(
-                                                        'px-3 py-1 rounded-md text-[11px] font-semibold transition-all duration-200 select-none',
-                                                        isActive
-                                                            ? 'text-zinc-900 shadow-sm'
-                                                            : 'text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300'
-                                                    )}
-                                                    style={isActive ? { backgroundColor: '#FDD405' } : {}}
-                                                >
-                                                    {mode.label}
-                                                </button>
-                                            );
-                                        })}
+                                    {/* Left group: mode toggle + scanner */}
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-zinc-200/80 dark:bg-zinc-900">
+                                            {MODES.map((mode) => {
+                                                const isActive = responseMode === mode.key;
+                                                return (
+                                                    <button
+                                                        key={mode.key}
+                                                        type="button"
+                                                        onClick={() => setResponseMode(mode.key)}
+                                                        className={clsx(
+                                                            'px-3 py-1 rounded-md text-[11px] font-semibold transition-all duration-200 select-none',
+                                                            isActive
+                                                                ? 'text-zinc-900 shadow-sm'
+                                                                : 'text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300'
+                                                        )}
+                                                        style={isActive ? { backgroundColor: '#FDD405' } : {}}
+                                                    >
+                                                        {mode.label}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setScannerOpen(true)}
+                                            className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-semibold
+                                                       text-zinc-500 dark:text-zinc-400
+                                                       hover:text-zinc-900 dark:hover:text-zinc-100
+                                                       border border-zinc-300/60 dark:border-zinc-700/60
+                                                       hover:border-[#FDD405]/60 dark:hover:border-[#FDD405]/50
+                                                       hover:bg-amber-50/40 dark:hover:bg-amber-950/15
+                                                       transition-all duration-150">
+                                            <ScanLine size={12} />
+                                            Scanners
+                                        </button>
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => setScannerOpen(true)}
-                                        className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-semibold
-                                                   text-zinc-500 dark:text-zinc-400
-                                                   hover:text-zinc-900 dark:hover:text-zinc-100
-                                                   border border-zinc-300/60 dark:border-zinc-700/60
-                                                   hover:border-[#FDD405]/60 dark:hover:border-[#FDD405]/50
-                                                   hover:bg-amber-50/40 dark:hover:bg-amber-950/15
-                                                   transition-all duration-150">
-                                        <ScanLine size={12} />
-                                        Scanners
-                                    </button>
                                     <button
                                         onClick={send}
                                         disabled={!input.trim()}
