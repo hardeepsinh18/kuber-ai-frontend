@@ -53,109 +53,79 @@ const stripResponseChrome = (text) => {
     return out.trim();
 };
 
-// ─── Signal Card (BUY / SELL / HOLD) ────────────────────────────────────────
+// ─── Verdict / Signal Card ────────────────────────────────────────────────────
 const SignalCard = ({ signal }) => {
     if (!signal || !signal.recommendation) return null;
 
-    const rec = signal.recommendation.toUpperCase(); // "BUY", "SELL", "HOLD"
-    const confidence = signal.confidence_pct ?? 50;
-    const why = Array.isArray(signal.why) ? signal.why.slice(0, 4) : [];
+    const rec  = signal.recommendation.toUpperCase();
+    const conf = signal.confidence_pct ?? 50;
+    const why  = Array.isArray(signal.why) ? signal.why.slice(0, 3) : [];
     const risk = (signal.risk || 'medium').toLowerCase();
 
-    const palette = {
-        BUY: {
-            outer: 'bg-emerald-50/80 dark:bg-emerald-950/25 border-emerald-200 dark:border-emerald-800/50',
-            badge: 'bg-emerald-500 text-white',
-            label: 'text-emerald-700 dark:text-emerald-300',
-            bar: 'bg-emerald-500',
-            icon: TrendingUp,
-        },
-        SELL: {
-            outer: 'bg-rose-50/80 dark:bg-rose-950/25 border-rose-200 dark:border-rose-800/50',
-            badge: 'bg-rose-500 text-white',
-            label: 'text-rose-700 dark:text-rose-300',
-            bar: 'bg-rose-500',
-            icon: TrendingDown,
-        },
-        HOLD: {
-            outer: 'bg-amber-50/70 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/40',
-            badge: 'bg-[#FDD405] text-white',
-            label: 'text-amber-700 dark:text-amber-300',
-            bar: 'bg-amber-500',
-            icon: Minus,
-        },
+    const cfg = {
+        BUY:  { accent: '#22c55e', bg: 'rgba(34,197,94,0.08)',  border: 'rgba(34,197,94,0.25)',  label: '📈 BUY',  icon: TrendingUp,   textColor: '#16a34a' },
+        SELL: { accent: '#ef4444', bg: 'rgba(239,68,68,0.08)',  border: 'rgba(239,68,68,0.25)',  label: '📉 SELL', icon: TrendingDown, textColor: '#dc2626' },
+        HOLD: { accent: '#FDD405', bg: 'rgba(253,212,5,0.07)',  border: 'rgba(253,212,5,0.30)',  label: '⏸ HOLD', icon: Minus,        textColor: '#b45309' },
     };
-    const c = palette[rec] || palette.HOLD;
+    const c = cfg[rec] || cfg.HOLD;
     const Icon = c.icon;
+    const fmt = (n) => n != null ? `₹${Number(n).toLocaleString('en-IN', { maximumFractionDigits: 0 })}` : null;
+    const pct = (n, pos) => n != null ? (
+        <span style={{ color: pos ? '#16a34a' : '#dc2626', fontSize: 11 }}>
+            {' '}({pos ? '+' : ''}{Number(n).toFixed(1)}%)
+        </span>
+    ) : null;
 
-    const riskBadge = {
-        low: 'text-emerald-600 dark:text-emerald-400 bg-emerald-100/80 dark:bg-emerald-950/40',
-        medium: 'text-amber-600 dark:text-[#FDD405] bg-amber-100/70 dark:bg-amber-950/30',
-        high: 'text-rose-600 dark:text-rose-400 bg-rose-100/80 dark:bg-rose-950/40',
-    };
+    const hasLevels = signal.ideal_entry != null || signal.target != null || signal.stop_loss != null;
 
     return (
-        <div className={clsx('mb-5 rounded-xl border p-4', c.outer)}>
-            {/* Header row */}
-            <div className="flex items-center justify-between mb-3">
+        <div className="mb-5 rounded-2xl overflow-hidden" style={{ border: `1.5px solid ${c.border}` }}>
+
+            {/* Header band */}
+            <div className="flex items-center justify-between px-5 py-3"
+                 style={{ background: `linear-gradient(135deg, ${c.accent}18 0%, ${c.accent}08 100%)` }}>
                 <div className="flex items-center gap-3">
-                    <span className={clsx('inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-sm font-bold', c.badge)}>
-                        <Icon size={14} />
-                        {rec}
+                    <span className="flex items-center gap-2 px-4 py-1.5 rounded-full text-[13px] font-extrabold text-white"
+                          style={{ backgroundColor: c.accent }}>
+                        <Icon size={13} />
+                        {c.label}
                     </span>
-                    <span className={clsx('text-sm font-medium', c.label)}>
-                        {confidence}% confidence
+                    <span className="text-[12px] font-semibold" style={{ color: c.textColor }}>
+                        {conf}% confidence
                     </span>
                 </div>
-                <span className={clsx('text-xs px-2.5 py-1 rounded-md font-medium capitalize', riskBadge[risk] || riskBadge.medium)}>
+                <span className="text-[11px] font-semibold px-2.5 py-1 rounded-lg capitalize"
+                      style={{ color: risk === 'low' ? '#16a34a' : risk === 'high' ? '#dc2626' : '#b45309',
+                               background: risk === 'low' ? 'rgba(34,197,94,0.1)' : risk === 'high' ? 'rgba(239,68,68,0.1)' : 'rgba(253,212,5,0.12)' }}>
                     {risk} risk
                 </span>
             </div>
 
             {/* Confidence bar */}
-            <div className="mb-3 h-1.5 bg-zinc-200/80 dark:bg-zinc-700/60 rounded-full overflow-hidden">
-                <div className={clsx('h-full rounded-full transition-all duration-700', c.bar)} style={{ width: `${confidence}%` }} />
+            <div className="h-[3px] bg-zinc-100 dark:bg-zinc-800">
+                <div className="h-full transition-all duration-700 rounded-full"
+                     style={{ width: `${conf}%`, backgroundColor: c.accent }} />
             </div>
 
-            {/* Entry / Target / Stop-Loss row — hidden */}
-            {false && (signal.ideal_entry != null || signal.target != null || signal.stop_loss != null) && (
-                <div className="flex flex-wrap gap-5 mb-3">
-                    {signal.ideal_entry != null && (
-                        <div>
-                            <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mb-0.5">Entry</p>
-                            <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                                ₹{Number(signal.ideal_entry).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                            </p>
+            {/* Entry / Target / Stop-Loss grid */}
+            {hasLevels && (
+                <div className="grid grid-cols-3 divide-x divide-zinc-100 dark:divide-zinc-800 bg-white dark:bg-[#1a1a1a]">
+                    {[
+                        { label: 'Entry',     val: fmt(signal.ideal_entry), sub: null,                          color: 'text-zinc-900 dark:text-zinc-100' },
+                        { label: 'Target',    val: fmt(signal.target),      sub: pct(signal.upside_pct, true),  color: 'text-emerald-600 dark:text-emerald-400' },
+                        { label: 'Stop Loss', val: fmt(signal.stop_loss),   sub: pct(signal.downside_pct, false), color: 'text-rose-600 dark:text-rose-400' },
+                    ].map(({ label, val, sub, color }) => val && (
+                        <div key={label} className="flex flex-col items-center py-4 px-3 gap-1">
+                            <span className="text-[10px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">{label}</span>
+                            <span className={`text-[16px] font-bold ${color}`}>{val}{sub}</span>
                         </div>
-                    )}
-                    {signal.target != null && (
-                        <div>
-                            <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mb-0.5">Target</p>
-                            <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-                                ₹{Number(signal.target).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                                {signal.upside_pct != null && (
-                                    <span className="text-[11px] ml-1 opacity-80">(+{Number(signal.upside_pct).toFixed(1)}%)</span>
-                                )}
-                            </p>
-                        </div>
-                    )}
-                    {signal.stop_loss != null && (
-                        <div>
-                            <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mb-0.5">Stop Loss</p>
-                            <p className="text-sm font-semibold text-rose-600 dark:text-rose-400">
-                                ₹{Number(signal.stop_loss).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                                {signal.downside_pct != null && (
-                                    <span className="text-[11px] ml-1 opacity-80">({Number(signal.downside_pct).toFixed(1)}%)</span>
-                                )}
-                            </p>
-                        </div>
-                    )}
+                    ))}
                     {signal.risk_reward != null && (
-                        <div>
-                            <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mb-0.5">Risk : Reward</p>
-                            <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+                        <div className="col-span-3 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-center py-2 gap-1.5">
+                            <span className="text-[11px] text-zinc-400">Risk : Reward</span>
+                            <span className="text-[12px] font-bold text-zinc-700 dark:text-zinc-300">
                                 1 : {Number(signal.risk_reward).toFixed(1)}
-                            </p>
+                            </span>
                         </div>
                     )}
                 </div>
@@ -163,14 +133,16 @@ const SignalCard = ({ signal }) => {
 
             {/* Why bullets */}
             {why.length > 0 && (
-                <ul className="space-y-1.5 pt-2 border-t border-zinc-200/50 dark:border-zinc-700/30">
-                    {why.map((w, i) => (
-                        <li key={i} className={clsx('flex items-start gap-2 text-xs leading-relaxed', c.label)}>
-                            <span className="mt-1 w-1 h-1 rounded-full flex-shrink-0 bg-current opacity-60" />
-                            <span>{w}</span>
-                        </li>
-                    ))}
-                </ul>
+                <div className="px-5 py-3 bg-zinc-50/60 dark:bg-zinc-900/40 border-t border-zinc-100 dark:border-zinc-800">
+                    <ul className="space-y-1.5">
+                        {why.map((w, i) => (
+                            <li key={i} className="flex items-start gap-2 text-[12px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                                <span className="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: c.accent }} />
+                                {w}
+                            </li>
+                        ))}
+                    </ul>
+                </div>
             )}
         </div>
     );
