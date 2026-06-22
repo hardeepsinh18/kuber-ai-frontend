@@ -7,10 +7,12 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 import { clsx } from 'clsx';
 
 /* ─── label classifiers ──────────────────────────────────────────────────── */
+// Backend RATING_LABEL: {5:"Exceptional", 4:"Strong", 3:"Average", 2:"Weak", 1:"Poor"}
+// "Exceptional" was missing → was falling through to RISK (causing 93/100 + 4 RISK bug)
 const isGoodLabel = (l) =>
-    /CHEAP|ELITE|ZERO.?DEBT|ATTRACTIVE|ABOVE.?AVG|RISING|STRONG|#\d|STABLE.?HIGH|NEW/i.test(l || '');
+    /EXCEPTIONAL|STRONG|CHEAP|ELITE|ZERO.?DEBT|ATTRACTIVE|ABOVE.?AVG|RISING|#\d|STABLE.?HIGH|NEW/i.test(l || '');
 const isNeutralLabel = (l) =>
-    /MODERATE|WATCH|STABILIZ|FAIR|AVERAGE/i.test(l || '');
+    /AVERAGE|MODERATE|WATCH|STABILIZ|FAIR/i.test(l || '');
 
 /* ─── Rating badge ───────────────────────────────────────────────────────── */
 const RatingBadge = ({ label, className }) => {
