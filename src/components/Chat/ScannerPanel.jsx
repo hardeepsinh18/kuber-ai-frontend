@@ -156,6 +156,7 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
     const [error, setError]             = useState('');
     const [universe, setUniverse]       = useState('nifty500');  // "nifty500" | "all_nse"
     const [msgIdx, setMsgIdx]           = useState(0);
+    const [scanDone, setScanDone]       = useState(null); // { count, msg } — shown briefly before close
 
     // Rotate loading message every 2s while scanning
     useEffect(() => {
@@ -238,8 +239,9 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                 if (job.status === 'done') {
                     clearInterval(pollRef.current);
                     const msg = formatResults(job.scanner, job.results, job.universe, job.duration_seconds);
-                    onSelectScanner(msg);
-                    onClose();
+                    setScanning(false);
+                    setScanDone({ count: job.results.length, msg });
+                    setTimeout(() => { onSelectScanner(msg); onClose(); }, 1200);
                 } else if (job.status === 'error') {
                     clearInterval(pollRef.current);
                     setError(`Scan error: ${job.error || 'Unknown error'}`);
@@ -312,8 +314,8 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
 
                 {/* Loading overlay */}
                 {scanning && (
-                    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4
-                                    bg-white/93 dark:bg-[#161616]/93 rounded-2xl">
+                    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 rounded-2xl
+                                    bg-white dark:bg-[#1a1a1a]">
                         {/* Scanner emoji */}
                         <div className="text-5xl" style={{ animation: 'bounce 2s infinite' }}>
                             {SCANNER_EMOJI[scannerName] || '🔍'}
@@ -355,6 +357,26 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                         {/* Timer */}
                         <p className="text-[11px] text-zinc-300 dark:text-zinc-600">
                             {elapsed > 0 ? `${elapsed}s elapsed` : 'starting…'}
+                        </p>
+                    </div>
+                )}
+
+                {/* Scan-complete flash overlay */}
+                {scanDone && (
+                    <div
+                        className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-2xl bg-white dark:bg-[#1a1a1a]"
+                        style={{ animation: 'fadeIn 0.3s ease-out' }}
+                    >
+                        <div className="text-5xl" style={{ animation: 'popIn 0.4s cubic-bezier(0.34,1.56,0.64,1)' }}>
+                            {scanDone.count > 0 ? '🎯' : '🔍'}
+                        </div>
+                        <p className="text-[18px] font-bold text-zinc-900 dark:text-white" style={{ animation: 'fadeIn 0.3s 0.15s ease-out both' }}>
+                            {scanDone.count > 0
+                                ? <><span style={{ color: '#FDD405' }}>{scanDone.count} stocks</span> found!</>
+                                : 'No matches today'}
+                        </p>
+                        <p className="text-[12px] text-zinc-400 dark:text-zinc-500" style={{ animation: 'fadeIn 0.3s 0.25s ease-out both' }}>
+                            Adding to chat…
                         </p>
                     </div>
                 )}
