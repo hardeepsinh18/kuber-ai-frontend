@@ -60,6 +60,43 @@ const CATEGORY_COLORS = {
     'Bearish Candlestick Patterns': 'text-rose-400',
 };
 
+const SCANNER_EMOJI = {
+    'Short Term Breakouts':      '🚀',
+    '52-Week High Breakout':     '🏆',
+    'Inside Bar Breakout':       '📦',
+    'SMA 200 Reclaim':           '📊',
+    'Golden Cross':              '✨',
+    'Death Cross':               '☠️',
+    'RSI Oversold':              '📉',
+    'RSI Overbought':            '📈',
+    'MACD Bullish Crossover':    '⚡',
+    'MACD Bearish Crossover':    '⬇️',
+    'Supertrend Buy':            '🟢',
+    'Supertrend Sell':           '🔴',
+    'BB Breakout Bullish':       '💥',
+    'BB Squeeze':                '🤏',
+    'Volume Surge':              '🔊',
+    'Morning Star':              '🌅',
+    'Bullish Engulfing':         '📈',
+    'Hammer':                    '🔨',
+    'Three White Soldiers':      '⚔️',
+    'Hanging Man':               '🪝',
+    'Shooting Star':             '🌠',
+    'Evening Star':              '🌙',
+    'Bearish Engulfing':         '📉',
+    'Three Black Crows':         '🐦',
+    'Doji':                      '⚖️',
+    'Low P/E':                   '💰',
+    'High ROE':                  '💎',
+    'Low Debt':                  '🏦',
+    'Revenue Growth':            '📊',
+    'EPS Growth':                '📈',
+    'High Dividend':             '🎯',
+    'Value Pick':                '🔍',
+    'Growth Pick':               '🌱',
+    'Quality Pick':              '⭐',
+};
+
 // Format scanner results as a plain numbered list — no LLM follow-up
 function formatResults(name, results, universe, seconds) {
     if (results.length === 0) {
@@ -245,14 +282,41 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
 
                 {/* Loading overlay */}
                 {scanning && (
-                    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3
-                                    bg-white/90 dark:bg-[#161616]/90 rounded-2xl">
-                        <Loader2 size={28} className="animate-spin text-indigo-500" />
-                        <p className="text-[14px] font-medium text-zinc-700 dark:text-zinc-200">
-                            Running <span className="text-indigo-500">{scannerName}</span> on {universe === 'nifty500' ? 'Nifty 500' : 'All NSE'} stocks…
-                        </p>
-                        <p className="text-[12px] text-zinc-400 dark:text-zinc-500">
-                            Downloading live price data · {elapsed > 0 ? `${elapsed}s elapsed` : 'starting…'}
+                    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4
+                                    bg-white/93 dark:bg-[#161616]/93 rounded-2xl">
+                        {/* Scanner emoji */}
+                        <div className="text-5xl" style={{ animation: 'bounce 2s infinite' }}>
+                            {SCANNER_EMOJI[scannerName] || '🔍'}
+                        </div>
+
+                        {/* Title */}
+                        <div className="flex flex-col items-center gap-1 text-center">
+                            <p className="text-[16px] font-bold text-zinc-900 dark:text-white">
+                                Scanning for{' '}
+                                <span style={{ color: '#FDD405' }}>{scannerName}</span>
+                            </p>
+                            <p className="text-[12px] text-zinc-400 dark:text-zinc-500">
+                                {universe === 'nifty500' ? 'Nifty 500' : 'All NSE'} stocks · analysing price patterns
+                            </p>
+                        </div>
+
+                        {/* Animated dots */}
+                        <div className="flex items-center gap-1.5">
+                            {[0, 1, 2].map(i => (
+                                <div
+                                    key={i}
+                                    className="w-2 h-2 rounded-full"
+                                    style={{
+                                        backgroundColor: '#FDD405',
+                                        animation: `pulse 1.2s ${i * 0.2}s ease-in-out infinite`,
+                                    }}
+                                />
+                            ))}
+                        </div>
+
+                        {/* Timer */}
+                        <p className="text-[11px] text-zinc-300 dark:text-zinc-600">
+                            {elapsed > 0 ? `${elapsed}s elapsed` : 'starting…'}
                         </p>
                     </div>
                 )}
