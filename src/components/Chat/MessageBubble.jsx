@@ -49,10 +49,7 @@ const stripResponseChrome = (text) => {
     out = out.replace(/\n*💬\s*\*?\*?Ask\s*me:?\*?\*?[\s\S]*?(?=\n##|\n---|\n━|$)/gi, '');
     // Remove "## 💬 Suggested Follow-ups" sections
     out = out.replace(/\n*##\s*💬\s*Suggested Follow-ups[\s\S]*?(?=\n##|\n---|\n━|$)/gi, '');
-    // Remove "> **Verdict:** ..." and "> ## 🎯 Verdict:" blockquotes
-    out = out.replace(/\n*>\s*(?:##\s*)?[🎯]?\s*\*?\*?Verdict:?\*?\*?[\s\S]*?(?=\n##|\n---|\n━|\n>(?!\s*(?:##\s*)?[🎯]?\s*\*?\*?Verdict)|$)/gi, '');
-    // Remove standalone verdict-first lines: lines starting with ✅/⚠️/❌/🔁 + BUY/HOLD/SELL/AVOID/WAIT
-    out = out.replace(/^[✅⚠️❌🔁]\s+(Buy|Hold|Sell|Avoid|Wait)\b[^\n]*/gim, '');
+    // NOTE: Verdict blockquotes (> **Verdict:** ...) are intentionally kept — rendered as styled cards below
     return out.trim();
 };
 
@@ -828,11 +825,37 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                                         {children}
                                     </a>
                                 ),
-                                blockquote: ({ children }) => (
-                                    <blockquote className="border-l-4 border-[#FDD405] dark:border-[#FDD405] pl-4 py-2 my-5 rounded-r-lg bg-amber-50/60 dark:bg-amber-950/20 text-zinc-800 dark:text-zinc-200 not-italic font-medium">
-                                        {children}
-                                    </blockquote>
-                                ),
+                                blockquote: ({ children }) => {
+                                    const raw = getChildText(children).toLowerCase();
+                                    const isVerdict = /verdict:/i.test(raw);
+                                    if (isVerdict) {
+                                        const isBull = /\b(buy|accumulate|bullish|upside|breakout|strong|yes)\b/.test(raw);
+                                        const isBear = /\b(sell|exit|bearish|downside|breakdown|avoid|no)\b/.test(raw);
+                                        const borderColor = isBull ? '#22c55e' : isBear ? '#ef4444' : '#FDD405';
+                                        const bgLight   = isBull ? 'rgba(34,197,94,0.07)' : isBear ? 'rgba(239,68,68,0.07)' : 'rgba(253,212,5,0.08)';
+                                        const bgDark    = isBull ? 'rgba(34,197,94,0.12)' : isBear ? 'rgba(239,68,68,0.12)' : 'rgba(253,212,5,0.10)';
+                                        const label     = isBull ? '🟢 Verdict' : isBear ? '🔴 Verdict' : '🟡 Verdict';
+                                        return (
+                                            <div className="my-4 rounded-xl overflow-hidden"
+                                                 style={{ border: `1.5px solid ${borderColor}40` }}>
+                                                <div className="px-3 py-1 text-[10px] font-bold tracking-widest uppercase"
+                                                     style={{ backgroundColor: `${borderColor}18`, color: borderColor }}>
+                                                    {label}
+                                                </div>
+                                                <div className="px-4 py-3 text-[14px] font-medium text-zinc-800 dark:text-zinc-100"
+                                                     style={{ backgroundColor: bgLight }}
+                                                     >
+                                                    {children}
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+                                    return (
+                                        <blockquote className="border-l-4 border-[#FDD405] dark:border-[#FDD405] pl-4 py-2 my-5 rounded-r-lg bg-amber-50/60 dark:bg-amber-950/20 text-zinc-800 dark:text-zinc-200 not-italic font-medium">
+                                            {children}
+                                        </blockquote>
+                                    );
+                                },
                                 table: ({ children }) => (
                                     <div className="my-6 overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-[#1C1B15] shadow-sm">
                                         <table className="min-w-full border-collapse">
