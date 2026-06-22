@@ -109,8 +109,7 @@ const ThinkingPaths = ({ steps = [], isThinking = true, className = '', processi
                     /* ── Done state: neutral collapsible card ── */
                     <div
                         className="rounded-xl border cursor-pointer transition-all duration-200
-                                   bg-zinc-50 border-zinc-200 hover:bg-zinc-100
-                                   dark:bg-white/[0.04] dark:border-zinc-700/30 dark:hover:bg-white/[0.07]"
+                                   bg-zinc-900/30 border-zinc-700/40 hover:bg-zinc-800/30"
                         onClick={() => setIsExpanded(!isExpanded)}
                         role="button" tabIndex={0}
                         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsExpanded(!isExpanded); } }}
@@ -118,12 +117,10 @@ const ThinkingPaths = ({ steps = [], isThinking = true, className = '', processi
                     >
                         <div className="flex items-center justify-between px-4 py-2.5">
                             <div className="flex items-center gap-2.5">
-                                <Cpu size={13} className="text-zinc-400 dark:text-zinc-500" />
-                                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-500">Analysis steps</span>
+                                <Cpu size={13} className="text-zinc-500" />
+                                <span className="text-xs font-medium text-zinc-500">Analysis steps</span>
                                 {processingTime > 0 && (
-                                    <span className="text-[11px] font-mono font-semibold tabular-nums px-2 py-0.5 rounded-md
-                                                     bg-[#FDD405]/10 dark:bg-[#FDD405]/10"
-                                          style={{ color: '#FDD405' }}>
+                                    <span className="text-[11px] font-mono px-1.5 py-0.5 rounded bg-zinc-200/60 dark:bg-zinc-700/50 text-zinc-500 dark:text-zinc-400">
                                         {displayTime}s
                                     </span>
                                 )}
@@ -133,7 +130,7 @@ const ThinkingPaths = ({ steps = [], isThinking = true, className = '', processi
                         </div>
 
                         {isExpanded && visibleSteps.length > 0 && (
-                            <ul className="px-4 pb-3 border-t border-zinc-200 dark:border-zinc-800/40 pt-2.5 space-y-1.5">
+                            <ul className="px-4 pb-3 border-t border-zinc-100 dark:border-zinc-800/40 pt-2.5 space-y-1.5">
                                 {visibleSteps.map((step, index) => (
                                     <li key={index}
                                         className="flex items-start gap-2 text-xs text-zinc-500 dark:text-zinc-400 animate-in fade-in slide-in-from-left-2"
