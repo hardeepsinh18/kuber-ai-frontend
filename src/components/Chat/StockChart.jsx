@@ -279,6 +279,17 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
         );
     };
 
+    // Candle data sliced to selected range (hoisted so the sticky Y-axis panel can reuse it)
+    const candleData = useMemo(() => data.slice(-candleRange), [data, candleRange]);
+    const candleDomain = useMemo(() => {
+        const allHL = candleData.flatMap(d => [d.high, d.low].filter(v => v != null));
+        if (!allHL.length) return ['auto', 'auto'];
+        const yMin = Math.min(...allHL);
+        const yMax = Math.max(...allHL);
+        const pad = (yMax - yMin) * 0.05;
+        return [yMin - pad, yMax + pad];
+    }, [candleData]);
+
     // Build pattern overlay elements — only clean horizontal support/resistance lines
     const patternElements = useMemo(() => {
         if (!patternOverlays) return { lines: [], dots: [], areas: [], hasPatterns: false };
@@ -400,16 +411,10 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                 </BarChart>
             );
         } else {
-            // Real candlestick chart — slice to selected range for readability
-            const candleData = data.slice(-candleRange);
-            const allHL = candleData.flatMap(d => [d.high, d.low].filter(v => v != null));
-            const yMin = allHL.length ? Math.min(...allHL) : 'auto';
-            const yMax = allHL.length ? Math.max(...allHL) : 'auto';
-            const pad = allHL.length ? (yMax - yMin) * 0.05 : 0;
-            const candleDomain = allHL.length ? [yMin - pad, yMax + pad] : ['auto', 'auto'];
-            const candleProps = { ...commonProps, data: candleData };
+            // Candle chart — Y-axis is rendered in a separate sticky panel outside the scroll container
+            const candleMargin = { top: 16, right: 4, left: 0, bottom: 16 };
             return (
-                <ComposedChart {...candleProps}>
+                <ComposedChart data={candleData} margin={candleMargin}>
                     <CartesianGrid strokeDasharray="2 4" stroke="#374151" opacity={0.4} vertical={false} />
                     <XAxis
                         dataKey="date"
@@ -419,16 +424,8 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                         tickLine={false}
                         axisLine={{ stroke: '#374151' }}
                     />
-                    <YAxis
-                        domain={candleDomain}
-                        stroke="#4b5563"
-                        tick={{ fill: '#6b7280', fontSize: 11 }}
-                        tickFormatter={(v) => `₹${v.toFixed(0)}`}
-                        tickLine={false}
-                        axisLine={false}
-                        width={60}
-                        orientation="right"
-                    />
+                    {/* No YAxis here — it lives in the sticky panel */}
+                    <YAxis domain={candleDomain} hide />
                     <Tooltip content={<CustomTooltip />} />
                     {patternElements.areas}
                     {patternElements.lines}
@@ -557,19 +554,40 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
             <div className="flex gap-4">
                 <div className={clsx("h-[260px] sm:h-[340px] overflow-hidden", atAGlance ? "flex-1" : "w-full")}>
                     {chartType === 'candle' ? (
-                        /* Scrollable candle container — each bar gets BAR_PX wide, scroll to latest */
-                        <div
-                            ref={candleScrollRef}
-                            className="h-full overflow-x-auto overflow-y-hidden"
-                            style={{ scrollbarWidth: 'thin', scrollbarColor: '#374151 transparent' }}
-                        >
-                            <div style={{
-                                width: `${Math.max(Math.min(data.length, candleRange) * BAR_PX, 400)}px`,
-                                minWidth: '100%',
-                                height: '100%',
-                            }}>
+                        /* Candle view: scrollable bars + sticky Y-axis panel */
+                        <div className="flex h-full">
+                            {/* Scrollable candles + X-axis */}
+                            <div
+                                ref={candleScrollRef}
+                                className="flex-1 overflow-x-auto overflow-y-hidden min-w-0"
+                                style={{ scrollbarWidth: 'thin', scrollbarColor: '#374151 transparent' }}
+                            >
+                                <div style={{
+                                    width: `${Math.max(candleData.length * BAR_PX, 300)}px`,
+                                    minWidth: '100%',
+                                    height: '100%',
+                                }}>
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        {renderChart()}
+                                    </ResponsiveContainer>
+                                </div>
+                            </div>
+
+                            {/* Sticky Y-axis panel — never scrolls */}
+                            <div className="flex-shrink-0 bg-white dark:bg-zinc-900/60" style={{ width: 62 }}>
                                 <ResponsiveContainer width="100%" height="100%">
-                                    {renderChart()}
+                                    <ComposedChart data={candleData} margin={{ top: 16, right: 0, left: 0, bottom: 16 }}>
+                                        <YAxis
+                                            domain={candleDomain}
+                                            orientation="right"
+                                            width={62}
+                                            tick={{ fill: '#6b7280', fontSize: 11 }}
+                                            tickFormatter={(v) => `₹${v.toFixed(0)}`}
+                                            tickLine={false}
+                                            axisLine={false}
+                                        />
+                                        <Line dataKey="close" stroke="transparent" dot={false} legendType="none" isAnimationActive={false} />
+                                    </ComposedChart>
                                 </ResponsiveContainer>
                             </div>
                         </div>
