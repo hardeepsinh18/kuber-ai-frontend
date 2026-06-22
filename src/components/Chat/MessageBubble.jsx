@@ -323,8 +323,8 @@ const IndicatorsTable = ({ rows, asOfDate }) => {
 
             {/* Table */}
             {open && (
-                <div className="px-3 pb-3">
-                    <div className="overflow-x-auto rounded-lg overflow-hidden">
+                <div className="px-3 pb-3 pt-2">
+                    <div className="overflow-x-auto rounded-lg overflow-hidden border border-[#FDD405]">
                         <table className="w-full text-[13px] border-collapse">
                             <thead>
                                 <tr className="bg-[#FDD405]">
