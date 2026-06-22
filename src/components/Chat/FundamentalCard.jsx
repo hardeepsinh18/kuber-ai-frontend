@@ -840,8 +840,8 @@ const TechnicalScoreCard = ({ tech }) => {
             <button
                 onClick={() => setOpen(o => !o)}
                 className="w-full flex items-center justify-between px-4 py-3
-                           bg-zinc-50 dark:bg-zinc-900/80
-                           hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors">
+                           bg-zinc-100 dark:bg-zinc-800
+                           hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors">
                 <span className="text-sm font-semibold text-zinc-900 dark:text-white">Technical Score Card</span>
                 <span className="text-zinc-400 text-xs">{open ? '∧' : '∨'}</span>
             </button>
