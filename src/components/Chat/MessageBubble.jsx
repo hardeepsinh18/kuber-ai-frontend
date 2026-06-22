@@ -299,7 +299,7 @@ const IndicatorsTable = ({ rows, asOfDate }) => {
         : null;
 
     return (
-        <div className="mt-4 border border-[#FDD405] rounded-xl overflow-hidden bg-white dark:bg-[#1C1B15]">
+        <div className="mt-4 border border-zinc-200 dark:border-zinc-700/50 rounded-xl overflow-hidden bg-white dark:bg-[#1C1B15]">
             {/* Toggle header */}
             <button
                 onClick={() => setOpen(o => !o)}
