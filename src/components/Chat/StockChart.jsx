@@ -61,18 +61,19 @@ const fmtVolLocal = (v) => {
 
 // Real candlestick layer rendered via Recharts Customized
 const CandleLayer = ({ xAxisMap, yAxisMap, data }) => {
-    // Recharts may key maps by number 0 or string "0" — handle both
     const xAxis = xAxisMap && (xAxisMap[0] ?? xAxisMap['0'] ?? Object.values(xAxisMap)[0]);
     const yAxis = yAxisMap && (yAxisMap[0] ?? yAxisMap['0'] ?? Object.values(yAxisMap)[0]);
     if (!xAxis?.scale || !yAxis?.scale || !data?.length) return null;
     const bandwidth = typeof xAxis.bandwidth === 'function' ? xAxis.bandwidth() : 8;
-    const halfW = Math.max(bandwidth * 0.38, 2);
+    const halfW = Math.max(bandwidth * 0.44, 3);
     return (
         <g>
             {data.map((point, i) => {
                 if (point.open == null || point.close == null || point.high == null || point.low == null) return null;
                 const isBull = point.close >= point.open;
-                const color = isBull ? '#10b981' : '#ef4444';
+                const bullColor = '#26a69a';
+                const bearColor = '#ef5350';
+                const color = isBull ? bullColor : bearColor;
                 const xPos = xAxis.scale(point.date);
                 if (xPos == null || isNaN(xPos)) return null;
                 const cx = xPos + bandwidth / 2;
@@ -81,12 +82,14 @@ const CandleLayer = ({ xAxisMap, yAxisMap, data }) => {
                 const bodyTop = yAxis.scale(Math.max(point.open, point.close));
                 const bodyBot = yAxis.scale(Math.min(point.open, point.close));
                 if ([yH, yL, bodyTop, bodyBot].some(v => v == null || isNaN(v))) return null;
-                const bodyH = Math.max(Math.abs(bodyBot - bodyTop), 1);
+                const bodyH = Math.max(Math.abs(bodyBot - bodyTop), 1.5);
                 return (
                     <g key={i}>
-                        <line x1={cx} y1={yH} x2={cx} y2={yL} stroke={color} strokeWidth={1} />
+                        {/* Wick */}
+                        <line x1={cx} y1={yH} x2={cx} y2={yL} stroke={color} strokeWidth={1.5} opacity={0.85} />
+                        {/* Body — solid fill for both bull and bear */}
                         <rect x={cx - halfW} y={bodyTop} width={halfW * 2} height={bodyH}
-                              fill={isBull ? color + '44' : color} stroke={color} strokeWidth={1} />
+                              fill={color} stroke={color} strokeWidth={0.5} rx={1} />
                     </g>
                 );
             })}
@@ -94,8 +97,16 @@ const CandleLayer = ({ xAxisMap, yAxisMap, data }) => {
     );
 };
 
+const CANDLE_RANGES = [
+    { label: '1M', bars: 22 },
+    { label: '3M', bars: 66 },
+    { label: '6M', bars: 132 },
+    { label: '1Y', bars: 252 },
+];
+
 const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAGlance = null }) => {
-    const [chartType, setChartType] = useState('area'); // 'line', 'area', 'ohlc', 'candle'
+    const [chartType, setChartType] = useState('area');
+    const [candleRange, setCandleRange] = useState(66); // default 3M
 
     if (!chartData) return null;
     if (chartData.error) {
@@ -375,35 +386,40 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                 </BarChart>
             );
         } else {
-            // Real candlestick chart using Customized layer
-            const allHL = data.flatMap(d => [d.high, d.low].filter(v => v != null));
+            // Real candlestick chart — slice to selected range for readability
+            const candleData = data.slice(-candleRange);
+            const allHL = candleData.flatMap(d => [d.high, d.low].filter(v => v != null));
             const yMin = allHL.length ? Math.min(...allHL) : 'auto';
             const yMax = allHL.length ? Math.max(...allHL) : 'auto';
-            const pad = allHL.length ? (yMax - yMin) * 0.04 : 0;
+            const pad = allHL.length ? (yMax - yMin) * 0.05 : 0;
             const candleDomain = allHL.length ? [yMin - pad, yMax + pad] : ['auto', 'auto'];
+            const candleProps = { ...commonProps, data: candleData };
             return (
-                <ComposedChart {...commonProps}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" className="dark:stroke-zinc-700" opacity={0.5} />
+                <ComposedChart {...candleProps}>
+                    <CartesianGrid strokeDasharray="2 4" stroke="#374151" opacity={0.4} vertical={false} />
                     <XAxis
                         dataKey="date"
                         tickFormatter={formatDate}
-                        stroke="#9ca3af"
-                        className="text-xs"
-                        tick={{ fill: '#6b7280' }}
+                        stroke="#4b5563"
+                        tick={{ fill: '#6b7280', fontSize: 11 }}
+                        tickLine={false}
+                        axisLine={{ stroke: '#374151' }}
                     />
                     <YAxis
                         domain={candleDomain}
-                        stroke="#9ca3af"
-                        className="text-xs"
-                        tick={{ fill: '#6b7280' }}
-                        tickFormatter={(value) => `₹${value.toFixed(0)}`}
+                        stroke="#4b5563"
+                        tick={{ fill: '#6b7280', fontSize: 11 }}
+                        tickFormatter={(v) => `₹${v.toFixed(0)}`}
+                        tickLine={false}
+                        axisLine={false}
+                        width={60}
+                        orientation="right"
                     />
                     <Tooltip content={<CustomTooltip />} />
                     {patternElements.areas}
                     {patternElements.lines}
-                    {/* Hidden line forces Recharts to initialise axis scales before CandleLayer renders */}
                     <Line dataKey="close" stroke="transparent" dot={false} legendType="none" isAnimationActive={false} />
-                    <Customized component={(props) => <CandleLayer {...props} data={data} />} />
+                    <Customized component={(props) => <CandleLayer {...props} data={candleData} />} />
                     {patternElements.dots}
                 </ComposedChart>
             );
@@ -501,6 +517,26 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                     <BarChart2 className="w-4 h-4" />
                     Candles
                 </button>
+
+                {/* Range selector — only for candle view */}
+                {chartType === 'candle' && (
+                    <div className="flex items-center gap-1 ml-auto">
+                        {CANDLE_RANGES.map(({ label, bars }) => (
+                            <button
+                                key={label}
+                                onClick={() => setCandleRange(bars)}
+                                className={clsx(
+                                    "px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all",
+                                    candleRange === bars
+                                        ? "bg-zinc-800 text-white dark:bg-zinc-200 dark:text-black"
+                                        : "text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+                                )}
+                            >
+                                {label}
+                            </button>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* Chart + Today's Market Stats side panel */}
