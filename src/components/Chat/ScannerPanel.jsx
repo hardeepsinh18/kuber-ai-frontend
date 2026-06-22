@@ -131,14 +131,44 @@ function formatResults(name, results, universe, seconds) {
 const POLL_INTERVAL = 4000;   // poll every 4s
 const MAX_WAIT_MS   = 180_000; // give up after 3 minutes
 
+const SCAN_MESSAGES = [
+    'Crunching price action across every candle…',
+    'Checking open, high, low, close patterns…',
+    'Comparing today vs yesterday vs last week…',
+    'Filtering out the noise, keeping the signal…',
+    'Running pattern logic on each symbol…',
+    'Almost there — sorting results by strength…',
+    'Cross-checking volume with price moves…',
+    'Scanning for momentum shifts…',
+    'Looking for clean setups in the data…',
+    'Validating breakout conditions…',
+    'Ranking stocks by pattern quality…',
+    'Fetching the freshest market data…',
+];
+
 const ScannerPanel = ({ onSelectScanner, onClose }) => {
     const panelRef   = useRef(null);
     const pollRef    = useRef(null);  // interval id for cleanup
+    const msgRef     = useRef(null);  // interval id for message rotation
     const [scanning, setScanning]       = useState(false);
     const [scannerName, setScannerName] = useState('');
     const [elapsed, setElapsed]         = useState(0);
     const [error, setError]             = useState('');
     const [universe, setUniverse]       = useState('nifty500');  // "nifty500" | "all_nse"
+    const [msgIdx, setMsgIdx]           = useState(0);
+
+    // Rotate loading message every 2s while scanning
+    useEffect(() => {
+        if (scanning) {
+            setMsgIdx(0);
+            msgRef.current = setInterval(() => {
+                setMsgIdx(i => (i + 1) % SCAN_MESSAGES.length);
+            }, 2000);
+        } else {
+            clearInterval(msgRef.current);
+        }
+        return () => clearInterval(msgRef.current);
+    }, [scanning]);
 
     // Clean up poll interval on unmount
     useEffect(() => () => clearInterval(pollRef.current), []);
@@ -290,13 +320,21 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                         </div>
 
                         {/* Title */}
-                        <div className="flex flex-col items-center gap-1 text-center">
+                        <div className="flex flex-col items-center gap-1.5 text-center px-6">
                             <p className="text-[16px] font-bold text-zinc-900 dark:text-white">
                                 Scanning for{' '}
                                 <span style={{ color: '#FDD405' }}>{scannerName}</span>
                             </p>
                             <p className="text-[12px] text-zinc-400 dark:text-zinc-500">
-                                {universe === 'nifty500' ? 'Nifty 500' : 'All NSE'} stocks · analysing price patterns
+                                {universe === 'nifty500' ? 'Nifty 500' : 'All NSE'} stocks
+                            </p>
+                            {/* Rotating message */}
+                            <p
+                                key={msgIdx}
+                                className="text-[12px] text-zinc-500 dark:text-zinc-400 italic"
+                                style={{ animation: 'fadeIn 0.4s ease-in' }}
+                            >
+                                {SCAN_MESSAGES[msgIdx]}
                             </p>
                         </div>
 
