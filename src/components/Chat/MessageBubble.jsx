@@ -915,24 +915,6 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                         <PatternDetectionSection patternSummary={patternSummary} />
                     )}
 
-                    {/* ── Data sources footer ──────────────────────────── */}
-                    {(metadata?.data_sources || metadata?.data_fetched_at || metadata?.metrics_available || metadata?.fundamentals_as_of) && (
-                        <div className="mt-5 pt-3 border-t border-zinc-100 dark:border-zinc-700/40">
-                            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-zinc-400 dark:text-zinc-500">
-                                {metadata.data_sources && <span>📊 {metadata.data_sources}</span>}
-                                {metadata.fundamentals_as_of && <span className="before:content-['·'] before:mr-2.5">Fundamentals as of {metadata.fundamentals_as_of}</span>}
-                                {metadata.data_fetched_at && (
-                                  <span className="before:content-['·'] before:mr-2.5">
-                                    Price {new Date(metadata.data_fetched_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
-                                    {metadata.price_stale && metadata.price_age_seconds && (
-                                      <span className="ml-1 text-[#FDD405]">({Math.round(metadata.price_age_seconds)}s delay)</span>
-                                    )}
-                                  </span>
-                                )}
-                                {metadata.metrics_available && <span className="before:content-['·'] before:mr-2.5">{metadata.metrics_available}</span>}
-                            </div>
-                        </div>
-                    )}
 
                     {/* ── Follow-up suggestions ────────────────────────── */}
                     {suggestedFollowUps && suggestedFollowUps.length > 0 && onFollowUpClick && (
