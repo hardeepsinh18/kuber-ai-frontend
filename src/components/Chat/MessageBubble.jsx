@@ -436,7 +436,7 @@ const HorizonChoice = ({ symbol, onChoice }) => {
     );
 };
 
-const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, chartData = null, metadata = {}, signal = null, patternSummary = null, technicalSummary = null, indicatorsTable = null, scoreCard = null, suggestedFollowUps = null, newsHeadlines = null, onFollowUpClick = null, onStreamingDone = null, messageId = null, onFeedback = null, responseMode = null }) => {
+const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, isScannerResult = false, chartData = null, metadata = {}, signal = null, patternSummary = null, technicalSummary = null, indicatorsTable = null, scoreCard = null, suggestedFollowUps = null, newsHeadlines = null, onFollowUpClick = null, onStreamingDone = null, messageId = null, onFeedback = null, responseMode = null }) => {
     const isUser = role === 'user';
 
     // Use streaming hook for AI messages
@@ -703,10 +703,22 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                     )}
 
                     {/* ── AI text (markdown) ──────────────────────────── */}
-                    <div className="prose prose-base max-w-none dark:prose-invert">
+                    <div className={`prose prose-base max-w-none dark:prose-invert${isScannerResult ? ' scanner-result' : ''}`}
+                         style={isScannerResult ? { animation: 'slideUpFade 0.5s cubic-bezier(0.22,1,0.36,1) both' } : {}}>
                         <ReactMarkdown
                             remarkPlugins={[remarkGfm]}
                             components={{
+                                ...(isScannerResult ? {
+                                    li: ({ children, index }) => (
+                                        <li style={{
+                                            opacity: 0,
+                                            animation: 'slideInStock 0.35s ease-out forwards',
+                                            animationDelay: `${0.05 + (index ?? 0) * 0.06}s`,
+                                        }}>
+                                            {children}
+                                        </li>
+                                    ),
+                                } : {}),
                                 p: ({ children }) => (
                                     <p className="mb-5 last:mb-0 leading-[1.75] text-[15px] text-zinc-700 dark:text-zinc-300 font-normal tracking-normal">
                                         {children}

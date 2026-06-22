@@ -415,7 +415,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
     // Scanner results go directly into chat as an assistant message — no LLM call.
     const handleScannerResult = useCallback(async (content) => {
         await ensureCurrentChat();
-        setMessages(prev => [...prev, { id: genId(), role: 'assistant', content }]);
+        setMessages(prev => [...prev, { id: genId(), role: 'assistant', content, isScannerResult: true }]);
     }, [ensureCurrentChat, setMessages]);
 
     const handleSend = async (manualInput = null) => {
@@ -701,6 +701,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                             <MessageBubble
                                 role={msg.role}
                                 content={typeof msg.content === 'string' ? msg.content : String(msg.content ?? '')}
+                                isScannerResult={msg.isScannerResult || false}
                                 isStreaming={msg.id === streamingMessageId}
                                 isLoading={isLoading}
                                 chartData={msg.chartData}
