@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useContext } from 'react';
+import { useTheme } from '../../context/ThemeContext';
 import {
     BarChart, Bar, LineChart, Line, Cell,
     XAxis, YAxis, CartesianGrid, ReferenceLine,
@@ -298,39 +299,53 @@ const PeerRankCard = ({ peers, group, rank }) => {
 
 /* ─── OVERALL HEALTH SCORE banner ───────────────────────────────── */
 const OverallHealthScore = ({ score, label, summary, ratingsSum }) => {
+    const { theme } = useTheme();
+    const isDark = theme === 'dark';
     const s = Math.min(100, Math.max(0, score || 0));
     const r = 32, cx = 42, cy = 42, circ = 2 * Math.PI * r;
     const filled = (s / 100) * circ;
     const { strong = 0, watch = 0, risk = 0 } = ratingsSum || {};
     const ringColor = s >= 70 ? '#10b981' : s >= 40 ? '#FDD405' : '#ef4444';
+    const trackColor = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.10)';
+    const numColor   = isDark ? '#fff' : '#111';
+    const subColor   = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.45)';
     return (
-        <div className="mb-4 rounded-xl bg-zinc-900 p-4 flex items-center gap-4 border border-zinc-700/50">
+        <div className="mb-4 rounded-xl p-4 flex items-center gap-4 border
+                        bg-zinc-900 border-zinc-700/50
+                        dark:bg-zinc-900 dark:border-zinc-700/50
+                        light:bg-zinc-100 light:border-zinc-200"
+             style={!isDark ? { background: '#f4f4f5', borderColor: '#e4e4e7' } : {}}>
             <div className="flex-shrink-0">
                 <svg viewBox="0 0 84 84" width={80} height={80}>
-                    <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth={8} />
+                    <circle cx={cx} cy={cy} r={r} fill="none" stroke={trackColor} strokeWidth={8} />
                     <circle cx={cx} cy={cy} r={r} fill="none" stroke={ringColor} strokeWidth={8}
                         strokeDasharray={`${filled} ${circ}`} strokeLinecap="round"
                         transform={`rotate(-90 ${cx} ${cy})`} />
-                    <text x={cx} y={cy - 4} textAnchor="middle" fill="#fff"
+                    <text x={cx} y={cy - 4} textAnchor="middle" fill={numColor}
                         fontSize={21} fontWeight="800" fontFamily="Inter,sans-serif">{s}</text>
-                    <text x={cx} y={cy + 12} textAnchor="middle" fill="rgba(255,255,255,0.45)"
+                    <text x={cx} y={cy + 12} textAnchor="middle" fill={subColor}
                         fontSize={9} fontFamily="Inter,sans-serif">/100</text>
                 </svg>
             </div>
             <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest mb-1">
+                <p className={clsx('text-[10px] font-bold uppercase tracking-widest mb-1',
+                    isDark ? 'text-white/50' : 'text-zinc-500')}>
                     Overall Health Score
                 </p>
-                <p className="text-[15px] font-bold text-white leading-snug mb-2 line-clamp-2">
+                <p className={clsx('text-[15px] font-bold leading-snug mb-2 line-clamp-2',
+                    isDark ? 'text-white' : 'text-zinc-900')}>
                     {summary || label || 'Healthy company.'}
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                     {[
-                        { dot: 'bg-emerald-400', text: `${strong} STRONG` },
+                        { dot: 'bg-emerald-500', text: `${strong} STRONG` },
                         { dot: 'bg-amber-400',   text: `${watch} WATCH` },
-                        { dot: 'bg-rose-400',    text: `${risk} RISK` },
+                        { dot: 'bg-rose-500',    text: `${risk} RISK` },
                     ].map(({ dot, text }) => (
-                        <span key={text} className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/10 text-[10px] font-semibold text-white/80">
+                        <span key={text} className={clsx(
+                            'flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold',
+                            isDark ? 'bg-white/10 text-white/80' : 'bg-zinc-200/80 text-zinc-700'
+                        )}>
                             <span className={clsx('w-1.5 h-1.5 rounded-full flex-shrink-0', dot)} />
                             {text}
                         </span>
