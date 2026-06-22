@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
     BarChart, Bar, LineChart, Line, Cell,
-    XAxis, ResponsiveContainer,
+    XAxis, YAxis, CartesianGrid, ReferenceLine,
+    ComposedChart, Customized, ResponsiveContainer,
 } from 'recharts';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { clsx } from 'clsx';
@@ -609,14 +610,128 @@ const CandleChart = ({ patternName }) => {
     );
 };
 
+/* ─── Real mini candlestick layer for pattern cards ─────────────────────── */
+const MiniCandleLayer = ({ xAxisMap, yAxisMap, data }) => {
+    const xAxis = xAxisMap && (xAxisMap[0] ?? xAxisMap['0'] ?? Object.values(xAxisMap)[0]);
+    const yAxis = yAxisMap && (yAxisMap[0] ?? yAxisMap['0'] ?? Object.values(yAxisMap)[0]);
+    if (!xAxis?.scale || !yAxis?.scale || !data?.length) return null;
+    const bandwidth = typeof xAxis.bandwidth === 'function' ? xAxis.bandwidth() : 8;
+    const halfW = Math.max(bandwidth * 0.42, 2);
+    return (
+        <g>
+            {data.map((pt, i) => {
+                if (pt.open == null || pt.close == null || pt.high == null || pt.low == null) return null;
+                const isBull = pt.close >= pt.open;
+                const color = isBull ? '#26a69a' : '#ef5350';
+                const xPos = xAxis.scale(pt.date);
+                if (xPos == null || isNaN(xPos)) return null;
+                const cx = xPos + bandwidth / 2;
+                const yH = yAxis.scale(pt.high);
+                const yL = yAxis.scale(pt.low);
+                const bodyTop = yAxis.scale(Math.max(pt.open, pt.close));
+                const bodyBot = yAxis.scale(Math.min(pt.open, pt.close));
+                if ([yH, yL, bodyTop, bodyBot].some(v => v == null || isNaN(v))) return null;
+                const bodyH = Math.max(Math.abs(bodyBot - bodyTop), 1.5);
+                return (
+                    <g key={i}>
+                        <line x1={cx} y1={yH} x2={cx} y2={yL} stroke={color} strokeWidth={1.2} opacity={0.9} />
+                        <rect x={cx - halfW} y={bodyTop} width={halfW * 2} height={bodyH}
+                              fill={color} stroke={color} strokeWidth={0.5} rx={0.5} />
+                    </g>
+                );
+            })}
+        </g>
+    );
+};
+
+/* ─── Mini chart for a single pattern card ───────────────────────────────── */
+const PatternMiniChart = ({ chartData, barsAgo = 0, support, resistance }) => {
+    const rawChart = useMemo(() => {
+        if (!chartData) return null;
+        if (Array.isArray(chartData)) return chartData.find(cd => cd && !cd.error) ?? null;
+        return chartData.error ? null : chartData;
+    }, [chartData]);
+
+    const slicedData = useMemo(() => {
+        if (!rawChart) return null;
+        const { dates = [], open = [], high = [], low = [], close = [] } = rawChart;
+        const allData = dates.map((date, i) => ({
+            date,
+            open: open[i], high: high[i], low: low[i], close: close[i],
+        })).filter(d => d.close != null);
+        if (allData.length < 5) return null;
+
+        const n = allData.length;
+        const patternIdx = Math.max(0, n - 1 - barsAgo);
+        const start = Math.max(0, patternIdx - 12);
+        const end   = Math.min(n, patternIdx + 4);
+        const slice = allData.slice(start, end);
+        return slice.length >= 3 ? { slice, patternIdx: patternIdx - start } : null;
+    }, [rawChart, barsAgo]);
+
+    if (!slicedData) {
+        return <CandleChart patternName="__unknown__" />;
+    }
+
+    const { slice, patternIdx } = slicedData;
+
+    const allHL = slice.flatMap(d => [d.high, d.low, support, resistance].filter(v => v != null));
+    const yMin  = Math.min(...allHL);
+    const yMax  = Math.max(...allHL);
+    const pad   = (yMax - yMin) * 0.1 || 1;
+    const domain = [yMin - pad, yMax + pad];
+
+    // Highlight the pattern formation bar
+    const highlightDate  = slice[patternIdx]?.date;
+    const highlightBefore = slice[Math.max(0, patternIdx - 1)]?.date;
+
+    return (
+        <div style={{ width: '100%', height: 100 }}>
+            <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={slice} margin={{ top: 6, right: 4, left: 0, bottom: 2 }}>
+                    <CartesianGrid strokeDasharray="2 4" stroke="#374151" opacity={0.25} vertical={false} />
+                    <XAxis dataKey="date" hide />
+                    <YAxis domain={domain} hide />
+                    {/* Pattern zone highlight */}
+                    {highlightDate && highlightBefore && (
+                        <ReferenceLine x={highlightDate} stroke="#FDD405" strokeWidth={14} strokeOpacity={0.18} />
+                    )}
+                    {/* Support line */}
+                    {support != null && (
+                        <ReferenceLine y={support} stroke="#10b981" strokeDasharray="3 3" strokeWidth={1.2}
+                            label={{ value: `S`, position: 'insideTopRight', fill: '#10b981', fontSize: 8 }} />
+                    )}
+                    {/* Resistance line */}
+                    {resistance != null && (
+                        <ReferenceLine y={resistance} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={1.2}
+                            label={{ value: `R`, position: 'insideTopRight', fill: '#ef4444', fontSize: 8 }} />
+                    )}
+                    {/* Invisible line so recharts initialises the axis scale */}
+                    <Line dataKey="close" stroke="transparent" dot={false} legendType="none" isAnimationActive={false} />
+                    <Customized component={(props) => <MiniCandleLayer {...props} data={slice} />} />
+                </ComposedChart>
+            </ResponsiveContainer>
+        </div>
+    );
+};
+
 /* ─── PATTERN DETECTION & RESISTANCE ALERT ───────────────────────────────── */
-export const PatternDetectionSection = ({ patternSummary }) => {
+export const PatternDetectionSection = ({ patternSummary, chartData = null }) => {
     const [open, setOpen] = React.useState(false);
     if (!patternSummary) return null;
 
     const candlesticks = Array.isArray(patternSummary.candlestick) ? patternSummary.candlestick : [];
     const summary      = patternSummary.summary;
     const resistance   = patternSummary.resistance;
+    const support      = patternSummary.support;
+
+    // Build a name→detail map so each card knows bars_ago
+    const detailMap = useMemo(() => {
+        const map = {};
+        [...(patternSummary.bullish_details || []), ...(patternSummary.bearish_details || [])]
+            .forEach(d => { map[d.name] = d; });
+        return map;
+    }, [patternSummary]);
 
     const hasContent = candlesticks.length > 0 || summary;
     if (!hasContent) return null;
@@ -638,22 +753,40 @@ export const PatternDetectionSection = ({ patternSummary }) => {
                     )}
                     {candlesticks.length > 0 && (
                         <div className="grid grid-cols-2 gap-3">
-                            {candlesticks.slice(0, 4).map((name, i) => (
-                                <div key={i} className="bg-white dark:bg-zinc-900 border border-[#FDD405] rounded-xl p-3">
-                                    {resistance != null && (
-                                        <div className="flex justify-end mb-1">
-                                            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/50 border border-rose-300 dark:border-rose-700/40 text-[10px] font-semibold text-rose-600 dark:text-rose-300">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 dark:bg-rose-400 flex-shrink-0" />
-                                                Resist ₹{Number(resistance).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                            {candlesticks.slice(0, 4).map((name, i) => {
+                                const detail   = detailMap[name] || {};
+                                const barsAgo  = detail.bars_ago ?? 0;
+                                const strength = detail.strength;
+                                return (
+                                    <div key={i} className="bg-white dark:bg-zinc-900 border border-[#FDD405] rounded-xl p-3">
+                                        {/* Header: Resistance badge + bars-ago label */}
+                                        <div className="flex items-center justify-between mb-2 gap-1 flex-wrap">
+                                            {resistance != null && (
+                                                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/50 border border-rose-300 dark:border-rose-700/40 text-[10px] font-semibold text-rose-600 dark:text-rose-300">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 dark:bg-rose-400 flex-shrink-0" />
+                                                    R ₹{Number(resistance).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                                                </span>
+                                            )}
+                                            <span className="text-[10px] text-zinc-400 dark:text-zinc-500 ml-auto">
+                                                {barsAgo === 0 ? 'Today' : `${barsAgo}d ago`}
+                                                {strength ? ` · ${strength}` : ''}
                                             </span>
                                         </div>
-                                    )}
-                                    <CandleChart patternName={name} />
-                                    <div className="border-t border-zinc-200 dark:border-zinc-700/40 pt-2 mt-1">
-                                        <p className="text-xs font-semibold text-zinc-900 dark:text-white text-center">{name}</p>
+
+                                        {/* Real candle chart or schematic fallback */}
+                                        <PatternMiniChart
+                                            chartData={chartData}
+                                            barsAgo={barsAgo}
+                                            support={support}
+                                            resistance={resistance}
+                                        />
+
+                                        <div className="border-t border-zinc-200 dark:border-zinc-700/40 pt-2 mt-2">
+                                            <p className="text-xs font-semibold text-zinc-900 dark:text-white text-center">{name}</p>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
                 </div>

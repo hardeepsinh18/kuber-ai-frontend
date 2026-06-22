@@ -912,7 +912,7 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
 
                     {/* ── Pattern Detection & Resistance Alert ─────────── */}
                     {patternSummary && (
-                        <PatternDetectionSection patternSummary={patternSummary} />
+                        <PatternDetectionSection patternSummary={patternSummary} chartData={chartData} />
                     )}
 
 
