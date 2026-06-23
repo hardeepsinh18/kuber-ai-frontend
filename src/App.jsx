@@ -17,6 +17,7 @@ import PreviewPage from './pages/PreviewPage';
 function AppContent() {
   const navigate = useNavigate();
   const [showLogin, setShowLogin] = useState(false);
+  const [showPortfolio, setShowPortfolio] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     if (typeof window !== 'undefined') return window.innerWidth >= 768;
     return true;
@@ -44,6 +45,8 @@ function AppContent() {
       setSidebarOpen={setSidebarOpen}
       showLogin={showLogin}
       setShowLogin={setShowLogin}
+      showPortfolio={showPortfolio}
+      setShowPortfolio={setShowPortfolio}
       chatList={chatList}
       loadChat={loadChat}
       deleteChat={deleteChat}

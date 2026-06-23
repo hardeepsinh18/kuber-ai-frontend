@@ -60,6 +60,35 @@ const CATEGORY_COLORS = {
     'Bearish Candlestick Patterns': 'text-rose-400',
 };
 
+// Hard contradictions — scanners that physically cannot fire on the same stock simultaneously.
+// Key = selected scanner → Value = set of scanners that must be disabled.
+const CONFLICTS = {
+    'RSI Oversold':           new Set(['RSI Overbought']),
+    'RSI Overbought':         new Set(['RSI Oversold']),
+    'MACD Bullish Crossover': new Set(['MACD Bearish Crossover']),
+    'MACD Bearish Crossover': new Set(['MACD Bullish Crossover']),
+    'Supertrend Buy':         new Set(['Supertrend Sell']),
+    'Supertrend Sell':        new Set(['Supertrend Buy']),
+    'Golden Cross':           new Set(['Death Cross']),
+    'Death Cross':            new Set(['Golden Cross']),
+    'BB Breakout Bullish':    new Set(['BB Squeeze']),
+    // BB Squeeze = bands contracting → breakouts/new highs are impossible
+    'BB Squeeze':             new Set(['BB Breakout Bullish', 'Short Term Breakouts', '52-Week High Breakout']),
+    'Short Term Breakouts':   new Set(['BB Squeeze']),
+    '52-Week High Breakout':  new Set(['BB Squeeze']),
+    // Candlestick direct opposites
+    'Bullish Engulfing':      new Set(['Bearish Engulfing']),
+    'Bearish Engulfing':      new Set(['Bullish Engulfing']),
+    'Morning Star':           new Set(['Evening Star']),
+    'Evening Star':           new Set(['Morning Star']),
+    'Three White Soldiers':   new Set(['Three Black Crows']),
+    'Three Black Crows':      new Set(['Three White Soldiers']),
+    // Hammer = bottom reversal bullish; Hanging Man / Shooting Star = top reversal bearish
+    'Hammer':                 new Set(['Hanging Man', 'Shooting Star']),
+    'Hanging Man':            new Set(['Hammer']),
+    'Shooting Star':          new Set(['Hammer']),
+};
+
 const SCANNER_EMOJI = {
     'Short Term Breakouts':      '🚀',
     '52-Week High Breakout':     '🏆',
@@ -152,6 +181,20 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
 
     // Multi-select state
     const [selected, setSelected] = useState(new Set());
+
+    // Derive which scanners are blocked by the current selection
+    const disabledByConflict = new Set();
+    for (const sel of selected) {
+        CONFLICTS[sel]?.forEach(c => disabledByConflict.add(c));
+    }
+
+    const conflictReasonFor = (name) => {
+        const reasons = [];
+        for (const sel of selected) {
+            if (CONFLICTS[sel]?.has(name)) reasons.push(sel);
+        }
+        return reasons.length ? `Conflicts with: ${reasons.join(', ')}` : undefined;
+    };
 
     const toggleScanner = (name) => {
         if (scanning) return;
@@ -314,19 +357,26 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
         }, POLL_INTERVAL);
     };
 
-    // Render a scanner button (selected = yellow outline + checkmark)
+    // Render a scanner button (selected = yellow outline + checkmark, conflicted = greyed out)
     const ScannerBtn = ({ name, hoverClass = '' }) => {
-        const isSel = selected.has(name);
+        const isSel       = selected.has(name);
+        const isConflict  = !isSel && disabledByConflict.has(name);
+        const tipText     = isConflict ? conflictReasonFor(name) : undefined;
+
         return (
             <button
                 key={name}
-                disabled={scanning}
+                disabled={scanning || isConflict}
+                title={tipText}
                 onClick={() => toggleScanner(name)}
-                className={`relative px-3 py-1.5 rounded-xl text-[12px] font-medium border transition-all cursor-pointer
-                            disabled:opacity-40 disabled:cursor-not-allowed
-                            ${isSel
-                                ? 'border-[#FDD405] bg-[#FDD405]/10 text-zinc-900 dark:text-white'
-                                : `bg-zinc-50 border-zinc-200 text-zinc-600
+                className={`relative px-3 py-1.5 rounded-xl text-[12px] font-medium border transition-all
+                            ${isConflict
+                                ? 'opacity-25 cursor-not-allowed select-none border-zinc-200 bg-zinc-50 text-zinc-400 dark:border-zinc-800/60 dark:bg-zinc-900/40 dark:text-zinc-600'
+                                : scanning
+                                ? 'opacity-40 cursor-not-allowed'
+                                : isSel
+                                ? 'cursor-pointer border-[#FDD405] bg-[#FDD405]/10 text-zinc-900 dark:text-white'
+                                : `cursor-pointer bg-zinc-50 border-zinc-200 text-zinc-600
                                    dark:bg-zinc-800/60 dark:border-white/8 dark:text-zinc-300
                                    ${hoverClass}`
                             }`}

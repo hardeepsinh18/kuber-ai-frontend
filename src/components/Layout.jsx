@@ -2,8 +2,10 @@ import { clsx } from 'clsx';
 import { ChevronsLeft, ChevronsRight } from 'lucide-react';
 import BackgroundEffect from './BackgroundEffect';
 import Sidebar from './Sidebar';
+import PortfolioOverlay from './Chat/PortfolioOverlay';
 
-const Layout = ({ children, onNewThread, sidebarOpen, setSidebarOpen, showLogin, setShowLogin, chatList = [], loadChat, deleteChat }) => {
+const Layout = ({ children, onNewThread, sidebarOpen, setSidebarOpen, showLogin, setShowLogin,
+    showPortfolio, setShowPortfolio, chatList = [], loadChat, deleteChat }) => {
     return (
         <div className="relative min-h-screen w-full overflow-hidden font-sans flex transition-colors duration-300 bg-[#F5F2E8] text-zinc-900 dark:bg-[#0A0A0A] dark:text-zinc-100">
             <BackgroundEffect />
@@ -12,12 +14,17 @@ const Layout = ({ children, onNewThread, sidebarOpen, setSidebarOpen, showLogin,
                 isOpen={sidebarOpen}
                 toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
                 onNewThread={onNewThread}
+                onPortfolioClick={() => setShowPortfolio(true)}
                 showLogin={showLogin}
                 setShowLogin={setShowLogin}
                 chatList={chatList}
                 loadChat={loadChat}
                 deleteChat={deleteChat}
             />
+
+            {showPortfolio && (
+                <PortfolioOverlay onClose={() => setShowPortfolio(false)} />
+            )}
 
             {/* Sidebar toggle — true D-shape semicircle, overlaps sidebar border by 1px to hide the line */}
             <button

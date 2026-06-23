@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import {
     Plus, MessageSquare,
     Sun, Moon, LogIn, Trash2, Search, Pencil, Check,
-    TrendingUp,
+    TrendingUp, BarChart2,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useTheme } from '../context/ThemeContext';
@@ -27,7 +27,7 @@ const relativeTime = (ts) => {
     return t.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 };
 
-const Sidebar = ({ isOpen, toggleSidebar, onNewThread, showLogin = false, setShowLogin = () => {}, chatList = [], loadChat, deleteChat }) => {
+const Sidebar = ({ isOpen, toggleSidebar, onNewThread, onPortfolioClick, showLogin = false, setShowLogin = () => {}, chatList = [], loadChat, deleteChat }) => {
     const { theme, toggleTheme } = useTheme();
     const { user, isAuthenticated, signOut, supabaseConfigured } = useAuth();
     const { renameChat, isListLoading, newChat } = useChatHistory();
@@ -310,6 +310,19 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, showLogin = false, setSho
                                 </button>
                             )}
 
+                            {/* Portfolio button */}
+                            <button
+                                onClick={onPortfolioClick}
+                                className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl
+                                           text-[11px] font-semibold transition-all duration-200
+                                           bg-zinc-200/80 text-zinc-700 hover:bg-zinc-300 hover:text-zinc-900
+                                           dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 dark:hover:text-white
+                                           border border-zinc-300/60 dark:border-zinc-700/50"
+                            >
+                                <BarChart2 size={11} />
+                                Portfolio
+                            </button>
+
                             {/* Theme toggle switch */}
                             <div className="flex items-center justify-between px-1">
                                 <span className="text-[11px] text-zinc-500 dark:text-zinc-400">Theme</span>
@@ -365,6 +378,15 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, showLogin = false, setSho
                         title="Search chats"
                     >
                         <Search size={17} />
+                    </button>
+
+                    <button
+                        onClick={onPortfolioClick}
+                        title="Portfolio Analysis"
+                        className="p-2 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300
+                                   hover:bg-zinc-200/60 dark:hover:bg-white/5 transition-colors"
+                    >
+                        <BarChart2 size={17} />
                     </button>
 
                     {/* Spacer */}
