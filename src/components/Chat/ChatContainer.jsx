@@ -441,7 +441,7 @@ const extractSymbolFromResponse = (responseData, metadata, chartData, extractedS
 
 const ChatContainer = ({ sidebarOpen, routeChatId }) => {
     const { chatId: routeChatIdParam } = useParams();
-    const { accessToken } = useAuth();
+    const { accessToken, refreshSession } = useAuth();
     const { theme } = useTheme();
     const { setChatActive } = useChatMode();
     const { messages, setMessages, ensureCurrentChat, loadChat, currentChatId, isChatLoading, chatLoadError, setChatLoadError } = useChatHistory();
@@ -600,14 +600,19 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
     };
 
     const handleFeedback = useCallback(async (msgId, rating) => {
+        // Fire-and-forget for the user, but never swallow silently — log failures
+        // so broken feedback delivery is observable instead of invisible.
         try {
-            await fetch(FEEDBACK_ENDPOINT, {
+            const res = await fetch(FEEDBACK_ENDPOINT, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message_id: msgId, rating }),
             });
-        } catch (_e) {
-            // Fire-and-forget — never surface feedback errors to the user
+            if (!res.ok) {
+                console.warn('Feedback submission failed:', res.status);
+            }
+        } catch (e) {
+            console.warn('Feedback submission error:', e?.message || e);
         }
     }, []);
 
@@ -735,19 +740,33 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             if (accessToken) {
                 headers.Authorization = `Bearer ${accessToken}`;
             }
-            const controller = new AbortController();
-            abortControllerRef.current = controller;
-            const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-            let response;
-            try {
-                response = await fetch(API_ENDPOINT, {
-                    method: 'POST',
-                    headers,
-                    body: JSON.stringify(payload),
-                    signal: controller.signal,
-                });
-            } finally {
-                clearTimeout(timeoutId);
+            const doFetch = async () => {
+                const controller = new AbortController();
+                abortControllerRef.current = controller;
+                const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+                try {
+                    return await fetch(API_ENDPOINT, {
+                        method: 'POST',
+                        headers,
+                        body: JSON.stringify(payload),
+                        signal: controller.signal,
+                    });
+                } finally {
+                    clearTimeout(timeoutId);
+                }
+            };
+
+            let response = await doFetch();
+
+            // On 401, the access token has likely expired. Force a single refresh
+            // and retry once before surfacing "session expired" to the user.
+            if (response.status === 401 && accessToken && typeof refreshSession === 'function') {
+                const freshToken = await refreshSession();
+                if (requestId !== activeRequestIdRef.current) return;
+                if (freshToken) {
+                    headers.Authorization = `Bearer ${freshToken}`;
+                    response = await doFetch();
+                }
             }
 
             if (requestId !== activeRequestIdRef.current) return;

@@ -92,6 +92,21 @@ export function AuthProvider({ children }) {
     return data;
   };
 
+  // Force a token refresh and return the fresh access token (or null on failure).
+  // Used by the chat flow to recover from a 401 without making the user re-sign-in.
+  const refreshSession = async () => {
+    if (!supabase) return null;
+    try {
+      const { data, error } = await supabase.auth.refreshSession();
+      if (error || !data?.session) return null;
+      setSession(data.session);
+      setUser(data.session.user ?? null);
+      return data.session.access_token ?? null;
+    } catch {
+      return null;
+    }
+  };
+
   const signOut = async () => {
     if (!supabase) {
       localStorage.removeItem(DEMO_KEY);
@@ -111,6 +126,7 @@ export function AuthProvider({ children }) {
     signUpWithEmail,
     signInWithGoogle,
     signOut,
+    refreshSession,
     supabaseConfigured: !!supabase,
   };
 
