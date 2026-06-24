@@ -332,27 +332,38 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
         }
     }, [routeChatId, routeChatIdParam, currentChatId, loadChat]);
 
+    // Reliable scroll helper — sets scrollTop directly on the container instead of
+    // using scrollIntoView, which can scroll the wrong ancestor when nested inside
+    // overflow:hidden parents.
+    const scrollToBottomNow = useCallback((smooth = false) => {
+        const el = chatContainerRef.current;
+        if (!el) return;
+        if (smooth) {
+            el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+        } else {
+            el.scrollTop = el.scrollHeight;
+        }
+    }, []);
+
     // Scroll to bottom when messages change or loading state changes.
-    // Use 'instant' during generation so the scroll lands after React has painted
-    // the new bubble — 'smooth' can complete mid-paint and land on empty space.
     useEffect(() => {
         if (messages.length > 0 || streamingMessageId || showThinking) {
-            const behavior = (streamingMessageId || showThinking) ? 'instant' : 'smooth';
-            bottomRef.current?.scrollIntoView({ behavior });
+            // Use smooth only for user-initiated navigation (no active generation)
+            scrollToBottomNow(!(streamingMessageId || showThinking || isLoading));
         }
-    }, [messages, isLoading, streamingMessageId, showThinking]);
+    }, [messages, isLoading, streamingMessageId, showThinking, scrollToBottomNow]);
 
     // Keep viewport pinned to bottom during generation (thinking + streaming).
     // Covers both the ThinkingPaths phase and the streaming text phase.
     useEffect(() => {
         if (!streamingMessageId && !showThinking) return;
-        const container = chatContainerRef.current;
         const id = setInterval(() => {
-            if (!container) return;
-            const { scrollTop, scrollHeight, clientHeight } = container;
-            const isNearBottom = scrollHeight - scrollTop - clientHeight < 300;
-            if (isNearBottom) {
-                bottomRef.current?.scrollIntoView({ behavior: 'instant' });
+            const el = chatContainerRef.current;
+            if (!el) return;
+            const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+            // Only follow if user hasn't scrolled up more than 300px
+            if (distFromBottom < 300) {
+                el.scrollTop = el.scrollHeight;
             }
         }, 60);
         return () => clearInterval(id);
