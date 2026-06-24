@@ -689,7 +689,7 @@ export default function PortfolioOverlay({ onClose }) {
       className="fixed inset-0 z-[60] flex items-start justify-center
         bg-black/70 dark:bg-black/80 backdrop-blur-sm overflow-y-auto p-4 md:p-6"
       style={{ animation: 'fadeIn 0.2s ease forwards' }}
-      onClick={e => e.target === e.currentTarget && close()}
+      onClick={e => e.target === e.currentTarget && onClose()}
     >
       <div
         className="relative w-full max-w-5xl my-4
@@ -734,7 +734,7 @@ export default function PortfolioOverlay({ onClose }) {
                 <RefreshCw size={11} /> Re-upload
               </button>
             )}
-            <button onClick={close}
+            <button onClick={onClose}
               className="p-2 rounded-xl transition-all duration-150
                 text-zinc-400 dark:text-zinc-500
                 hover:text-zinc-800 dark:hover:text-white
