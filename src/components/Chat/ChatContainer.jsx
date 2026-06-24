@@ -332,29 +332,31 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
         }
     }, [routeChatId, routeChatIdParam, currentChatId, loadChat]);
 
-    // Scroll to bottom when messages change or loading state changes
+    // Scroll to bottom when messages change or loading state changes.
+    // Use 'instant' during generation so the scroll lands after React has painted
+    // the new bubble — 'smooth' can complete mid-paint and land on empty space.
     useEffect(() => {
         if (messages.length > 0 || streamingMessageId || showThinking) {
-            bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+            const behavior = (streamingMessageId || showThinking) ? 'instant' : 'smooth';
+            bottomRef.current?.scrollIntoView({ behavior });
         }
     }, [messages, isLoading, streamingMessageId, showThinking]);
 
-    // During fake streaming the bubble grows but messages[] doesn't change,
-    // so we run a fast interval to keep the viewport pinned to the bottom —
-    // but only when the user is already near the bottom (don't fight user scroll).
+    // Keep viewport pinned to bottom during generation (thinking + streaming).
+    // Covers both the ThinkingPaths phase and the streaming text phase.
     useEffect(() => {
-        if (!streamingMessageId) return;
+        if (!streamingMessageId && !showThinking) return;
         const container = chatContainerRef.current;
         const id = setInterval(() => {
             if (!container) return;
             const { scrollTop, scrollHeight, clientHeight } = container;
-            const isNearBottom = scrollHeight - scrollTop - clientHeight < 200;
+            const isNearBottom = scrollHeight - scrollTop - clientHeight < 300;
             if (isNearBottom) {
                 bottomRef.current?.scrollIntoView({ behavior: 'instant' });
             }
         }, 60);
         return () => clearInterval(id);
-    }, [streamingMessageId]);
+    }, [streamingMessageId, showThinking]);
 
     const updateScrollButtonVisibility = useCallback(() => {
         const container = chatContainerRef.current;
