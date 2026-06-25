@@ -276,24 +276,36 @@ const extractStockSymbols = (query) => {
     };
 
     const queryLower = query.toLowerCase();
+    // rewrittenQuery replaces alias text with the actual ticker so the backend
+    // receives "tell about SAIL" instead of "tell about sail" — prevents fuzzy mismatch
+    let rewrittenQuery = query;
 
-    // 1. Check multi-word aliases first (most reliable)
-    for (const [alias, symbol] of Object.entries(stockAliases)) {
-        if (alias.includes(' ') && queryLower.includes(alias)) {
+    // 1. Check multi-word aliases first (most reliable), longest match wins
+    const multiWordAliases = Object.entries(stockAliases)
+        .filter(([a]) => a.includes(' '))
+        .sort((a, b) => b[0].length - a[0].length); // longest first
+
+    for (const [alias, symbol] of multiWordAliases) {
+        if (queryLower.includes(alias)) {
             if (!confident.includes(symbol)) confident.push(symbol);
+            rewrittenQuery = rewrittenQuery.replace(new RegExp(alias, 'gi'), symbol);
         }
     }
 
-    // 2. Check each word
-    const words = query.split(/\s+/);
+    // 2. Check each word in the (possibly already rewritten) query
+    const words = rewrittenQuery.split(/\s+/);
     for (const word of words) {
         const cleaned = word.replace(/[.,!?;:()'"/]/g, '');
         if (!cleaned) continue;
         const cleanedLower = cleaned.toLowerCase();
 
-        // Alias match (single-word) → confident
+        // Alias match (single-word) → confident + rewrite
         if (stockAliases[cleanedLower] && !confident.includes(stockAliases[cleanedLower])) {
             confident.push(stockAliases[cleanedLower]);
+            rewrittenQuery = rewrittenQuery.replace(
+                new RegExp(`\\b${cleaned}\\b`, 'gi'),
+                stockAliases[cleanedLower]
+            );
             continue;
         }
 
@@ -316,8 +328,11 @@ const extractStockSymbols = (query) => {
         }
     }
 
-    // Return confident symbols only (raw ones stay local, used only as fallback reference)
-    return { confident: [...new Set(confident)].slice(0, 5), raw: [...new Set(raw)] };
+    return {
+        confident: [...new Set(confident)].slice(0, 5),
+        raw: [...new Set(raw)],
+        rewrittenQuery,
+    };
 };
 
 /**
@@ -642,7 +657,8 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
 
             // confident = alias-mapped or ALL-CAPS user-typed tickers (safe to send)
             // raw = lowercase words that may be parts of a company name (do NOT send)
-            const { confident: confidentSymbols } = extractStockSymbols(normalized);
+            // rewrittenQuery = query with alias text replaced by ticker ("tell about sail" → "tell about SAIL")
+            const { confident: confidentSymbols, rewrittenQuery } = extractStockSymbols(normalized);
             const chartResolution = extractChartResolution(normalized);
             const chartPeriod = extractChartPeriod(normalized);
 
@@ -657,13 +673,12 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             // Follow-up detection: no confident symbol in current query → inherit active stock
             const isFollowUp = confidentSymbols.length === 0 && activeStock;
 
-            // Rewrite follow-up queries so the backend LLM sees an unambiguous stock name.
-            // Strategy: replace ambiguous pronouns (it/this/that) with the actual ticker,
-            // then append the ticker as context in case no pronoun was present.
-            // "should i buy it"       → "should i buy TATAELXSI"
-            // "is it worth holding"   → "is TATAELXSI worth holding"
-            // "what is the target"    → "what is the target for TATAELXSI"
-            let effectiveQuery = normalized;
+            // effectiveQuery is the string actually sent to the backend.
+            // For direct queries: use rewrittenQuery (alias text → ticker, e.g. "tell about SAIL")
+            // For follow-ups: replace pronouns with the active stock ticker
+            //   "should i buy it"   → "should i buy TATAELXSI"
+            //   "what is the target" → "what is the target for TATAELXSI"
+            let effectiveQuery = rewrittenQuery; // already has alias text replaced with tickers
             if (isFollowUp) {
                 const withPronouns = normalized.replace(
                     /\b(it|this|that|them|those|the stock|that stock|the company|this stock)\b/gi,
