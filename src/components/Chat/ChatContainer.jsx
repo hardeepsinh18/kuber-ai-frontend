@@ -476,68 +476,51 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             setThinkingSteps([]);
 
             if (import.meta.env.DEV) console.log('Sending query:', normalized);
-            // Generate dynamic thinking steps based on the query
-            let extractedSymbols = extractStockSymbols(normalized);
+
+            const extractedSymbols = extractStockSymbols(normalized);
             const chartResolution = extractChartResolution(normalized);
             const chartPeriod = extractChartPeriod(normalized);
 
-            // If user explicitly names a new stock, update the active context
-            if (extractedSymbols.length > 0) {
-                activeContextSymbolRef.current = extractedSymbols[0]
-                    .replace(/\.(NS|BO|BSE)$/i, '')
-                    .replace(/^(NSE:|BSE:)/i, '');
-            }
+            // Resolve which stock this query is about.
+            // Priority: explicit symbols in current query > last backend-validated stock.
+            // We NEVER set activeContextSymbolRef from client-extracted hints here —
+            // only the backend response (authoritative) updates it after each reply.
+            const activeStock = activeContextSymbolRef.current; // last backend-validated symbol
+            const symbolsToSend = extractedSymbols.length > 0
+                ? extractedSymbols
+                : (activeStock ? [activeStock] : []);
 
-            // Context carry-forward: if no stock found in current query, inherit
-            // the actively tracked stock so follow-up questions like "should i buy it?",
-            // "what is its PE?", "give me the chart" all resolve to the right stock.
-            let contextSymbol = null;
-            if (extractedSymbols.length === 0 && activeContextSymbolRef.current) {
-                contextSymbol = activeContextSymbolRef.current;
-                extractedSymbols = [contextSymbol];
-            }
+            // Rewrite the query when we're inheriting context so the backend LLM
+            // understands what "it / this / the stock" refers to.
+            // e.g. "should i buy it?" → "should i buy it? [stock: TATAMOTORS]"
+            const isFollowUp = extractedSymbols.length === 0 && activeStock;
+            const effectiveQuery = isFollowUp
+                ? `${normalized} [stock: ${activeStock}]`
+                : normalized;
 
-            const dynamicSteps = generateThinkingSteps(normalized, extractedSymbols);
+            const dynamicSteps = generateThinkingSteps(normalized, symbolsToSend);
 
-            // Per-chat context: last N turns for conversation continuity
-            const maxHistoryMessages = 10;
+            // Last N turns for conversation continuity
             const conversationHistory = messagesRef.current
-                .slice(-maxHistoryMessages)
+                .slice(-10)
                 .map((m) => ({
                     role: m.role === 'user' ? 'user' : 'assistant',
                     content: typeof m.content === 'string' ? m.content : ''
                 }))
                 .filter((m) => m.content.trim());
 
-            // If we inherited context stock, append it to the query so the backend
-            // LLM has explicit context — e.g. "should i buy it?" → "should i buy TATAMOTORS?"
-            const effectiveQuery = (contextSymbol && !normalized.toUpperCase().includes(contextSymbol))
-                ? `${normalized} (referring to ${contextSymbol})`
-                : normalized;
-
-            // Build payload according to backend schema
-            let payload = {
+            // Build payload
+            const payload = {
                 query: effectiveQuery,
-                timeframe: "medium_term",
-                risk_level: "medium",
+                timeframe: 'medium_term',
+                risk_level: 'medium',
                 response_mode: responseMode,
+                ...(symbolsToSend.length > 0 && { symbols: symbolsToSend }),
+                ...(activeStock && { context_stock: activeStock }),
+                ...(chartResolution && { chart_resolution: chartResolution }),
+                ...(chartPeriod && { chart_period: chartPeriod }),
+                ...(conversationHistory.length > 0 && { chat_history: conversationHistory }),
             };
-
-            // Extract potential symbol hints (backend will validate/normalize)
-            if (extractedSymbols.length > 0) {
-                payload.symbols = extractedSymbols;
-            }
-            // Chart resolution + period for Fyers — backend uses for chart_data
-            if (chartResolution) {
-                payload.chart_resolution = chartResolution;
-            }
-            if (chartPeriod) {
-                payload.chart_period = chartPeriod;
-            }
-            if (conversationHistory.length > 0) {
-                payload.chat_history = conversationHistory;
-            }
-            // If no symbols extracted, backend will parse query or answer conceptually
 
             const headers = { 'Content-Type': 'application/json' };
             if (accessToken) {
@@ -607,15 +590,18 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             })();
             const metadata = responseData.metadata || { symbols: extractedSymbols };
 
-            // Update active context symbol whenever backend returns stock data
+            // Update active context ONLY from the backend's authoritative response.
+            // Never set from client-extracted hints (those can be multi-word noise like TATA+MOTORS).
             const respSymbol = metadata?.at_a_glance?.symbol
-                || (metadata?.symbols && metadata.symbols[0])
-                || (extractedSymbols.length > 0 ? extractedSymbols[0] : null);
+                || (Array.isArray(metadata?.symbols) && metadata.symbols[0])
+                || responseData.resolved_symbol
+                || null;
             if (respSymbol) {
-                // Strip exchange suffixes so it stays clean for future queries
-                activeContextSymbolRef.current = respSymbol
+                activeContextSymbolRef.current = String(respSymbol)
                     .replace(/\.(NS|BO|BSE)$/i, '')
-                    .replace(/^(NSE:|BSE:)/i, '');
+                    .replace(/^(NSE:|BSE:)/i, '')
+                    .toUpperCase();
+                if (import.meta.env.DEV) console.log('Active stock context:', activeContextSymbolRef.current);
             }
 
             const signal = responseData.signal || null;
