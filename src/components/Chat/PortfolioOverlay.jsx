@@ -97,8 +97,12 @@ function UploadZone({ onFile }) {
 
   const handleFile = (f) => {
     if (!f) return
-    if (!f.name.match(/\.(xlsx|xls)$/i)) {
-      alert('Please upload an Excel file (.xlsx or .xls)')
+    if (!f.name.match(/\.(xlsx|xls|json)$/i)) {
+      alert('Only .xlsx, .xls, or .json files are accepted.')
+      return
+    }
+    if (f.size > 10 * 1024 * 1024) {
+      alert('File too large. Maximum allowed size is 10MB.')
       return
     }
     onFile(f)
@@ -121,7 +125,7 @@ function UploadZone({ onFile }) {
         onDragLeave={() => setDragging(false)}
         onDrop={e => { e.preventDefault(); setDragging(false); handleFile(e.dataTransfer.files[0]) }}
       >
-        <input ref={fileRef} type="file" accept=".xlsx,.xls" className="hidden"
+        <input ref={fileRef} type="file" accept=".xlsx,.xls,.json" className="hidden"
           onChange={e => handleFile(e.target.files[0])} />
 
         <div className={`w-16 h-16 mx-auto mb-5 rounded-2xl flex items-center justify-center
@@ -134,7 +138,7 @@ function UploadZone({ onFile }) {
           {dragging ? 'Drop to analyse' : 'Upload your portfolio'}
         </p>
         <p className="text-sm text-zinc-500 dark:text-zinc-500 mb-6">
-          Drag & drop an Excel file, or click to browse
+          Drag & drop an Excel or JSON file, or click to browse
         </p>
 
         <div className="inline-flex flex-col gap-1.5 text-xs text-left mb-7">
