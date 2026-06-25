@@ -52,8 +52,8 @@ const StartScreen = ({ onStartChat, onScannerResult, responseMode, setResponseMo
                     <motion.h1 {...fadeUp(0)}
                         className="text-center font-bold tracking-[-0.025em] leading-[1.18] mb-8"
                         style={{ fontSize: 'clamp(1.4rem, 2.8vw, 2.6rem)' }}>
-                        <span className="text-zinc-900 dark:text-white">Got a question about markets,</span><br />
-                        <span className="text-zinc-500 dark:text-zinc-400">stocks or mutual funds?</span>
+                        <span className="text-zinc-900 dark:text-white">Got a question about markets</span><br />
+                        <span className="text-zinc-500 dark:text-zinc-400">or stocks?</span>
                     </motion.h1>
 
                     {/* Input card */}
