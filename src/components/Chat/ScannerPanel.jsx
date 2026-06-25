@@ -462,6 +462,15 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                         <p className="text-[11px] text-zinc-300 dark:text-zinc-600">
                             {elapsed > 0 ? `${elapsed}s elapsed` : 'starting…'}
                         </p>
+                        <button
+                            onClick={onClose}
+                            className="mt-2 px-4 py-1.5 rounded-lg text-xs font-medium
+                                text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200
+                                border border-zinc-200 dark:border-zinc-700
+                                hover:bg-zinc-100 dark:hover:bg-zinc-800
+                                transition-all duration-150">
+                            Cancel
+                        </button>
                     </div>
                 )}
 
