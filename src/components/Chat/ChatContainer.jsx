@@ -475,11 +475,33 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
 
             if (import.meta.env.DEV) console.log('Sending query:', normalized);
             // Generate dynamic thinking steps based on the query
-            const extractedSymbols = extractStockSymbols(normalized);
+            let extractedSymbols = extractStockSymbols(normalized);
             const chartResolution = extractChartResolution(normalized);
             const chartPeriod = extractChartPeriod(normalized);
+
+            // Context carry-forward: if no stock found in current query, inherit
+            // the last discussed stock from recent AI message metadata so follow-up
+            // questions like "should i buy it?" resolve to the right stock.
+            if (extractedSymbols.length === 0) {
+                const recentMsgs = messagesRef.current.slice(-12);
+                for (let i = recentMsgs.length - 1; i >= 0; i--) {
+                    const msg = recentMsgs[i];
+                    if (msg.role === 'ai' && msg.metadata) {
+                        const sym = msg.metadata?.at_a_glance?.symbol
+                            || msg.metadata?.symbols?.[0]
+                            || msg.metadata?.chart?.symbol;
+                        if (sym) { extractedSymbols = [sym]; break; }
+                    }
+                    // Also check prior user messages for explicit symbols
+                    if (msg.role === 'user' && msg.id !== undefined) {
+                        const prevSyms = extractStockSymbols(msg.content || '');
+                        if (prevSyms.length > 0) { extractedSymbols = prevSyms; break; }
+                    }
+                }
+            }
+
             const dynamicSteps = generateThinkingSteps(normalized, extractedSymbols);
-            
+
             // Per-chat context: last N turns for conversation continuity
             const maxHistoryMessages = 10;
             const conversationHistory = messagesRef.current
