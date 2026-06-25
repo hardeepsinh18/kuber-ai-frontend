@@ -115,12 +115,11 @@ const ScannerDrawer = ({ data, onAnalyze, onClose }) => {
                                         onClick={() => onAnalyze(sym)}
                                         className="flex items-center gap-1 ml-2 px-2.5 py-1 rounded-lg
                                                    text-[11px] font-semibold flex-shrink-0
-                                                   text-zinc-400 dark:text-zinc-500
-                                                   border border-zinc-200 dark:border-white/10
-                                                   hover:text-zinc-900 dark:hover:text-white
-                                                   hover:border-[#FDD405]/60 dark:hover:border-[#FDD405]/50
-                                                   hover:bg-amber-50 dark:hover:bg-[#FDD405]/8
+                                                   border border-transparent
                                                    opacity-0 group-hover:opacity-100
+                                                   group-hover:text-zinc-900 dark:group-hover:text-white
+                                                   group-hover:border-[#FDD405]/60 dark:group-hover:border-[#FDD405]/50
+                                                   group-hover:bg-amber-50 dark:group-hover:bg-[#FDD405]/8
                                                    transition-all duration-150">
                                         Analyze
                                         <ArrowUpRight size={11} />
