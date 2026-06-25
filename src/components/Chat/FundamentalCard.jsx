@@ -943,22 +943,21 @@ const KuberScoreBanner = ({ horizon, tech, fund, ratingsSum, symbol }) => {
             {/* Breakdown — Technical Engine + Fundamental Engine */}
             {showBreakdown && (
                 <div className="px-4 pb-4 bg-white dark:bg-[#111]">
-                    {/* ── Technical Engine ── */}
-                    {tech && <TechnicalScoreCard tech={tech} />}
-
                     {/* ── Fundamental Engine ── */}
                     {fund ? (
                         <>
                             {fund.score != null && (
-                                <div className="mt-4">
-                                    <OverallHealthScore
-                                        score={fund.score}
-                                        label={fund.label}
-                                        summary={fund.summary}
-                                        ratingsSum={ratingsSum}
-                                    />
-                                </div>
+                                <OverallHealthScore
+                                    score={fund.score}
+                                    label={fund.label}
+                                    summary={fund.summary}
+                                    ratingsSum={ratingsSum}
+                                />
                             )}
+
+                            {/* ── Technical Engine ── */}
+                            {tech && <TechnicalScoreCard tech={tech} />}
+
                             <FinancialScoreCard fund={fund} symbol={symbol} />
                             {fund.historical && <FiveYearScoreCard fund={fund} />}
                         </>
@@ -1126,18 +1125,16 @@ export default function FundamentalScoreCard({ scoreCard, symbol }) {
             ) : (
                 /* No horizon — show individual cards directly */
                 <>
-                    {tech && <TechnicalScoreCard tech={tech} />}
-
                     {fund?.score != null && (
-                        <div className="mt-4">
-                            <OverallHealthScore
-                                score={fund.score}
-                                label={fund.label}
-                                summary={fund.summary}
-                                ratingsSum={ratingsSum}
-                            />
-                        </div>
+                        <OverallHealthScore
+                            score={fund.score}
+                            label={fund.label}
+                            summary={fund.summary}
+                            ratingsSum={ratingsSum}
+                        />
                     )}
+
+                    {tech && <TechnicalScoreCard tech={tech} />}
 
                     {fund && <FinancialScoreCard fund={fund} symbol={symbol} />}
                     {fund?.historical && <FiveYearScoreCard fund={fund} />}
