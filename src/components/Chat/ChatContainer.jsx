@@ -285,6 +285,8 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
     const messagesRef = useRef(messages);
     const lastSendAtRef = useRef(0);
     const lastSendTextRef = useRef('');
+    // Tracks the last stock discussed — used to resolve follow-up queries like "should i buy it?"
+    const activeContextSymbolRef = useRef(null);
 
     useEffect(() => {
         isLoadingRef.current = isLoading;
@@ -479,25 +481,20 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             const chartResolution = extractChartResolution(normalized);
             const chartPeriod = extractChartPeriod(normalized);
 
+            // If user explicitly names a new stock, update the active context
+            if (extractedSymbols.length > 0) {
+                activeContextSymbolRef.current = extractedSymbols[0]
+                    .replace(/\.(NS|BO|BSE)$/i, '')
+                    .replace(/^(NSE:|BSE:)/i, '');
+            }
+
             // Context carry-forward: if no stock found in current query, inherit
-            // the last discussed stock from recent AI message metadata so follow-up
-            // questions like "should i buy it?" resolve to the right stock.
-            if (extractedSymbols.length === 0) {
-                const recentMsgs = messagesRef.current.slice(-12);
-                for (let i = recentMsgs.length - 1; i >= 0; i--) {
-                    const msg = recentMsgs[i];
-                    if (msg.role === 'ai' && msg.metadata) {
-                        const sym = msg.metadata?.at_a_glance?.symbol
-                            || msg.metadata?.symbols?.[0]
-                            || msg.metadata?.chart?.symbol;
-                        if (sym) { extractedSymbols = [sym]; break; }
-                    }
-                    // Also check prior user messages for explicit symbols
-                    if (msg.role === 'user' && msg.id !== undefined) {
-                        const prevSyms = extractStockSymbols(msg.content || '');
-                        if (prevSyms.length > 0) { extractedSymbols = prevSyms; break; }
-                    }
-                }
+            // the actively tracked stock so follow-up questions like "should i buy it?",
+            // "what is its PE?", "give me the chart" all resolve to the right stock.
+            let contextSymbol = null;
+            if (extractedSymbols.length === 0 && activeContextSymbolRef.current) {
+                contextSymbol = activeContextSymbolRef.current;
+                extractedSymbols = [contextSymbol];
             }
 
             const dynamicSteps = generateThinkingSteps(normalized, extractedSymbols);
@@ -512,9 +509,15 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 }))
                 .filter((m) => m.content.trim());
 
+            // If we inherited context stock, append it to the query so the backend
+            // LLM has explicit context — e.g. "should i buy it?" → "should i buy TATAMOTORS?"
+            const effectiveQuery = (contextSymbol && !normalized.toUpperCase().includes(contextSymbol))
+                ? `${normalized} (referring to ${contextSymbol})`
+                : normalized;
+
             // Build payload according to backend schema
             let payload = {
-                query: normalized,
+                query: effectiveQuery,
                 timeframe: "medium_term",
                 risk_level: "medium",
                 response_mode: responseMode,
@@ -603,6 +606,18 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 return hasOhlcv(rawChartData) ? rawChartData : null;
             })();
             const metadata = responseData.metadata || { symbols: extractedSymbols };
+
+            // Update active context symbol whenever backend returns stock data
+            const respSymbol = metadata?.at_a_glance?.symbol
+                || (metadata?.symbols && metadata.symbols[0])
+                || (extractedSymbols.length > 0 ? extractedSymbols[0] : null);
+            if (respSymbol) {
+                // Strip exchange suffixes so it stays clean for future queries
+                activeContextSymbolRef.current = respSymbol
+                    .replace(/\.(NS|BO|BSE)$/i, '')
+                    .replace(/^(NSE:|BSE:)/i, '');
+            }
+
             const signal = responseData.signal || null;
             const patternSummary = responseData.pattern_summary || null;
             const technicalSummary = responseData.technical_summary || null;
