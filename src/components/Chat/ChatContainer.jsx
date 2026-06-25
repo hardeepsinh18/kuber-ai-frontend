@@ -251,6 +251,36 @@ const genId = () =>
         ? crypto.randomUUID()
         : `msg_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
+/** Strip exchange suffix to get bare NSE ticker */
+const cleanSymbol = (s) =>
+    s ? String(s).replace(/\.(NS|BO|BSE)$/i, '').replace(/^(NSE:|BSE:)/i, '').toUpperCase().trim() : null;
+
+/**
+ * Extract the authoritative stock symbol from a backend response.
+ * Checks every known field the backend may populate, most reliable first.
+ */
+const extractSymbolFromResponse = (responseData, metadata, chartData, extractedSymbols) => {
+    const candidates = [
+        metadata?.at_a_glance?.symbol,
+        metadata?.resolved_symbol,
+        Array.isArray(metadata?.symbols) ? metadata.symbols[0] : metadata?.symbols,
+        responseData?.resolved_symbol,
+        responseData?.symbol,
+        !Array.isArray(chartData) && chartData?.chart_metadata?.symbol,
+        Array.isArray(chartData) && chartData[0]?.chart_metadata?.symbol,
+        responseData?.signal?.symbol,
+        responseData?.technical_summary?.symbol,
+        responseData?.score_card?.symbol,
+        // Only use client-extracted as last resort when unambiguous (single word)
+        extractedSymbols?.length === 1 ? extractedSymbols[0] : null,
+    ];
+    for (const s of candidates) {
+        const c = cleanSymbol(s);
+        if (c && c.length >= 2 && c.length <= 20) return c;
+    }
+    return null;
+};
+
 const ChatContainer = ({ sidebarOpen, routeChatId }) => {
     const { chatId: routeChatIdParam } = useParams();
     const { accessToken } = useAuth();
@@ -490,12 +520,12 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 ? extractedSymbols
                 : (activeStock ? [activeStock] : []);
 
-            // Rewrite the query when we're inheriting context so the backend LLM
-            // understands what "it / this / the stock" refers to.
-            // e.g. "should i buy it?" → "should i buy it? [stock: TATAMOTORS]"
+            // Rewrite the query when inheriting context so the backend LLM
+            // clearly knows which stock the user is referring to.
+            // e.g. "should i buy it?" + context HDFCBANK → "HDFCBANK: should i buy it?"
             const isFollowUp = extractedSymbols.length === 0 && activeStock;
             const effectiveQuery = isFollowUp
-                ? `${normalized} [stock: ${activeStock}]`
+                ? `${activeStock}: ${normalized}`
                 : normalized;
 
             const dynamicSteps = generateThinkingSteps(normalized, symbolsToSend);
@@ -590,18 +620,12 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             })();
             const metadata = responseData.metadata || { symbols: extractedSymbols };
 
-            // Update active context ONLY from the backend's authoritative response.
-            // Never set from client-extracted hints (those can be multi-word noise like TATA+MOTORS).
-            const respSymbol = metadata?.at_a_glance?.symbol
-                || (Array.isArray(metadata?.symbols) && metadata.symbols[0])
-                || responseData.resolved_symbol
-                || null;
-            if (respSymbol) {
-                activeContextSymbolRef.current = String(respSymbol)
-                    .replace(/\.(NS|BO|BSE)$/i, '')
-                    .replace(/^(NSE:|BSE:)/i, '')
-                    .toUpperCase();
-                if (import.meta.env.DEV) console.log('Active stock context:', activeContextSymbolRef.current);
+            // Update active stock context from the backend's authoritative response.
+            // Uses every possible field the backend might put the symbol in.
+            const resolvedSym = extractSymbolFromResponse(responseData, metadata, chartData, extractedSymbols);
+            if (resolvedSym) {
+                activeContextSymbolRef.current = resolvedSym;
+                if (import.meta.env.DEV) console.log('[Context] Active stock set to:', resolvedSym);
             }
 
             const signal = responseData.signal || null;
