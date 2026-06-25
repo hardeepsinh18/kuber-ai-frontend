@@ -158,6 +158,7 @@ const extractStockSymbols = (query) => {
         'hul': 'HINDUNILVR',
         'itc': 'ITC',
         'sbi': 'SBIN',
+        'sail': 'SAIL',
         'bajaj': 'BAJFINANCE',
         'bajajfin': 'BAJFINANCE',
         'kotak': 'KOTAKBANK',
@@ -196,6 +197,9 @@ const extractStockSymbols = (query) => {
         'apollohosp': 'APOLLOHOSP',
         // Multi-word company names
         'hdfc bank': 'HDFCBANK',
+        'steel authority': 'SAIL',
+        'steel authority of india': 'SAIL',
+        'sail steel': 'SAIL',
         'icici bank': 'ICICIBANK',
         'axis bank': 'AXISBANK',
         'kotak bank': 'KOTAKBANK',
