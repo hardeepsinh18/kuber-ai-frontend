@@ -131,60 +131,189 @@ const SYMBOL_HINT_STOPWORDS = new Set([
  * Handles uppercase, lowercase, mixed case, and common stock name patterns
  * Backend will validate and normalize - this provides smart hints
  */
+/**
+ * Extract stock symbols from a user query.
+ * Returns { confident, raw } — only `confident` symbols should be sent to the backend.
+ *
+ * confident = alias-mapped names (hdfc bank → HDFCBANK) or user typed ALL-CAPS ticker (TCS, INFY)
+ * raw       = individual words that look like tickers but may be parts of a company name
+ *             ("prince pipes" → ["PRINCE","PIPES"]) — sending these confuses the backend
+ */
 const extractStockSymbols = (query) => {
-    const symbols = [];
-    const words = query.split(/\s+/);
+    const confident = [];
+    const raw = [];
 
-    // Common stock name mappings (case-insensitive)
     const stockAliases = {
-        'bccl': 'BHARATCOAL',
-        'bharat coal': 'BHARATCOAL',
-        'bharatcoal': 'BHARATCOAL',
+        // Single-word aliases
         'tcs': 'TCS',
         'infosys': 'INFY',
+        'infy': 'INFY',
         'reliance': 'RELIANCE',
         'hdfc': 'HDFCBANK',
-        'hdfc bank': 'HDFCBANK',
         'wipro': 'WIPRO',
-        'tech mahindra': 'TECHM',
         'techm': 'TECHM',
+        'bccl': 'BHARATCOAL',
+        'bharatcoal': 'BHARATCOAL',
+        'ril': 'RELIANCE',
+        'hul': 'HINDUNILVR',
+        'itc': 'ITC',
+        'sbi': 'SBIN',
+        'bajaj': 'BAJFINANCE',
+        'bajajfin': 'BAJFINANCE',
+        'kotak': 'KOTAKBANK',
+        'axis': 'AXISBANK',
+        'icici': 'ICICIBANK',
+        'titan': 'TITAN',
+        'nestle': 'NESTLEIND',
+        'maruti': 'MARUTI',
+        'asian': 'ASIANPAINT',
+        'ultracemco': 'ULTRACEMCO',
+        'ltim': 'LTIM',
+        'hcltech': 'HCLTECH',
+        'sunpharma': 'SUNPHARMA',
+        'drreddy': 'DRREDDY',
+        'cipla': 'CIPLA',
+        'powergrid': 'POWERGRID',
+        'ntpc': 'NTPC',
+        'ongc': 'ONGC',
+        'ioc': 'IOC',
+        'bpcl': 'BPCL',
+        'grasim': 'GRASIM',
+        'adanient': 'ADANIENT',
+        'adaniports': 'ADANIPORTS',
+        'hindalco': 'HINDALCO',
+        'tatasteel': 'TATASTEEL',
+        'jswsteel': 'JSWSTEEL',
+        'indusindbk': 'INDUSINDBK',
+        'hdfclife': 'HDFCLIFE',
+        'sbilife': 'SBILIFE',
+        'bajajfinsv': 'BAJAJFINSV',
+        'britannia': 'BRITANNIA',
+        'heromotoco': 'HEROMOTOCO',
+        'eichermot': 'EICHERMOT',
+        'tataconsum': 'TATACONSUM',
+        'divislab': 'DIVISLAB',
+        'apollohosp': 'APOLLOHOSP',
+        // Multi-word company names
+        'hdfc bank': 'HDFCBANK',
+        'icici bank': 'ICICIBANK',
+        'axis bank': 'AXISBANK',
+        'kotak bank': 'KOTAKBANK',
+        'state bank': 'SBIN',
+        'tech mahindra': 'TECHM',
+        'bharat coal': 'BHARATCOAL',
+        'asian paints': 'ASIANPAINT',
+        'asian paint': 'ASIANPAINT',
+        'bajaj finance': 'BAJFINANCE',
+        'bajaj finserv': 'BAJAJFINSV',
+        'sun pharma': 'SUNPHARMA',
+        'dr reddy': 'DRREDDY',
+        'tata steel': 'TATASTEEL',
+        'tata motors': 'TATAMOTORS',
+        'tata power': 'TATAPOWER',
+        'tata elxsi': 'TATAELXSI',
+        'tata consultancy': 'TCS',
+        'tata consumer': 'TATACONSUM',
+        'jsw steel': 'JSWSTEEL',
+        'hero motocorp': 'HEROMOTOCO',
+        'eicher motors': 'EICHERMOT',
+        'ultra cement': 'ULTRACEMCO',
+        'ultratech cement': 'ULTRACEMCO',
+        'indusind bank': 'INDUSINDBK',
+        'apollo hospital': 'APOLLOHOSP',
+        'apollo hospitals': 'APOLLOHOSP',
+        'divi lab': 'DIVISLAB',
+        'divis lab': 'DIVISLAB',
+        'prince pipe': 'PRINCEPIPE',
+        'prince pipes': 'PRINCEPIPE',
+        'princepipe': 'PRINCEPIPE',
+        'hfcl': 'HFCL',
+        'irctc': 'IRCTC',
+        'zomato': 'ZOMATO',
+        'paytm': 'PAYTM',
+        'nykaa': 'NYKAA',
+        'delhivery': 'DELHIVERY',
+        'policybazaar': 'POLICYBZR',
+        'policy bazaar': 'POLICYBZR',
+        'indigo': 'INDIGO',
+        'interglobe': 'INDIGO',
+        'godrej': 'GODREJCP',
+        'dabur': 'DABUR',
+        'marico': 'MARICO',
+        'pidilite': 'PIDILITIND',
+        'berger': 'BERGEPAINT',
+        'berger paints': 'BERGEPAINT',
+        'mrf': 'MRF',
+        'ceat': 'CEATLTD',
+        'balkrishna': 'BALKRISIND',
+        'bkt': 'BALKRISIND',
+        'voltas': 'VOLTAS',
+        'blue star': 'BLUESTARCO',
+        'havells': 'HAVELLS',
+        'crompton': 'CROMPTON',
+        'dixon': 'DIXON',
+        'amber enterprise': 'AMBER',
+        'amber enterprises': 'AMBER',
+        'laurus labs': 'LAURUSLABS',
+        'laurus': 'LAURUSLABS',
+        'alkem': 'ALKEM',
+        'torrent pharma': 'TORNTPHARM',
+        'torrent': 'TORNTPHARM',
+        'lupin': 'LUPIN',
+        'biocon': 'BIOCON',
+        'persistent': 'PERSISTENT',
+        'coforge': 'COFORGE',
+        'mphasis': 'MPHASIS',
+        'ltts': 'LTTS',
+        'tata elx': 'TATAELXSI',
+        'atul auto': 'ATULAUTO',
+        'suzuki': 'MARUTI',
+        'maruti suzuki': 'MARUTI',
     };
 
+    const queryLower = query.toLowerCase();
+
+    // 1. Check multi-word aliases first (most reliable)
+    for (const [alias, symbol] of Object.entries(stockAliases)) {
+        if (alias.includes(' ') && queryLower.includes(alias)) {
+            if (!confident.includes(symbol)) confident.push(symbol);
+        }
+    }
+
+    // 2. Check each word
+    const words = query.split(/\s+/);
     for (const word of words) {
-        // Remove punctuation
-        const cleaned = word.replace(/[.,!?;:()]/g, '');
+        const cleaned = word.replace(/[.,!?;:()'"/]/g, '');
+        if (!cleaned) continue;
         const cleanedLower = cleaned.toLowerCase();
-        
-        // Check if it's a known alias
-        if (stockAliases[cleanedLower]) {
-            symbols.push(stockAliases[cleanedLower]);
+
+        // Alias match (single-word) → confident
+        if (stockAliases[cleanedLower] && !confident.includes(stockAliases[cleanedLower])) {
+            confident.push(stockAliases[cleanedLower]);
             continue;
         }
-        
-        // Match ticker-like patterns (case-insensitive now)
-        // Examples: TCS, INFY, RELIANCE, HDFCBANK, bccl, Wipro
-        if (/^[A-Za-z]{2,15}$/i.test(cleaned)) {
-            const upper = cleaned.toUpperCase();
-            if (SYMBOL_HINT_STOPWORDS.has(upper)) continue;
-            symbols.push(upper);
+
+        // NSE/BSE explicit format (SYMBOL.NS or SYMBOL.BO) → confident
+        if (/^[A-Za-z]{1,20}\.(NS|BO)$/i.test(cleaned)) {
+            const sym = cleaned.toUpperCase();
+            if (!confident.includes(sym)) confident.push(sym);
+            continue;
         }
-        // Match NSE/BSE formatted symbols: SYMBOL.NS or SYMBOL.BO
-        else if (/^[A-Za-z]{1,15}\.(NS|BO)$/i.test(cleaned)) {
-            symbols.push(cleaned.toUpperCase());
+
+        // User typed ALL-CAPS word that looks like a ticker → confident
+        if (/^[A-Z][A-Z0-9&-]{1,19}$/.test(cleaned) && !SYMBOL_HINT_STOPWORDS.has(cleaned.toUpperCase())) {
+            if (!confident.includes(cleaned.toUpperCase())) confident.push(cleaned.toUpperCase());
+            continue;
+        }
+
+        // Mixed/lowercase word → raw (may be part of a company name, don't send as symbol)
+        if (/^[A-Za-z]{2,15}$/.test(cleaned) && !SYMBOL_HINT_STOPWORDS.has(cleaned.toUpperCase())) {
+            raw.push(cleaned.toUpperCase());
         }
     }
 
-    // Check for multi-word company names
-    const queryLower = query.toLowerCase();
-    for (const [alias, symbol] of Object.entries(stockAliases)) {
-        if (queryLower.includes(alias) && !symbols.includes(symbol)) {
-            symbols.push(symbol);
-        }
-    }
-
-    // Remove duplicates, limit to 5
-    // Backend will validate and normalize these
-    return [...new Set(symbols)].slice(0, 5);
+    // Return confident symbols only (raw ones stay local, used only as fallback reference)
+    return { confident: [...new Set(confident)].slice(0, 5), raw: [...new Set(raw)] };
 };
 
 /**
@@ -507,30 +636,32 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
 
             if (import.meta.env.DEV) console.log('Sending query:', normalized);
 
-            const extractedSymbols = extractStockSymbols(normalized);
+            // confident = alias-mapped or ALL-CAPS user-typed tickers (safe to send)
+            // raw = lowercase words that may be parts of a company name (do NOT send)
+            const { confident: confidentSymbols } = extractStockSymbols(normalized);
             const chartResolution = extractChartResolution(normalized);
             const chartPeriod = extractChartPeriod(normalized);
 
-            // Resolve which stock this query is about.
-            // Priority: explicit symbols in current query > last backend-validated stock.
-            // We NEVER set activeContextSymbolRef from client-extracted hints here —
-            // only the backend response (authoritative) updates it after each reply.
             const activeStock = activeContextSymbolRef.current; // last backend-validated symbol
-            const symbolsToSend = extractedSymbols.length > 0
-                ? extractedSymbols
+
+            // Only send confident symbol hints. Raw words like ["PRINCE","PIPES"] are omitted
+            // to avoid confusing the backend — it can resolve company names from the query text.
+            const symbolsToSend = confidentSymbols.length > 0
+                ? confidentSymbols
                 : (activeStock ? [activeStock] : []);
 
-            // Rewrite the query when inheriting context so the backend LLM
-            // clearly knows which stock the user is referring to.
-            // e.g. "should i buy it?" + context HDFCBANK → "HDFCBANK: should i buy it?"
-            const isFollowUp = extractedSymbols.length === 0 && activeStock;
+            // Follow-up detection: no confident symbol in current query → inherit active stock
+            const isFollowUp = confidentSymbols.length === 0 && activeStock;
+
+            // Rewrite query for follow-ups so the backend LLM sees the stock explicitly
+            // e.g. "should i buy it?" → "HDFCBANK: should i buy it?"
             const effectiveQuery = isFollowUp
                 ? `${activeStock}: ${normalized}`
                 : normalized;
 
             const dynamicSteps = generateThinkingSteps(normalized, symbolsToSend);
 
-            // Last N turns for conversation continuity
+            // Last 10 turns for conversation continuity
             const conversationHistory = messagesRef.current
                 .slice(-10)
                 .map((m) => ({
@@ -618,11 +749,11 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 if (Array.isArray(rawChartData)) return rawChartData.every(hasOhlcv) ? rawChartData : null;
                 return hasOhlcv(rawChartData) ? rawChartData : null;
             })();
-            const metadata = responseData.metadata || { symbols: extractedSymbols };
+            const metadata = responseData.metadata || { symbols: confidentSymbols };
 
             // Update active stock context from the backend's authoritative response.
             // Uses every possible field the backend might put the symbol in.
-            const resolvedSym = extractSymbolFromResponse(responseData, metadata, chartData, extractedSymbols);
+            const resolvedSym = extractSymbolFromResponse(responseData, metadata, chartData, confidentSymbols);
             if (resolvedSym) {
                 activeContextSymbolRef.current = resolvedSym;
                 if (import.meta.env.DEV) console.log('[Context] Active stock set to:', resolvedSym);
