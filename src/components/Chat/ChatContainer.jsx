@@ -653,11 +653,22 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             // Follow-up detection: no confident symbol in current query → inherit active stock
             const isFollowUp = confidentSymbols.length === 0 && activeStock;
 
-            // Rewrite query for follow-ups so the backend LLM sees the stock explicitly
-            // e.g. "should i buy it?" → "HDFCBANK: should i buy it?"
-            const effectiveQuery = isFollowUp
-                ? `${activeStock}: ${normalized}`
-                : normalized;
+            // Rewrite follow-up queries so the backend LLM sees an unambiguous stock name.
+            // Strategy: replace ambiguous pronouns (it/this/that) with the actual ticker,
+            // then append the ticker as context in case no pronoun was present.
+            // "should i buy it"       → "should i buy TATAELXSI"
+            // "is it worth holding"   → "is TATAELXSI worth holding"
+            // "what is the target"    → "what is the target for TATAELXSI"
+            let effectiveQuery = normalized;
+            if (isFollowUp) {
+                const withPronouns = normalized.replace(
+                    /\b(it|this|that|them|those|the stock|that stock|the company|this stock)\b/gi,
+                    activeStock
+                );
+                effectiveQuery = withPronouns !== normalized
+                    ? withPronouns
+                    : `${normalized} for ${activeStock}`;
+            }
 
             const dynamicSteps = generateThinkingSteps(normalized, symbolsToSend);
 
