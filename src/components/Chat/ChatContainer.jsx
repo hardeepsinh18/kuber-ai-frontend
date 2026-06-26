@@ -723,6 +723,9 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 ...(conversationHistory.length > 0 && { chat_history: conversationHistory }),
             };
 
+            // Always log payload so issues can be diagnosed via browser DevTools → Console
+            console.log('[KuberAI] Request payload:', JSON.stringify(payload, null, 2));
+
             const headers = { 'Content-Type': 'application/json' };
             if (accessToken) {
                 headers.Authorization = `Bearer ${accessToken}`;
@@ -763,12 +766,16 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             }
 
             const responseData = await response.json();
-            
+
+            // Always log response for diagnostics (browser DevTools → Console)
+            console.log('[KuberAI] Response content:', responseData?.content || responseData?.answer);
+            console.log('[KuberAI] Response keys:', Object.keys(responseData || {}));
+
             // Calculate processing time
             const endTime = Date.now();
             const timeTaken = (endTime - requestStartTime) / 1000; // in seconds
             setProcessingTime(timeTaken);
-            
+
             if (import.meta.env.DEV) {
                 console.log('API Response:', responseData);
                 console.log('Processing time:', timeTaken.toFixed(2), 'seconds');
