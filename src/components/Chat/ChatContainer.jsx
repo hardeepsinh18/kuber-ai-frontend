@@ -710,19 +710,18 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 }))
                 .filter((m) => m.content.trim());
 
-            // For general market queries (no stock symbol) the backend handles "analyst" mode
-            // more reliably than "snap/quick". Auto-upgrade when no symbols are present.
-            const effectiveResponseMode = (symbolsToSend.length === 0 && responseMode === 'snap')
-                ? 'analyst'
-                : responseMode;
+            const hasStockContext = symbolsToSend.length > 0;
 
-            // Build payload
+            // Build payload — stock-specific fields (timeframe, risk_level, symbols) are
+            // omitted for general market queries to avoid confusing the backend's LLM chain.
             const payload = {
                 query: effectiveQuery,
-                timeframe: 'medium_term',
-                risk_level: 'medium',
-                response_mode: effectiveResponseMode,
-                ...(symbolsToSend.length > 0 && { symbols: symbolsToSend }),
+                response_mode: responseMode,
+                ...(hasStockContext && {
+                    timeframe: 'medium_term',
+                    risk_level: 'medium',
+                    symbols: symbolsToSend,
+                }),
                 ...(activeStock && { context_stock: activeStock }),
                 ...(chartResolution && { chart_resolution: chartResolution }),
                 ...(chartPeriod && { chart_period: chartPeriod }),
@@ -775,6 +774,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
 
             // Always log response for diagnostics (browser DevTools → Console)
             console.log('[KuberAI] Response content:', responseData?.content || responseData?.answer);
+            console.log('[KuberAI] Intent / confidence:', responseData?.intent, '/', responseData?.confidence);
             console.log('[KuberAI] Response keys:', Object.keys(responseData || {}));
 
             // Calculate processing time
