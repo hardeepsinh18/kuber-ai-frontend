@@ -93,12 +93,22 @@ const SYMBOL_HINT_STOPWORDS = new Set([
     'ENERGY', 'POWER', 'COAL', 'MINING',
     'CEMENT', 'STEEL', 'METAL', 'METALS', 'FMCG', 'CONSUMER', 'RETAIL',
     'TELECOM', 'TELECOMM',
+    // Sector/category abbreviations — NOT stock tickers
+    'PSU', 'PSUS', 'ETF', 'ETFS', 'NFO', 'IPO', 'FPO', 'OFS', 'QIP', 'SME',
+    'MF', 'MFS', 'SIP', 'AMC', 'AUM', 'NAV',
+    'FII', 'DII', 'FPI', 'HNI', 'LIC',
+    // Financial metric abbreviations
+    'PE', 'PB', 'EPS', 'ROE', 'ROA', 'ROCE', 'EBITDA', 'PAT', 'PEG',
+    'CAGR', 'YOY', 'QOQ', 'MOM', 'TTM', 'DIV', 'DY',
+    // Macro / regulatory / exchange bodies — not tickers
+    'RBI', 'SEBI', 'NSE', 'BSE', 'MCX', 'GDP', 'CPI', 'WPI', 'IIP',
     // Query descriptor words that look like tickers
     'ANALYSIS', 'ANALYZE', 'REPORT', 'REPORTS', 'QUARTERLY', 'ANNUAL',
     'FUTURE', 'FUTURES', 'OPTION', 'OPTIONS', 'CALL', 'PUTS',
     'FUNDAMENTAL', 'FUNDAMENTALS', 'TECHNICAL', 'TECHNICALS',
     'VALUATION', 'VALUATIONS', 'GROWTH', 'RETURNS', 'RETURN',
     'RALLY', 'CRASH', 'BULL', 'BEAR', 'BULLISH', 'BEARISH',
+    'DIVIDEND', 'YIELD', 'BONUS', 'SPLIT', 'RIGHTS',
     // Financial concept words that are NOT stock tickers
     // Without this list, "what is lump sum" → sends LUMP+SUM as symbol hints
     'LUMP', 'SUM', 'NAV', 'ALPHA', 'LOAD', 'EXIT', 'EXPENSE', 'RATIO',
