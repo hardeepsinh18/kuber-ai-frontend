@@ -710,12 +710,18 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 }))
                 .filter((m) => m.content.trim());
 
+            // For general market queries (no stock symbol) the backend handles "analyst" mode
+            // more reliably than "snap/quick". Auto-upgrade when no symbols are present.
+            const effectiveResponseMode = (symbolsToSend.length === 0 && responseMode === 'snap')
+                ? 'analyst'
+                : responseMode;
+
             // Build payload
             const payload = {
                 query: effectiveQuery,
                 timeframe: 'medium_term',
                 risk_level: 'medium',
-                response_mode: responseMode,
+                response_mode: effectiveResponseMode,
                 ...(symbolsToSend.length > 0 && { symbols: symbolsToSend }),
                 ...(activeStock && { context_stock: activeStock }),
                 ...(chartResolution && { chart_resolution: chartResolution }),
@@ -785,7 +791,12 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             setShowThinking(false);
             setThinkingSteps(dynamicSteps);
             
-            const aiResponseText = responseData.content || responseData.answer || "No response content received.";
+            const rawResponseText = responseData.content || responseData.answer || '';
+            // Detect backend-side error responses and substitute a helpful message
+            const isBackendError = /^something went wrong|^an error occurred|^i('m| am) unable|^sorry,? (i|we) (could|can't|cannot)/i.test(rawResponseText.trim());
+            const aiResponseText = isBackendError
+                ? "I wasn't able to process this query. If you're looking for a market scan or sector screener, try the **Scanners** tab, or ask about a specific stock like *\"Tell me about SAIL\"*."
+                : (rawResponseText || "No response content received.");
 
             // Validate chart data structure before passing to MessageBubble
             const rawChartData = responseData.chart_data || null;
