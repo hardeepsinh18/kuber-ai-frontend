@@ -164,25 +164,26 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
         chart_metadata = {}
     } = chartData;
 
-    // Prepare data for Recharts
+    // Prepare data for Recharts — filter rows where close is missing or zero
     const data = useMemo(() => {
         return dates.map((date, index) => ({
             date,
-            open: open[index],
-            high: high[index],
-            low: low[index],
-            close: close[index],
-            volume: volume[index],
-            // For simple charts
-            price: close[index],
-        }));
+            open: open[index] || null,
+            high: high[index] || null,
+            low: low[index] || null,
+            close: close[index] || null,
+            volume: volume[index] || null,
+            price: close[index] || null,
+        })).filter(d => d.close != null && d.close > 0);
     }, [dates, open, high, low, close, volume]);
 
-    // Calculate price change
+    // Calculate price change — skip zero/null values at either end (stale DB data)
     const priceChange = useMemo(() => {
-        if (close.length < 2) return { value: 0, percent: 0 };
-        const first = close[0];
-        const last = close[close.length - 1];
+        const valid = close.filter(v => v != null && v > 0);
+        if (valid.length < 2) return { value: 0, percent: 0 };
+        const first = valid[0];
+        const last = valid[valid.length - 1];
+        if (!first) return { value: 0, percent: 0 };
         const change = last - first;
         const percent = (change / first) * 100;
         return { value: change, percent };
