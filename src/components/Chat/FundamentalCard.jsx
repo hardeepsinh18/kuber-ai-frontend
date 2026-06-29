@@ -1,11 +1,11 @@
-import React, { useState, useMemo, useContext } from 'react';
+import React, { useState, useMemo, useContext, useCallback } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import {
     BarChart, Bar, LineChart, Line, Cell,
     XAxis, YAxis, CartesianGrid, ReferenceLine,
-    ComposedChart, Customized, ResponsiveContainer,
+    ComposedChart, Customized, ResponsiveContainer, Tooltip,
 } from 'recharts';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, X, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { clsx } from 'clsx';
 
 /* ─── label classifiers ──────────────────────────────────────────────────── */
@@ -729,87 +729,400 @@ const PatternMiniChart = ({ chartData, barsAgo = 0, support, resistance }) => {
     );
 };
 
+/* ─── Interactive candle chart for modal ─────────────────────────────────── */
+const ModalCandleLayer = ({ data = [] }) => {
+    if (!data.length) return null;
+    const allHL = data.flatMap(d => [d.high, d.low]);
+    const yMin = Math.min(...allHL);
+    const yMax = Math.max(...allHL);
+    const yRange = yMax - yMin || 1;
+    return (
+        <g>
+            {data.map((d, i) => {
+                const bull = d.close >= d.open;
+                const color = bull ? '#26A69A' : '#EF5350';
+                return (
+                    <g key={i}>
+                        <line x1={i} y1={d.high} x2={i} y2={d.low} stroke={color} strokeWidth={1.2} opacity={0.9} />
+                        <rect
+                            x={i - 0.35} y={Math.min(d.open, d.close)}
+                            width={0.7} height={Math.max(0.002 * yRange, Math.abs(d.close - d.open))}
+                            fill={color} stroke={color} strokeWidth={0.3}
+                        />
+                    </g>
+                );
+            })}
+        </g>
+    );
+};
+
+/* OHLC tooltip for modal chart */
+const OHLCTooltip = ({ active, payload, label }) => {
+    if (!active || !payload?.length) return null;
+    const d = payload[0]?.payload;
+    if (!d) return null;
+    const bull = d.close >= d.open;
+    return (
+        <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-2 text-[11px] shadow-xl">
+            <p className="text-zinc-400 mb-1">{d.date}</p>
+            <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
+                <span className="text-zinc-400">O</span><span className="text-white font-mono">₹{Number(d.open).toLocaleString('en-IN', {maximumFractionDigits: 2})}</span>
+                <span className="text-zinc-400">H</span><span className="text-emerald-400 font-mono">₹{Number(d.high).toLocaleString('en-IN', {maximumFractionDigits: 2})}</span>
+                <span className="text-zinc-400">L</span><span className="text-rose-400 font-mono">₹{Number(d.low).toLocaleString('en-IN', {maximumFractionDigits: 2})}</span>
+                <span className="text-zinc-400">C</span><span className={`font-mono font-semibold ${bull ? 'text-emerald-400' : 'text-rose-400'}`}>₹{Number(d.close).toLocaleString('en-IN', {maximumFractionDigits: 2})}</span>
+            </div>
+        </div>
+    );
+};
+
+/* ─── Interactive pattern modal ──────────────────────────────────────────── */
+const PatternModal = ({ pattern, ohlcBars, chartData, support, resistance, onClose }) => {
+    const rawChart = useMemo(() => {
+        if (!chartData) return null;
+        if (Array.isArray(chartData)) return chartData.find(cd => cd && !cd.error) ?? null;
+        return chartData.error ? null : chartData;
+    }, [chartData]);
+
+    const slicedData = useMemo(() => {
+        if (!rawChart) return [];
+        const { dates = [], open = [], high = [], low = [], close = [] } = rawChart;
+        const all = dates.map((date, i) => ({
+            date, open: open[i], high: high[i], low: low[i], close: close[i],
+        })).filter(d => d.close != null);
+        const n = all.length;
+        const barsAgo = pattern?.bars_ago ?? 0;
+        const patIdx = Math.max(0, n - 1 - barsAgo);
+        return all.slice(Math.max(0, patIdx - 25), Math.min(n, patIdx + 10));
+    }, [rawChart, pattern]);
+
+    const patternBarDates = useMemo(() => new Set((ohlcBars || []).map(b => b.date)), [ohlcBars]);
+
+    const allHL = slicedData.flatMap(d => [d.high, d.low, support, resistance].filter(v => v != null));
+    const yMin = allHL.length ? Math.min(...allHL) : 0;
+    const yMax = allHL.length ? Math.max(...allHL) : 1;
+    const pad  = (yMax - yMin) * 0.10 || 1;
+
+    const dirColor = pattern?.direction === 'bullish' ? '#22c55e'
+                   : pattern?.direction === 'bearish' ? '#ef4444' : '#FDD405';
+    const DirIcon  = pattern?.direction === 'bullish' ? TrendingUp
+                   : pattern?.direction === 'bearish' ? TrendingDown : Minus;
+
+    return (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+             style={{ backgroundColor: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }}
+             onClick={onClose}>
+            <div className="bg-zinc-900 border border-zinc-700 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl"
+                 onClick={e => e.stopPropagation()}>
+                {/* Header */}
+                <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-700">
+                    <div className="flex items-center gap-2">
+                        <DirIcon size={18} color={dirColor} />
+                        <span className="text-white font-semibold">{pattern?.name || 'Pattern'}</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full border"
+                              style={{ color: dirColor, borderColor: dirColor, backgroundColor: `${dirColor}18` }}>
+                            {pattern?.direction} · {pattern?.strength}
+                        </span>
+                        {(pattern?.bars_ago ?? 0) === 0
+                            ? <span className="text-xs text-zinc-400">Today</span>
+                            : <span className="text-xs text-zinc-400">{pattern?.bars_ago}d ago</span>}
+                    </div>
+                    <button onClick={onClose}
+                            className="text-zinc-400 hover:text-white transition-colors p-1 rounded-lg hover:bg-zinc-700">
+                        <X size={18} />
+                    </button>
+                </div>
+
+                {/* Chart */}
+                <div className="px-5 pt-4">
+                    <div style={{ height: 220, width: '100%' }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                            <ComposedChart data={slicedData} margin={{ top: 8, right: 40, left: 0, bottom: 4 }}>
+                                <CartesianGrid strokeDasharray="2 4" stroke="#374151" opacity={0.3} vertical={false} />
+                                <XAxis dataKey="date" tick={{ fill: '#6b7280', fontSize: 9 }}
+                                       tickLine={false} axisLine={false}
+                                       tickFormatter={d => d?.slice(5)} />
+                                <YAxis domain={[yMin - pad, yMax + pad]} tick={{ fill: '#6b7280', fontSize: 9 }}
+                                       tickLine={false} axisLine={false} orientation="right"
+                                       tickFormatter={v => `₹${Math.round(v)}`} width={60} />
+                                <Tooltip content={<OHLCTooltip />} />
+                                {/* Pattern bar highlights */}
+                                {slicedData.map((d, i) =>
+                                    patternBarDates.has(d.date)
+                                        ? <ReferenceLine key={i} x={d.date} stroke="#FDD405" strokeWidth={14} strokeOpacity={0.15} />
+                                        : null
+                                )}
+                                {support != null && (
+                                    <ReferenceLine y={support} stroke="#10b981" strokeDasharray="3 3" strokeWidth={1}
+                                        label={{ value: `S ₹${Math.round(support)}`, position: 'insideTopLeft', fill: '#10b981', fontSize: 9 }} />
+                                )}
+                                {resistance != null && (
+                                    <ReferenceLine y={resistance} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={1}
+                                        label={{ value: `R ₹${Math.round(resistance)}`, position: 'insideTopLeft', fill: '#ef4444', fontSize: 9 }} />
+                                )}
+                                <Line dataKey="close" stroke="transparent" dot={false} legendType="none" isAnimationActive={false} />
+                                <Customized component={(props) => <ModalCandleLayer {...props} data={slicedData} />} />
+                            </ComposedChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                {/* OHLC Table for pattern bars */}
+                {ohlcBars && ohlcBars.length > 0 && (
+                    <div className="px-5 py-4">
+                        <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wide mb-2">
+                            Pattern Candle{ohlcBars.length > 1 ? 's' : ''} — OHLC
+                        </p>
+                        <div className="overflow-x-auto rounded-lg border border-zinc-700">
+                            <table className="w-full text-xs">
+                                <thead>
+                                    <tr className="bg-zinc-800 text-zinc-400">
+                                        <th className="px-3 py-2 text-left font-medium">Date</th>
+                                        <th className="px-3 py-2 text-right font-medium">Open</th>
+                                        <th className="px-3 py-2 text-right font-medium text-emerald-400">High</th>
+                                        <th className="px-3 py-2 text-right font-medium text-rose-400">Low</th>
+                                        <th className="px-3 py-2 text-right font-medium">Close</th>
+                                        <th className="px-3 py-2 text-right font-medium">Chg%</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {ohlcBars.map((bar, i) => {
+                                        const bull = bar.close >= bar.open;
+                                        const chg  = bar.open ? ((bar.close - bar.open) / bar.open * 100) : 0;
+                                        return (
+                                            <tr key={i} className={i % 2 === 0 ? 'bg-zinc-900' : 'bg-zinc-800/50'}>
+                                                <td className="px-3 py-2 text-zinc-300 font-mono">{bar.date}</td>
+                                                <td className="px-3 py-2 text-right text-zinc-200 font-mono">₹{Number(bar.open).toLocaleString('en-IN', {maximumFractionDigits: 2})}</td>
+                                                <td className="px-3 py-2 text-right text-emerald-400 font-mono">₹{Number(bar.high).toLocaleString('en-IN', {maximumFractionDigits: 2})}</td>
+                                                <td className="px-3 py-2 text-right text-rose-400 font-mono">₹{Number(bar.low).toLocaleString('en-IN', {maximumFractionDigits: 2})}</td>
+                                                <td className={`px-3 py-2 text-right font-mono font-semibold ${bull ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                    ₹{Number(bar.close).toLocaleString('en-IN', {maximumFractionDigits: 2})}
+                                                </td>
+                                                <td className={`px-3 py-2 text-right font-mono ${bull ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                    {bull ? '+' : ''}{chg.toFixed(2)}%
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+
+                {/* Pattern description */}
+                {pattern?.description && (
+                    <div className="px-5 pb-4">
+                        <p className="text-xs text-zinc-400 leading-relaxed">{pattern.description}</p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+/* ─── Chart pattern card (top 1 from scanner) ────────────────────────────── */
+const ChartPatternCard = ({ cp }) => {
+    const [modalOpen, setModalOpen] = useState(false);
+    if (!cp) return null;
+
+    const dirColor  = cp.direction === 'bullish' ? '#22c55e' : cp.direction === 'bearish' ? '#ef4444' : '#FDD405';
+    const DirIcon   = cp.direction === 'bullish' ? TrendingUp : cp.direction === 'bearish' ? TrendingDown : Minus;
+    const chartSlice = cp.chart_slice || [];
+
+    const allHL = chartSlice.flatMap(d => [d.High ?? d.high, d.Low ?? d.low].filter(Boolean));
+    const yMin = allHL.length ? Math.min(...allHL) : 0;
+    const yMax = allHL.length ? Math.max(...allHL) : 1;
+    const pad  = (yMax - yMin) * 0.12 || 1;
+
+    const sliceData = chartSlice.map(d => ({
+        date: d.date, open: d.Open ?? d.open, high: d.High ?? d.high,
+        low: d.Low ?? d.low, close: d.Close ?? d.close,
+    }));
+
+    return (
+        <>
+            <button
+                onClick={() => setModalOpen(true)}
+                className="w-full text-left bg-white dark:bg-zinc-900 border rounded-xl p-3 hover:border-[#FDD405]/70 transition-all group"
+                style={{ borderColor: dirColor + '66' }}
+            >
+                <div className="flex items-center justify-between mb-2 gap-1 flex-wrap">
+                    <div className="flex items-center gap-1.5">
+                        <DirIcon size={11} color={dirColor} />
+                        <span className="text-[10px] font-semibold" style={{ color: dirColor }}>{cp.direction}</span>
+                    </div>
+                    <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+                        {cp.bars_ago === 0 ? 'Active' : `${cp.bars_ago}d ago`} · {cp.strength}
+                    </span>
+                </div>
+
+                {/* Mini chart from chart_slice */}
+                <div style={{ height: 90, width: '100%' }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                        <ComposedChart data={sliceData} margin={{ top: 4, right: 4, left: 0, bottom: 2 }}>
+                            <CartesianGrid strokeDasharray="2 4" stroke="#374151" opacity={0.2} vertical={false} />
+                            <YAxis domain={[yMin - pad, yMax + pad]} hide />
+                            <XAxis dataKey="date" hide />
+                            {cp.annotations?.hlines?.slice(0, 2).map((hl, j) => (
+                                <ReferenceLine key={j} y={hl.price} stroke={hl.color} strokeDasharray="3 3" strokeWidth={1} />
+                            ))}
+                            <Line dataKey="close" stroke="transparent" dot={false} legendType="none" isAnimationActive={false} />
+                            <Customized component={(props) => <MiniCandleLayer {...props} data={sliceData.slice(-25)} />} />
+                        </ComposedChart>
+                    </ResponsiveContainer>
+                </div>
+
+                <div className="border-t border-zinc-200 dark:border-zinc-700/40 pt-2 mt-2 flex items-center justify-between">
+                    <p className="text-xs font-semibold text-zinc-900 dark:text-white">{cp.pattern}</p>
+                    <span className="text-[9px] text-zinc-400 group-hover:text-zinc-200 transition-colors">tap to expand →</span>
+                </div>
+
+                {cp.target && (
+                    <div className="mt-1.5 flex gap-2 text-[10px]">
+                        <span className="text-zinc-400">Target</span>
+                        <span className="font-mono font-semibold text-emerald-400">₹{Number(cp.target).toLocaleString('en-IN', {maximumFractionDigits: 0})}</span>
+                        {cp.stop && (<><span className="text-zinc-600">|</span><span className="text-zinc-400">Stop</span><span className="font-mono text-rose-400">₹{Number(cp.stop).toLocaleString('en-IN', {maximumFractionDigits: 0})}</span></>)}
+                    </div>
+                )}
+            </button>
+
+            {modalOpen && (
+                <PatternModal
+                    pattern={cp}
+                    ohlcBars={null}
+                    chartData={null}
+                    support={cp.support}
+                    resistance={cp.resistance}
+                    onClose={() => setModalOpen(false)}
+                />
+            )}
+        </>
+    );
+};
+
 /* ─── PATTERN DETECTION & RESISTANCE ALERT ───────────────────────────────── */
 export const PatternDetectionSection = ({ patternSummary, chartData = null }) => {
     const [open, setOpen] = React.useState(false);
+    const [selectedPattern, setSelectedPattern] = useState(null);
+
     if (!patternSummary) return null;
 
-    // Merge candlestick + chart patterns, deduplicate, cap at 4
-    const candlesticks = [
-        ...(Array.isArray(patternSummary.candlestick)     ? patternSummary.candlestick     : []),
-        ...(Array.isArray(patternSummary.chart_patterns)  ? patternSummary.chart_patterns  : []),
-    ].filter((name, i, arr) => arr.indexOf(name) === i);
-    const summary      = patternSummary.summary;
-    const resistance   = patternSummary.resistance;
-    const support      = patternSummary.support;
+    const candlestickNames = Array.isArray(patternSummary.candlestick) ? patternSummary.candlestick : [];
+    const candlestickDetails = Array.isArray(patternSummary.candlestick_details) ? patternSummary.candlestick_details : [];
+    const chartPatternDetails = Array.isArray(patternSummary.chart_pattern_details) ? patternSummary.chart_pattern_details : [];
+    const summary    = patternSummary.summary;
+    const resistance = patternSummary.resistance;
+    const support    = patternSummary.support;
 
-    // Build a name→detail map so each card knows bars_ago
+    // name → detail map (bars_ago, strength, ohlc_bars)
     const detailMap = useMemo(() => {
         const map = {};
+        candlestickDetails.forEach(d => { map[d.name] = d; });
         [...(patternSummary.bullish_details || []), ...(patternSummary.bearish_details || [])]
-            .forEach(d => { map[d.name] = d; });
+            .forEach(d => { if (!map[d.name]) map[d.name] = d; });
         return map;
-    }, [patternSummary]);
+    }, [patternSummary, candlestickDetails]);
 
-    const hasContent = candlesticks.length > 0 || summary;
+    const hasContent = candlestickNames.length > 0 || chartPatternDetails.length > 0 || summary;
     if (!hasContent) return null;
 
+    const topChartPattern = chartPatternDetails[0] || null;
+
     return (
-        <div className="mt-4 border border-zinc-200 dark:border-zinc-700/50 rounded-xl overflow-hidden bg-white dark:bg-[#1C1B15]">
-            <button
-                onClick={() => setOpen(o => !o)}
-                className="w-full flex items-center justify-between px-4 py-3 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-left"
-            >
-                <span className="text-sm font-semibold text-zinc-900 dark:text-white">Pattern Detection & Resistance Alert</span>
-                {open ? <ChevronUp size={15} className="text-zinc-500 dark:text-zinc-400 flex-shrink-0" />
-                      : <ChevronDown size={15} className="text-zinc-500 dark:text-zinc-400 flex-shrink-0" />}
-            </button>
-            {open && (
-                <div className="p-4 bg-zinc-50 dark:bg-[#1C1B15]">
-                    {summary && (
-                        <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed mb-4">{summary}</p>
-                    )}
-                    {candlesticks.length > 0 && (
-                        <div className="grid grid-cols-2 gap-3">
-                            {candlesticks.slice(0, 4).map((name, i) => {
-                                const detail   = detailMap[name] || {};
-                                const barsAgo  = detail.bars_ago ?? 0;
-                                const strength = detail.strength;
-                                return (
-                                    <div key={i} className="bg-white dark:bg-zinc-900 border border-[#FDD405] rounded-xl p-3">
-                                        {/* Header: Resistance badge + bars-ago label */}
-                                        <div className="flex items-center justify-between mb-2 gap-1 flex-wrap">
-                                            {resistance != null && (
-                                                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/50 border border-rose-300 dark:border-rose-700/40 text-[10px] font-semibold text-rose-600 dark:text-rose-300">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 dark:bg-rose-400 flex-shrink-0" />
-                                                    R ₹{Number(resistance).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                                                </span>
-                                            )}
-                                            <span className="text-[10px] text-zinc-400 dark:text-zinc-500 ml-auto">
-                                                {barsAgo === 0 ? 'Today' : `${barsAgo}d ago`}
-                                                {strength ? ` · ${strength}` : ''}
-                                            </span>
-                                        </div>
+        <>
+            <div className="mt-4 border border-zinc-200 dark:border-zinc-700/50 rounded-xl overflow-hidden bg-white dark:bg-[#1C1B15]">
+                <button
+                    onClick={() => setOpen(o => !o)}
+                    className="w-full flex items-center justify-between px-4 py-3 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-left"
+                >
+                    <span className="text-sm font-semibold text-zinc-900 dark:text-white">Pattern Detection & Resistance Alert</span>
+                    {open ? <ChevronUp size={15} className="text-zinc-500 dark:text-zinc-400 flex-shrink-0" />
+                          : <ChevronDown size={15} className="text-zinc-500 dark:text-zinc-400 flex-shrink-0" />}
+                </button>
 
-                                        {/* Real candle chart or schematic fallback */}
-                                        <PatternMiniChart
-                                            chartData={chartData}
-                                            barsAgo={barsAgo}
-                                            support={support}
-                                            resistance={resistance}
-                                        />
+                {open && (
+                    <div className="p-4 bg-zinc-50 dark:bg-[#1C1B15]">
+                        {summary && (
+                            <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed mb-4">{summary}</p>
+                        )}
 
-                                        <div className="border-t border-zinc-200 dark:border-zinc-700/40 pt-2 mt-2">
-                                            <p className="text-xs font-semibold text-zinc-900 dark:text-white text-center">{name}</p>
-                                        </div>
+                        <div className={`flex gap-3 ${topChartPattern ? '' : ''}`}>
+                            {/* Left: Candle Patterns */}
+                            {candlestickNames.length > 0 && (
+                                <div className={topChartPattern ? 'flex-1 min-w-0' : 'w-full'}>
+                                    <p className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wide mb-2">
+                                        Candle Pattern{candlestickNames.length > 1 ? 's' : ''}
+                                    </p>
+                                    <div className="flex flex-col gap-3">
+                                        {candlestickNames.slice(0, 2).map((name, i) => {
+                                            const detail   = detailMap[name] || {};
+                                            const barsAgo  = detail.bars_ago ?? 0;
+                                            const strength = detail.strength;
+                                            const ohlcBars = detail.ohlc_bars || null;
+                                            return (
+                                                <button
+                                                    key={i}
+                                                    onClick={() => setSelectedPattern({ name, barsAgo, strength, ohlcBars })}
+                                                    className="w-full text-left bg-white dark:bg-zinc-900 border border-[#FDD405] rounded-xl p-3 hover:border-[#FDD405] hover:shadow-md transition-all group"
+                                                >
+                                                    {/* Header */}
+                                                    <div className="flex items-center justify-between mb-2 gap-1 flex-wrap">
+                                                        {resistance != null && (
+                                                            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/50 border border-rose-300 dark:border-rose-700/40 text-[10px] font-semibold text-rose-600 dark:text-rose-300">
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 dark:bg-rose-400 flex-shrink-0" />
+                                                                R ₹{Number(resistance).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                                                            </span>
+                                                        )}
+                                                        <span className="text-[10px] text-zinc-400 dark:text-zinc-500 ml-auto">
+                                                            {barsAgo === 0 ? 'Today' : `${barsAgo}d ago`}
+                                                            {strength ? ` · ${strength}` : ''}
+                                                        </span>
+                                                    </div>
+
+                                                    <PatternMiniChart
+                                                        chartData={chartData}
+                                                        barsAgo={barsAgo}
+                                                        support={support}
+                                                        resistance={resistance}
+                                                    />
+
+                                                    <div className="border-t border-zinc-200 dark:border-zinc-700/40 pt-2 mt-2 flex items-center justify-between">
+                                                        <p className="text-xs font-semibold text-zinc-900 dark:text-white">{name}</p>
+                                                        <span className="text-[9px] text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-200 transition-colors">tap →</span>
+                                                    </div>
+                                                </button>
+                                            );
+                                        })}
                                     </div>
-                                );
-                            })}
+                                </div>
+                            )}
+
+                            {/* Right: Chart Pattern (top 1) */}
+                            {topChartPattern && (
+                                <div className={candlestickNames.length > 0 ? 'flex-1 min-w-0' : 'w-full'}>
+                                    <p className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wide mb-2">
+                                        Chart Pattern
+                                    </p>
+                                    <ChartPatternCard cp={topChartPattern} />
+                                </div>
+                            )}
                         </div>
-                    )}
-                </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Interactive candle pattern modal */}
+            {selectedPattern && (
+                <PatternModal
+                    pattern={{ name: selectedPattern.name, bars_ago: selectedPattern.barsAgo, strength: selectedPattern.strength, direction: detailMap[selectedPattern.name]?.direction }}
+                    ohlcBars={selectedPattern.ohlcBars}
+                    chartData={chartData}
+                    support={support}
+                    resistance={resistance}
+                    onClose={() => setSelectedPattern(null)}
+                />
             )}
-        </div>
+        </>
     );
 };
 
