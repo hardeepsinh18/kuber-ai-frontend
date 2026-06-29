@@ -1098,7 +1098,7 @@ export const PatternDetectionSection = ({ patternSummary, chartData = null }) =>
                                         Candle Pattern{candlestickNames.length > 1 ? 's' : ''}
                                     </p>
                                     <div className="flex flex-col gap-3">
-                                        {candlestickNames.slice(0, 2).map((name, i) => {
+                                        {candlestickNames.slice(0, 3).map((name, i) => {
                                             const detail   = detailMap[name] || {};
                                             const barsAgo  = detail.bars_ago ?? 0;
                                             const strength = detail.strength;
@@ -1141,15 +1141,21 @@ export const PatternDetectionSection = ({ patternSummary, chartData = null }) =>
                                 </div>
                             )}
 
-                            {/* Right: Chart Pattern (top 1) */}
-                            {topChartPattern && (
-                                <div className={candlestickNames.length > 0 ? 'flex-1 min-w-0' : 'w-full'}>
-                                    <p className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wide mb-2">
-                                        Chart Pattern
-                                    </p>
+                            {/* Right: Chart Pattern (top 1) or placeholder */}
+                            <div className={candlestickNames.length > 0 ? 'flex-1 min-w-0' : 'w-full'}>
+                                <p className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wide mb-2">
+                                    Chart Pattern
+                                </p>
+                                {topChartPattern ? (
                                     <ChartPatternCard cp={topChartPattern} />
-                                </div>
-                            )}
+                                ) : (
+                                    <div className="h-full min-h-[80px] flex items-center justify-center rounded-xl border border-dashed border-zinc-700/50 px-4 py-6 text-center">
+                                        <span className="text-[11px] text-zinc-500 italic leading-relaxed">
+                                            No classical chart patterns detected — no triangle, channel, or H&amp;S forming currently.
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 )}
