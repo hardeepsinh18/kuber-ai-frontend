@@ -1090,10 +1090,10 @@ export const PatternDetectionSection = ({ patternSummary, chartData = null }) =>
                             </div>
                         )}
 
-                        <div className={`flex gap-3 ${topChartPattern ? '' : ''}`}>
+                        <div className={`grid gap-3 ${candlestickNames.length > 0 ? 'grid-cols-2' : 'grid-cols-1'}`}>
                             {/* Left: Candle Patterns */}
                             {candlestickNames.length > 0 && (
-                                <div className={topChartPattern ? 'flex-1 min-w-0' : 'w-full'}>
+                                <div className="min-w-0 overflow-hidden">
                                     <p className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wide mb-2">
                                         Candle Pattern{candlestickNames.length > 1 ? 's' : ''}
                                     </p>
@@ -1142,7 +1142,7 @@ export const PatternDetectionSection = ({ patternSummary, chartData = null }) =>
                             )}
 
                             {/* Right: Chart Pattern (top 1) or placeholder */}
-                            <div className={candlestickNames.length > 0 ? 'flex-1 min-w-0' : 'w-full'}>
+                            <div className="min-w-0 overflow-hidden">
                                 <p className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wide mb-2">
                                     Chart Pattern
                                 </p>
