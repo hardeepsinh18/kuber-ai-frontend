@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import MessageBubble from './MessageBubble';
 import InputBar from './InputBar';
+import GroupClarificationPopup from './GroupClarificationPopup';
 import StartScreen from './StartScreen';
 import ThinkingPaths from './ThinkingPaths';
 import SourcesPanel from './SourcesPanel';
@@ -449,6 +450,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const [streamingMessageId, setStreamingMessageId] = useState(null); // Track which message is streaming
+    const [dismissedDisambigId, setDismissedDisambigId] = useState(null); // AI message id whose clarification popup the user dismissed
     const [showThinking, setShowThinking] = useState(false); // Show thinking paths
     const [thinkingSteps, setThinkingSteps] = useState([]); // Store thinking steps
     const [startTime, setStartTime] = useState(null); // Track request start time
@@ -841,6 +843,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             const technicalSummary = responseData.technical_summary || null;
             const indicatorsTable = responseData.indicators_table || null;
             const scoreCard = responseData.score_card || null;
+            const managementSentiment = responseData.management_sentiment || null;
             const suggestedFollowUps = Array.isArray(responseData.suggested_follow_ups) ? responseData.suggested_follow_ups : null;
             const newsHeadlines = responseData.news_headlines || null;
 
@@ -859,6 +862,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 technicalSummary,
                 indicatorsTable,
                 scoreCard,
+                managementSentiment,
                 suggestedFollowUps,
                 newsHeadlines,
                 thinkingSteps: (responseData.retrieval_steps && responseData.retrieval_steps.length > 0) ? responseData.retrieval_steps : dynamicSteps,
@@ -1017,6 +1021,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                                 technicalSummary={msg.technicalSummary}
                                 indicatorsTable={msg.indicatorsTable}
                                 scoreCard={msg.scoreCard}
+                                managementSentiment={msg.managementSentiment}
                                 suggestedFollowUps={msg.suggestedFollowUps}
                                 newsHeadlines={msg.newsHeadlines}
                                 onFollowUpClick={(text) => handleSend(text)}
@@ -1088,6 +1093,25 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                     })()}
                     onHorizonChoice={(q) => handleSend(q)}
                 />
+
+                {/* Group disambiguation popup — when the latest AI reply asks which company
+                    (e.g. "Tata Motors" → TMPV / TMCV). Selecting a chip sends its ticker. */}
+                {(() => {
+                    if (isLoading) return null;
+                    const lastAI = [...messages].reverse().find(m => m.role === 'ai');
+                    const d = lastAI?.metadata?.disambiguation;
+                    if (!d || !d.ambiguous || !Array.isArray(d.suggestions) || d.suggestions.length === 0) return null;
+                    if (dismissedDisambigId === lastAI.id) return null;
+                    return (
+                        <GroupClarificationPopup
+                            groupName={d.group_name}
+                            candidates={d.suggestions}
+                            disabled={isLoading}
+                            onSelect={(ticker) => { setDismissedDisambigId(lastAI.id); handleSend(ticker); }}
+                            onDismiss={() => setDismissedDisambigId(lastAI.id)}
+                        />
+                    );
+                })()}
             </div>
         </div>
         </>

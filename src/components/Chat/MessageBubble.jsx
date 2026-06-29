@@ -6,6 +6,7 @@ import { TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp } from 'lucide-
 import { useStreamingText } from '../../hooks/useStreamingText';
 import StockChart from './StockChart';
 import FundamentalScoreCard, { PatternDetectionSection } from './FundamentalCard';
+import ManagementSentiment from './ManagementSentiment';
 
 const normalizeSymbol = (s) => {
     const raw = String(s || "").trim();
@@ -410,7 +411,7 @@ const HorizonChoice = ({ symbol, onChoice }) => {
     );
 };
 
-const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, isScannerResult = false, chartData = null, metadata = {}, signal = null, patternSummary = null, technicalSummary = null, indicatorsTable = null, scoreCard = null, suggestedFollowUps = null, newsHeadlines = null, onFollowUpClick = null, onStreamingDone = null, messageId = null, onFeedback = null, responseMode = null }) => {
+const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, isScannerResult = false, chartData = null, metadata = {}, signal = null, patternSummary = null, technicalSummary = null, indicatorsTable = null, scoreCard = null, managementSentiment = null, suggestedFollowUps = null, newsHeadlines = null, onFollowUpClick = null, onStreamingDone = null, messageId = null, onFeedback = null, responseMode = null }) => {
     const isUser = role === 'user';
 
     // Use streaming hook for AI messages
@@ -903,6 +904,9 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                         scoreCard={scoreCard}
                         symbol={primarySymbolLabel}
                     />
+
+                    {/* ── Management Sentiment (earnings-call/annual-report tone) ── */}
+                    <ManagementSentiment data={managementSentiment} />
 
                     {/* ── Expandable indicators table (DB-backed) ──────── */}
                     <IndicatorsTable
