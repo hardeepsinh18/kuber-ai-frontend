@@ -1,9 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import {
   X, FileSpreadsheet, BarChart2, AlertCircle,
-  CheckCircle2, RefreshCw, ChevronDown, ChevronRight,
+  CheckCircle2, RefreshCw, ChevronDown, ChevronRight, Clock,
 } from 'lucide-react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
+import { supabase } from '../../lib/supabase'
 
 // In production Vercel proxies /portfolio-api/* → EC2:8001/api/*
 // Set VITE_PORTFOLIO_API_BASE=http://localhost:8001 for local dev
@@ -12,6 +13,23 @@ const PORTFOLIO_BASE = (_raw && _raw.startsWith('http')) ? _raw.replace(/\/$/, '
 const UPLOAD_ENDPOINT = PORTFOLIO_BASE
   ? `${PORTFOLIO_BASE}/api/v1/portfolio/upload-and-analyze`
   : '/portfolio-api/v1/portfolio/upload-and-analyze'
+const HISTORY_ENDPOINT = PORTFOLIO_BASE
+  ? `${PORTFOLIO_BASE}/api/v1/portfolio/history`
+  : '/portfolio-api/v1/portfolio/history'
+const SNAPSHOT_ENDPOINT = (id) => PORTFOLIO_BASE
+  ? `${PORTFOLIO_BASE}/api/v1/portfolio/history/${id}`
+  : `/portfolio-api/v1/portfolio/history/${id}`
+
+async function getAuthHeader() {
+  try {
+    if (!supabase) return {}
+    const { data } = await supabase.auth.getSession()
+    const token = data?.session?.access_token
+    return token ? { 'X-Supabase-Auth': `Bearer ${token}` } : {}
+  } catch {
+    return {}
+  }
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -86,6 +104,128 @@ function ScoreChip({ score }) {
     : 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400'
   return (
     <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${cls}`}>{s}</span>
+  )
+}
+
+// ── History View ──────────────────────────────────────────────────────────────
+
+function HistoryView({ onLoad }) {
+  const [records, setRecords] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [loadingId, setLoadingId] = useState(null)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        const headers = await getAuthHeader()
+        if (!Object.keys(headers).length) {
+          setError('Sign in to view your portfolio history.')
+          setLoading(false)
+          return
+        }
+        const res = await fetch(HISTORY_ENDPOINT, { headers })
+        if (!res.ok) throw new Error(`Server error ${res.status}`)
+        const json = await res.json()
+        if (!cancelled) setRecords(json.history || [])
+      } catch (e) {
+        if (!cancelled) setError(e.message)
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [])
+
+  const loadSnapshot = async (id) => {
+    setLoadingId(id)
+    try {
+      const headers = await getAuthHeader()
+      const res = await fetch(SNAPSHOT_ENDPOINT(id), { headers })
+      if (!res.ok) throw new Error(`Server error ${res.status}`)
+      const data = await res.json()
+      onLoad(data)
+    } catch (e) {
+      alert('Failed to load: ' + e.message)
+    } finally {
+      setLoadingId(null)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-2 border-[#FDD405] border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <Clock size={36} className="text-zinc-300 dark:text-zinc-600 mb-3" />
+        <p className="text-sm text-zinc-500">{error}</p>
+      </div>
+    )
+  }
+
+  if (!records.length) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <Clock size={36} className="text-zinc-300 dark:text-zinc-600 mb-3" />
+        <p className="text-sm font-semibold text-zinc-900 dark:text-white mb-1">No history yet</p>
+        <p className="text-xs text-zinc-500">Upload a portfolio to start building your analysis history.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-3" style={{ animation: 'fadeIn 0.3s ease forwards' }}>
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+        {records.length} past {records.length === 1 ? 'analysis' : 'analyses'} — click to reload
+      </p>
+      {records.map((r, idx) => {
+        const date = new Date(r.uploaded_at)
+        const dateStr = date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+        const timeStr = date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+        const health = Math.round(r.health_score ?? 0)
+        return (
+          <button
+            key={r.id}
+            onClick={() => loadSnapshot(r.id)}
+            disabled={loadingId === r.id}
+            style={{ animation: `slideInStock 0.3s ease forwards`, animationDelay: `${idx * 40}ms`, opacity: 0 }}
+            className="w-full text-left rounded-2xl border border-zinc-200/70 dark:border-zinc-800/40
+              bg-white/60 dark:bg-zinc-900/60 px-4 py-3.5
+              hover:border-[#FDD405]/60 hover:bg-[#FDD405]/5
+              transition-all duration-150 disabled:opacity-60"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-zinc-900 dark:text-white truncate">{r.filename}</p>
+                <p className="text-[11px] text-zinc-400 mt-0.5">{dateStr} · {timeStr} · {r.holdings_count} stocks</p>
+              </div>
+              <div className="flex items-center gap-3 flex-shrink-0">
+                <div className="text-right">
+                  <p className="text-[10px] text-zinc-400 uppercase tracking-wide">Health</p>
+                  <p className="text-base font-black leading-tight"
+                    style={{ color: health >= 80 ? '#22c55e' : health >= 60 ? '#f59e0b' : '#ef4444' }}>
+                    {health}
+                  </p>
+                </div>
+                {loadingId === r.id
+                  ? <div className="w-5 h-5 border-2 border-[#FDD405] border-t-transparent rounded-full animate-spin" />
+                  : <ChevronRight size={16} className="text-zinc-400" />
+                }
+              </div>
+            </div>
+          </button>
+        )
+      })}
+    </div>
   )
 }
 
@@ -893,7 +1033,8 @@ export default function PortfolioOverlay({ onClose }) {
     fd.append('file', file)
 
     try {
-      const res = await fetch(UPLOAD_ENDPOINT, { method: 'POST', body: fd })
+      const authHeaders = await getAuthHeader()
+      const res = await fetch(UPLOAD_ENDPOINT, { method: 'POST', body: fd, headers: authHeaders })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
         throw new Error(err.detail || `Server returned ${res.status}`)
@@ -913,6 +1054,14 @@ export default function PortfolioOverlay({ onClose }) {
     setErrorMsg('')
     setFileName('')
   }
+
+  const loadFromHistory = useCallback((data) => {
+    setResult(data)
+    setFileName(data._filename || 'Saved analysis')
+    setPhase('results')
+  }, [])
+
+  const showHistory = phase !== 'loading'
 
   return (
     <div
@@ -944,7 +1093,7 @@ export default function PortfolioOverlay({ onClose }) {
               <h2 className="text-[14px] font-bold text-zinc-900 dark:text-white leading-tight">
                 Portfolio Analysis
               </h2>
-              {fileName && phase !== 'upload' && (
+              {fileName && phase === 'results' && (
                 <p className="text-[11px] text-zinc-400 dark:text-zinc-500 leading-tight mt-0.5">
                   {fileName}
                 </p>
@@ -953,6 +1102,19 @@ export default function PortfolioOverlay({ onClose }) {
           </div>
 
           <div className="flex items-center gap-2">
+            {showHistory && (
+              <button
+                onClick={() => phase === 'history' ? reset() : setPhase('history')}
+                className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg
+                  transition-all duration-150
+                  ${phase === 'history'
+                    ? 'bg-[#FDD405]/15 text-[#FDD405]'
+                    : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-200/60 dark:hover:bg-white/5'
+                  }`}>
+                <Clock size={11} />
+                History
+              </button>
+            )}
             {phase === 'results' && (
               <button onClick={reset}
                 className="flex items-center gap-1.5 text-xs font-medium
@@ -976,9 +1138,10 @@ export default function PortfolioOverlay({ onClose }) {
 
         {/* ── Body ── */}
         <div className="p-5 md:p-6">
-          {phase === 'upload'  && <UploadZone onFile={handleFile} />}
-          {phase === 'loading' && <LoadingState fileName={fileName} />}
-          {phase === 'results' && result && <Results data={result} />}
+          {phase === 'upload'   && <UploadZone onFile={handleFile} />}
+          {phase === 'loading'  && <LoadingState fileName={fileName} />}
+          {phase === 'results'  && result && <Results data={result} />}
+          {phase === 'history'  && <HistoryView onLoad={loadFromHistory} />}
 
           {phase === 'error' && (
             <div className="flex flex-col items-center justify-center py-24 text-center"
