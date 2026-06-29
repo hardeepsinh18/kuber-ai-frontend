@@ -995,21 +995,30 @@ const ChartPatternCard = ({ cp }) => {
                     </span>
                 </div>
 
-                {/* Mini chart from chart_slice */}
-                <div style={{ height: 90, width: '100%' }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                        <ComposedChart data={sliceData} margin={{ top: 4, right: 4, left: 0, bottom: 2 }}>
-                            <CartesianGrid strokeDasharray="2 4" stroke="#374151" opacity={0.2} vertical={false} />
-                            <YAxis domain={[yMin - pad, yMax + pad]} hide />
-                            <XAxis dataKey="date" hide />
-                            {cp.annotations?.hlines?.slice(0, 2).map((hl, j) => (
-                                <ReferenceLine key={j} y={hl.price} stroke={hl.color} strokeDasharray="3 3" strokeWidth={1} />
-                            ))}
-                            <Line dataKey="close" stroke="transparent" dot={false} legendType="none" isAnimationActive={false} />
-                            <Customized component={(props) => <MiniCandleLayer {...props} data={sliceData.slice(-25)} />} />
-                        </ComposedChart>
-                    </ResponsiveContainer>
-                </div>
+                {/* Mini chart from chart_slice — use same slice for both data and candles */}
+                {(() => {
+                    const miniSlice = sliceData.slice(-30);
+                    const allMiniHL = miniSlice.flatMap(d => [d.high, d.low].filter(Boolean));
+                    const miniYMin = allMiniHL.length ? Math.min(...allMiniHL) : yMin;
+                    const miniYMax = allMiniHL.length ? Math.max(...allMiniHL) : yMax;
+                    const miniPad  = (miniYMax - miniYMin) * 0.12 || 1;
+                    return (
+                        <div style={{ height: 90, width: '100%' }}>
+                            <ResponsiveContainer width="100%" height="100%">
+                                <ComposedChart data={miniSlice} margin={{ top: 4, right: 4, left: 0, bottom: 2 }}>
+                                    <CartesianGrid strokeDasharray="2 4" stroke="#374151" opacity={0.2} vertical={false} />
+                                    <YAxis domain={[miniYMin - miniPad, miniYMax + miniPad]} hide />
+                                    <XAxis dataKey="date" hide />
+                                    {cp.annotations?.hlines?.slice(0, 2).map((hl, j) => (
+                                        <ReferenceLine key={j} y={hl.price} stroke={hl.color} strokeDasharray="3 3" strokeWidth={1} />
+                                    ))}
+                                    <Line dataKey="close" stroke="transparent" dot={false} legendType="none" isAnimationActive={false} />
+                                    <Customized component={(props) => <MiniCandleLayer {...props} data={miniSlice} />} />
+                                </ComposedChart>
+                            </ResponsiveContainer>
+                        </div>
+                    );
+                })()}
 
                 <div className="border-t border-zinc-200 dark:border-zinc-700/40 pt-2 mt-2 flex items-center justify-between">
                     <p className="text-xs font-semibold text-zinc-900 dark:text-white">{cp.pattern}</p>
