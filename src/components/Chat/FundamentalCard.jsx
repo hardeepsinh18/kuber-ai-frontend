@@ -730,27 +730,44 @@ const PatternMiniChart = ({ chartData, barsAgo = 0, support, resistance }) => {
     );
 };
 
-/* ─── Interactive candle chart for modal ─────────────────────────────────── */
-const ModalCandleLayer = ({ data = [] }) => {
-    if (!data.length) return null;
-    const allHL = data.flatMap(d => [d.high, d.low]);
-    const yMin = Math.min(...allHL);
-    const yMax = Math.max(...allHL);
-    const yRange = yMax - yMin || 1;
+/* ─── Pattern trendline + hline overlay (TradingView-style) ─────────────── */
+const PatternAnnotationLayer = ({ xAxisMap, yAxisMap, trendlines = [], hlines = [], data = [] }) => {
+    const xAxis = xAxisMap && (xAxisMap[0] ?? xAxisMap['0'] ?? Object.values(xAxisMap)[0]);
+    const yAxis = yAxisMap && (yAxisMap[0] ?? yAxisMap['0'] ?? Object.values(yAxisMap)[0]);
+    if (!xAxis?.scale || !yAxis?.scale || !data?.length) return null;
+    const bandwidth = typeof xAxis.bandwidth === 'function' ? xAxis.bandwidth() : 0;
+    const half = bandwidth / 2;
+    // date → center-x pixel map
+    const dateX = {};
+    data.forEach(d => { const x = xAxis.scale(d.date); if (x != null && !isNaN(x)) dateX[d.date] = x + half; });
+    const dateList = Object.keys(dateX).sort();
+    const getX = (target) => {
+        if (dateX[target] != null) return dateX[target];
+        let best = dateList[0], bestD = Infinity;
+        for (const d of dateList) { const diff = Math.abs(+new Date(d) - +new Date(target)); if (diff < bestD) { bestD = diff; best = d; } }
+        return dateX[best] ?? null;
+    };
+    const cLeft  = xAxis.x  ?? 0;
+    const cRight = (xAxis.x ?? 0) + (xAxis.width ?? 0);
     return (
         <g>
-            {data.map((d, i) => {
-                const bull = d.close >= d.open;
-                const color = bull ? '#26A69A' : '#EF5350';
+            {trendlines.map((tl, i) => {
+                if (!tl?.length || tl.length < 2) return null;
+                const x1 = getX(tl[0].date), x2 = getX(tl[1].date);
+                const y1 = yAxis.scale(tl[0].price), y2 = yAxis.scale(tl[1].price);
+                if ([x1, x2, y1, y2].some(v => v == null || isNaN(v))) return null;
+                const slope = x2 !== x1 ? (y2 - y1) / (x2 - x1) : 0;
                 return (
-                    <g key={i}>
-                        <line x1={i} y1={d.high} x2={i} y2={d.low} stroke={color} strokeWidth={1.2} opacity={0.9} />
-                        <rect
-                            x={i - 0.35} y={Math.min(d.open, d.close)}
-                            width={0.7} height={Math.max(0.002 * yRange, Math.abs(d.close - d.open))}
-                            fill={color} stroke={color} strokeWidth={0.3}
-                        />
-                    </g>
+                    <line key={`tl${i}`} x1={x1} y1={y1} x2={cRight} y2={y2 + slope * (cRight - x2)}
+                          stroke="#4FC3F7" strokeWidth={1.5} opacity={0.85} strokeLinecap="round" />
+                );
+            })}
+            {hlines.map((hl, j) => {
+                const y = yAxis.scale(hl.price);
+                if (y == null || isNaN(y)) return null;
+                return (
+                    <line key={`hl${j}`} x1={cLeft} y1={y} x2={cRight} y2={y}
+                          stroke={hl.color || '#FDD405'} strokeWidth={1.2} strokeDasharray="5 3" opacity={0.9} />
                 );
             })}
         </g>
@@ -871,7 +888,15 @@ const PatternModal = ({ pattern, ohlcBars, chartData, chartSlice, support, resis
                                         label={{ value: `R ₹${Math.round(resistance)}`, position: 'insideTopLeft', fill: '#ef4444', fontSize: 9 }} />
                                 )}
                                 <Line dataKey="close" stroke="transparent" dot={false} legendType="none" isAnimationActive={false} />
-                                <Customized component={(props) => <ModalCandleLayer {...props} data={slicedData} />} />
+                                <Customized component={(props) => <MiniCandleLayer {...props} data={slicedData} />} />
+                                <Customized component={(props) => (
+                                    <PatternAnnotationLayer
+                                        {...props}
+                                        trendlines={pattern?.annotations?.trendlines || []}
+                                        hlines={pattern?.annotations?.hlines || []}
+                                        data={slicedData}
+                                    />
+                                )} />
                             </ComposedChart>
                         </ResponsiveContainer>
                     </div>
