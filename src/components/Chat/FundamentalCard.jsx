@@ -936,8 +936,11 @@ const ChartPatternCard = ({ cp }) => {
     const pad  = (yMax - yMin) * 0.12 || 1;
 
     const sliceData = chartSlice.map(d => ({
-        date: d.date, open: d.Open ?? d.open, high: d.High ?? d.high,
-        low: d.Low ?? d.low, close: d.Close ?? d.close,
+        date: d.date ?? d.Date,   // backend may return "Date" (capital) or "date"
+        open:  d.Open  ?? d.open,
+        high:  d.High  ?? d.high,
+        low:   d.Low   ?? d.low,
+        close: d.Close ?? d.close,
     }));
 
     return (
