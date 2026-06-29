@@ -1555,15 +1555,28 @@ const TechnicalScoreCard = ({ tech }) => {
                             <div className="text-xs font-bold mt-1" style={{ color: scoreColor }}>{label}</div>
                         </div>
                         <div className="flex flex-col items-end gap-2">
-                            <span className="text-[11px] px-2.5 py-1 rounded-full font-semibold"
-                                  style={{ background: `${bias.color}15`, color: bias.color }}>
-                                {bias.text}
-                            </span>
-                            {risk_flags?.length > 0 && (
+                            <div className="flex items-center gap-1">
                                 <span className="text-[11px] px-2.5 py-1 rounded-full font-semibold"
-                                      style={{ background: 'rgba(239,68,68,0.10)', color: '#ef4444' }}>
-                                    ⚠ {risk_flags.length} risk flag{risk_flags.length > 1 ? 's' : ''}
+                                      style={{ background: `${bias.color}15`, color: bias.color }}>
+                                    {bias.text}
                                 </span>
+                                <InfoTip text={
+                                    METRIC_INFO.weekly_trend
+                                        ? `${METRIC_INFO.weekly_trend.def}\n\n${bias.text.replace(/[↑↓→]\s*/,'')}: ${METRIC_INFO.weekly_trend[
+                                            weekly_bias === 'WEEKLY_BULLISH' ? 'Strong'
+                                            : weekly_bias === 'WEEKLY_BEARISH' ? 'Poor' : 'Average'
+                                          ] || ''}`
+                                        : null
+                                } />
+                            </div>
+                            {risk_flags?.length > 0 && (
+                                <div className="flex items-center gap-1">
+                                    <span className="text-[11px] px-2.5 py-1 rounded-full font-semibold"
+                                          style={{ background: 'rgba(239,68,68,0.10)', color: '#ef4444' }}>
+                                        ⚠ {risk_flags.length} risk flag{risk_flags.length > 1 ? 's' : ''}
+                                    </span>
+                                    <InfoTip text={`Active risk flags:\n\n${risk_flags.join('\n')}`} />
+                                </div>
                             )}
                         </div>
                     </div>
