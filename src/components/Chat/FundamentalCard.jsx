@@ -1309,6 +1309,124 @@ const SIGNAL_NAMES = {
     sma_regime:      'SMA Regime',
 };
 
+/* Metric definitions + what each rating means */
+const METRIC_INFO = {
+    ema_stack: {
+        def: 'Alignment of 8, 21, 50 & 200-day EMAs. When short-term EMAs stack above long-term ones, the trend is healthy.',
+        Poor:        'All EMAs inverted — price is in a confirmed downtrend.',
+        Weak:        'EMAs partially misaligned — mixed signals, no clear trend.',
+        Average:     'EMAs roughly flat — directionless or in transition.',
+        Strong:      'EMAs mostly bullishly aligned — uptrend is progressing.',
+        Exceptional: 'All EMAs perfectly stacked — strong, sustained uptrend.',
+    },
+    price_structure: {
+        def: 'Sequence of highs and lows. Higher highs + higher lows = bullish structure; lower highs + lower lows = bearish.',
+        Poor:        'Lower highs and lower lows — structural downtrend confirmed.',
+        Weak:        'Recent highs not being sustained — structure breaking down.',
+        Average:     'Sideways / choppy — no clear directional pattern.',
+        Strong:      'Higher highs and higher lows — healthy uptrend structure.',
+        Exceptional: 'Clean breakout impulse above prior structure — very bullish.',
+    },
+    breakout: {
+        def: 'Detects whether price has broken above key resistance levels, ideally confirmed by volume.',
+        Poor:        'Price is well below all resistance — no breakout in sight.',
+        Weak:        'Approaching resistance but no clean break yet.',
+        Average:     'Minor move at resistance — awaiting volume confirmation.',
+        Strong:      'Clean breakout above resistance with volume.',
+        Exceptional: 'Explosive volume breakout — high conviction move.',
+    },
+    volume_context: {
+        def: 'Compares recent volume to the 20-day average. High volume on up-moves confirms buying interest.',
+        Poor:        'Volume low and declining — no buying interest.',
+        Weak:        'Volume below average — lack of conviction.',
+        Average:     'Volume near average — neutral, no edge.',
+        Strong:      'Volume above average — solid market participation.',
+        Exceptional: '2-3× average volume — likely institutional activity.',
+    },
+    rsi: {
+        def: 'RSI (14-day) measures momentum on a 0-100 scale. >70 = overbought, <30 = oversold.',
+        Poor:        'RSI below 35 — strong bearish momentum, oversold territory.',
+        Weak:        'RSI 35-45 — bearish momentum, downtrend in place.',
+        Average:     'RSI 45-55 — neutral, no clear directional edge.',
+        Strong:      'RSI 55-70 — bullish momentum with room to run.',
+        Exceptional: 'RSI in 60-70 zone with upward slope — strong trend momentum.',
+    },
+    macd: {
+        def: 'MACD tracks the difference between two EMAs. Bullish when the signal line crosses above zero.',
+        Poor:        'MACD deeply negative and histogram widening — accelerating downtrend.',
+        Weak:        'MACD bearish crossover — momentum turning down.',
+        Average:     'MACD near zero line — momentum in transition.',
+        Strong:      'MACD bullish crossover — momentum turning up.',
+        Exceptional: 'MACD strongly positive with rising histogram — strong upward momentum.',
+    },
+    volatility: {
+        def: 'ATR-based measure of recent price swings. High volatility means larger moves in either direction.',
+        Poor:        'Very high volatility with a downward bias — unstable and risky.',
+        Weak:        'Above-average volatility — unpredictable, wider stops needed.',
+        Average:     'Normal volatility — typical market behavior.',
+        Strong:      'Controlled, low volatility in an uptrend — healthy grind higher.',
+        Exceptional: 'Volatility compression near a base — potential big breakout pending.',
+    },
+    weekly_trend: {
+        def: 'Macro trend direction based on the weekly candle chart. Overrides short-term noise.',
+        Poor:        'Weekly chart in clear downtrend — avoid longs entirely.',
+        Weak:        'Weekly trend rolling over — caution, headwinds ahead.',
+        Average:     'Weekly trend sideways — no macro tailwind or headwind.',
+        Strong:      'Weekly uptrend intact — macro direction is supportive.',
+        Exceptional: 'Strong weekly uptrend accelerating — maximum macro tailwind.',
+    },
+    sentiment: {
+        def: 'Derived from price action, volume patterns, and momentum divergences to gauge buyer vs. seller control.',
+        Poor:        'Strong bearish sentiment — sellers firmly in control.',
+        Weak:        'Mild bearish lean — market cautious and defensive.',
+        Average:     'Balanced sentiment — no strong conviction either way.',
+        Strong:      'Mild bullish sentiment — buyers beginning to step in.',
+        Exceptional: 'Very bullish sentiment — high-conviction buying pressure.',
+    },
+    risk_flags: {
+        def: 'Checks for risky conditions: gap-downs, volume spikes on declines, extreme extensions, or proximity to major resistance.',
+        Poor:        'Multiple risk flags active — high-risk setup, proceed with caution.',
+        Weak:        'Some risk factors present — elevated risk.',
+        Average:     '1-2 risk flags — manageable risk, stay alert.',
+        Strong:      'Very few risk factors — relatively clean setup.',
+        Exceptional: 'Zero risk flags — cleanest possible technical setup.',
+    },
+    sma_regime: {
+        def: 'Position of price relative to the 50-day and 200-day SMAs. The "golden cross" (SMA50 > SMA200) is a bullish regime.',
+        Poor:        'Price below both SMA50 & SMA200 — deeply bearish regime.',
+        Weak:        'Price below SMA200 — long-term downtrend regime.',
+        Average:     'Price between SMA50 and SMA200 — transitional phase.',
+        Strong:      'Price above SMA50 — medium-term uptrend.',
+        Exceptional: 'Price above both SMAs with golden cross — fully bullish regime.',
+    },
+};
+
+const SCORE_INFO = 'Weighted composite of 11 sub-metrics (EMA Stack, Price Structure, Breakout, Volume, RSI, MACD, Volatility, Weekly Trend, Sentiment, Risk Flags, SMA Regime). Each scored 1-5 and normalized to 100. ≥70 = Strong Pick · 50-69 = Watchlist · 35-49 = Caution · <35 = Avoid.';
+
+/* Hover tooltip button */
+const InfoTip = ({ text, position = 'left' }) => {
+    const [vis, setVis] = useState(false);
+    return (
+        <div className="relative inline-flex flex-shrink-0"
+             onMouseEnter={() => setVis(true)}
+             onMouseLeave={() => setVis(false)}>
+            <button
+                onClick={e => { e.stopPropagation(); setVis(v => !v); }}
+                className="w-[14px] h-[14px] rounded-full border border-zinc-500 dark:border-zinc-600 text-zinc-400 dark:text-zinc-500 text-[8px] font-bold flex items-center justify-center hover:border-zinc-300 hover:text-zinc-200 transition-colors leading-none"
+                style={{ fontFamily: 'serif' }}
+            >
+                i
+            </button>
+            {vis && (
+                <div className={`absolute z-[9999] bottom-full mb-2 w-52 p-2.5 bg-zinc-800 border border-zinc-600 rounded-lg shadow-2xl text-[10px] text-zinc-300 leading-relaxed pointer-events-none ${position === 'right' ? 'left-0' : 'right-0'}`}>
+                    {text}
+                    <div className={`absolute top-full border-4 border-transparent border-t-zinc-600 ${position === 'right' ? 'left-2' : 'right-2'}`} />
+                </div>
+            )}
+        </div>
+    );
+};
+
 const SIG_PALETTE = {
     Exceptional: { bg: 'rgba(34,197,94,0.10)',  color: '#22c55e' },
     Strong:      { bg: 'rgba(74,222,128,0.08)',  color: '#4ade80' },
@@ -1354,7 +1472,10 @@ const TechnicalScoreCard = ({ tech }) => {
                     <div className="flex items-center justify-between p-3 rounded-xl"
                          style={{ background: `${scoreColor}12`, border: `1.5px solid ${scoreColor}30` }}>
                         <div>
-                            <div className="text-[10px] text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1">Technical Quality Score</div>
+                            <div className="flex items-center gap-1.5 mb-1">
+                                <div className="text-[10px] text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">Technical Quality Score</div>
+                                <InfoTip text={SCORE_INFO} position="right" />
+                            </div>
                             <div className="text-3xl font-extrabold leading-none" style={{ color: scoreColor }}>{score}<span className="text-base font-semibold opacity-60">/100</span></div>
                             <div className="text-xs font-bold mt-1" style={{ color: scoreColor }}>{label}</div>
                         </div>
@@ -1376,18 +1497,25 @@ const TechnicalScoreCard = ({ tech }) => {
                     {Object.keys(signals).length > 0 && (
                         <div className="grid grid-cols-2 gap-2">
                             {Object.entries(signals).map(([key, sig]) => {
-                                const p = SIG_PALETTE[sig.label] || SIG_PALETTE.Average;
+                                const p    = SIG_PALETTE[sig.label] || SIG_PALETTE.Average;
+                                const info = METRIC_INFO[key];
+                                const tipText = info
+                                    ? `${info.def}${info[sig.label] ? `\n\n${sig.label}: ${info[sig.label]}` : ''}`
+                                    : null;
                                 return (
                                     <div key={key}
                                          className="flex items-center justify-between px-3 py-2.5 rounded-xl border border-zinc-100 dark:border-zinc-800/50"
                                          style={{ background: p.bg }}>
-                                        <div>
-                                            <div className="text-[9px] uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-0.5">
-                                                {SIGNAL_NAMES[key] || key}
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-1 mb-0.5">
+                                                <div className="text-[9px] uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+                                                    {SIGNAL_NAMES[key] || key}
+                                                </div>
+                                                {tipText && <InfoTip text={tipText} />}
                                             </div>
                                             <div className="text-[11px] font-bold" style={{ color: p.color }}>{sig.label}</div>
                                         </div>
-                                        <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-extrabold text-white flex-shrink-0"
+                                        <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-extrabold text-white flex-shrink-0 ml-2"
                                              style={{ backgroundColor: p.color }}>
                                             {sig.score}
                                         </div>
