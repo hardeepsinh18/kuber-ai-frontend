@@ -1453,6 +1453,16 @@ const METRIC_INFO = {
 
 const SCORE_INFO = 'Weighted composite of 11 sub-metrics (EMA Stack, Price Structure, Breakout, Volume, RSI, MACD, Volatility, Weekly Trend, Sentiment, Risk Flags, SMA Regime). Each scored 1-5 and normalized to 100. ≥70 = Strong Pick · 50-69 = Watchlist · 35-49 = Caution · <35 = Avoid.';
 
+const RISK_FLAG_LABELS = {
+    EXTENDED_OVERBOUGHT:  'RSI above 75 — stock is overbought, pullback risk is elevated.',
+    EXTENDED_OVERSOLD:    'RSI below 25 — deeply oversold, but may keep falling in downtrends.',
+    VERTICAL_CANDLE_AVOID:'Extreme single-bar spike detected — high volatility, avoid chasing.',
+    CHOPPY_CONDITIONS:    'Price action is choppy with no clear trend — low-probability setups.',
+    LOW_CONFIDENCE_MOVE:  'Recent move happened on weak volume — participation is low, move may not sustain.',
+    FAILED_BREAKOUT:      'Breakout attempt failed or reversed — indicates supply overhead.',
+    POOR_RISK_REWARD:     'Weak trend with only moderate breakout quality — risk/reward is unfavourable.',
+};
+
 /* Hover tooltip — uses a portal so overflow:hidden on ancestors can't clip it */
 const InfoTip = ({ text }) => {
     const [vis, setVis]   = useState(false);
@@ -1581,7 +1591,7 @@ const TechnicalScoreCard = ({ tech }) => {
                                           style={{ background: 'rgba(239,68,68,0.10)', color: '#ef4444' }}>
                                         ⚠ {risk_flags.length} risk flag{risk_flags.length > 1 ? 's' : ''}
                                     </span>
-                                    <InfoTip text={`Active risk flags:\n\n${risk_flags.join('\n')}`} />
+                                    <InfoTip text={`Active risk flags:\n\n${risk_flags.map(f => RISK_FLAG_LABELS[f] ? `• ${RISK_FLAG_LABELS[f]}` : `• ${f}`).join('\n')}`} />
                                 </div>
                             )}
                         </div>
