@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Mic2, ChevronUp, ChevronDown } from 'lucide-react';
 
 /**
  * Management Sentiment card — derived from earnings-call & annual-report disclosures
@@ -93,15 +94,15 @@ const ManagementSentiment = ({ data }) => {
                         Management Sentiment
                     </span>
                     {data.period && (
-                        <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold"
+                        <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold inline-flex items-center gap-1"
                               style={{ background: `${color}18`, color }}>
-                            🎙️ {data.period}
+                            <Mic2 size={10} strokeWidth={2.4} /> {data.period}
                         </span>
                     )}
                     <span className="text-[10px] text-zinc-400 dark:text-zinc-600 font-normal">from earnings calls</span>
                     <button onClick={() => setOpen(o => !o)}
-                        className="ml-auto text-[11px] text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
-                        aria-label="Toggle details">{open ? '▲' : '▼'}</button>
+                        className="ml-auto text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+                        aria-label="Toggle details">{open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}</button>
                 </div>
 
                 {/* Gauge + tone + sparkline */}

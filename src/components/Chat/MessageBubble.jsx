@@ -8,6 +8,8 @@ import StockChart from './StockChart';
 import FundamentalScoreCard, { PatternDetectionSection } from './FundamentalCard';
 import ManagementSentiment from './ManagementSentiment';
 import CompanyFilings from './CompanyFilings';
+import RecentDevelopments from './RecentDevelopments';
+import AITake from './AITake';
 
 const normalizeSymbol = (s) => {
     const raw = String(s || "").trim();
@@ -412,7 +414,7 @@ const HorizonChoice = ({ symbol, onChoice }) => {
     );
 };
 
-const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, isScannerResult = false, chartData = null, metadata = {}, signal = null, patternSummary = null, technicalSummary = null, indicatorsTable = null, scoreCard = null, managementSentiment = null, companyFilings = null, suggestedFollowUps = null, newsHeadlines = null, onFollowUpClick = null, onStreamingDone = null, messageId = null, onFeedback = null, responseMode = null }) => {
+const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, isScannerResult = false, chartData = null, metadata = {}, signal = null, patternSummary = null, technicalSummary = null, indicatorsTable = null, scoreCard = null, managementSentiment = null, companyFilings = null, recentDevelopments = null, aiTake = null, suggestedFollowUps = null, newsHeadlines = null, onFollowUpClick = null, onStreamingDone = null, messageId = null, onFeedback = null, responseMode = null }) => {
     const isUser = role === 'user';
 
     // Use streaming hook for AI messages
@@ -897,6 +899,9 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                     {/* ── Post-text structured sections — hidden while streaming, fade in after ── */}
                     <div className={clsx('transition-opacity duration-500', cardsVisible ? 'opacity-100' : 'opacity-0 pointer-events-none')}>
 
+                    {/* ── AI Take (synthesized verdict) — top of the structured cards ── */}
+                    <AITake data={aiTake} />
+
                     {/* ── Technical indicators chips + support/resistance ── */}
                     <TechnicalSection technicalSummary={technicalSummary} patternSummary={patternSummary} />
 
@@ -908,6 +913,9 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
 
                     {/* ── Management Sentiment (earnings-call/annual-report tone) ── */}
                     <ManagementSentiment data={managementSentiment} />
+
+                    {/* ── Recent Developments (material company events) ── */}
+                    <RecentDevelopments data={recentDevelopments} />
 
                     {/* ── Company Filings & Disclosures (primary-source corpus) ── */}
                     <CompanyFilings data={companyFilings} />

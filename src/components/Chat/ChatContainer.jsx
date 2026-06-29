@@ -845,6 +845,8 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             const scoreCard = responseData.score_card || null;
             const managementSentiment = responseData.management_sentiment || null;
             const companyFilings = responseData.company_filings || null;
+            const recentDevelopments = responseData.recent_developments || null;
+            const aiTake = responseData.ai_take || null;
             const suggestedFollowUps = Array.isArray(responseData.suggested_follow_ups) ? responseData.suggested_follow_ups : null;
             const newsHeadlines = responseData.news_headlines || null;
 
@@ -865,6 +867,8 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 scoreCard,
                 managementSentiment,
                 companyFilings,
+                recentDevelopments,
+                aiTake,
                 suggestedFollowUps,
                 newsHeadlines,
                 thinkingSteps: (responseData.retrieval_steps && responseData.retrieval_steps.length > 0) ? responseData.retrieval_steps : dynamicSteps,
@@ -1025,6 +1029,8 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                                 scoreCard={msg.scoreCard}
                                 managementSentiment={msg.managementSentiment}
                                 companyFilings={msg.companyFilings}
+                                recentDevelopments={msg.recentDevelopments}
+                                aiTake={msg.aiTake}
                                 suggestedFollowUps={msg.suggestedFollowUps}
                                 newsHeadlines={msg.newsHeadlines}
                                 onFollowUpClick={(text) => handleSend(text)}

@@ -1,4 +1,13 @@
 import React, { useState } from 'react';
+import { FolderOpen, BookText, Mic2, BarChart3, Megaphone, FileText, ChevronUp, ChevronDown } from 'lucide-react';
+
+const TYPE_ICON = {
+    annual_report: BookText,
+    transcript: Mic2,
+    investor_presentation: BarChart3,
+    announcement: Megaphone,
+    quarterly_results: FileText,
+};
 
 /**
  * Company Filings & Disclosures panel — surfaces the primary-source corpus
@@ -38,31 +47,39 @@ const CompanyFilings = ({ data }) => {
             <div className="px-4 py-3.5 bg-zinc-50 dark:bg-zinc-900/60">
                 {/* Header — clickable to expand */}
                 <button onClick={() => setOpen(o => !o)} className="w-full flex items-center gap-2 text-left">
+                    <FolderOpen size={13} style={{ color: '#a98a00' }} strokeWidth={2.2} />
                     <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 dark:text-zinc-500">
-                        📄 Company Filings &amp; Disclosures
+                        Company Filings &amp; Disclosures
                     </span>
                     <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold"
                           style={{ background: `${ACCENT}1e`, color: '#a98a00' }}>
                         backed by {data.total} primary {data.total === 1 ? 'document' : 'documents'}
                     </span>
-                    <span className="ml-auto text-[11px] text-zinc-400">{open ? '▲' : '▼'}</span>
+                    <span className="ml-auto text-zinc-400">{open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}</span>
                 </button>
 
                 {/* Collapsed: one-line type summary. Expanded: full grouped lists. */}
                 {!open ? (
-                    <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
-                        {data.groups.map((g) => (
-                            <span key={g.type} className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                                {g.icon} {g.label} <span className="font-semibold text-zinc-600 dark:text-zinc-300">{g.count}</span>
-                            </span>
-                        ))}
+                    <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1.5">
+                        {data.groups.map((g) => {
+                            const Icon = TYPE_ICON[g.type] || FileText;
+                            return (
+                                <span key={g.type} className="text-[11px] text-zinc-500 dark:text-zinc-400 inline-flex items-center gap-1">
+                                    <Icon size={12} strokeWidth={2} className="text-zinc-400 dark:text-zinc-500" />
+                                    {g.label} <span className="font-semibold text-zinc-600 dark:text-zinc-300">{g.count}</span>
+                                </span>
+                            );
+                        })}
                     </div>
                 ) : (
                     <div className="mt-3 space-y-3">
-                        {data.groups.map((g) => (
+                        {data.groups.map((g) => {
+                            const Icon = TYPE_ICON[g.type] || FileText;
+                            return (
                             <div key={g.type}>
-                                <div className="text-[11px] font-semibold text-zinc-600 dark:text-zinc-300 mb-1.5">
-                                    {g.icon} {g.label} <span className="text-zinc-400 dark:text-zinc-600 font-normal">({g.count})</span>
+                                <div className="text-[11px] font-semibold text-zinc-600 dark:text-zinc-300 mb-1.5 inline-flex items-center gap-1.5">
+                                    <Icon size={13} strokeWidth={2} style={{ color: '#a98a00' }} />
+                                    {g.label} <span className="text-zinc-400 dark:text-zinc-600 font-normal">({g.count})</span>
                                 </div>
                                 <div className="flex flex-wrap gap-1.5">
                                     {g.items.map((it, i) => {
@@ -88,7 +105,8 @@ const CompanyFilings = ({ data }) => {
                                     })}
                                 </div>
                             </div>
-                        ))}
+                            );
+                        })}
                         <div className="text-[9.5px] text-zinc-400 dark:text-zinc-600">
                             Source documents filed with NSE/BSE. Click to open the original PDF.
                         </div>
