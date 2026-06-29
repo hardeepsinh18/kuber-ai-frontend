@@ -1063,9 +1063,7 @@ export const PatternDetectionSection = ({ patternSummary, chartData = null }) =>
         return map;
     }, [patternSummary, candlestickDetails]);
 
-    const hasContent = candlestickNames.length > 0 || chartPatternDetails.length > 0 || summary;
-    if (!hasContent) return null;
-
+    const hasPatterns = candlestickNames.length > 0 || chartPatternDetails.length > 0;
     const topChartPattern = chartPatternDetails[0] || null;
 
     return (
@@ -1084,6 +1082,12 @@ export const PatternDetectionSection = ({ patternSummary, chartData = null }) =>
                     <div className="p-4 bg-zinc-50 dark:bg-[#1C1B15]">
                         {summary && (
                             <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed mb-4">{summary}</p>
+                        )}
+
+                        {!hasPatterns && (
+                            <div className="flex items-center gap-2 py-2 px-1 text-[12px] text-zinc-500 dark:text-zinc-500 italic">
+                                <span>Nothing forming right now — no chart or candle patterns detected in recent price action.</span>
+                            </div>
                         )}
 
                         <div className={`flex gap-3 ${topChartPattern ? '' : ''}`}>
