@@ -4,8 +4,6 @@ import {
   CheckCircle2, RefreshCw, ChevronDown, ChevronRight, Clock,
 } from 'lucide-react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
-import { supabase } from '../../lib/supabase'
-
 // In production Vercel proxies /portfolio-api/* → EC2:8001/api/*
 // Set VITE_PORTFOLIO_API_BASE=http://localhost:8001 for local dev
 const _raw = import.meta.env.VITE_PORTFOLIO_API_BASE
@@ -13,22 +11,33 @@ const PORTFOLIO_BASE = (_raw && _raw.startsWith('http')) ? _raw.replace(/\/$/, '
 const UPLOAD_ENDPOINT = PORTFOLIO_BASE
   ? `${PORTFOLIO_BASE}/api/v1/portfolio/upload-and-analyze`
   : '/portfolio-api/v1/portfolio/upload-and-analyze'
-const HISTORY_ENDPOINT = PORTFOLIO_BASE
-  ? `${PORTFOLIO_BASE}/api/v1/portfolio/history`
-  : '/portfolio-api/v1/portfolio/history'
-const SNAPSHOT_ENDPOINT = (id) => PORTFOLIO_BASE
-  ? `${PORTFOLIO_BASE}/api/v1/portfolio/history/${id}`
-  : `/portfolio-api/v1/portfolio/history/${id}`
 
-async function getAuthHeader() {
+// ── Local history helpers (localStorage, max 15 entries) ─────────────────────
+const LS_KEY = 'kuber_portfolio_history'
+const MAX_HISTORY = 15
+
+function lsGetHistory() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]') } catch { return [] }
+}
+
+function lsSaveEntry(filename, result) {
   try {
-    if (!supabase) return {}
-    const { data } = await supabase.auth.getSession()
-    const token = data?.session?.access_token
-    return token ? { 'X-Supabase-Auth': `Bearer ${token}` } : {}
-  } catch {
-    return {}
-  }
+    const entries = lsGetHistory()
+    const entry = {
+      id: crypto.randomUUID(),
+      filename,
+      uploaded_at: new Date().toISOString(),
+      health_score: result.health_score,
+      technical_score: result.technical_score,
+      fundamental_score: result.fundamental_score,
+      diversification_score: result.diversification_score,
+      holdings_count: result.holdings_count,
+      portfolio_value: result.portfolio_value,
+      full_result: result,
+    }
+    const updated = [entry, ...entries].slice(0, MAX_HISTORY)
+    localStorage.setItem(LS_KEY, JSON.stringify(updated))
+  } catch { /* quota exceeded — silent */ }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -110,67 +119,7 @@ function ScoreChip({ score }) {
 // ── History View ──────────────────────────────────────────────────────────────
 
 function HistoryView({ onLoad }) {
-  const [records, setRecords] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [loadingId, setLoadingId] = useState(null)
-  const [error, setError] = useState(null)
-
-  useEffect(() => {
-    let cancelled = false
-    ;(async () => {
-      setLoading(true)
-      setError(null)
-      try {
-        const headers = await getAuthHeader()
-        if (!Object.keys(headers).length) {
-          setError('Sign in to view your portfolio history.')
-          setLoading(false)
-          return
-        }
-        const res = await fetch(HISTORY_ENDPOINT, { headers })
-        if (!res.ok) throw new Error(`Server error ${res.status}`)
-        const json = await res.json()
-        if (!cancelled) setRecords(json.history || [])
-      } catch (e) {
-        if (!cancelled) setError(e.message)
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    })()
-    return () => { cancelled = true }
-  }, [])
-
-  const loadSnapshot = async (id) => {
-    setLoadingId(id)
-    try {
-      const headers = await getAuthHeader()
-      const res = await fetch(SNAPSHOT_ENDPOINT(id), { headers })
-      if (!res.ok) throw new Error(`Server error ${res.status}`)
-      const data = await res.json()
-      onLoad(data)
-    } catch (e) {
-      alert('Failed to load: ' + e.message)
-    } finally {
-      setLoadingId(null)
-    }
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="w-8 h-8 border-2 border-[#FDD405] border-t-transparent rounded-full animate-spin" />
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 text-center">
-        <Clock size={36} className="text-zinc-300 dark:text-zinc-600 mb-3" />
-        <p className="text-sm text-zinc-500">{error}</p>
-      </div>
-    )
-  }
+  const [records] = useState(() => lsGetHistory())
 
   if (!records.length) {
     return (
@@ -195,13 +144,12 @@ function HistoryView({ onLoad }) {
         return (
           <button
             key={r.id}
-            onClick={() => loadSnapshot(r.id)}
-            disabled={loadingId === r.id}
+            onClick={() => onLoad(r.full_result, r.filename)}
             style={{ animation: `slideInStock 0.3s ease forwards`, animationDelay: `${idx * 40}ms`, opacity: 0 }}
             className="w-full text-left rounded-2xl border border-zinc-200/70 dark:border-zinc-800/40
               bg-white/60 dark:bg-zinc-900/60 px-4 py-3.5
               hover:border-[#FDD405]/60 hover:bg-[#FDD405]/5
-              transition-all duration-150 disabled:opacity-60"
+              transition-all duration-150"
           >
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
@@ -216,10 +164,7 @@ function HistoryView({ onLoad }) {
                     {health}
                   </p>
                 </div>
-                {loadingId === r.id
-                  ? <div className="w-5 h-5 border-2 border-[#FDD405] border-t-transparent rounded-full animate-spin" />
-                  : <ChevronRight size={16} className="text-zinc-400" />
-                }
+                <ChevronRight size={16} className="text-zinc-400" />
               </div>
             </div>
           </button>
@@ -1033,13 +978,13 @@ export default function PortfolioOverlay({ onClose }) {
     fd.append('file', file)
 
     try {
-      const authHeaders = await getAuthHeader()
-      const res = await fetch(UPLOAD_ENDPOINT, { method: 'POST', body: fd, headers: authHeaders })
+      const res = await fetch(UPLOAD_ENDPOINT, { method: 'POST', body: fd })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
         throw new Error(err.detail || `Server returned ${res.status}`)
       }
       const data = await res.json()
+      lsSaveEntry(file.name, data)
       setResult(data)
       setPhase('results')
     } catch (e) {
@@ -1055,9 +1000,9 @@ export default function PortfolioOverlay({ onClose }) {
     setFileName('')
   }
 
-  const loadFromHistory = useCallback((data) => {
+  const loadFromHistory = useCallback((data, name) => {
     setResult(data)
-    setFileName(data._filename || 'Saved analysis')
+    setFileName(name || 'Saved analysis')
     setPhase('results')
   }, [])
 
