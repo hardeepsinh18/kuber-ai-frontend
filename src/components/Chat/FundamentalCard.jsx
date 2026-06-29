@@ -1095,10 +1095,10 @@ export const PatternDetectionSection = ({ patternSummary, chartData = null }) =>
                             {candlestickNames.length > 0 && (
                                 <div className="min-w-0 overflow-hidden">
                                     <p className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wide mb-2">
-                                        Candle Pattern{candlestickNames.length > 1 ? 's' : ''}
+                                        Candle Pattern
                                     </p>
                                     <div className="flex flex-col gap-3">
-                                        {candlestickNames.slice(0, 3).map((name, i) => {
+                                        {candlestickNames.slice(0, 1).map((name, i) => {
                                             const detail   = detailMap[name] || {};
                                             const barsAgo  = detail.bars_ago ?? 0;
                                             const strength = detail.strength;
