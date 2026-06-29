@@ -777,7 +777,7 @@ const OHLCTooltip = ({ active, payload, label }) => {
 };
 
 /* ─── Interactive pattern modal ──────────────────────────────────────────── */
-const PatternModal = ({ pattern, ohlcBars, chartData, support, resistance, onClose }) => {
+const PatternModal = ({ pattern, ohlcBars, chartData, chartSlice, support, resistance, onClose }) => {
     const rawChart = useMemo(() => {
         if (!chartData) return null;
         if (Array.isArray(chartData)) return chartData.find(cd => cd && !cd.error) ?? null;
@@ -785,6 +785,16 @@ const PatternModal = ({ pattern, ohlcBars, chartData, support, resistance, onClo
     }, [chartData]);
 
     const slicedData = useMemo(() => {
+        // Chart pattern mode: use chart_slice directly
+        if (!rawChart && chartSlice?.length) {
+            return chartSlice.map(d => ({
+                date:  d.date  ?? d.Date,
+                open:  d.Open  ?? d.open,
+                high:  d.High  ?? d.high,
+                low:   d.Low   ?? d.low,
+                close: d.Close ?? d.close,
+            })).filter(d => d.close != null);
+        }
         if (!rawChart) return [];
         const { dates = [], open = [], high = [], low = [], close = [] } = rawChart;
         const all = dates.map((date, i) => ({
@@ -794,7 +804,7 @@ const PatternModal = ({ pattern, ohlcBars, chartData, support, resistance, onClo
         const barsAgo = pattern?.bars_ago ?? 0;
         const patIdx = Math.max(0, n - 1 - barsAgo);
         return all.slice(Math.max(0, patIdx - 25), Math.min(n, patIdx + 10));
-    }, [rawChart, pattern]);
+    }, [rawChart, chartSlice, pattern]);
 
     const patternBarDates = useMemo(() => new Set((ohlcBars || []).map(b => b.date)), [ohlcBars]);
 
@@ -992,9 +1002,10 @@ const ChartPatternCard = ({ cp }) => {
 
             {modalOpen && (
                 <PatternModal
-                    pattern={cp}
+                    pattern={{ ...cp, name: cp.pattern }}
                     ohlcBars={null}
                     chartData={null}
+                    chartSlice={cp.chart_slice}
                     support={cp.support}
                     resistance={cp.resistance}
                     onClose={() => setModalOpen(false)}
