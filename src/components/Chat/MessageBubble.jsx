@@ -7,6 +7,7 @@ import { useStreamingText } from '../../hooks/useStreamingText';
 import StockChart from './StockChart';
 import FundamentalScoreCard, { PatternDetectionSection } from './FundamentalCard';
 import ManagementSentiment from './ManagementSentiment';
+import CompanyFilings from './CompanyFilings';
 
 const normalizeSymbol = (s) => {
     const raw = String(s || "").trim();
@@ -411,7 +412,7 @@ const HorizonChoice = ({ symbol, onChoice }) => {
     );
 };
 
-const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, isScannerResult = false, chartData = null, metadata = {}, signal = null, patternSummary = null, technicalSummary = null, indicatorsTable = null, scoreCard = null, managementSentiment = null, suggestedFollowUps = null, newsHeadlines = null, onFollowUpClick = null, onStreamingDone = null, messageId = null, onFeedback = null, responseMode = null }) => {
+const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, isScannerResult = false, chartData = null, metadata = {}, signal = null, patternSummary = null, technicalSummary = null, indicatorsTable = null, scoreCard = null, managementSentiment = null, companyFilings = null, suggestedFollowUps = null, newsHeadlines = null, onFollowUpClick = null, onStreamingDone = null, messageId = null, onFeedback = null, responseMode = null }) => {
     const isUser = role === 'user';
 
     // Use streaming hook for AI messages
@@ -907,6 +908,9 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
 
                     {/* ── Management Sentiment (earnings-call/annual-report tone) ── */}
                     <ManagementSentiment data={managementSentiment} />
+
+                    {/* ── Company Filings & Disclosures (primary-source corpus) ── */}
+                    <CompanyFilings data={companyFilings} />
 
                     {/* ── Expandable indicators table (DB-backed) ──────── */}
                     <IndicatorsTable
