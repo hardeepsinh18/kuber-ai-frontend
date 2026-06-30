@@ -447,18 +447,23 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
     }, [isStreaming]);
 
     // Intent-based visibility: show only sections relevant to what the user asked.
-    // 'pe_ratio' → price header + text only (no chart, news, technicals, fundamentals)
-    // 'news'      → text + news only
-    // 'technicals'→ price header + text + technical/indicators/patterns (no fundamentals/news/chart)
-    // 'chart'     → price header + chart + text (no news/technicals/fundamentals)
-    // 'full'      → show everything
+    // 'pe_ratio'   → price header + text only
+    // 'news'       → text + news only
+    // 'technicals' → price header + chart + text + technical/indicators/patterns
+    // 'chart'      → price header + chart + text
+    // 'full'       → show everything
+    const isFull        = queryIntent === 'full';
     const showAtAGlance  = queryIntent !== 'news';
-    const showChart      = queryIntent === 'full' || queryIntent === 'chart';
-    const showNews       = queryIntent === 'full' || queryIntent === 'news';
-    const showTechnicals = queryIntent === 'full' || queryIntent === 'technicals';
-    const showFundCard   = queryIntent === 'full';
-    const showIndicators = queryIntent === 'full' || queryIntent === 'technicals';
-    const showPatterns   = queryIntent === 'full' || queryIntent === 'technicals';
+    const showChart      = isFull || queryIntent === 'chart' || queryIntent === 'technicals';
+    const showNews       = isFull || queryIntent === 'news';
+    const showTechnicals = isFull || queryIntent === 'technicals';
+    const showFundCard   = isFull;
+    const showIndicators = isFull || queryIntent === 'technicals';
+    const showPatterns   = isFull || queryIntent === 'technicals';
+    const showAITake     = isFull;
+    const showManagement = isFull;
+    const showDevelopments = isFull;
+    const showFilings    = isFull;
 
     // Feedback state: null | 1 (thumbs up) | -1 (thumbs down)
     const [feedbackRating, setFeedbackRating] = React.useState(null);
@@ -914,7 +919,7 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                     <div className={clsx('transition-opacity duration-500', cardsVisible ? 'opacity-100' : 'opacity-0 pointer-events-none')}>
 
                     {/* ── AI Take (synthesized verdict) — top of the structured cards ── */}
-                    <AITake data={aiTake} />
+                    {showAITake && <AITake data={aiTake} />}
 
                     {/* ── Technical indicators chips + support/resistance ── */}
                     {showTechnicals && <TechnicalSection technicalSummary={technicalSummary} patternSummary={patternSummary} />}
@@ -926,13 +931,13 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                     />}
 
                     {/* ── Management Sentiment (earnings-call/annual-report tone) ── */}
-                    <ManagementSentiment data={managementSentiment} />
+                    {showManagement && <ManagementSentiment data={managementSentiment} />}
 
                     {/* ── Recent Developments (material company events) ── */}
-                    <RecentDevelopments data={recentDevelopments} />
+                    {showDevelopments && <RecentDevelopments data={recentDevelopments} />}
 
                     {/* ── Company Filings & Disclosures (primary-source corpus) ── */}
-                    <CompanyFilings data={companyFilings} />
+                    {showFilings && <CompanyFilings data={companyFilings} />}
 
                     {/* ── Expandable indicators table (DB-backed) ──────── */}
                     {showIndicators && <IndicatorsTable
