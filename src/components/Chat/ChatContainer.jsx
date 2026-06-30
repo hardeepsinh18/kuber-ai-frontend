@@ -67,8 +67,10 @@ const extractChartPeriod = (query) => {
 const extractQueryIntent = (query) => {
     const q = query.toLowerCase();
 
-    // P/E ratio specific query — only show price header + text answer
+    // Single fundamental metric queries — only show price header + text answer
     if (/\bp[/\s-]?e\b|pe ratio|p\/e ratio|price.{0,6}earn|price to earn/i.test(q)) return 'pe_ratio';
+    if (/\b(roe|return on equity|roce|return on capital|eps|earnings per share|debt.equity|d\/e ratio|net margin|profit margin|revenue growth|profit growth|dividend yield|book value|pb ratio|price.book|peg ratio|ebitda|fcf|free cash flow|market cap|mcap)\b/i.test(q) &&
+        !/\b(technical|chart|rsi|macd|news|full analysis|tell me about|analyze)\b/i.test(q)) return 'pe_ratio';
 
     // News-only query (no technical/fundamental/chart intent mixed in)
     if (/\b(news|headlines?|latest news|recent news|what'?s new)\b/i.test(q) &&
