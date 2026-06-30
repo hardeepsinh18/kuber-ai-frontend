@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+﻿import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import * as chatStorage from '../lib/chatStorage';
 import * as chatsApi from '../lib/chatsApi';
 import { useAuth } from './AuthContext';
@@ -16,81 +16,86 @@ export function ChatHistoryProvider({ children }) {
     const persistTimeoutRef = useRef(null);
     const isLoadedRef = useRef(false);
     const syncedMessageCountRef = useRef(0);
-    // Ref mirror of currentChatId — prevents stale closure in the persist debounce callback
     const currentChatIdRef = useRef(null);
 
-    // Load chat list on mount: from backend when logged in, else localStorage (filter empty).
-    // When Supabase is configured but user is not logged in, show empty list — auth is required.
+    useEffect(() => { currentChatIdRef.current = currentChatId; }, [currentChatId]);
+
+    // Load chat list on mount.
+    // 1. Show localStorage immediately (7-day filter, minus pending-deletes) - instant sidebar.
+    // 2. If logged in, fetch server list in background and merge - server wins on conflicts.
+    // 3. Retry any pending-delete API calls so server stays in sync.
     useEffect(() => {
-        setIsListLoading(true);
+        const pendingDeletes = chatStorage.getPendingDeletes();
+
+        function buildLocalList() {
+            return chatStorage.getChatList()
+                .filter((c) => !pendingDeletes.includes(c.id))
+                .filter((c) => chatStorage.isWithin7Days(c.updatedAt))
+                .filter((c) => chatStorage.getChatMessages(c.id).length > 0);
+        }
+
+        // Show local data immediately so sidebar does not flicker
+        const localList = buildLocalList();
+        setChatList(localList);
+        chatStorage.saveChatList(localList);
+        isLoadedRef.current = true;
+        setIsListLoading(!!accessToken);
+
         if (accessToken) {
+            // Retry pending deletes so server eventually catches up
+            pendingDeletes.forEach((id) => {
+                chatsApi.deleteChat(id, accessToken)
+                    .then(() => chatStorage.clearPendingDelete(id))
+                    .catch(() => {});
+            });
+
             chatsApi.getChats(accessToken)
                 .then((serverList) => {
-                    if (serverList && serverList.length >= 0) {
-                        const list = serverList.map((c) => ({
+                    if (!serverList) return;
+                    const pDeletes = chatStorage.getPendingDeletes();
+                    const merged = serverList
+                        .filter((c) => !pDeletes.includes(c.id))
+                        .filter((c) => chatStorage.isWithin7Days(c.updated_at ?? c.updatedAt))
+                        .map((c) => ({
                             id: c.id,
                             title: c.title ?? c.name ?? 'New chat',
                             updatedAt: c.updated_at ?? c.updatedAt ?? Date.now(),
                         }));
-                        setChatList(list);
-                        isLoadedRef.current = true;
-                        setIsListLoading(false);
-                        return;
-                    }
-                    loadLocalList();
+                    setChatList(merged);
+                    chatStorage.saveChatList(merged);
                 })
-                .catch(() => loadLocalList());
+                .catch(() => {})
+                .finally(() => setIsListLoading(false));
         } else if (supabaseConfigured) {
-            // Auth required but not logged in — show empty sidebar
             setChatList([]);
-            isLoadedRef.current = true;
             setIsListLoading(false);
         } else {
-            loadLocalList();
-        }
-
-        function loadLocalList() {
-            const list = chatStorage.getChatList().filter((c) => chatStorage.getChatMessages(c.id).length > 0);
-            setChatList(list);
-            chatStorage.saveChatList(list);
-            isLoadedRef.current = true;
             setIsListLoading(false);
         }
     }, [accessToken, supabaseConfigured]);
 
-    // Keep ref in sync so the debounce callback always reads the latest chatId
-    useEffect(() => { currentChatIdRef.current = currentChatId; }, [currentChatId]);
-
     // Persist current chat when messages or currentChatId change (debounced).
-    // When logged in, sync to backend; always persist to localStorage as cache/fallback.
     useEffect(() => {
         if (!currentChatId || !isLoadedRef.current) return;
         if (persistTimeoutRef.current) clearTimeout(persistTimeoutRef.current);
         persistTimeoutRef.current = setTimeout(() => {
-            // Use ref to get the chatId at time-of-execution, not time-of-capture.
-            // Prevents stale closure when user switches chats during the 400ms debounce.
             const chatId = currentChatIdRef.current;
             if (!chatId) return;
             const hasMessages = messages.length > 0;
-            // Only consider messages NEW if they exceed the synced baseline.
-            // This prevents merely *viewing* a loaded chat from bumping its updatedAt.
             const hasNewMessages = messages.length > syncedMessageCountRef.current;
             if (hasMessages) {
                 const title = chatStorage.getTitleFromMessages(messages);
-                // Strip heavy chartData before persisting to localStorage to avoid QuotaExceededError.
-                // chartData (OHLCV arrays) can be 2-5MB per message. Keep it in memory only.
                 const msgsForStorage = messages.map(({ chartData: _cd, ...rest }) => rest);
                 try {
                     chatStorage.saveChatMessages(chatId, msgsForStorage);
                 } catch (storageErr) {
-                    // localStorage full — clear oldest chats and retry once
                     console.warn('localStorage quota exceeded, pruning old chats:', storageErr);
                     try {
                         const list = chatStorage.getChatList();
                         const oldest = list.slice(-Math.ceil(list.length / 2));
                         oldest.forEach(c => chatStorage.saveChatMessages(c.id, []));
                         chatStorage.saveChatMessages(chatId, msgsForStorage);
-                    } catch (_) { /* give up silently */ }
+                    } catch (_) {}
                 }
                 setChatList((prev) => {
                     const next = prev.map((c) =>
@@ -98,7 +103,6 @@ export function ChatHistoryProvider({ children }) {
                             ? { ...c, title, ...(hasNewMessages ? { updatedAt: Date.now() } : {}) }
                             : c
                     );
-                    // New chat being created for the first time — add it to list
                     const found = next.some((c) => c.id === chatId);
                     if (!found) next.unshift({ id: chatId, title, updatedAt: Date.now() });
                     chatStorage.saveChatList(next);
@@ -106,7 +110,6 @@ export function ChatHistoryProvider({ children }) {
                 });
                 if (accessToken) {
                     const start = syncedMessageCountRef.current;
-                    // Exclude chartData from backend sync — too large for DB JSONB column
                     const newOnes = messages.slice(start).map((m) => ({
                         role: m.role === 'ai' ? 'assistant' : 'user',
                         content: m.content ?? '',
@@ -117,7 +120,6 @@ export function ChatHistoryProvider({ children }) {
                             ...(m.suggestedFollowUps?.length ? { _suggestedFollowUps: m.suggestedFollowUps } : {}),
                             ...(m.processingTime != null ? { _processingTime: m.processingTime } : {}),
                             ...(m.signal != null ? { _signal: m.signal } : {}),
-                            // chartData intentionally excluded — too large for DB
                         },
                     }));
                     if (newOnes.length > 0) {
@@ -145,10 +147,7 @@ export function ChatHistoryProvider({ children }) {
                 if (serverId) {
                     syncedMessageCountRef.current = 0;
                     setCurrentChatId(serverId);
-                    setChatList((prev) => {
-                        const next = [{ id: serverId, title: 'New chat', updatedAt: Date.now() }, ...prev];
-                        return next;
-                    });
+                    setChatList((prev) => [{ id: serverId, title: 'New chat', updatedAt: Date.now() }, ...prev]);
                     return serverId;
                 }
             } catch (_) {}
@@ -166,7 +165,6 @@ export function ChatHistoryProvider({ children }) {
     }, [currentChatId, accessToken]);
 
     const newChat = useCallback(() => {
-        // Persist current chat if it has messages before switching away
         if (currentChatId && messages.length > 0) {
             const title = chatStorage.getTitleFromMessages(messages);
             chatStorage.saveChatMessages(currentChatId, messages);
@@ -183,13 +181,8 @@ export function ChatHistoryProvider({ children }) {
         syncedMessageCountRef.current = 0;
         if (accessToken) {
             chatsApi.createChat(accessToken, 'New chat').then((serverId) => {
-                if (serverId) {
-                    setCurrentChatId(serverId);
-                    setMessages([]);
-                } else {
-                    setCurrentChatId(crypto.randomUUID?.() ?? `chat_${Date.now()}`);
-                    setMessages([]);
-                }
+                setCurrentChatId(serverId ?? (crypto.randomUUID?.() ?? `chat_${Date.now()}`));
+                setMessages([]);
             }).catch(() => {
                 setCurrentChatId(crypto.randomUUID?.() ?? `chat_${Date.now()}`);
                 setMessages([]);
@@ -204,8 +197,6 @@ export function ChatHistoryProvider({ children }) {
         setCurrentChatId(id);
         setChatLoadError(null);
         syncedMessageCountRef.current = 0;
-        // Always prefer localStorage first — it has rich fields (thinkingSteps, newsHeadlines,
-        // suggestedFollowUps, chartData, etc.) that the backend does not return directly.
         const rawLocalMsgs = chatStorage.getChatMessages(id);
         const localMsgs = rawLocalMsgs
             .filter(m => m != null && m.role)
@@ -219,8 +210,7 @@ export function ChatHistoryProvider({ children }) {
             syncedMessageCountRef.current = localMsgs.length;
             return;
         }
-        // No local data (e.g. different device/browser): fall back to backend.
-        setMessages([]); // Only clear when we know we'll fetch remotely
+        setMessages([]);
         if (accessToken) {
             setIsChatLoading(true);
             chatsApi.getChat(id, accessToken).then((data) => {
@@ -239,7 +229,6 @@ export function ChatHistoryProvider({ children }) {
                     }));
                     setMessages(msgs);
                     syncedMessageCountRef.current = msgs.length;
-                    // Cache locally so next load is instant with rich fields
                     chatStorage.saveChatMessages(id, msgs);
                 }
                 setChatLoadError(null);
@@ -252,9 +241,10 @@ export function ChatHistoryProvider({ children }) {
     }, [accessToken]);
 
     const deleteChat = useCallback((id) => {
-        if (accessToken) {
-            chatsApi.deleteChat(id, accessToken).catch(() => {});
-        }
+        // Immediately mark as pending-delete in localStorage.
+        // Even if the API call below fails or is slow, this chat won't reappear on next reload
+        // because the mount effect filters out pending-deletes from the server list.
+        chatStorage.addPendingDelete(id);
         chatStorage.saveChatMessages(id, []);
         setChatList((prev) => {
             const next = prev.filter((c) => c.id !== id);
@@ -265,6 +255,13 @@ export function ChatHistoryProvider({ children }) {
             setCurrentChatId(null);
             setMessages([]);
             syncedMessageCountRef.current = 0;
+        }
+        if (accessToken) {
+            chatsApi.deleteChat(id, accessToken)
+                .then(() => chatStorage.clearPendingDelete(id))
+                .catch(() => { /* stays in pending-deletes - retried on next mount */ });
+        } else {
+            chatStorage.clearPendingDelete(id);
         }
     }, [accessToken, currentChatId]);
 

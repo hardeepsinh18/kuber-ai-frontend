@@ -6,8 +6,10 @@
 
 const CHAT_LIST_KEY = 'stockhug_chat_list';
 const CHAT_PREFIX = 'stockhug_chat_';
+const PENDING_DELETES_KEY = 'stockhug_pending_deletes';
 const MAX_CHATS = 50;
 const MAX_MESSAGES_PER_CHAT = 500;
+const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
 function getStorageKey(chatId) {
     return `${CHAT_PREFIX}${chatId}`;
@@ -53,6 +55,33 @@ export function saveChatMessages(chatId, messages) {
     } catch (e) {
         console.warn('chatStorage: saveChatMessages failed', e);
     }
+}
+
+export function getPendingDeletes() {
+    try {
+        const raw = localStorage.getItem(PENDING_DELETES_KEY);
+        return raw ? JSON.parse(raw) : [];
+    } catch { return []; }
+}
+
+export function addPendingDelete(id) {
+    try {
+        const list = getPendingDeletes();
+        if (!list.includes(id)) list.push(id);
+        localStorage.setItem(PENDING_DELETES_KEY, JSON.stringify(list));
+    } catch {}
+}
+
+export function clearPendingDelete(id) {
+    try {
+        const list = getPendingDeletes().filter((d) => d !== id);
+        localStorage.setItem(PENDING_DELETES_KEY, JSON.stringify(list));
+    } catch {}
+}
+
+export function isWithin7Days(updatedAt) {
+    if (!updatedAt) return true;
+    return (Date.now() - Number(updatedAt)) < SEVEN_DAYS_MS;
 }
 
 export function getTitleFromMessages(messages) {
