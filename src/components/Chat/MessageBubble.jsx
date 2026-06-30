@@ -44,6 +44,8 @@ const isNegativePct = (s) => /^[-−][\d.,]+%\s*$/.test(String(s).trim());
 const isTickerLike = (s) => /^[A-Z0-9]{2,6}$/.test(String(s).trim());
 
 // Strip markdown images, phantom chart sections, and inline "Ask me" (duplicated by follow-up buttons)
+const DISCLAIMER_TEXT = 'This is a multi-factor analysis for education only, not investment advice. Past performance does not guarantee future returns. Consider your risk profile and consult a SEBI-registered advisor before investing.';
+
 const stripResponseChrome = (text) => {
     if (!text || typeof text !== 'string') return text;
     let out = text.replace(/!\[[^\]]*\]\([^)]+\)/g, '');
@@ -51,7 +53,15 @@ const stripResponseChrome = (text) => {
     out = out.replace(/\n?##\s*(Intraday\s+Chart|Chart)\s*\n+/gi, '\n');
     out = out.replace(/\n*💬\s*\*?\*?Ask\s*me:?\*?\*?[\s\S]*?(?=\n##|\n---|\n━|$)/gi, '');
     out = out.replace(/\n*##\s*💬\s*Suggested Follow-ups[\s\S]*?(?=\n##|\n---|\n━|$)/gi, '');
+    // Strip disclaimer from text — rendered separately as a styled box at the bottom
+    out = out.replace(/\*?\*?Disclaimer:?\*?\*?[^\n]*((\n[^\n]+)*)/gi, '');
     return out.trim();
+};
+
+// Detect if a response contains a disclaimer (before stripping)
+const hasDisclaimerText = (text) => {
+    if (!text || typeof text !== 'string') return false;
+    return /disclaimer/i.test(text) || /multi.factor analysis for education/i.test(text) || /consult a sebi/i.test(text);
 };
 
 // For focused intents — remove irrelevant sections from the LLM text.
@@ -504,6 +514,7 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
     }, [feedbackRating, onFeedback, messageId]);
 
     const rawText = (!isUser && isStreaming) ? displayedText : content;
+    const showDisclaimer = !isUser && !isStreaming && hasDisclaimerText(rawText);
     const strippedText = !isUser ? stripResponseChrome(rawText) : rawText;
     const textToDisplay = (!isUser && queryIntent !== 'full') ? filterByIntent(strippedText, queryIntent) : strippedText;
 
@@ -1039,6 +1050,21 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                     )}
 
                     </div>{/* end post-text fade wrapper */}
+
+                    {/* ── Disclaimer — amber highlighted box, always last ── */}
+                    {showDisclaimer && (
+                        <div className="mt-4 flex items-start gap-2.5 px-3.5 py-2.5 rounded-xl"
+                            style={{
+                                background: 'linear-gradient(135deg, rgba(253,212,5,0.10) 0%, rgba(253,212,5,0.06) 100%)',
+                                border: '1px solid rgba(253,212,5,0.30)',
+                            }}>
+                            <span className="text-[13px] mt-0.5 flex-shrink-0">⚠️</span>
+                            <p className="text-[11px] leading-relaxed text-zinc-500 dark:text-zinc-400 m-0">
+                                <span className="font-semibold text-[#FDD405]">Disclaimer: </span>
+                                {DISCLAIMER_TEXT}
+                            </p>
+                        </div>
+                    )}
 
                     {/* ── Suggested follow-up chips — bottom of response ── */}
                     {!isStreaming && Array.isArray(suggestedFollowUps) && suggestedFollowUps.length > 0 && onFollowUpClick && (
