@@ -57,6 +57,20 @@ const stripResponseChrome = (text) => {
     return out.trim();
 };
 
+// For focused intents (pe_ratio, technicals, news, chart) strip markdown tables
+// and section headings so only the direct prose answer is shown.
+const stripToDirectAnswer = (text) => {
+    if (!text || typeof text !== 'string') return text;
+    return text
+        // Remove table rows (lines that start with |)
+        .replace(/^(\|[^\n]*\|?\s*)+$/gm, '')
+        // Remove markdown headings (##, ###, etc.)
+        .replace(/^#{1,6}\s+[^\n]*/gm, '')
+        // Collapse extra blank lines left behind
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+};
+
 // ─── Verdict / Signal Card ────────────────────────────────────────────────────
 const SignalCard = ({ signal }) => {
     if (!signal || !signal.recommendation) return null;
@@ -474,7 +488,8 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
     }, [feedbackRating, onFeedback, messageId]);
 
     const rawText = (!isUser && isStreaming) ? displayedText : content;
-    const textToDisplay = !isUser ? stripResponseChrome(rawText) : rawText;
+    const strippedText = !isUser ? stripResponseChrome(rawText) : rawText;
+    const textToDisplay = (!isUser && queryIntent !== 'full') ? stripToDirectAnswer(strippedText) : strippedText;
 
     const relevantNews = React.useMemo(() => {
         const headlines = Array.isArray(newsHeadlines) ? newsHeadlines : [];
