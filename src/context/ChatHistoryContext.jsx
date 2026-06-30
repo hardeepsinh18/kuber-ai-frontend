@@ -59,7 +59,8 @@ export function ChatHistoryProvider({ children }) {
                         .map((c) => ({
                             id: c.id,
                             title: c.title ?? c.name ?? 'New chat',
-                            updatedAt: c.updated_at ?? c.updatedAt ?? Date.now(),
+                            // Always normalize to numeric timestamp so localStorage reads work correctly
+                            updatedAt: chatStorage.toTimestamp(c.updated_at ?? c.updatedAt),
                         }));
                     setChatList(merged);
                     chatStorage.saveChatList(merged);

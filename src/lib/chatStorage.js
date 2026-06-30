@@ -79,9 +79,17 @@ export function clearPendingDelete(id) {
     } catch {}
 }
 
+export function toTimestamp(updatedAt) {
+    if (!updatedAt) return Date.now();
+    if (typeof updatedAt === 'number') return updatedAt;
+    const ts = new Date(updatedAt).getTime();
+    return isNaN(ts) ? Date.now() : ts;
+}
+
 export function isWithin7Days(updatedAt) {
     if (!updatedAt) return true;
-    return (Date.now() - Number(updatedAt)) < SEVEN_DAYS_MS;
+    const ts = toTimestamp(updatedAt);
+    return (Date.now() - ts) < SEVEN_DAYS_MS;
 }
 
 export function getTitleFromMessages(messages) {
