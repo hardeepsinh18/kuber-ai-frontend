@@ -1130,6 +1130,14 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                             || '';
                     })()}
                     onHorizonChoice={(q) => handleSend(q)}
+                    suggestedFollowUps={(() => {
+                        if (isLoading) return null;
+                        const lastAI = [...messages].reverse().find(m => m.role === 'ai');
+                        return Array.isArray(lastAI?.suggestedFollowUps) && lastAI.suggestedFollowUps.length > 0
+                            ? lastAI.suggestedFollowUps
+                            : null;
+                    })()}
+                    onFollowUpClick={(text) => handleSend(text)}
                 />
 
                 {/* Group disambiguation popup — when the latest AI reply asks which company

@@ -17,7 +17,7 @@ const MODES = [
     { key: 'analyst', label: 'Analyst' },
 ];
 
-const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horizonQuestion = false, horizonSymbol = '', onHorizonChoice, responseMode, setResponseMode, onScannerResult }) => {
+const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horizonQuestion = false, horizonSymbol = '', onHorizonChoice, responseMode, setResponseMode, onScannerResult, suggestedFollowUps = null, onFollowUpClick = null }) => {
     const inputRef = useRef(null);
     const [scannerOpen, setScannerOpen] = useState(false);
 
@@ -89,6 +89,28 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
                                         </button>
                                     );
                                 })}
+                            </div>
+                        )}
+
+                        {/* ── Suggested follow-ups ── */}
+                        {!isLoading && suggestedFollowUps && suggestedFollowUps.length > 0 && onFollowUpClick && (
+                            <div className="flex flex-wrap gap-1.5 px-3 pt-2.5 pb-1">
+                                {suggestedFollowUps.map((label) => (
+                                    <button
+                                        key={label}
+                                        type="button"
+                                        onClick={() => onFollowUpClick(label)}
+                                        className="px-3 py-1 text-[11px] font-medium rounded-full
+                                                   text-zinc-500 dark:text-zinc-400
+                                                   bg-zinc-100/80 dark:bg-zinc-800/60
+                                                   border border-zinc-200/70 dark:border-zinc-700/50
+                                                   hover:text-zinc-900 dark:hover:text-white
+                                                   hover:border-[#FDD405]/60 dark:hover:border-[#FDD405]/50
+                                                   hover:bg-amber-50/80 dark:hover:bg-[#FDD405]/10
+                                                   transition-all duration-150 truncate max-w-[220px]">
+                                        {label}
+                                    </button>
+                                ))}
                             </div>
                         )}
 

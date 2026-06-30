@@ -946,29 +946,6 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                     )}
 
 
-                    {/* ── Follow-up suggestions ────────────────────────── */}
-                    {suggestedFollowUps && suggestedFollowUps.length > 0 && onFollowUpClick && (
-                        <div className="mt-4 pt-4 border-t border-zinc-200/60 dark:border-zinc-700/40">
-                            <div className="flex flex-wrap gap-2">
-                                {suggestedFollowUps.map((label) => (
-                                    <button
-                                        key={label}
-                                        type="button"
-                                        aria-label={`Ask: ${label}`}
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            if (!isLoading) onFollowUpClick(label);
-                                        }}
-                                        disabled={isLoading}
-                                        className="px-3.5 py-1.5 text-[13px] rounded-xl bg-white dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-200 hover:bg-amber-50 dark:hover:bg-amber-950/20 hover:text-amber-800 dark:hover:text-amber-300 border border-zinc-200 dark:border-zinc-700 hover:border-[#FDD405]/60 dark:hover:border-amber-700/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-                                    >
-                                        {label}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
 
                     {/* ── Mode badge + Feedback thumbs ─────────────────── */}
                     {((messageId && onFeedback) || responseMode) && (
