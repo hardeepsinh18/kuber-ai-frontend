@@ -7,9 +7,9 @@
 const CHAT_LIST_KEY = 'stockhug_chat_list';
 const CHAT_PREFIX = 'stockhug_chat_';
 const PENDING_DELETES_KEY = 'stockhug_pending_deletes';
-const MAX_CHATS = 50;
-const MAX_MESSAGES_PER_CHAT = 500;
-const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+// No artificial caps — server (Supabase) is the permanent store;
+// localStorage is a fast local cache, not the authoritative limit.
+const MAX_MESSAGES_PER_CHAT = 2000; // guard only against single-chat runaway
 
 function getStorageKey(chatId) {
     return `${CHAT_PREFIX}${chatId}`;
@@ -20,7 +20,7 @@ export function getChatList() {
         const raw = localStorage.getItem(CHAT_LIST_KEY);
         if (!raw) return [];
         const list = JSON.parse(raw);
-        return Array.isArray(list) ? list.slice(0, MAX_CHATS) : [];
+        return Array.isArray(list) ? list : [];
     } catch {
         return [];
     }
@@ -40,10 +40,9 @@ export function getChatMessages(chatId) {
 
 export function saveChatList(list) {
     try {
-        const trimmed = list.slice(0, MAX_CHATS);
-        localStorage.setItem(CHAT_LIST_KEY, JSON.stringify(trimmed));
+        localStorage.setItem(CHAT_LIST_KEY, JSON.stringify(list));
     } catch (e) {
-        console.warn('chatStorage: saveChatList failed', e);
+        console.warn('chatStorage: saveChatList failed (quota) — list not updated locally:', e);
     }
 }
 
@@ -86,11 +85,6 @@ export function toTimestamp(updatedAt) {
     return isNaN(ts) ? Date.now() : ts;
 }
 
-export function isWithin7Days(updatedAt) {
-    if (!updatedAt) return true;
-    const ts = toTimestamp(updatedAt);
-    return (Date.now() - ts) < SEVEN_DAYS_MS;
-}
 
 export function getTitleFromMessages(messages) {
     if (!messages || !messages.length) return 'New chat';

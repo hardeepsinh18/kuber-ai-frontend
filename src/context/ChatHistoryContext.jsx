@@ -21,23 +21,21 @@ export function ChatHistoryProvider({ children }) {
     useEffect(() => { currentChatIdRef.current = currentChatId; }, [currentChatId]);
 
     // Load chat list on mount.
-    // 1. Show localStorage immediately (7-day filter, minus pending-deletes) - instant sidebar.
-    // 2. If logged in, fetch server list in background and merge - server wins on conflicts.
+    // 1. Show localStorage immediately (minus pending-deletes) — instant sidebar, no limits.
+    // 2. If logged in, fetch ALL chats from server in background — server is the permanent store.
     // 3. Retry any pending-delete API calls so server stays in sync.
     useEffect(() => {
         const pendingDeletes = chatStorage.getPendingDeletes();
 
         function buildLocalList() {
+            // No date filter, no count cap — show everything that isn't deleted
             return chatStorage.getChatList()
-                .filter((c) => !pendingDeletes.includes(c.id))
-                .filter((c) => chatStorage.isWithin7Days(c.updatedAt))
-                .filter((c) => chatStorage.getChatMessages(c.id).length > 0);
+                .filter((c) => !pendingDeletes.includes(c.id));
         }
 
-        // Show local data immediately so sidebar does not flicker
+        // Show local data immediately so sidebar doesn't flicker
         const localList = buildLocalList();
         setChatList(localList);
-        chatStorage.saveChatList(localList);
         isLoadedRef.current = true;
         setIsListLoading(!!accessToken);
 
@@ -51,21 +49,21 @@ export function ChatHistoryProvider({ children }) {
 
             chatsApi.getChats(accessToken)
                 .then((serverList) => {
-                    if (!serverList) return;
+                    if (!serverList) return; // 404/501 — no chat API, keep local
                     const pDeletes = chatStorage.getPendingDeletes();
+                    // Server is source of truth: show all chats, no date/count filter
                     const merged = serverList
                         .filter((c) => !pDeletes.includes(c.id))
-                        .filter((c) => chatStorage.isWithin7Days(c.updated_at ?? c.updatedAt))
                         .map((c) => ({
                             id: c.id,
                             title: c.title ?? c.name ?? 'New chat',
-                            // Always normalize to numeric timestamp so localStorage reads work correctly
+                            // Normalize to numeric ms timestamp so isWithin7Days / sorts work
                             updatedAt: chatStorage.toTimestamp(c.updated_at ?? c.updatedAt),
                         }));
                     setChatList(merged);
                     chatStorage.saveChatList(merged);
                 })
-                .catch(() => {})
+                .catch(() => {}) // server fetch failed — local list already shown
                 .finally(() => setIsListLoading(false));
         } else if (supabaseConfigured) {
             setChatList([]);
@@ -89,14 +87,8 @@ export function ChatHistoryProvider({ children }) {
                 const msgsForStorage = messages.map(({ chartData: _cd, ...rest }) => rest);
                 try {
                     chatStorage.saveChatMessages(chatId, msgsForStorage);
-                } catch (storageErr) {
-                    console.warn('localStorage quota exceeded, pruning old chats:', storageErr);
-                    try {
-                        const list = chatStorage.getChatList();
-                        const oldest = list.slice(-Math.ceil(list.length / 2));
-                        oldest.forEach(c => chatStorage.saveChatMessages(c.id, []));
-                        chatStorage.saveChatMessages(chatId, msgsForStorage);
-                    } catch (_) {}
+                } catch {
+                    // localStorage quota full — messages are safely on the server, no pruning
                 }
                 setChatList((prev) => {
                     const next = prev.map((c) =>
