@@ -60,6 +60,32 @@ const extractChartPeriod = (query) => {
 };
 
 /**
+ * Detect what specific information the user is asking for.
+ * Returns: 'pe_ratio' | 'news' | 'technicals' | 'chart' | 'full'
+ * Used by MessageBubble to hide irrelevant sections and keep answers focused.
+ */
+const extractQueryIntent = (query) => {
+    const q = query.toLowerCase();
+
+    // P/E ratio specific query — only show price header + text answer
+    if (/\bp[/\s-]?e\b|pe ratio|p\/e ratio|price.{0,6}earn|price to earn/i.test(q)) return 'pe_ratio';
+
+    // News-only query (no technical/fundamental/chart intent mixed in)
+    if (/\b(news|headlines?|latest news|recent news|what'?s new)\b/i.test(q) &&
+        !/\b(technical|fundamental|chart|ratio|buy|sell|rsi|macd|score)\b/i.test(q)) return 'news';
+
+    // Technicals-only query
+    if (/\b(technicals?|technical analysis|rsi|macd|bollinger|momentum|indicators?)\b/i.test(q) &&
+        !/\b(fundamental|news|pe ratio|earnings)\b/i.test(q)) return 'technicals';
+
+    // Chart-only query
+    if (/\b(chart|graph|plot|candlestick|price chart)\b/i.test(q) &&
+        !/\b(fundamental|news|pe|technical analysis|rsi|macd)\b/i.test(q)) return 'chart';
+
+    return 'full';
+};
+
+/**
  * Words that match ticker-shaped tokens but are normal English / query words.
  * Without this, queries like "How has TCS performed over 5 years?" send
  * symbols: ['HOW','HAS','TCS','PERFORMED','OVER'] and break backend resolution.
@@ -678,6 +704,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             const { confident: confidentSymbols, rewrittenQuery } = extractStockSymbols(normalized);
             const chartResolution = extractChartResolution(normalized);
             const chartPeriod = extractChartPeriod(normalized);
+            const queryIntent = extractQueryIntent(normalized);
 
             const activeStock = activeContextSymbolRef.current; // last backend-validated symbol
 
@@ -871,6 +898,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 aiTake,
                 suggestedFollowUps,
                 newsHeadlines,
+                queryIntent,
                 thinkingSteps: (responseData.retrieval_steps && responseData.retrieval_steps.length > 0) ? responseData.retrieval_steps : dynamicSteps,
                 sourceDocuments: responseData.source_documents || [],
                 processingTime: timeTaken,
@@ -1033,6 +1061,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                                 aiTake={msg.aiTake}
                                 suggestedFollowUps={msg.suggestedFollowUps}
                                 newsHeadlines={msg.newsHeadlines}
+                                queryIntent={msg.queryIntent || 'full'}
                                 onFollowUpClick={(text) => handleSend(text)}
                                 onStreamingDone={msg.id === streamingMessageId ? handleStreamingDone : undefined}
                                 messageId={msg.role === 'ai' ? msg.id : null}

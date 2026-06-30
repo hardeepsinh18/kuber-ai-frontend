@@ -414,7 +414,7 @@ const HorizonChoice = ({ symbol, onChoice }) => {
     );
 };
 
-const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, isScannerResult = false, chartData = null, metadata = {}, signal = null, patternSummary = null, technicalSummary = null, indicatorsTable = null, scoreCard = null, managementSentiment = null, companyFilings = null, recentDevelopments = null, aiTake = null, suggestedFollowUps = null, newsHeadlines = null, onFollowUpClick = null, onStreamingDone = null, messageId = null, onFeedback = null, responseMode = null }) => {
+const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, isScannerResult = false, chartData = null, metadata = {}, signal = null, patternSummary = null, technicalSummary = null, indicatorsTable = null, scoreCard = null, managementSentiment = null, companyFilings = null, recentDevelopments = null, aiTake = null, suggestedFollowUps = null, newsHeadlines = null, queryIntent = 'full', onFollowUpClick = null, onStreamingDone = null, messageId = null, onFeedback = null, responseMode = null }) => {
     const isUser = role === 'user';
 
     // Use streaming hook for AI messages
@@ -445,6 +445,20 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
     React.useEffect(() => {
         if (!isStreaming) setCardsVisible(true);
     }, [isStreaming]);
+
+    // Intent-based visibility: show only sections relevant to what the user asked.
+    // 'pe_ratio' → price header + text only (no chart, news, technicals, fundamentals)
+    // 'news'      → text + news only
+    // 'technicals'→ price header + text + technical/indicators/patterns (no fundamentals/news/chart)
+    // 'chart'     → price header + chart + text (no news/technicals/fundamentals)
+    // 'full'      → show everything
+    const showAtAGlance  = queryIntent !== 'news';
+    const showChart      = queryIntent === 'full' || queryIntent === 'chart';
+    const showNews       = queryIntent === 'full' || queryIntent === 'news';
+    const showTechnicals = queryIntent === 'full' || queryIntent === 'technicals';
+    const showFundCard   = queryIntent === 'full';
+    const showIndicators = queryIntent === 'full' || queryIntent === 'technicals';
+    const showPatterns   = queryIntent === 'full' || queryIntent === 'technicals';
 
     // Feedback state: null | 1 (thumbs up) | -1 (thumbs down)
     const [feedbackRating, setFeedbackRating] = React.useState(null);
@@ -518,7 +532,7 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                 <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 md:px-8">
 
                     {/* ── Price header (at-a-glance) ──────────────────── */}
-                    {metadata?.at_a_glance && (metadata.at_a_glance.price != null || metadata.at_a_glance.change_percent != null) && (() => {
+                    {showAtAGlance && metadata?.at_a_glance && (metadata.at_a_glance.price != null || metadata.at_a_glance.change_percent != null) && (() => {
                         const aag = metadata.at_a_glance;
                         const fmtVol = (v) => {
                             if (!v || v <= 0) return null;
@@ -631,15 +645,15 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                     })()}
 
                     {/* ── Chart(s) ────────────────────────────────────── */}
-                    <ChartSection
+                    {showChart && <ChartSection
                         chartData={chartData}
                         resolveSymbol={resolveChartSymbol}
                         patternSummary={patternSummary}
                         atAGlance={metadata?.at_a_glance}
-                    />
+                    />}
 
                     {/* ── News headlines ──────────────────────────────── */}
-                    {relevantNews.length > 0 && (
+                    {showNews && relevantNews.length > 0 && (
                         <div className="mb-5 rounded-xl border border-zinc-200 dark:border-zinc-700/50 overflow-hidden">
                             <div className="flex items-center justify-between px-4 py-2.5 bg-zinc-100 dark:bg-zinc-800 border-b border-zinc-200 dark:border-zinc-700/50">
                                 <h4 className="text-[11px] font-semibold text-zinc-900 dark:text-white uppercase tracking-wide">Recent News</h4>
@@ -903,13 +917,13 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                     <AITake data={aiTake} />
 
                     {/* ── Technical indicators chips + support/resistance ── */}
-                    <TechnicalSection technicalSummary={technicalSummary} patternSummary={patternSummary} />
+                    {showTechnicals && <TechnicalSection technicalSummary={technicalSummary} patternSummary={patternSummary} />}
 
                     {/* ── Fundamental score card (Health Score + Financial metrics) ── */}
-                    <FundamentalScoreCard
+                    {showFundCard && <FundamentalScoreCard
                         scoreCard={scoreCard}
                         symbol={primarySymbolLabel}
-                    />
+                    />}
 
                     {/* ── Management Sentiment (earnings-call/annual-report tone) ── */}
                     <ManagementSentiment data={managementSentiment} />
@@ -921,13 +935,13 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                     <CompanyFilings data={companyFilings} />
 
                     {/* ── Expandable indicators table (DB-backed) ──────── */}
-                    <IndicatorsTable
+                    {showIndicators && <IndicatorsTable
                         rows={indicatorsTable}
                         asOfDate={metadata?.indicators_as_of}
-                    />
+                    />}
 
                     {/* ── Pattern Detection & Resistance Alert ─────────── */}
-                    {patternSummary && (
+                    {showPatterns && patternSummary && (
                         <PatternDetectionSection patternSummary={patternSummary} chartData={chartData} />
                     )}
 
