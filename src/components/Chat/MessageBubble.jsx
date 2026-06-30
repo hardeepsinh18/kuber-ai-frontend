@@ -49,12 +49,41 @@ const stripResponseChrome = (text) => {
     let out = text.replace(/!\[[^\]]*\]\([^)]+\)/g, '');
     out = out.replace(/\n{3,}/g, '\n\n');
     out = out.replace(/\n?##\s*(Intraday\s+Chart|Chart)\s*\n+/gi, '\n');
-    // Remove "💬 Ask me: ..." blocks and all following lines until the next section
     out = out.replace(/\n*💬\s*\*?\*?Ask\s*me:?\*?\*?[\s\S]*?(?=\n##|\n---|\n━|$)/gi, '');
-    // Remove "## 💬 Suggested Follow-ups" sections
     out = out.replace(/\n*##\s*💬\s*Suggested Follow-ups[\s\S]*?(?=\n##|\n---|\n━|$)/gi, '');
-    // NOTE: Verdict blockquotes (> **Verdict:** ...) are intentionally kept — rendered as styled cards below
     return out.trim();
+};
+
+// For focused intents — remove irrelevant sections from the LLM text.
+// pe_ratio: keep only fundamental/valuation lines, strip signal/technical/risk/entry/disclaimer.
+// technicals: keep signal + technical + risk + entry, strip fundamental ratios + disclaimer.
+// news: remove signal/technical/entry/disclaimer lines.
+const filterByIntent = (text, intent) => {
+    if (!text || intent === 'full') return text;
+    const lines = text.split('\n');
+
+    const isSignalLine   = l => /^[⚠️🟢🔴🟡⚡🎯]+\s*(wait|buy|sell|hold|weak|strong)/i.test(l.trim()) || /^[⚡🎯🔴]\s*(entry|stop|target)/i.test(l.trim()) || /^\**(entry|stop loss|target)\**/i.test(l.trim());
+    const isTechnical    = l => /^\s*[\*-]*\s*(technical:|price below|ema\d|macd|rsi|bollinger|momentum|volume signal|atr)/i.test(l);
+    const isRisk         = l => /^\s*[\*-]*\s*risk:/i.test(l);
+    const isFundamental  = l => /^\s*[\*-]*\s*(fundamental:|p\/e|pe ratio|roe|roce|eps|debt|d\/e|book value|market cap|revenue|profit|margin|valuation)/i.test(l);
+    const isEntryLevel   = l => /[⚡🎯🔴]\s*(entry|stop|target)\s*[₹:]/i.test(l) || /\|\s*(entry|stop|target)\s*[₹:]/i.test(l);
+    const isDisclaimer   = l => /^\s*[\*]*disclaimer[\*]*/i.test(l) || /multi.factor analysis for education/i.test(l) || /consult a sebi/i.test(l) || /past performance does not/i.test(l);
+
+    let filtered;
+    if (intent === 'pe_ratio') {
+        // Keep only lines that are about fundamentals/valuation, discard signal/technical/risk/entry/disclaimer
+        filtered = lines.filter(l => !isSignalLine(l) && !isTechnical(l) && !isRisk(l) && !isEntryLevel(l) && !isDisclaimer(l));
+    } else if (intent === 'technicals') {
+        // Keep signal + technical + risk + entry, discard fundamental ratios + disclaimer
+        filtered = lines.filter(l => !isFundamental(l) && !isDisclaimer(l));
+    } else if (intent === 'news') {
+        // Drop signal cards, entry/stop levels, disclaimer
+        filtered = lines.filter(l => !isSignalLine(l) && !isEntryLevel(l) && !isDisclaimer(l));
+    } else {
+        return text;
+    }
+
+    return filtered.join('\n').replace(/\n{3,}/g, '\n\n').trim();
 };
 
 
@@ -475,7 +504,8 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
     }, [feedbackRating, onFeedback, messageId]);
 
     const rawText = (!isUser && isStreaming) ? displayedText : content;
-    const textToDisplay = !isUser ? stripResponseChrome(rawText) : rawText;
+    const strippedText = !isUser ? stripResponseChrome(rawText) : rawText;
+    const textToDisplay = (!isUser && queryIntent !== 'full') ? filterByIntent(strippedText, queryIntent) : strippedText;
 
     const relevantNews = React.useMemo(() => {
         const headlines = Array.isArray(newsHeadlines) ? newsHeadlines : [];
