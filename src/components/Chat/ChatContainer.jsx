@@ -496,6 +496,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
 
     const bottomRef = useRef(null);
     const chatContainerRef = useRef(null);
+    const streamingTopRef = useRef(null); // marks top of the incoming AI message
     const abortControllerRef = useRef(null);
     const streamingTimeoutRef = useRef(null);
     const activeRequestIdRef = useRef(0);
@@ -565,29 +566,26 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
         }
     }, []);
 
-    // Scroll to bottom when messages change or loading state changes.
+    // When a new AI message starts streaming, scroll so its TOP is visible —
+    // user reads top-to-bottom as content builds. No jumping to bottom.
     useEffect(() => {
-        if (messages.length > 0 || streamingMessageId || showThinking) {
-            // Use smooth only for user-initiated navigation (no active generation)
-            scrollToBottomNow(!(streamingMessageId || showThinking || isLoading));
+        if (streamingMessageId && streamingTopRef.current) {
+            streamingTopRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-    }, [messages, isLoading, streamingMessageId, showThinking, scrollToBottomNow]);
+    }, [streamingMessageId]);
 
-    // Keep viewport pinned to bottom during generation (thinking + streaming).
-    // Covers both the ThinkingPaths phase and the streaming text phase.
+    // When thinking starts (before response), scroll to bottom to show the spinner.
     useEffect(() => {
-        if (!streamingMessageId && !showThinking) return;
-        const id = setInterval(() => {
-            const el = chatContainerRef.current;
-            if (!el) return;
-            const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-            // Only follow if user hasn't scrolled up more than 300px
-            if (distFromBottom < 300) {
-                el.scrollTop = el.scrollHeight;
-            }
-        }, 60);
-        return () => clearInterval(id);
-    }, [streamingMessageId, showThinking]);
+        if (showThinking) scrollToBottomNow(false);
+    }, [showThinking, scrollToBottomNow]);
+
+    // After streaming ends, scroll to bottom so the user sees the full response
+    // including chips and the input bar.
+    useEffect(() => {
+        if (!streamingMessageId && !showThinking && messages.length > 0 && !isLoading) {
+            scrollToBottomNow(true);
+        }
+    }, [streamingMessageId, showThinking, isLoading, scrollToBottomNow]);
 
     const updateScrollButtonVisibility = useCallback(() => {
         const container = chatContainerRef.current;
@@ -1031,6 +1029,10 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 >
                     {messages.filter(msg => msg && msg.role).map((msg) => (
                         <React.Fragment key={msg.id}>
+                            {/* Anchor scrolled-to when this message starts streaming */}
+                            {msg.role === 'ai' && msg.id === streamingMessageId && (
+                                <div ref={streamingTopRef} />
+                            )}
                             {msg.role === 'ai' && msg.thinkingSteps && msg.thinkingSteps.length > 0 && (
                                 <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 md:px-8 pb-2">
                                     <ThinkingPaths
