@@ -476,12 +476,12 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
     // 'full'       → show everything
     const isFull        = queryIntent === 'full';
     const showAtAGlance  = queryIntent !== 'news';
-    const showChart      = isFull || queryIntent === 'chart';
+    const showChart      = isFull || queryIntent === 'chart' || queryIntent === 'technicals';
     const showNews       = isFull || queryIntent === 'news';
     const showTechnicals = isFull || queryIntent === 'technicals';
     const showFundCard   = isFull;
-    const showIndicators = isFull;
-    const showPatterns   = isFull;
+    const showIndicators = isFull || queryIntent === 'technicals';
+    const showPatterns   = isFull || queryIntent === 'technicals';
     const showAITake     = isFull;
     const showManagement = isFull;
     const showDevelopments = isFull;
