@@ -1031,6 +1031,29 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                     )}
 
                     </div>{/* end post-text fade wrapper */}
+
+                    {/* ── Suggested follow-up chips — bottom of response ── */}
+                    {!isStreaming && Array.isArray(suggestedFollowUps) && suggestedFollowUps.length > 0 && onFollowUpClick && (
+                        <div className="flex flex-wrap gap-2 pt-3">
+                            {suggestedFollowUps.map((label) => (
+                                <button
+                                    key={label}
+                                    type="button"
+                                    onClick={() => onFollowUpClick(label)}
+                                    className="px-3.5 py-1.5 text-[12px] font-medium rounded-full
+                                               text-zinc-500 dark:text-zinc-400
+                                               bg-white dark:bg-zinc-800/70
+                                               border border-zinc-200/80 dark:border-zinc-700/60
+                                               hover:text-zinc-900 dark:hover:text-white
+                                               hover:border-[#FDD405]/70 dark:hover:border-[#FDD405]/60
+                                               hover:bg-amber-50/80 dark:hover:bg-[#FDD405]/10
+                                               shadow-sm transition-all duration-150 truncate max-w-[260px]">
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
                 </div>
             )}
         </div>
