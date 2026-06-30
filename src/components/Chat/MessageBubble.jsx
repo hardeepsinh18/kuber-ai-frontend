@@ -57,18 +57,26 @@ const stripResponseChrome = (text) => {
     return out.trim();
 };
 
-// For focused intents (pe_ratio, technicals, news, chart) strip markdown tables
-// and section headings so only the direct prose answer is shown.
+// For focused intents (pe_ratio, technicals, news, chart) keep ONLY the first
+// paragraph — the direct one-line/two-line answer — and drop everything else
+// (tables, section headings, bold-label context blocks, verdict blockquotes).
 const stripToDirectAnswer = (text) => {
     if (!text || typeof text !== 'string') return text;
-    return text
-        // Remove table rows (lines that start with |)
+    let out = text
+        // Remove markdown table rows
         .replace(/^(\|[^\n]*\|?\s*)+$/gm, '')
-        // Remove markdown headings (##, ###, etc.)
+        // Remove markdown headings
         .replace(/^#{1,6}\s+[^\n]*/gm, '')
-        // Collapse extra blank lines left behind
+        // Remove blockquote lines (> ...) — verdict / disclaimer blocks
+        .replace(/^>.*$/gm, '')
+        // Collapse whitespace
         .replace(/\n{3,}/g, '\n\n')
         .trim();
+
+    // Keep only the first paragraph (everything before the first blank line).
+    // This is the direct answer sentence; everything after is extra context.
+    const firstPara = out.split(/\n\n/)[0] || out;
+    return firstPara.trim();
 };
 
 // ─── Verdict / Signal Card ────────────────────────────────────────────────────
