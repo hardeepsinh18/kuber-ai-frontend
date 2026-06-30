@@ -753,6 +753,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             const payload = {
                 query: effectiveQuery,
                 response_mode: responseMode,
+                query_intent: queryIntent,
                 ...(hasStockContext && {
                     timeframe: 'medium_term',
                     risk_level: 'medium',
@@ -1107,6 +1108,35 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                         </svg>
                     </button>
                 )}
+                {/* ── Suggested follow-ups — below response, above input ── */}
+                {(() => {
+                    if (isLoading) return null;
+                    const lastAI = [...messages].reverse().find(m => m.role === 'ai');
+                    const chips = Array.isArray(lastAI?.suggestedFollowUps) && lastAI.suggestedFollowUps.length > 0
+                        ? lastAI.suggestedFollowUps : null;
+                    if (!chips) return null;
+                    return (
+                        <div className="w-full max-w-3xl mx-auto px-4 pb-2 flex flex-wrap gap-2">
+                            {chips.map((label) => (
+                                <button
+                                    key={label}
+                                    type="button"
+                                    onClick={() => handleSend(label)}
+                                    className="px-3.5 py-1.5 text-[12px] font-medium rounded-full
+                                               text-zinc-500 dark:text-zinc-400
+                                               bg-white dark:bg-zinc-800/70
+                                               border border-zinc-200/80 dark:border-zinc-700/60
+                                               hover:text-zinc-900 dark:hover:text-white
+                                               hover:border-[#FDD405]/70 dark:hover:border-[#FDD405]/60
+                                               hover:bg-amber-50/80 dark:hover:bg-[#FDD405]/10
+                                               shadow-sm transition-all duration-150 truncate max-w-[260px]">
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
+                    );
+                })()}
+
                 {/* ── Input bar — inside the card at the bottom ── */}
                 <InputBar
                     input={input}
@@ -1132,14 +1162,6 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                             || '';
                     })()}
                     onHorizonChoice={(q) => handleSend(q)}
-                    suggestedFollowUps={(() => {
-                        if (isLoading) return null;
-                        const lastAI = [...messages].reverse().find(m => m.role === 'ai');
-                        return Array.isArray(lastAI?.suggestedFollowUps) && lastAI.suggestedFollowUps.length > 0
-                            ? lastAI.suggestedFollowUps
-                            : null;
-                    })()}
-                    onFollowUpClick={(text) => handleSend(text)}
                 />
 
                 {/* Group disambiguation popup — when the latest AI reply asks which company
