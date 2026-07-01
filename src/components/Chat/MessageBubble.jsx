@@ -65,7 +65,9 @@ const hasDisclaimerText = (text) => {
 };
 
 // For focused intents — remove irrelevant sections from the LLM text.
-// pe_ratio: section-aware — skip Key Risks / Investment Grade / Scorecard table / signals.
+// pe_ratio: keep ONLY text before the first section heading — the LLM always puts the
+//   direct answer (P/E value, ROE value) in the opening paragraph before any ## section.
+//   Once a section heading appears (##, ###, bold-header, etc.) everything is cut.
 // technicals: keep signal + technical + risk + entry, strip fundamental ratios + disclaimer.
 // news: remove signal/technical/entry/disclaimer lines.
 const filterByIntent = (text, intent) => {
@@ -77,37 +79,39 @@ const filterByIntent = (text, intent) => {
     const isFundamental = l => /^\s*[\*-]*\s*(fundamental:|p\/e|pe ratio|roe|roce|eps|debt|d\/e|book value|market cap|revenue|profit|margin|valuation)/i.test(l);
     const isEntryLevel  = l => /[⚡🎯🔴]\s*(entry|stop|target)\s*[₹:]/i.test(l) || /\|\s*(entry|stop|target)\s*[₹:]/i.test(l);
     const isDisclaimer  = l => /^\s*[\*]*disclaimer[\*]*/i.test(l) || /multi.factor analysis for education/i.test(l) || /consult a sebi/i.test(l) || /past performance does not/i.test(l);
-    const isTableRow    = l => /^\s*\|/.test(l); // any markdown table row
-
-    // Section keywords to skip entirely for a pe_ratio/ROE focused query.
-    // [^a-zA-Z\n]* handles emojis between ## and the text (e.g. "## 📊 Financial Scorecard")
-    const SKIP_SECTION_PE = /^#{1,4}[^a-zA-Z\n]*(key risks?|risks?|risk analysis|investment grade|signal|technical|chart|news|recent development|management|filing|strengths?|weaknesses?|key positives?|key negatives?|overall verdict|conclusion|bottom line|scorecard|financial scorecard|summary scorecard)/i;
-    // Also catch bold-text faux-headers that aren't markdown headings
-    const SKIP_BOLD_HEADER_PE = /^\*{1,2}(key risks?|risks?|investment grade|technical|strengths?|weaknesses?|overall verdict|conclusion|scorecard|financial scorecard)\*{1,2}\s*:?$/i;
+    const isTableRow    = l => /^\s*\|/.test(l);
+    // Any markdown heading (## or ### etc., possibly with emoji before the text)
+    const isSectionHeading = l => /^#{1,4}[^a-zA-Z\n]*[a-zA-Z]/.test(l.trim());
+    // Bold-text faux-headers the LLM sometimes uses instead of markdown headings
+    const isBoldHeader = l => /^\*{1,2}[^*]{3,50}\*{1,2}\s*:?\s*$/.test(l.trim());
 
     let filtered;
     if (intent === 'pe_ratio') {
-        let inSkipSection = false;
+        // Whitelist strategy: keep ONLY content before the first section heading.
+        // The LLM's opening paragraph always contains the direct answer; everything
+        // after the first ## heading is extra analysis the user did not ask for.
+        let hitSection = false;
         filtered = lines.filter(l => {
+            if (hitSection) return false;
             const t = l.trim();
 
-            // Markdown heading — decide whether to skip this section
-            if (/^#{1,4}[^a-zA-Z\n]*[a-zA-Z]/.test(t)) {
-                if (SKIP_SECTION_PE.test(t)) { inSkipSection = true; return false; }
-                inSkipSection = false; // valuation/answer section — keep
-                return true;
+            if (isSectionHeading(t) || isBoldHeader(t)) {
+                hitSection = true;
+                return false;
             }
 
-            // Bold-text faux-headers (e.g. **Key Risks**:)
-            if (SKIP_BOLD_HEADER_PE.test(t)) { inSkipSection = true; return false; }
-
-            if (inSkipSection) return false;
-
-            // Skip LLM-generated markdown tables (Financial Scorecard table, etc.)
             if (isTableRow(t)) return false;
-
             return !isSignalLine(l) && !isTechnical(l) && !isEntryLevel(l) && !isDisclaimer(l);
         });
+
+        // Safety: if nothing was kept (LLM started directly with a heading),
+        // fall back to showing only lines that mention P/E or ROE.
+        if (filtered.every(l => !l.trim())) {
+            filtered = lines.filter(l =>
+                /\bp[\/\s-]?e\b|pe ratio|p\/e|roe|return on equity/i.test(l) &&
+                !isDisclaimer(l) && !isTableRow(l.trim())
+            );
+        }
     } else if (intent === 'technicals') {
         filtered = lines.filter(l => !isFundamental(l) && !isDisclaimer(l));
     } else if (intent === 'news') {
