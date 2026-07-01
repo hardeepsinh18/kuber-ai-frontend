@@ -514,14 +514,6 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                         </p>
                     </div>
                 </div>
-                <span className={clsx(
-                    "px-2.5 py-1 rounded-lg text-sm font-semibold",
-                    isPositive
-                        ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
-                        : "bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400"
-                )}>
-                    {isPositive ? '+' : ''}{priceChange.percent.toFixed(2)}%
-                </span>
             </div>
 
             {/* Chart type selector */}
