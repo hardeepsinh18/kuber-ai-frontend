@@ -79,8 +79,11 @@ const filterByIntent = (text, intent) => {
     const isDisclaimer  = l => /^\s*[\*]*disclaimer[\*]*/i.test(l) || /multi.factor analysis for education/i.test(l) || /consult a sebi/i.test(l) || /past performance does not/i.test(l);
     const isTableRow    = l => /^\s*\|/.test(l); // any markdown table row
 
-    // Whole sections to skip for a pe_ratio/ROE focused query
-    const SKIP_SECTION_PE = /^#{1,4}\s*(key risks?|risks?|risk analysis|investment grade|signal|technical|chart pattern|news|recent development|management|filing|strengths?|weaknesses?|key positives?|key negatives?|overall verdict|conclusion|bottom line|scorecard|financial scorecard|summary scorecard)\b/i;
+    // Section keywords to skip entirely for a pe_ratio/ROE focused query.
+    // [^a-zA-Z\n]* handles emojis between ## and the text (e.g. "## 📊 Financial Scorecard")
+    const SKIP_SECTION_PE = /^#{1,4}[^a-zA-Z\n]*(key risks?|risks?|risk analysis|investment grade|signal|technical|chart|news|recent development|management|filing|strengths?|weaknesses?|key positives?|key negatives?|overall verdict|conclusion|bottom line|scorecard|financial scorecard|summary scorecard)/i;
+    // Also catch bold-text faux-headers that aren't markdown headings
+    const SKIP_BOLD_HEADER_PE = /^\*{1,2}(key risks?|risks?|investment grade|technical|strengths?|weaknesses?|overall verdict|conclusion|scorecard|financial scorecard)\*{1,2}\s*:?$/i;
 
     let filtered;
     if (intent === 'pe_ratio') {
@@ -88,16 +91,19 @@ const filterByIntent = (text, intent) => {
         filtered = lines.filter(l => {
             const t = l.trim();
 
-            if (/^#{1,4}\s/.test(t)) {
-                // Entering a new section — decide whether to skip it
+            // Markdown heading — decide whether to skip this section
+            if (/^#{1,4}[^a-zA-Z\n]*[a-zA-Z]/.test(t)) {
                 if (SKIP_SECTION_PE.test(t)) { inSkipSection = true; return false; }
-                inSkipSection = false; // valuation/unknown section — keep it
+                inSkipSection = false; // valuation/answer section — keep
                 return true;
             }
 
+            // Bold-text faux-headers (e.g. **Key Risks**:)
+            if (SKIP_BOLD_HEADER_PE.test(t)) { inSkipSection = true; return false; }
+
             if (inSkipSection) return false;
 
-            // Skip LLM-generated markdown tables (Financial Scorecard, etc.)
+            // Skip LLM-generated markdown tables (Financial Scorecard table, etc.)
             if (isTableRow(t)) return false;
 
             return !isSignalLine(l) && !isTechnical(l) && !isEntryLevel(l) && !isDisclaimer(l);
