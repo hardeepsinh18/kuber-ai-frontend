@@ -312,6 +312,59 @@ const extractStockSymbols = (query) => {
         'atul auto': 'ATULAUTO',
         'suzuki': 'MARUTI',
         'maruti suzuki': 'MARUTI',
+        // Pumps / capital goods
+        'oswal pumps': 'OSWALPUMPS',
+        'oswalpumps': 'OSWALPUMPS',
+        'kirloskar': 'KIRLOSKAR',
+        'ksb pumps': 'KSB',
+        'ksb': 'KSB',
+        'elgi equipments': 'ELGIEQUIP',
+        'elgi': 'ELGIEQUIP',
+        // Gas / energy PSUs
+        'gail': 'GAIL',
+        'petronet': 'PETRONET',
+        'petronet lng': 'PETRONET',
+        'igl': 'IGL',
+        'mgl': 'MGL',
+        'adani gas': 'ATGL',
+        'atgl': 'ATGL',
+        // Steel
+        'tata steel': 'TATASTEEL',
+        'jsw': 'JSWSTEEL',
+        'jsw steel': 'JSWSTEEL',
+        'sailsteel': 'SAIL',
+        'vedanta': 'VEDL',
+        'hindzinc': 'HINDZINC',
+        'hind zinc': 'HINDZINC',
+        'nmdc': 'NMDC',
+        // Infra / roads
+        'irb': 'IRB',
+        'irb infra': 'IRB',
+        'l&t': 'LT',
+        'larsen': 'LT',
+        'larsen toubro': 'LT',
+        'knr': 'KNRCON',
+        // Consumer
+        'dmart': 'DMART',
+        'd mart': 'DMART',
+        'avenue supermarts': 'DMART',
+        'varun beverages': 'VBL',
+        'vbl': 'VBL',
+        // Defence
+        'hal': 'HAL',
+        'bharat electronics': 'BEL',
+        'bel': 'BEL',
+        'bhel': 'BHEL',
+        'mazagon': 'MAZDOCK',
+        'mazagon dock': 'MAZDOCK',
+        // Railways / infra
+        'rvnl': 'RVNL',
+        'irfc': 'IRFC',
+        'ircon': 'IRCON',
+        // IT mid-cap
+        'hexaware': 'HEXAWARE',
+        'kpit': 'KPITTECH',
+        'kpit tech': 'KPITTECH',
     };
 
     const queryLower = query.toLowerCase();
@@ -708,29 +761,61 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
 
             const activeStock = activeContextSymbolRef.current; // last backend-validated symbol
 
-            // Only send confident symbol hints. Raw words like ["PRINCE","PIPES"] are omitted
-            // to avoid confusing the backend — it can resolve company names from the query text.
+            // ── Follow-up detection ──────────────────────────────────────────────────────
+            // A query is a follow-up ONLY when it explicitly references the previous stock
+            // via pronouns ("it", "this stock") or relative sector phrases ("same sector").
+            // New-topic queries like "which steel stock should i buy" or "should i buy oswal
+            // pumps" must NOT inherit the previous active stock — that causes context pollution
+            // where NIFTY50 bleeds into completely unrelated answers.
+
+            // Explicit pronoun references to the previous stock
+            const hasPronounRef = /\b(its|this stock|that stock|the stock|this company|the company|that company|same stock)\b/i.test(normalized)
+                || /\bshould i (buy|sell|hold) it\b/i.test(normalized)
+                || /\b(what about it|tell me (more )?about it|analyze it|performance of it)\b/i.test(normalized);
+
+            // Relative sector / entity references that need the active stock for context
+            const hasSameRef = /\b(same sector|same segment|in the same|its sector|that sector|in this sector|same (peers?|companies|stocks?))\b/i.test(normalized);
+
+            // Screener / discovery queries are always new topics — never inherit active stock
+            const isScreenerQuery = /\bwhich\s+\S+\s+(stock|stocks?|company|companies|share|shares?|etf)\b/i.test(normalized)
+                || /\b(best stock|top stocks?|best performing stock|which sector|best sector|recommend.*stock)\b/i.test(normalized);
+
+            const wordCount = normalized.trim().split(/\s+/).length;
+
+            // True follow-up: has an explicit reference OR is a very short (≤4 word) context-only
+            // question — but never when it's a screener or sector discovery query.
+            const isFollowUp = confidentSymbols.length === 0 && !!activeStock && !isScreenerQuery
+                && (hasPronounRef || hasSameRef || wordCount <= 4);
+
+            // Only send the previous stock as a hint for genuine follow-ups.
+            // For new-topic queries (screeners, explicit company names, sector switches)
+            // send nothing — let the backend resolve the symbol from the query text.
             const symbolsToSend = confidentSymbols.length > 0
                 ? confidentSymbols
-                : (activeStock ? [activeStock] : []);
-
-            // Follow-up detection: no confident symbol in current query → inherit active stock
-            const isFollowUp = confidentSymbols.length === 0 && activeStock;
+                : (isFollowUp ? [activeStock] : []);
 
             // effectiveQuery is the string actually sent to the backend.
             // For direct queries: use rewrittenQuery (alias text → ticker, e.g. "tell about SAIL")
             // For follow-ups: replace pronouns with the active stock ticker
             //   "should i buy it"   → "should i buy TATAELXSI"
             //   "what is the target" → "what is the target for TATAELXSI"
-            let effectiveQuery = rewrittenQuery; // already has alias text replaced with tickers
+            //   "tell me more"      → "tell me more for TATAELXSI"  (≤4 words, appended)
+            //   "in the same sector…" → sent as-is (symbolsToSend provides context)
+            let effectiveQuery = rewrittenQuery;
             if (isFollowUp) {
                 const withPronouns = normalized.replace(
                     /\b(it|this|that|them|those|the stock|that stock|the company|this stock)\b/gi,
                     activeStock
                 );
-                effectiveQuery = withPronouns !== normalized
-                    ? withPronouns
-                    : `${normalized} for ${activeStock}`;
+                if (withPronouns !== normalized) {
+                    // Pronouns were substituted — use the rewritten string
+                    effectiveQuery = withPronouns;
+                } else if (wordCount <= 4) {
+                    // Very short contextual question — append active stock so backend has context
+                    effectiveQuery = `${normalized} for ${activeStock}`;
+                }
+                // Longer relative-ref queries ("in the same sector…") go as-is;
+                // the symbolsToSend already gives the backend the context it needs.
             }
 
             const dynamicSteps = generateThinkingSteps(normalized, symbolsToSend);
