@@ -65,59 +65,51 @@ const hasDisclaimerText = (text) => {
 };
 
 // For focused intents — remove irrelevant sections from the LLM text.
-// pe_ratio: keep ONLY text before the first section heading — the LLM always puts the
-//   direct answer (P/E value, ROE value) in the opening paragraph before any ## section.
-//   Once a section heading appears (##, ###, bold-header, etc.) everything is cut.
-// technicals: keep signal + technical + risk + entry, strip fundamental ratios + disclaimer.
-// news: remove signal/technical/entry/disclaimer lines.
+// Universal focused-intent filter:
+// For every focused intent (pe_ratio, technicals, news, chart) keep ONLY the
+// opening direct-answer content and cut at the first section heading (## / bold-header).
+// The LLM always writes the direct answer in its first paragraph; everything after
+// the first heading is extra analysis the user did not ask for.
+// React cards (charts, technical indicators, news headlines) already show structured
+// data — the text only needs to give the brief direct answer.
 const filterByIntent = (text, intent) => {
     if (!text || intent === 'full') return text;
     const lines = text.split('\n');
 
-    const isSignalLine  = l => /^[⚠️🟢🔴🟡⚡🎯]+\s*(wait|buy|sell|hold|weak|strong)/i.test(l.trim()) || /^[⚡🎯🔴]\s*(entry|stop|target)/i.test(l.trim()) || /^\**(entry|stop loss|target)\**/i.test(l.trim());
-    const isTechnical   = l => /^\s*[\*-]*\s*(technical:|price below|ema\d|macd|rsi|bollinger|momentum|volume signal|atr)/i.test(l);
-    const isFundamental = l => /^\s*[\*-]*\s*(fundamental:|p\/e|pe ratio|roe|roce|eps|debt|d\/e|book value|market cap|revenue|profit|margin|valuation)/i.test(l);
-    const isEntryLevel  = l => /[⚡🎯🔴]\s*(entry|stop|target)\s*[₹:]/i.test(l) || /\|\s*(entry|stop|target)\s*[₹:]/i.test(l);
-    const isDisclaimer  = l => /^\s*[\*]*disclaimer[\*]*/i.test(l) || /multi.factor analysis for education/i.test(l) || /consult a sebi/i.test(l) || /past performance does not/i.test(l);
-    const isTableRow    = l => /^\s*\|/.test(l);
-    // Any markdown heading (## or ### etc., possibly with emoji before the text)
-    const isSectionHeading = l => /^#{1,4}[^a-zA-Z\n]*[a-zA-Z]/.test(l.trim());
-    // Bold-text faux-headers the LLM sometimes uses instead of markdown headings
-    const isBoldHeader = l => /^\*{1,2}[^*]{3,50}\*{1,2}\s*:?\s*$/.test(l.trim());
+    const isDisclaimer     = l => /^\s*[\*]*disclaimer[\*]*/i.test(l.trim()) || /multi.factor analysis for education/i.test(l) || /consult a sebi/i.test(l) || /past performance does not/i.test(l);
+    const isTableRow       = l => /^\s*\|/.test(l);
+    const isSignalLine     = l => /^[⚠️🟢🔴🟡⚡🎯]+\s*(wait|buy|sell|hold|weak|strong)/i.test(l.trim()) || /^[⚡🎯🔴]\s*(entry|stop|target)/i.test(l.trim());
+    const isEntryLevel     = l => /[⚡🎯🔴]\s*(entry|stop|target)\s*[₹:]/i.test(l) || /^\**(entry|stop loss|target)\**/i.test(l.trim());
+    // ## heading, possibly with emoji between ## and text
+    const isSectionHeading = t => /^#{1,4}[^a-zA-Z\n]*[a-zA-Z]/.test(t);
+    // **Bold text**: used by LLM as a faux section header on its own line
+    const isBoldHeader     = t => /^\*{1,2}[^*]{4,60}\*{1,2}\s*:?\s*$/.test(t);
 
-    let filtered;
-    if (intent === 'pe_ratio') {
-        // Whitelist strategy: keep ONLY content before the first section heading.
-        // The LLM's opening paragraph always contains the direct answer; everything
-        // after the first ## heading is extra analysis the user did not ask for.
-        let hitSection = false;
-        filtered = lines.filter(l => {
-            if (hitSection) return false;
-            const t = l.trim();
+    // Cut at first section heading — keep only the opening direct-answer paragraph(s)
+    let hitSection = false;
+    let filtered = lines.filter(l => {
+        if (hitSection) return false;
+        const t = l.trim();
+        if (isSectionHeading(t) || isBoldHeader(t)) { hitSection = true; return false; }
+        if (isTableRow(t) || isDisclaimer(l)) return false;
+        // Strip buy/sell/entry signals from all focused intents
+        if (isSignalLine(l) || isEntryLevel(l)) return false;
+        return true;
+    });
 
-            if (isSectionHeading(t) || isBoldHeader(t)) {
-                hitSection = true;
-                return false;
-            }
-
-            if (isTableRow(t)) return false;
-            return !isSignalLine(l) && !isTechnical(l) && !isEntryLevel(l) && !isDisclaimer(l);
-        });
-
-        // Safety: if nothing was kept (LLM started directly with a heading),
-        // fall back to showing only lines that mention P/E or ROE.
-        if (filtered.every(l => !l.trim())) {
-            filtered = lines.filter(l =>
-                /\bp[\/\s-]?e\b|pe ratio|p\/e|roe|return on equity/i.test(l) &&
-                !isDisclaimer(l) && !isTableRow(l.trim())
-            );
-        }
-    } else if (intent === 'technicals') {
-        filtered = lines.filter(l => !isFundamental(l) && !isDisclaimer(l));
-    } else if (intent === 'news') {
-        filtered = lines.filter(l => !isSignalLine(l) && !isEntryLevel(l) && !isDisclaimer(l));
-    } else {
-        return text;
+    // Fallback: LLM started directly with a heading → fall back to lines
+    // that mention the core keywords for this intent
+    const FALLBACK_KW = {
+        pe_ratio:   /\bp[\/\s-]?e\b|pe ratio|p\/e|roe|return on equity/i,
+        technicals: /\brsi\b|macd|ema\d?|support|resistance|trend|momentum/i,
+        news:       /\bnews\b|headline|recent|development|quarter|result/i,
+        chart:      /\bchart\b|candlestick|price action|breakout|trend/i,
+    };
+    if (filtered.every(l => !l.trim())) {
+        const kw = FALLBACK_KW[intent];
+        filtered = kw
+            ? lines.filter(l => kw.test(l) && !isDisclaimer(l) && !isTableRow(l.trim()))
+            : lines;
     }
 
     return filtered.join('\n').replace(/\n{3,}/g, '\n\n').trim();
