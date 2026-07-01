@@ -498,28 +498,13 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isComplete]);
 
-    // For focused intents (pe_ratio, technicals, news, chart), the LLM generates a full
-    // response but we only show the opening paragraph. "Effectively done" = the first
-    // section heading has appeared in the stream, meaning the direct answer is complete.
-    // We use this to show disclaimer + chips immediately instead of waiting for the full
-    // 20-25s stream to finish.
-    const rawText = (!isUser && isStreaming) ? displayedText : content;
-    const isEffectivelyDone = !isStreaming || (
-        !isFull && isStreaming && /\n#{1,4}[^a-zA-Z\n]*[a-zA-Z]/m.test(rawText)
-    );
-
-    // Cards below the text should be hidden while streaming and fade in after.
-    const [cardsVisible, setCardsVisible] = React.useState(!isStreaming);
-    React.useEffect(() => {
-        if (isEffectivelyDone) setCardsVisible(true);
-    }, [isEffectivelyDone]);
-
     // Intent-based visibility: show only sections relevant to what the user asked.
     // 'pe_ratio'   → price header + text only
     // 'news'       → text + news only
     // 'technicals' → price header + chart + text + technical/indicators/patterns
     // 'chart'      → price header + chart + text
     // 'full'       → show everything
+    // isFull must be declared BEFORE isEffectivelyDone which references it.
     const isFull        = queryIntent === 'full';
     const showAtAGlance  = queryIntent !== 'news';
     const showChart      = isFull || queryIntent === 'chart' || queryIntent === 'technicals';
@@ -532,6 +517,21 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
     const showManagement = isFull;
     const showDevelopments = isFull;
     const showFilings    = isFull;
+
+    // For focused intents (pe_ratio, technicals, news, chart), the LLM streams a full
+    // response but we only show the opening paragraph. "Effectively done" = the first
+    // section heading has appeared in the stream, meaning the direct answer is complete.
+    // Disclaimer + chips appear immediately at that point instead of waiting 20-25s.
+    const rawText = (!isUser && isStreaming) ? displayedText : content;
+    const isEffectivelyDone = !isStreaming || (
+        !isFull && isStreaming && /\n#{1,4}[^a-zA-Z\n]*[a-zA-Z]/m.test(rawText)
+    );
+
+    // Cards below the text should be hidden while streaming and fade in after.
+    const [cardsVisible, setCardsVisible] = React.useState(!isStreaming);
+    React.useEffect(() => {
+        if (isEffectivelyDone) setCardsVisible(true);
+    }, [isEffectivelyDone]);
 
     // Feedback state: null | 1 (thumbs up) | -1 (thumbs down)
     const [feedbackRating, setFeedbackRating] = React.useState(null);
