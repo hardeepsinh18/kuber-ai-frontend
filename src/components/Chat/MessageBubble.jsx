@@ -498,12 +498,21 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isComplete]);
 
+    // For focused intents (pe_ratio, technicals, news, chart), the LLM generates a full
+    // response but we only show the opening paragraph. "Effectively done" = the first
+    // section heading has appeared in the stream, meaning the direct answer is complete.
+    // We use this to show disclaimer + chips immediately instead of waiting for the full
+    // 20-25s stream to finish.
+    const rawText = (!isUser && isStreaming) ? displayedText : content;
+    const isEffectivelyDone = !isStreaming || (
+        !isFull && isStreaming && /\n#{1,4}[^a-zA-Z\n]*[a-zA-Z]/m.test(rawText)
+    );
+
     // Cards below the text should be hidden while streaming and fade in after.
-    // For already-rendered messages (isStreaming=false from the start), show immediately.
     const [cardsVisible, setCardsVisible] = React.useState(!isStreaming);
     React.useEffect(() => {
-        if (!isStreaming) setCardsVisible(true);
-    }, [isStreaming]);
+        if (isEffectivelyDone) setCardsVisible(true);
+    }, [isEffectivelyDone]);
 
     // Intent-based visibility: show only sections relevant to what the user asked.
     // 'pe_ratio'   → price header + text only
@@ -532,8 +541,7 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
         if (onFeedback && messageId) onFeedback(messageId, rating);
     }, [feedbackRating, onFeedback, messageId]);
 
-    const rawText = (!isUser && isStreaming) ? displayedText : content;
-    const showDisclaimer = !isUser && !isStreaming && hasDisclaimerText(rawText);
+    const showDisclaimer = !isUser && isEffectivelyDone && hasDisclaimerText(content || displayedText);
     const strippedText = !isUser ? stripResponseChrome(rawText) : rawText;
     const textToDisplay = (!isUser && queryIntent !== 'full') ? filterByIntent(strippedText, queryIntent) : strippedText;
 
@@ -1086,7 +1094,7 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                     )}
 
                     {/* ── Suggested follow-up chips — bottom of response ── */}
-                    {!isStreaming && Array.isArray(suggestedFollowUps) && suggestedFollowUps.length > 0 && onFollowUpClick && (
+                    {isEffectivelyDone && Array.isArray(suggestedFollowUps) && suggestedFollowUps.length > 0 && onFollowUpClick && (
                         <div className="flex flex-wrap gap-2 pt-3">
                             {suggestedFollowUps.map((label) => (
                                 <button
