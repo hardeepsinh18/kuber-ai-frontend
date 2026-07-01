@@ -65,29 +65,46 @@ const hasDisclaimerText = (text) => {
 };
 
 // For focused intents — remove irrelevant sections from the LLM text.
-// pe_ratio: keep only fundamental/valuation lines, strip signal/technical/risk/entry/disclaimer.
+// pe_ratio: section-aware — skip Key Risks / Investment Grade / Scorecard table / signals.
 // technicals: keep signal + technical + risk + entry, strip fundamental ratios + disclaimer.
 // news: remove signal/technical/entry/disclaimer lines.
 const filterByIntent = (text, intent) => {
     if (!text || intent === 'full') return text;
     const lines = text.split('\n');
 
-    const isSignalLine   = l => /^[⚠️🟢🔴🟡⚡🎯]+\s*(wait|buy|sell|hold|weak|strong)/i.test(l.trim()) || /^[⚡🎯🔴]\s*(entry|stop|target)/i.test(l.trim()) || /^\**(entry|stop loss|target)\**/i.test(l.trim());
-    const isTechnical    = l => /^\s*[\*-]*\s*(technical:|price below|ema\d|macd|rsi|bollinger|momentum|volume signal|atr)/i.test(l);
-    const isRisk         = l => /^\s*[\*-]*\s*risk:/i.test(l);
-    const isFundamental  = l => /^\s*[\*-]*\s*(fundamental:|p\/e|pe ratio|roe|roce|eps|debt|d\/e|book value|market cap|revenue|profit|margin|valuation)/i.test(l);
-    const isEntryLevel   = l => /[⚡🎯🔴]\s*(entry|stop|target)\s*[₹:]/i.test(l) || /\|\s*(entry|stop|target)\s*[₹:]/i.test(l);
-    const isDisclaimer   = l => /^\s*[\*]*disclaimer[\*]*/i.test(l) || /multi.factor analysis for education/i.test(l) || /consult a sebi/i.test(l) || /past performance does not/i.test(l);
+    const isSignalLine  = l => /^[⚠️🟢🔴🟡⚡🎯]+\s*(wait|buy|sell|hold|weak|strong)/i.test(l.trim()) || /^[⚡🎯🔴]\s*(entry|stop|target)/i.test(l.trim()) || /^\**(entry|stop loss|target)\**/i.test(l.trim());
+    const isTechnical   = l => /^\s*[\*-]*\s*(technical:|price below|ema\d|macd|rsi|bollinger|momentum|volume signal|atr)/i.test(l);
+    const isFundamental = l => /^\s*[\*-]*\s*(fundamental:|p\/e|pe ratio|roe|roce|eps|debt|d\/e|book value|market cap|revenue|profit|margin|valuation)/i.test(l);
+    const isEntryLevel  = l => /[⚡🎯🔴]\s*(entry|stop|target)\s*[₹:]/i.test(l) || /\|\s*(entry|stop|target)\s*[₹:]/i.test(l);
+    const isDisclaimer  = l => /^\s*[\*]*disclaimer[\*]*/i.test(l) || /multi.factor analysis for education/i.test(l) || /consult a sebi/i.test(l) || /past performance does not/i.test(l);
+    const isTableRow    = l => /^\s*\|/.test(l); // any markdown table row
+
+    // Whole sections to skip for a pe_ratio/ROE focused query
+    const SKIP_SECTION_PE = /^#{1,4}\s*(key risks?|risks?|risk analysis|investment grade|signal|technical|chart pattern|news|recent development|management|filing|strengths?|weaknesses?|key positives?|key negatives?|overall verdict|conclusion|bottom line|scorecard|financial scorecard|summary scorecard)\b/i;
 
     let filtered;
     if (intent === 'pe_ratio') {
-        // Keep only lines that are about fundamentals/valuation, discard signal/technical/risk/entry/disclaimer
-        filtered = lines.filter(l => !isSignalLine(l) && !isTechnical(l) && !isRisk(l) && !isEntryLevel(l) && !isDisclaimer(l));
+        let inSkipSection = false;
+        filtered = lines.filter(l => {
+            const t = l.trim();
+
+            if (/^#{1,4}\s/.test(t)) {
+                // Entering a new section — decide whether to skip it
+                if (SKIP_SECTION_PE.test(t)) { inSkipSection = true; return false; }
+                inSkipSection = false; // valuation/unknown section — keep it
+                return true;
+            }
+
+            if (inSkipSection) return false;
+
+            // Skip LLM-generated markdown tables (Financial Scorecard, etc.)
+            if (isTableRow(t)) return false;
+
+            return !isSignalLine(l) && !isTechnical(l) && !isEntryLevel(l) && !isDisclaimer(l);
+        });
     } else if (intent === 'technicals') {
-        // Keep signal + technical + risk + entry, discard fundamental ratios + disclaimer
         filtered = lines.filter(l => !isFundamental(l) && !isDisclaimer(l));
     } else if (intent === 'news') {
-        // Drop signal cards, entry/stop levels, disclaimer
         filtered = lines.filter(l => !isSignalLine(l) && !isEntryLevel(l) && !isDisclaimer(l));
     } else {
         return text;
