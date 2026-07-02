@@ -45,10 +45,6 @@ const MOMENTUM_SCANNERS = [
     { name: 'Volume Surge'           },
     { name: 'Short Term Breakouts'   },
     { name: '52-Week High Breakout'  },
-    { name: 'Inside Bar Breakout'    },
-    { name: 'SMA 200 Reclaim'        },
-    { name: 'Golden Cross'           },
-    { name: 'Death Cross'            },
 ];
 
 const FUNDAMENTAL_SCANNER_NAMES = [
@@ -517,44 +513,46 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                 )}
 
                 {/* Scrollable body */}
-                <div className="overflow-y-auto flex-1 px-4 py-4 space-y-5">
+                <div className="overflow-y-auto flex-1 px-5 py-5 space-y-6">
 
                     {/* ── TECHNICAL PATTERNS ── */}
                     <div>
-                        <div className="flex items-center gap-2 mb-3">
-                            <TrendingUp size={14} className="text-[#FDD405]" />
-                            <span className="text-[11px] font-semibold uppercase tracking-widest text-[#FDD405]">Technical Patterns</span>
+                        {/* Main header */}
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className="w-0.5 h-4 rounded-full" style={{ backgroundColor: '#FDD405' }} />
+                            <TrendingUp size={13} style={{ color: '#FDD405' }} />
+                            <span className="text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: '#FDD405' }}>Technical Patterns</span>
                         </div>
 
-                        <div className="space-y-4 pl-1">
+                        <div className="space-y-4 pl-3">
                             {/* Chart Patterns sub-header */}
                             <div>
-                                <div className="flex items-center gap-1.5 mb-2">
-                                    <CandlestickChart size={11} className="text-sky-400" />
-                                    <span className="text-[10.5px] font-semibold uppercase tracking-wider text-sky-400">Chart Patterns</span>
+                                <div className="flex items-center gap-1.5 mb-2.5">
+                                    <CandlestickChart size={11} className="text-zinc-400" />
+                                    <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-zinc-400">Chart Patterns</span>
                                 </div>
-                                <div className="flex flex-wrap gap-2">
+                                <div className="flex flex-wrap gap-1.5">
                                     {CHART_PATTERNS.map(s => (
                                         <ScannerBtn key={s.name} name={s.name}
-                                            hoverClass="hover:border-sky-300 hover:bg-sky-50 hover:text-sky-700 dark:hover:bg-sky-950/50 dark:hover:border-sky-500/40 dark:hover:text-sky-300"
+                                            hoverClass="hover:border-[#FDD405]/50 hover:bg-[#FDD405]/8 hover:text-white dark:hover:bg-[#FDD405]/8 dark:hover:border-[#FDD405]/50 dark:hover:text-white"
                                         />
                                     ))}
                                 </div>
                             </div>
 
-                            {/* Divider */}
-                            <div className="border-t border-white/6" />
+                            {/* Inner divider */}
+                            <div className="border-t border-white/5 ml-0" />
 
                             {/* Candlestick Patterns sub-header */}
                             <div>
-                                <div className="flex items-center gap-1.5 mb-2">
-                                    <BarChart2 size={11} className="text-violet-400" />
-                                    <span className="text-[10.5px] font-semibold uppercase tracking-wider text-violet-400">Candlestick Patterns</span>
+                                <div className="flex items-center gap-1.5 mb-2.5">
+                                    <BarChart2 size={11} className="text-zinc-400" />
+                                    <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-zinc-400">Candlestick Patterns</span>
                                 </div>
-                                <div className="flex flex-wrap gap-2">
+                                <div className="flex flex-wrap gap-1.5">
                                     {CANDLESTICK_PATTERNS.map(s => (
                                         <ScannerBtn key={s.name} name={s.name}
-                                            hoverClass="hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700 dark:hover:bg-violet-950/50 dark:hover:border-violet-500/40 dark:hover:text-violet-300"
+                                            hoverClass="hover:border-[#FDD405]/50 hover:bg-[#FDD405]/8 hover:text-white dark:hover:bg-[#FDD405]/8 dark:hover:border-[#FDD405]/50 dark:hover:text-white"
                                         />
                                     ))}
                                 </div>
@@ -567,14 +565,15 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
 
                     {/* ── MOMENTUM INDICATORS ── */}
                     <div>
-                        <div className="flex items-center gap-2 mb-3">
-                            <TrendingUp size={14} className="text-emerald-400" />
-                            <span className="text-[11px] font-semibold uppercase tracking-widest text-emerald-400">Momentum Indicators</span>
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className="w-0.5 h-4 rounded-full" style={{ backgroundColor: '#FDD405' }} />
+                            <BarChart2 size={13} style={{ color: '#FDD405' }} />
+                            <span className="text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: '#FDD405' }}>Momentum Indicators</span>
                         </div>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-1.5 pl-3">
                             {MOMENTUM_SCANNERS.map(s => (
                                 <ScannerBtn key={s.name} name={s.name}
-                                    hoverClass="hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-emerald-950/50 dark:hover:border-emerald-500/40 dark:hover:text-emerald-300"
+                                    hoverClass="hover:border-[#FDD405]/50 hover:bg-[#FDD405]/8 hover:text-white dark:hover:bg-[#FDD405]/8 dark:hover:border-[#FDD405]/50 dark:hover:text-white"
                                 />
                             ))}
                         </div>
@@ -585,14 +584,15 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
 
                     {/* ── FUNDAMENTAL SCREENS ── */}
                     <div>
-                        <div className="flex items-center gap-2 mb-3">
-                            <BookOpen size={14} className="text-amber-400" />
-                            <span className="text-[11px] font-semibold uppercase tracking-widest text-amber-400">Fundamental Screens</span>
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className="w-0.5 h-4 rounded-full" style={{ backgroundColor: '#FDD405' }} />
+                            <BookOpen size={13} style={{ color: '#FDD405' }} />
+                            <span className="text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: '#FDD405' }}>Fundamental Screens</span>
                         </div>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-1.5 pl-3">
                             {FUNDAMENTAL_SCANNER_NAMES.map(name => (
                                 <ScannerBtn key={name} name={name}
-                                    hoverClass="hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700 dark:hover:bg-amber-950/50 dark:hover:border-amber-500/40 dark:hover:text-amber-300"
+                                    hoverClass="hover:border-[#FDD405]/50 hover:bg-[#FDD405]/8 hover:text-white dark:hover:bg-[#FDD405]/8 dark:hover:border-[#FDD405]/50 dark:hover:text-white"
                                 />
                             ))}
                         </div>
