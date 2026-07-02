@@ -29,8 +29,10 @@ export function ChatHistoryProvider({ children }) {
 
         function buildLocalList() {
             // No date filter, no count cap — show everything that isn't deleted
+            // and has at least one message stored (empty "New chat" entries are noise)
             return chatStorage.getChatList()
-                .filter((c) => !pendingDeletes.includes(c.id));
+                .filter((c) => !pendingDeletes.includes(c.id))
+                .filter((c) => c.title !== 'New chat' || chatStorage.getChatMessages(c.id).length > 0);
         }
 
         // Show local data immediately so sidebar doesn't flicker
@@ -51,13 +53,25 @@ export function ChatHistoryProvider({ children }) {
                 .then((serverList) => {
                     if (!serverList) return; // 404/501 — no chat API, keep local
                     const pDeletes = chatStorage.getPendingDeletes();
-                    // Server is source of truth: show all chats, no date/count filter
+                    // Server is source of truth: show all chats, no date/count filter.
+                    // Skip server-side empty "New chat" entries (title=null/New chat, no
+                    // local messages) — these are leftover from abandoned sessions.
+                    // Delete them from the server in the background to keep it clean.
                     const merged = serverList
                         .filter((c) => !pDeletes.includes(c.id))
+                        .filter((c) => {
+                            const title = c.title ?? c.name ?? '';
+                            const isEmpty = (!title || title === 'New chat') &&
+                                chatStorage.getChatMessages(c.id).length === 0;
+                            if (isEmpty) {
+                                // Clean up server side silently
+                                chatsApi.deleteChat(c.id, accessToken).catch(() => {});
+                            }
+                            return !isEmpty;
+                        })
                         .map((c) => ({
                             id: c.id,
                             title: c.title ?? c.name ?? 'New chat',
-                            // Normalize to numeric ms timestamp so isWithin7Days / sorts work
                             updatedAt: chatStorage.toTimestamp(c.updated_at ?? c.updatedAt),
                         }));
                     setChatList(merged);
@@ -134,26 +148,23 @@ export function ChatHistoryProvider({ children }) {
 
     const ensureCurrentChat = useCallback(async () => {
         if (currentChatId) return currentChatId;
+        // Don't add to chatList here with title "New chat" — that creates phantom sidebar
+        // entries for chats where the user never sends a message.
+        // The debounce persist effect (above) adds the chat to the sidebar with the correct
+        // title derived from the first real message once messages actually arrive.
         if (accessToken) {
             try {
                 const serverId = await chatsApi.createChat(accessToken, 'New chat');
                 if (serverId) {
                     syncedMessageCountRef.current = 0;
                     setCurrentChatId(serverId);
-                    setChatList((prev) => [{ id: serverId, title: 'New chat', updatedAt: Date.now() }, ...prev]);
                     return serverId;
                 }
             } catch (_) {}
         }
         syncedMessageCountRef.current = 0;
         const id = crypto.randomUUID?.() ?? `chat_${Date.now()}`;
-        const now = Date.now();
         setCurrentChatId(id);
-        setChatList((prev) => {
-            const next = [{ id, title: 'New chat', updatedAt: now }, ...prev];
-            chatStorage.saveChatList(next);
-            return next;
-        });
         return id;
     }, [currentChatId, accessToken]);
 
@@ -268,7 +279,11 @@ export function ChatHistoryProvider({ children }) {
     }, [accessToken]);
 
     const value = {
-        chatList: [...chatList].sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0)),
+        // Never expose empty "New chat" placeholders to the sidebar — only real chats
+        // that have at least one message (title was derived from first user message).
+        chatList: [...chatList]
+            .filter((c) => c.title !== 'New chat')
+            .sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0)),
         currentChatId,
         messages,
         setMessages,
