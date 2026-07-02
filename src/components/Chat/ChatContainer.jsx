@@ -67,22 +67,34 @@ const extractChartPeriod = (query) => {
 const extractQueryIntent = (query) => {
     const q = query.toLowerCase();
 
+    // Per-aspect signals (plural-safe: "technicals"/"fundamentals" included).
+    const hasFundamental = /\bfundamentals?\b|\bfundamental analysis\b/i.test(q);
+    const hasTechnical   = /\btechnicals?\b|\btechnical analysis\b|\brsi\b|\bmacd\b|\bbollinger\b|\bmomentum\b|\bindicators?\b/i.test(q);
+    const hasNews        = /\bnews\b|\bheadlines?\b|latest news|recent news|what'?s new/i.test(q);
+    const hasChart       = /\bchart\b|\bgraph\b|\bplot\b|\bcandlestick\b|price chart/i.test(q);
+
+    // Broad / analysis / multi-aspect queries → full response, no section filtering.
+    // Covers "fundamentals", "full analysis", "overview", "should I buy", and any query
+    // asking for MORE THAN ONE aspect (e.g. "fundamentals AND technicals"). This must run
+    // BEFORE the focused checks so a mixed query is never mistaken for a single-aspect one.
+    const wantsFull =
+        hasFundamental ||
+        /analy|overview|detail|in.?depth|complete|everything|\bfull\b|tell me about|should i (buy|sell|invest)|worth (buying|investing|it)|deep dive|buy or sell/i.test(q);
+    const aspectCount = [hasFundamental, hasTechnical, hasNews, hasChart].filter(Boolean).length;
+    if (wantsFull || aspectCount >= 2) return 'full';
+
     // Single fundamental metric queries — only show price header + text answer
     if (/\bp[/\s-]?e\b|pe ratio|p\/e ratio|price.{0,6}earn|price to earn/i.test(q)) return 'pe_ratio';
-    if (/\b(roe|return on equity|roce|return on capital|eps|earnings per share|debt.equity|d\/e ratio|net margin|profit margin|revenue growth|profit growth|dividend yield|book value|pb ratio|price.book|peg ratio|ebitda|fcf|free cash flow|market cap|mcap)\b/i.test(q) &&
-        !/\b(technical|chart|rsi|macd|news|full analysis|tell me about|analyze)\b/i.test(q)) return 'pe_ratio';
+    if (/\b(roe|return on equity|roce|return on capital|eps|earnings per share|debt.equity|d\/e ratio|net margin|profit margin|revenue growth|profit growth|dividend yield|book value|pb ratio|price.book|peg ratio|ebitda|fcf|free cash flow|market cap|mcap)\b/i.test(q)) return 'pe_ratio';
 
-    // News-only query (no technical/fundamental/chart intent mixed in)
-    if (/\b(news|headlines?|latest news|recent news|what'?s new)\b/i.test(q) &&
-        !/\b(technical|fundamental|chart|ratio|buy|sell|rsi|macd|score)\b/i.test(q)) return 'news';
+    // News-only query
+    if (hasNews) return 'news';
 
     // Technicals-only query
-    if (/\b(technicals?|technical analysis|rsi|macd|bollinger|momentum|indicators?)\b/i.test(q) &&
-        !/\b(fundamental|news|pe ratio|earnings)\b/i.test(q)) return 'technicals';
+    if (hasTechnical) return 'technicals';
 
     // Chart-only query
-    if (/\b(chart|graph|plot|candlestick|price chart)\b/i.test(q) &&
-        !/\b(fundamental|news|pe|technical analysis|rsi|macd)\b/i.test(q)) return 'chart';
+    if (hasChart) return 'chart';
 
     return 'full';
 };
