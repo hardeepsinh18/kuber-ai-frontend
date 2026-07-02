@@ -279,10 +279,11 @@ export function ChatHistoryProvider({ children }) {
     }, [accessToken]);
 
     const value = {
-        // Never expose empty "New chat" placeholders to the sidebar — only real chats
-        // that have at least one message (title was derived from first user message).
+        // Hide "New chat" entries only when they have NO locally stored messages.
+        // A chat titled "New chat" but WITH messages is a real chat whose server title
+        // update failed — it must still appear in the sidebar.
         chatList: [...chatList]
-            .filter((c) => c.title !== 'New chat')
+            .filter((c) => c.title !== 'New chat' || chatStorage.getChatMessages(c.id).length > 0)
             .sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0)),
         currentChatId,
         messages,
