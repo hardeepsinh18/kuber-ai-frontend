@@ -8,6 +8,7 @@ import {
 } from 'recharts';
 import { ChevronDown, ChevronUp, X, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { clsx } from 'clsx';
+import PatternAnnotationLayer from './PatternAnnotationLayer';
 
 /* ─── label classifiers ──────────────────────────────────────────────────── */
 // Backend RATING_LABEL: {5:"Exceptional", 4:"Strong", 3:"Average", 2:"Weak", 1:"Poor"}
@@ -731,49 +732,6 @@ const PatternMiniChart = ({ chartData, barsAgo = 0, support, resistance }) => {
 };
 
 /* ─── Pattern trendline + hline overlay (TradingView-style) ─────────────── */
-const PatternAnnotationLayer = ({ xAxisMap, yAxisMap, trendlines = [], hlines = [], data = [] }) => {
-    const xAxis = xAxisMap && (xAxisMap[0] ?? xAxisMap['0'] ?? Object.values(xAxisMap)[0]);
-    const yAxis = yAxisMap && (yAxisMap[0] ?? yAxisMap['0'] ?? Object.values(yAxisMap)[0]);
-    if (!xAxis?.scale || !yAxis?.scale || !data?.length) return null;
-    const bandwidth = typeof xAxis.bandwidth === 'function' ? xAxis.bandwidth() : 0;
-    const half = bandwidth / 2;
-    // date → center-x pixel map
-    const dateX = {};
-    data.forEach(d => { const x = xAxis.scale(d.date); if (x != null && !isNaN(x)) dateX[d.date] = x + half; });
-    const dateList = Object.keys(dateX).sort();
-    const getX = (target) => {
-        if (dateX[target] != null) return dateX[target];
-        let best = dateList[0], bestD = Infinity;
-        for (const d of dateList) { const diff = Math.abs(+new Date(d) - +new Date(target)); if (diff < bestD) { bestD = diff; best = d; } }
-        return dateX[best] ?? null;
-    };
-    const cLeft  = xAxis.x  ?? 0;
-    const cRight = (xAxis.x ?? 0) + (xAxis.width ?? 0);
-    return (
-        <g>
-            {trendlines.map((tl, i) => {
-                if (!tl?.length || tl.length < 2) return null;
-                const x1 = getX(tl[0].date), x2 = getX(tl[1].date);
-                const y1 = yAxis.scale(tl[0].price), y2 = yAxis.scale(tl[1].price);
-                if ([x1, x2, y1, y2].some(v => v == null || isNaN(v))) return null;
-                const slope = x2 !== x1 ? (y2 - y1) / (x2 - x1) : 0;
-                return (
-                    <line key={`tl${i}`} x1={x1} y1={y1} x2={cRight} y2={y2 + slope * (cRight - x2)}
-                          stroke="#4FC3F7" strokeWidth={1.5} opacity={0.85} strokeLinecap="round" />
-                );
-            })}
-            {hlines.map((hl, j) => {
-                const y = yAxis.scale(hl.price);
-                if (y == null || isNaN(y)) return null;
-                return (
-                    <line key={`hl${j}`} x1={cLeft} y1={y} x2={cRight} y2={y}
-                          stroke={hl.color || '#FDD405'} strokeWidth={1.2} strokeDasharray="5 3" opacity={0.9} />
-                );
-            })}
-        </g>
-    );
-};
-
 /* OHLC tooltip for modal chart */
 const OHLCTooltip = ({ active, payload, label }) => {
     if (!active || !payload?.length) return null;
@@ -880,12 +838,10 @@ const PatternModal = ({ pattern, ohlcBars, chartData, chartSlice, support, resis
                                         : null
                                 )}
                                 {support != null && (
-                                    <ReferenceLine y={support} stroke="#10b981" strokeDasharray="3 3" strokeWidth={1}
-                                        label={{ value: `S ₹${Math.round(support)}`, position: 'insideTopLeft', fill: '#10b981', fontSize: 9 }} />
+                                    <ReferenceLine y={support} stroke="#10b981" strokeDasharray="3 3" strokeWidth={1} />
                                 )}
                                 {resistance != null && (
-                                    <ReferenceLine y={resistance} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={1}
-                                        label={{ value: `R ₹${Math.round(resistance)}`, position: 'insideTopLeft', fill: '#ef4444', fontSize: 9 }} />
+                                    <ReferenceLine y={resistance} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={1} />
                                 )}
                                 <Line dataKey="close" stroke="transparent" dot={false} legendType="none" isAnimationActive={false} />
                                 <Customized component={(props) => <MiniCandleLayer {...props} data={slicedData} />} />
@@ -894,6 +850,9 @@ const PatternModal = ({ pattern, ohlcBars, chartData, chartSlice, support, resis
                                         {...props}
                                         trendlines={pattern?.annotations?.trendlines || []}
                                         hlines={pattern?.annotations?.hlines || []}
+                                        markers={pattern?.annotations?.markers || []}
+                                        curve={pattern?.annotations?.curve || []}
+                                        windowStartDate={pattern?.annotations?.window_start_date || null}
                                         data={slicedData}
                                     />
                                 )} />
@@ -1009,11 +968,19 @@ const ChartPatternCard = ({ cp }) => {
                                     <CartesianGrid strokeDasharray="2 4" stroke="#374151" opacity={0.2} vertical={false} />
                                     <YAxis domain={[miniYMin - miniPad, miniYMax + miniPad]} hide />
                                     <XAxis dataKey="date" hide />
-                                    {cp.annotations?.hlines?.slice(0, 2).map((hl, j) => (
-                                        <ReferenceLine key={j} y={hl.price} stroke={hl.color} strokeDasharray="3 3" strokeWidth={1} />
-                                    ))}
                                     <Line dataKey="close" stroke="transparent" dot={false} legendType="none" isAnimationActive={false} />
                                     <Customized component={(props) => <MiniCandleLayer {...props} data={miniSlice} />} />
+                                    <Customized component={(props) => (
+                                        <PatternAnnotationLayer
+                                            {...props}
+                                            trendlines={cp.annotations?.trendlines || []}
+                                            hlines={cp.annotations?.hlines || []}
+                                            curve={cp.annotations?.curve || []}
+                                            markers={[]}
+                                            windowStartDate={cp.annotations?.window_start_date || null}
+                                            data={miniSlice}
+                                        />
+                                    )} />
                                 </ComposedChart>
                             </ResponsiveContainer>
                         </div>

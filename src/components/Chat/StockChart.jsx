@@ -20,6 +20,7 @@ import {
 } from 'recharts';
 import { TrendingUp, TrendingDown, Activity, Calendar, BarChart3, BarChart2, LineChart as LineChartIcon, ZoomIn, ZoomOut } from 'lucide-react';
 import { clsx } from 'clsx';
+import PatternAnnotationLayer from './PatternAnnotationLayer';
 
 /**
  * StockChart Component - Beautiful multi-timeframe stock charts
@@ -335,28 +336,40 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
         return [yMin - pad, yMax + pad];
     }, [candleData]);
 
-    // Build pattern overlay elements — only clean horizontal support/resistance lines
-    const patternElements = useMemo(() => {
-        if (!patternOverlays) return { lines: [], dots: [], areas: [], hasPatterns: false };
+    // Pattern annotations — draw each detected pattern's own geometry (sloped
+    // trendlines, pivot labels, curve, horizontal levels), confined to the pattern
+    // region. Sourced from the top chart pattern's `annotations` payload.
+    const patternAnn = useMemo(() => {
+        const cp = patternOverlays?.chart_pattern_details?.[0];
+        const a = cp?.annotations || {};
+        const trendlines = a.trendlines || [];
+        const hlines = a.hlines || [];
+        const markers = a.markers || [];
+        const curve = a.curve || [];
+        return {
+            trendlines, hlines, markers, curve,
+            windowStartDate: a.window_start_date || null,
+            has: !!(trendlines.length || hlines.length || markers.length || curve.length),
+        };
+    }, [patternOverlays]);
 
-        const lines = [];
-
-        // Only show simple overlay_lines (support/resistance) — no dots, no shaded areas
-        (patternOverlays.overlay_lines || []).forEach((line, i) => {
-            lines.push(
-                <ReferenceLine
-                    key={`ol-${i}`}
-                    y={line.price}
-                    stroke={line.color}
-                    strokeDasharray={line.dash || '4 3'}
-                    strokeWidth={1.5}
-                    label={{ value: line.label, position: 'insideTopRight', fill: line.color, fontSize: 10 }}
+    // Render the annotation overlay as a Recharts <Customized> layer for a given
+    // data array (each chart type plots a different slice).
+    const renderPatternLayer = (layerData) => (
+        patternAnn.has ? (
+            <Customized component={(props) => (
+                <PatternAnnotationLayer
+                    {...props}
+                    trendlines={patternAnn.trendlines}
+                    hlines={patternAnn.hlines}
+                    markers={patternAnn.markers}
+                    curve={patternAnn.curve}
+                    windowStartDate={patternAnn.windowStartDate}
+                    data={layerData}
                 />
-            );
-        });
-
-        return { lines, dots: [], areas: [], hasPatterns: lines.length > 0 };
-    }, [patternOverlays, dates]);
+            )} />
+        ) : null
+    );
 
     // Render different chart types
     const renderChart = () => {
@@ -390,8 +403,6 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                         tickFormatter={(value) => `₹${value.toFixed(0)}`}
                     />
                     <Tooltip content={<CustomTooltip />} />
-                    {patternElements.areas}
-                    {patternElements.lines}
                     <Line
                         type="monotone"
                         dataKey="price"
@@ -400,7 +411,7 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                         dot={false}
                         animationDuration={1000}
                     />
-                    {patternElements.dots}
+                    {renderPatternLayer(displayData)}
                 </LineChart>
             );
         } else if (chartType === 'area') {
@@ -428,8 +439,6 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                         tickFormatter={(value) => `₹${value.toFixed(0)}`}
                     />
                     <Tooltip content={<CustomTooltip />} />
-                    {patternElements.areas}
-                    {patternElements.lines}
                     <Area
                         type="monotone"
                         dataKey="price"
@@ -438,7 +447,7 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                         fill="url(#colorArea)"
                         animationDuration={1000}
                     />
-                    {patternElements.dots}
+                    {renderPatternLayer(displayData)}
                 </AreaChart>
             );
         } else if (chartType === 'ohlc') {
@@ -448,11 +457,9 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                     <XAxis dataKey="date" tickFormatter={formatDate} stroke="#9ca3af" tick={{ fill: '#6b7280' }} />
                     <YAxis domain={['auto', 'auto']} stroke="#9ca3af" tick={{ fill: '#6b7280' }} tickFormatter={(v) => `₹${v.toFixed(0)}`} />
                     <Tooltip content={<CustomTooltip />} />
-                    {patternElements.areas}
-                    {patternElements.lines}
                     <Bar dataKey="high" fill="#10b981" opacity={0.5} animationDuration={800} />
                     <Bar dataKey="low" fill="#ef4444" opacity={0.5} animationDuration={800} />
-                    {patternElements.dots}
+                    {renderPatternLayer(displayData)}
                 </BarChart>
             );
         } else {
@@ -472,11 +479,9 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                     {/* No YAxis here — it lives in the sticky panel */}
                     <YAxis domain={candleDomain} hide />
                     <Tooltip content={<CustomTooltip />} />
-                    {patternElements.areas}
-                    {patternElements.lines}
                     <Line dataKey="close" stroke="transparent" dot={false} legendType="none" isAnimationActive={false} />
                     <Customized component={(props) => <CandleLayer {...props} data={candleData} />} />
-                    {patternElements.dots}
+                    {renderPatternLayer(candleData)}
                 </ComposedChart>
             );
         }
