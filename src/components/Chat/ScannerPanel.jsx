@@ -1,67 +1,62 @@
 import { useEffect, useRef, useState } from 'react';
-import { X, TrendingUp, BarChart2, CandlestickChart, LineChart, BookOpen, Loader2, Check } from 'lucide-react';
+import { X, TrendingUp, BarChart2, CandlestickChart, BookOpen, Check } from 'lucide-react';
 
 const _raw = import.meta.env.VITE_API_BASE || import.meta.env.NEXT_PUBLIC_API_URL;
 const API_BASE = (_raw && _raw.startsWith('http')) ? _raw.replace(/\/$/, '') : '';
 const SCANNER_ENDPOINT = API_BASE ? `${API_BASE}/api/v1/scanner` : '/api/v1/scanner';
 
-const TECHNICAL_SCANNERS = {
-    'Breakout & Trend': [
-        { name: 'Short Term Breakouts'  },
-        { name: '52-Week High Breakout' },
-        { name: 'Inside Bar Breakout'   },
-        { name: 'SMA 200 Reclaim'       },
-        { name: 'Golden Cross'          },
-        { name: 'Death Cross'           },
-    ],
-    'Momentum Indicators': [
-        { name: 'RSI Oversold'          },
-        { name: 'RSI Overbought'        },
-        { name: 'MACD Bullish Crossover'},
-        { name: 'MACD Bearish Crossover'},
-        { name: 'Supertrend Buy'        },
-        { name: 'Supertrend Sell'       },
-        { name: 'BB Breakout Bullish'   },
-        { name: 'BB Squeeze'            },
-        { name: 'Volume Surge'          },
-    ],
-    'Bullish Candlestick Patterns': [
-        { name: 'Morning Star'          },
-        { name: 'Bullish Engulfing'     },
-        { name: 'Hammer'                },
-        { name: 'Three White Soldiers'  },
-    ],
-    'Bearish Candlestick Patterns': [
-        { name: 'Hanging Man'           },
-        { name: 'Shooting Star'         },
-        { name: 'Evening Star'          },
-        { name: 'Bearish Engulfing'     },
-        { name: 'Three Black Crows'     },
-        { name: 'Doji'                  },
-    ],
-};
+const CHART_PATTERNS = [
+    { name: 'Head & Shoulders'       },
+    { name: 'Inverse H&S'            },
+    { name: 'Double Top'             },
+    { name: 'Double Bottom'          },
+    { name: 'Ascending Triangle'     },
+    { name: 'Descending Triangle'    },
+    { name: 'Symmetrical Triangle'   },
+    { name: 'Rising Wedge'           },
+    { name: 'Falling Wedge'          },
+    { name: 'Bull Flag'              },
+    { name: 'Bear Flag'              },
+    { name: 'Bull Pennant'           },
+    { name: 'Bear Pennant'           },
+    { name: 'Rounding Bottom'        },
+    { name: 'Channel Breakout'       },
+];
+
+const CANDLESTICK_PATTERNS = [
+    { name: 'Morning Star'           },
+    { name: 'Bearish Engulfing'      },
+    { name: 'Hammer'                 },
+    { name: 'Hanging Man'            },
+    { name: 'Shooting Star'          },
+    { name: 'Evening Star'           },
+    { name: 'Doji'                   },
+];
+
+const MOMENTUM_SCANNERS = [
+    { name: 'RSI Oversold'           },
+    { name: 'RSI Overbought'         },
+    { name: 'MACD Bullish Crossover' },
+    { name: 'MACD Bearish Crossover' },
+    { name: 'Supertrend Buy'         },
+    { name: 'Supertrend Sell'        },
+    { name: 'BB Breakout Bullish'    },
+    { name: 'BB Squeeze'             },
+    { name: 'Volume Surge'           },
+    { name: 'Short Term Breakouts'   },
+    { name: '52-Week High Breakout'  },
+    { name: 'Inside Bar Breakout'    },
+    { name: 'SMA 200 Reclaim'        },
+    { name: 'Golden Cross'           },
+    { name: 'Death Cross'            },
+];
 
 const FUNDAMENTAL_SCANNER_NAMES = [
     'Low P/E', 'High ROE', 'Low Debt', 'Revenue Growth',
     'EPS Growth', 'High Dividend', 'Value Pick', 'Growth Pick', 'Quality Pick',
 ];
 
-const CATEGORY_ICONS = {
-    'Breakout & Trend':             TrendingUp,
-    'Momentum Indicators':          BarChart2,
-    'Bullish Candlestick Patterns': CandlestickChart,
-    'Bearish Candlestick Patterns': LineChart,
-};
-
-const CATEGORY_COLORS = {
-    'Breakout & Trend':             'text-indigo-400',
-    'Momentum Indicators':          'text-purple-400',
-    'Bullish Candlestick Patterns': 'text-emerald-400',
-    'Bearish Candlestick Patterns': 'text-rose-400',
-};
-
 // Hard contradictions — scanners that physically cannot fire on the same stock simultaneously.
-// Key = selected scanner → Value = set of scanners that must be disabled.
 const CONFLICTS = {
     'RSI Oversold':           new Set(['RSI Overbought']),
     'RSI Overbought':         new Set(['RSI Oversold']),
@@ -72,30 +67,55 @@ const CONFLICTS = {
     'Golden Cross':           new Set(['Death Cross']),
     'Death Cross':            new Set(['Golden Cross']),
     'BB Breakout Bullish':    new Set(['BB Squeeze']),
-    // BB Squeeze = bands contracting → breakouts/new highs are impossible
     'BB Squeeze':             new Set(['BB Breakout Bullish', 'Short Term Breakouts', '52-Week High Breakout']),
     'Short Term Breakouts':   new Set(['BB Squeeze']),
     '52-Week High Breakout':  new Set(['BB Squeeze']),
-    // Candlestick direct opposites
-    'Bullish Engulfing':      new Set(['Bearish Engulfing']),
-    'Bearish Engulfing':      new Set(['Bullish Engulfing']),
-    'Morning Star':           new Set(['Evening Star']),
-    'Evening Star':           new Set(['Morning Star']),
-    'Three White Soldiers':   new Set(['Three Black Crows']),
-    'Three Black Crows':      new Set(['Three White Soldiers']),
-    // Hammer = bottom reversal bullish; Hanging Man / Shooting Star = top reversal bearish
-    'Hammer':                 new Set(['Hanging Man', 'Shooting Star']),
-    'Hanging Man':            new Set(['Hammer']),
-    'Shooting Star':          new Set(['Hammer']),
+    // Candlestick opposites
+    'Morning Star':           new Set(['Evening Star', 'Bearish Engulfing', 'Hanging Man', 'Shooting Star']),
+    'Evening Star':           new Set(['Morning Star', 'Hammer']),
+    'Bearish Engulfing':      new Set(['Morning Star', 'Hammer']),
+    'Hammer':                 new Set(['Hanging Man', 'Shooting Star', 'Evening Star', 'Bearish Engulfing']),
+    'Hanging Man':            new Set(['Hammer', 'Morning Star']),
+    'Shooting Star':          new Set(['Hammer', 'Morning Star']),
+    // Chart pattern opposites
+    'Head & Shoulders':       new Set(['Inverse H&S', 'Double Bottom', 'Rounding Bottom', 'Bull Flag', 'Bull Pennant', 'Falling Wedge']),
+    'Inverse H&S':            new Set(['Head & Shoulders', 'Double Top', 'Bear Flag', 'Bear Pennant', 'Rising Wedge']),
+    'Double Top':             new Set(['Double Bottom', 'Inverse H&S', 'Bull Flag', 'Bull Pennant', 'Falling Wedge']),
+    'Double Bottom':          new Set(['Double Top', 'Head & Shoulders', 'Bear Flag', 'Bear Pennant', 'Rising Wedge']),
+    'Rising Wedge':           new Set(['Falling Wedge', 'Inverse H&S', 'Double Bottom', 'Bull Flag', 'Bull Pennant']),
+    'Falling Wedge':          new Set(['Rising Wedge', 'Head & Shoulders', 'Double Top', 'Bear Flag', 'Bear Pennant']),
+    'Bull Flag':              new Set(['Bear Flag', 'Head & Shoulders', 'Double Top', 'Rising Wedge']),
+    'Bear Flag':              new Set(['Bull Flag', 'Inverse H&S', 'Double Bottom', 'Falling Wedge']),
+    'Bull Pennant':           new Set(['Bear Pennant', 'Head & Shoulders', 'Double Top', 'Rising Wedge']),
+    'Bear Pennant':           new Set(['Bull Pennant', 'Inverse H&S', 'Double Bottom', 'Falling Wedge']),
 };
 
 const SCANNER_EMOJI = {
-    'Short Term Breakouts':      '🚀',
-    '52-Week High Breakout':     '🏆',
-    'Inside Bar Breakout':       '📦',
-    'SMA 200 Reclaim':           '📊',
-    'Golden Cross':              '✨',
-    'Death Cross':               '☠️',
+    // Chart patterns
+    'Head & Shoulders':          '🏔️',
+    'Inverse H&S':               '🌊',
+    'Double Top':                '🔝',
+    'Double Bottom':             '🏁',
+    'Ascending Triangle':        '📐',
+    'Descending Triangle':       '📏',
+    'Symmetrical Triangle':      '🔺',
+    'Rising Wedge':              '📈',
+    'Falling Wedge':             '📉',
+    'Bull Flag':                 '🚩',
+    'Bear Flag':                 '🏴',
+    'Bull Pennant':              '⛳',
+    'Bear Pennant':              '🎌',
+    'Rounding Bottom':           '🌅',
+    'Channel Breakout':          '💥',
+    // Candlestick patterns
+    'Morning Star':              '🌄',
+    'Bearish Engulfing':         '📉',
+    'Hammer':                    '🔨',
+    'Hanging Man':               '🪝',
+    'Shooting Star':             '🌠',
+    'Evening Star':              '🌙',
+    'Doji':                      '⚖️',
+    // Momentum
     'RSI Oversold':              '📉',
     'RSI Overbought':            '📈',
     'MACD Bullish Crossover':    '⚡',
@@ -105,16 +125,13 @@ const SCANNER_EMOJI = {
     'BB Breakout Bullish':       '💥',
     'BB Squeeze':                '🤏',
     'Volume Surge':              '🔊',
-    'Morning Star':              '🌅',
-    'Bullish Engulfing':         '📈',
-    'Hammer':                    '🔨',
-    'Three White Soldiers':      '⚔️',
-    'Hanging Man':               '🪝',
-    'Shooting Star':             '🌠',
-    'Evening Star':              '🌙',
-    'Bearish Engulfing':         '📉',
-    'Three Black Crows':         '🐦',
-    'Doji':                      '⚖️',
+    'Short Term Breakouts':      '🚀',
+    '52-Week High Breakout':     '🏆',
+    'Inside Bar Breakout':       '📦',
+    'SMA 200 Reclaim':           '📊',
+    'Golden Cross':              '✨',
+    'Death Cross':               '☠️',
+    // Fundamentals
     'Low P/E':                   '💰',
     'High ROE':                  '💎',
     'Low Debt':                  '🏦',
@@ -500,47 +517,77 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                 )}
 
                 {/* Scrollable body */}
-                <div className="overflow-y-auto flex-1 px-4 py-4 space-y-6">
-                    {/* Technical Section */}
+                <div className="overflow-y-auto flex-1 px-4 py-4 space-y-5">
+
+                    {/* ── TECHNICAL PATTERNS ── */}
                     <div>
                         <div className="flex items-center gap-2 mb-3">
-                            <TrendingUp size={14} className="text-indigo-400" />
-                            <span className="text-[11px] font-semibold uppercase tracking-widest text-indigo-400">Technical Patterns</span>
-                            <span className="text-[10px] text-zinc-400 dark:text-zinc-600 ml-1">25 scanners</span>
+                            <TrendingUp size={14} className="text-[#FDD405]" />
+                            <span className="text-[11px] font-semibold uppercase tracking-widest text-[#FDD405]">Technical Patterns</span>
                         </div>
-                        <div className="space-y-4">
-                            {Object.entries(TECHNICAL_SCANNERS).map(([category, scanners]) => {
-                                const Icon  = CATEGORY_ICONS[category];
-                                const color = CATEGORY_COLORS[category];
-                                const hoverClasses = {
-                                    'text-indigo-400':  'hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 dark:hover:bg-indigo-950/50 dark:hover:border-indigo-500/40 dark:hover:text-indigo-300',
-                                    'text-purple-400':  'hover:border-purple-300 hover:bg-purple-50 hover:text-purple-700 dark:hover:bg-purple-950/50 dark:hover:border-purple-500/40 dark:hover:text-purple-300',
-                                    'text-emerald-400': 'hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-emerald-950/50 dark:hover:border-emerald-500/40 dark:hover:text-emerald-300',
-                                    'text-rose-400':    'hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-950/50 dark:hover:border-rose-500/40 dark:hover:text-rose-300',
-                                }[color] || '';
-                                return (
-                                    <div key={category}>
-                                        <div className={`flex items-center gap-1.5 mb-2 ${color}`}>
-                                            {Icon && <Icon size={12} />}
-                                            <span className="text-[11px] font-medium">{category}</span>
-                                        </div>
-                                        <div className="flex flex-wrap gap-2">
-                                            {scanners.map(s => (
-                                                <ScannerBtn key={s.name} name={s.name} hoverClass={hoverClasses} />
-                                            ))}
-                                        </div>
-                                    </div>
-                                );
-                            })}
+
+                        <div className="space-y-4 pl-1">
+                            {/* Chart Patterns sub-header */}
+                            <div>
+                                <div className="flex items-center gap-1.5 mb-2">
+                                    <CandlestickChart size={11} className="text-sky-400" />
+                                    <span className="text-[10.5px] font-semibold uppercase tracking-wider text-sky-400">Chart Patterns</span>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {CHART_PATTERNS.map(s => (
+                                        <ScannerBtn key={s.name} name={s.name}
+                                            hoverClass="hover:border-sky-300 hover:bg-sky-50 hover:text-sky-700 dark:hover:bg-sky-950/50 dark:hover:border-sky-500/40 dark:hover:text-sky-300"
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Divider */}
+                            <div className="border-t border-white/6" />
+
+                            {/* Candlestick Patterns sub-header */}
+                            <div>
+                                <div className="flex items-center gap-1.5 mb-2">
+                                    <BarChart2 size={11} className="text-violet-400" />
+                                    <span className="text-[10.5px] font-semibold uppercase tracking-wider text-violet-400">Candlestick Patterns</span>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {CANDLESTICK_PATTERNS.map(s => (
+                                        <ScannerBtn key={s.name} name={s.name}
+                                            hoverClass="hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700 dark:hover:bg-violet-950/50 dark:hover:border-violet-500/40 dark:hover:text-violet-300"
+                                        />
+                                    ))}
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Fundamental Section */}
+                    {/* Section divider */}
+                    <div className="border-t border-white/8" />
+
+                    {/* ── MOMENTUM INDICATORS ── */}
+                    <div>
+                        <div className="flex items-center gap-2 mb-3">
+                            <TrendingUp size={14} className="text-emerald-400" />
+                            <span className="text-[11px] font-semibold uppercase tracking-widest text-emerald-400">Momentum Indicators</span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            {MOMENTUM_SCANNERS.map(s => (
+                                <ScannerBtn key={s.name} name={s.name}
+                                    hoverClass="hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-emerald-950/50 dark:hover:border-emerald-500/40 dark:hover:text-emerald-300"
+                                />
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Section divider */}
+                    <div className="border-t border-white/8" />
+
+                    {/* ── FUNDAMENTAL SCREENS ── */}
                     <div>
                         <div className="flex items-center gap-2 mb-3">
                             <BookOpen size={14} className="text-amber-400" />
                             <span className="text-[11px] font-semibold uppercase tracking-widest text-amber-400">Fundamental Screens</span>
-                            <span className="text-[10px] text-zinc-400 dark:text-zinc-600 ml-1">9 scanners · Nifty 100</span>
                         </div>
                         <div className="flex flex-wrap gap-2">
                             {FUNDAMENTAL_SCANNER_NAMES.map(name => (
@@ -550,6 +597,7 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                             ))}
                         </div>
                     </div>
+
                 </div>
 
                 {/* Run bar — appears when anything is selected */}
