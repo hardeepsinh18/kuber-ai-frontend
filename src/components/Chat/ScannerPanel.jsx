@@ -527,9 +527,9 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                         <div className="space-y-4 pl-3">
                             {/* Chart Patterns sub-header */}
                             <div>
-                                <div className="flex items-center gap-1.5 mb-2.5">
-                                    <CandlestickChart size={11} className="text-zinc-400" />
-                                    <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-zinc-400">Chart Patterns</span>
+                                <div className="flex items-center gap-2 mb-2.5">
+                                    <CandlestickChart size={12} className="text-zinc-300" />
+                                    <span className="text-[11.5px] font-semibold uppercase tracking-[0.08em] text-zinc-300">Chart Patterns</span>
                                 </div>
                                 <div className="flex flex-wrap gap-1.5">
                                     {CHART_PATTERNS.map(s => (
@@ -545,9 +545,9 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
 
                             {/* Candlestick Patterns sub-header */}
                             <div>
-                                <div className="flex items-center gap-1.5 mb-2.5">
-                                    <BarChart2 size={11} className="text-zinc-400" />
-                                    <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-zinc-400">Candlestick Patterns</span>
+                                <div className="flex items-center gap-2 mb-2.5">
+                                    <BarChart2 size={12} className="text-zinc-300" />
+                                    <span className="text-[11.5px] font-semibold uppercase tracking-[0.08em] text-zinc-300">Candlestick Patterns</span>
                                 </div>
                                 <div className="flex flex-wrap gap-1.5">
                                     {CANDLESTICK_PATTERNS.map(s => (
