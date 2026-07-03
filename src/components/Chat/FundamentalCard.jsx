@@ -886,6 +886,8 @@ const PatternModal = ({ pattern, ohlcBars, chartData, chartSlice, support, resis
                                         hlines={pattern?.annotations?.hlines || []}
                                         markers={pattern?.annotations?.markers || []}
                                         curve={pattern?.annotations?.curve || []}
+                                        skeleton={pattern?.annotations?.skeleton || []}
+                                        neckline={pattern?.annotations?.neckline || null}
                                         windowStartDate={pattern?.annotations?.window_start_date || null}
                                         data={slicedData}
                                     />
@@ -1010,6 +1012,7 @@ const ChartPatternCard = ({ cp }) => {
                                             trendlines={cp.annotations?.trendlines || []}
                                             hlines={cp.annotations?.hlines || []}
                                             curve={cp.annotations?.curve || []}
+                                            skeleton={cp.annotations?.skeleton || []}
                                             markers={[]}
                                             windowStartDate={cp.annotations?.window_start_date || null}
                                             data={miniSlice}

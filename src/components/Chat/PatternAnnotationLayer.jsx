@@ -29,6 +29,8 @@ const PatternAnnotationLayer = ({
     hlines = [],
     markers = [],
     curve = [],
+    skeleton = [],
+    neckline = null,
     windowStartDate = null,
     data = [],
 }) => {
@@ -98,6 +100,19 @@ const PatternAnnotationLayer = ({
                 );
             })}
 
+            {/* Blue skeleton — traces the pattern's swings so the shape is obvious */}
+            {skeleton.length >= 2 && (() => {
+                const pts = skeleton
+                    .map(p => ({ x: getX(p.date), y: yAxis.scale(p.price) }))
+                    .filter(p => p.x != null && p.y != null && !isNaN(p.x) && !isNaN(p.y));
+                if (pts.length < 2) return null;
+                const dPath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+                return (
+                    <path d={dPath} fill="none" stroke="#4FC3F7" strokeWidth={2.2}
+                          opacity={0.95} strokeLinecap="round" strokeLinejoin="round" />
+                );
+            })()}
+
             {/* Horizontal levels — confined to the pattern region, no price text */}
             {hlines.map((hl, j) => {
                 const y = yAxis.scale(hl.price);
@@ -109,6 +124,26 @@ const PatternAnnotationLayer = ({
                           strokeDasharray={dash} opacity={0.85} />
                 );
             })}
+
+            {/* Neckline price tag — pinned to the right end of the neckline */}
+            {neckline && neckline.price != null && (() => {
+                const y = yAxis.scale(neckline.price);
+                if (y == null || isNaN(y)) return null;
+                const label = neckline.label || `₹${neckline.price}`;
+                const w = label.length * 6.2 + 10;
+                const x = cRight - w - 2;
+                return (
+                    <g>
+                        <rect x={x} y={y - 8} width={w} height={16} rx={3}
+                              fill="#141308" stroke="#FFFF00" strokeWidth={0.75} opacity={0.95} />
+                        <text x={x + w / 2} y={y + 3.5} textAnchor="middle" fontSize={10} fontWeight={600}
+                              fill="#FFE24D" fontFamily="ui-monospace, Menlo, monospace"
+                              style={{ pointerEvents: 'none' }}>
+                            {label}
+                        </text>
+                    </g>
+                );
+            })()}
 
             {/* Pivot markers + labels */}
             {markers.map((m, k) => {
