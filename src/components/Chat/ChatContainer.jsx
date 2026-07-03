@@ -378,10 +378,11 @@ const extractStockSymbols = (query) => {
         'kpit': 'KPITTECH',
         'kpit tech': 'KPITTECH',
         // Telecom
-        'vi': 'VODAFONEIDEA',
-        'vodafone': 'VODAFONEIDEA',
-        'vodafone idea': 'VODAFONEIDEA',
-        'idea': 'VODAFONEIDEA',
+        'vi': 'IDEA',
+        'vodafone': 'IDEA',
+        'vodafone idea': 'IDEA',
+        'idea': 'IDEA',
+        'vodafoneidea': 'IDEA',   // catches chip text like "VODAFONEIDEA long term..."
         'airtel': 'BHARTIARTL',
         'bharti airtel': 'BHARTIARTL',
         'bsnl': 'BSNL',
