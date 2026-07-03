@@ -33,7 +33,12 @@ const GroupClarificationPopup = ({ groupName, candidates, onSelect, onDismiss, d
             const idx = parseInt(e.key, 10);
             if (idx >= 1 && idx <= Math.min(candidates.length, 6)) {
                 e.preventDefault();
-                if (!disabled) onSelect(candidates[idx - 1].name || candidates[idx - 1].ticker);
+                // Send the ticker (e.g. "TMPV"), not the name — the LLM collapses long
+                // successor names (e.g. "Tata Motors Passenger Vehicles") back to the
+                // ambiguous parent, which would re-trigger this same disambiguation.
+                const c = candidates[idx - 1];
+                const t = (c.ticker || '').replace('.NS', '').replace('.BO', '') || c.name;
+                if (!disabled) onSelect(t);
             }
             if (e.key === 'Escape') onDismiss();
         };
@@ -131,7 +136,7 @@ const GroupClarificationPopup = ({ groupName, candidates, onSelect, onDismiss, d
                             type="button"
                             disabled={disabled}
                             className={`gcp-row${i === shown.length - 1 ? ' last' : ''}`}
-                            onClick={() => onSelect(name)}
+                            onClick={() => onSelect(ticker || name)}
                         >
                             {/* Avatar */}
                             <span style={{

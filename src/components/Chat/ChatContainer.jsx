@@ -601,6 +601,31 @@ const extractSymbolFromResponse = (responseData, metadata, chartData, extractedS
     return null;
 };
 
+/**
+ * Derive the discussed stock from a STORED chat message (message shape, not
+ * response shape). Lets a reopened chat restore its follow-up context.
+ */
+const deriveSymbolFromMessage = (m) => {
+    if (!m || m.role === 'user') return null;
+    const md = m.metadata || {};
+    const cd = m.chartData;
+    const candidates = [
+        md._contextSymbol, // persisted authoritative value (set on message save)
+        md.at_a_glance?.symbol,
+        md.resolved_symbol,
+        Array.isArray(md.symbols) ? md.symbols[0] : md.symbols,
+        !Array.isArray(cd) ? cd?.chart_metadata?.symbol : cd?.[0]?.chart_metadata?.symbol,
+        m.signal?.symbol,
+        m.technicalSummary?.symbol,
+        m.scoreCard?.symbol,
+    ];
+    for (const s of candidates) {
+        const c = cleanSymbol(s);
+        if (c && c.length >= 2 && c.length <= 20) return c;
+    }
+    return null;
+};
+
 const ChatContainer = ({ sidebarOpen, routeChatId }) => {
     const { chatId: routeChatIdParam } = useParams();
     const { accessToken, refreshSession } = useAuth();
@@ -647,6 +672,20 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
     useEffect(() => {
         messagesRef.current = messages;
     }, [messages]);
+
+    // Keep follow-up stock context in sync with the OPEN chat:
+    // - switching to a new/other chat must not leak the previous chat's stock
+    //   (stale ref used to send wrong `symbols` hints across chats)
+    // - reopening a saved chat restores its last discussed stock
+    useEffect(() => {
+        let restored = null;
+        for (let i = messages.length - 1; i >= 0; i--) {
+            restored = deriveSymbolFromMessage(messages[i]);
+            if (restored) break;
+        }
+        activeContextSymbolRef.current = restored;
+        if (import.meta.env.DEV) console.log('[Context] Active stock synced to:', restored);
+    }, [currentChatId, messages]);
 
     const clearStreamingTimeout = useCallback(() => {
         if (streamingTimeoutRef.current) {
@@ -1038,6 +1077,9 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             const resolvedSym = extractSymbolFromResponse(responseData, metadata, chartData, confidentSymbols);
             if (resolvedSym) {
                 activeContextSymbolRef.current = resolvedSym;
+                // Persist on the message so reopening this chat restores the context
+                // (deriveSymbolFromMessage reads _contextSymbol first).
+                metadata._contextSymbol = resolvedSym;
                 if (import.meta.env.DEV) console.log('[Context] Active stock set to:', resolvedSym);
             }
 
