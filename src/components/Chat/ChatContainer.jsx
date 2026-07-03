@@ -377,6 +377,73 @@ const extractStockSymbols = (query) => {
         'hexaware': 'HEXAWARE',
         'kpit': 'KPITTECH',
         'kpit tech': 'KPITTECH',
+        // Telecom
+        'vi': 'VODAFONEIDEA',
+        'vodafone': 'VODAFONEIDEA',
+        'vodafone idea': 'VODAFONEIDEA',
+        'idea': 'VODAFONEIDEA',
+        'airtel': 'BHARTIARTL',
+        'bharti airtel': 'BHARTIARTL',
+        'bsnl': 'BSNL',
+        // Other commonly missed
+        'zeel': 'ZEEL',
+        'zee': 'ZEEL',
+        'zee entertainment': 'ZEEL',
+        'pnb': 'PNB',
+        'punjab national': 'PNB',
+        'canara': 'CANBK',
+        'canara bank': 'CANBK',
+        'bob': 'BANKBARODA',
+        'bank of baroda': 'BANKBARODA',
+        'union bank': 'UNIONBANK',
+        'iob': 'IOB',
+        'indian overseas': 'IOB',
+        'uco bank': 'UCOBANK',
+        'uco': 'UCOBANK',
+        'central bank': 'CENTRALBK',
+        'motherson': 'MOTHERSON',
+        'samvardhana motherson': 'MOTHERSON',
+        'minda': 'MINDAIND',
+        'bajaj auto': 'BAJAJ-AUTO',
+        'tvs motor': 'TVSMOTOR',
+        'tvs': 'TVSMOTOR',
+        'hero': 'HEROMOTOCO',
+        'abb': 'ABB',
+        'siemens': 'SIEMENS',
+        'cg power': 'CGPOWER',
+        'cg': 'CGPOWER',
+        'suzlon': 'SUZLON',
+        'inox wind': 'INOXWIND',
+        'renew power': 'RNP',
+        'pfc': 'PFC',
+        'rec': 'RECLTD',
+        'ireda': 'IREDA',
+        'nhpc': 'NHPC',
+        'sjvn': 'SJVN',
+        'torrent power': 'TORNTPOWER',
+        'tata power': 'TATAPOWER',
+        'adani power': 'ADANIPOWER',
+        'jppower': 'JPPOWER',
+        'coal india': 'COALINDIA',
+        'nle': 'NLC',
+        'nlc': 'NLC',
+        'hindalco': 'HINDALCO',
+        'nalco': 'NATIONALUM',
+        'national aluminium': 'NATIONALUM',
+        'vedl': 'VEDL',
+        'hpcl': 'HINDPETRO',
+        'hindustan petroleum': 'HINDPETRO',
+        'mrpl': 'MRPL',
+        'castrol': 'CASTROLIND',
+        'gulf oil': 'GULFOILLUB',
+        'godrej properties': 'GODREJPROP',
+        'oberoi realty': 'OBEROIRLTY',
+        'dlf': 'DLF',
+        'prestige': 'PRESTIGE',
+        'brigade': 'BRIGADE',
+        'sobha': 'SOBHA',
+        'lodha': 'LODHA',
+        'macrotech': 'LODHA',
     };
 
     const queryLower = query.toLowerCase();
@@ -780,10 +847,20 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             // pumps" must NOT inherit the previous active stock — that causes context pollution
             // where NIFTY50 bleeds into completely unrelated answers.
 
+            const wordCount = normalized.trim().split(/\s+/).length;
+
             // Explicit pronoun references to the previous stock
-            const hasPronounRef = /\b(its|this stock|that stock|the stock|this company|the company|that company|same stock)\b/i.test(normalized)
+            const hasPronounRef =
+                // Named stock references
+                /\b(its|this stock|that stock|the stock|this company|the company|that company|same stock)\b/i.test(normalized)
+                // "should I buy/sell/hold it"
                 || /\bshould i (buy|sell|hold) it\b/i.test(normalized)
-                || /\b(what about it|tell me (more )?about it|analyze it|performance of it)\b/i.test(normalized);
+                // "what about it", "tell me about it", "analyze it" etc.
+                || /\b(what about it|tell me (more )?about it|analyze it|performance of it)\b/i.test(normalized)
+                // Short queries (≤6 words) containing a bare "it" pronoun — catches
+                // "is it good", "will it go up", "can I buy it", "is it safe"
+                // Long queries are excluded to avoid false matches like "is it a good time for markets"
+                || (/\bit\b/i.test(normalized) && wordCount <= 6);
 
             // Relative sector / entity references that need the active stock for context
             const hasSameRef = /\b(same sector|same segment|in the same|its sector|that sector|in this sector|same (peers?|companies|stocks?))\b/i.test(normalized);
@@ -792,12 +869,12 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             const isScreenerQuery = /\bwhich\s+\S+\s+(stock|stocks?|company|companies|share|shares?|etf)\b/i.test(normalized)
                 || /\b(best stock|top stocks?|best performing stock|which sector|best sector|recommend.*stock)\b/i.test(normalized);
 
-            const wordCount = normalized.trim().split(/\s+/).length;
-
-            // True follow-up: has an explicit reference OR is a very short (≤4 word) context-only
-            // question — but never when it's a screener or sector discovery query.
+            // True follow-up: has an explicit pronoun/relative reference OR is a very short
+            // (≤3 word) bare question with no stock mentioned — e.g. "buy or sell", "is it good".
+            // ≤4 is intentionally NOT used: "tell me about X" (4 words) has an explicit new
+            // stock name and must never inherit the previous context.
             const isFollowUp = confidentSymbols.length === 0 && !!activeStock && !isScreenerQuery
-                && (hasPronounRef || hasSameRef || wordCount <= 4);
+                && (hasPronounRef || hasSameRef || wordCount <= 3);
 
             // Only send the previous stock as a hint for genuine follow-ups.
             // For new-topic queries (screeners, explicit company names, sector switches)
