@@ -660,8 +660,46 @@ const MiniCandleLayer = ({ xAxisMap, yAxisMap, data }) => {
     );
 };
 
+/* ─── Hollow ring around the pattern's candle group (Recharts <Customized>) ─── */
+// Draws a single amber ellipse enclosing all candles whose date is in
+// `patternDates` (wick + body), replacing the old vertical column highlight.
+const PatternCircleLayer = ({ xAxisMap, yAxisMap, data = [], patternDates }) => {
+    const xAxis = xAxisMap && (xAxisMap[0] ?? xAxisMap['0'] ?? Object.values(xAxisMap)[0]);
+    const yAxis = yAxisMap && (yAxisMap[0] ?? yAxisMap['0'] ?? Object.values(yAxisMap)[0]);
+    if (!xAxis?.scale || !yAxis?.scale || !data?.length || !patternDates) return null;
+    const want = patternDates instanceof Set ? patternDates : new Set(patternDates);
+    if (!want.size) return null;
+    const bandwidth = typeof xAxis.bandwidth === 'function' ? xAxis.bandwidth() : 8;
+    const half = bandwidth / 2;
+    const xs = [], highs = [], lows = [];
+    data.forEach(d => {
+        if (!want.has(d.date)) return;
+        const x = xAxis.scale(d.date);
+        if (x == null || isNaN(x)) return;
+        xs.push(x + half);
+        if (d.high != null) highs.push(d.high);
+        if (d.low != null) lows.push(d.low);
+    });
+    if (!xs.length || !highs.length || !lows.length) return null;
+    const yTop = yAxis.scale(Math.max(...highs));
+    const yBot = yAxis.scale(Math.min(...lows));
+    if ([yTop, yBot].some(v => v == null || isNaN(v))) return null;
+    const padX = half + 4;
+    const padY = 6;
+    const x0 = Math.min(...xs) - padX;
+    const x1 = Math.max(...xs) + padX;
+    const cx = (x0 + x1) / 2;
+    const cy = (yTop + yBot) / 2;
+    const rx = Math.max((x1 - x0) / 2, 6);
+    const ry = Math.max(Math.abs(yBot - yTop) / 2 + padY, 8);
+    return (
+        <ellipse cx={cx} cy={cy} rx={rx} ry={ry}
+                 fill="none" stroke="#FDD405" strokeWidth={1.6} opacity={0.9} />
+    );
+};
+
 /* ─── Mini chart for a single pattern card ───────────────────────────────── */
-const PatternMiniChart = ({ chartData, barsAgo = 0, support, resistance }) => {
+const PatternMiniChart = ({ chartData, barsAgo = 0, support, resistance, ohlcBars = null }) => {
     const rawChart = useMemo(() => {
         if (!chartData) return null;
         if (Array.isArray(chartData)) return chartData.find(cd => cd && !cd.error) ?? null;
@@ -697,9 +735,13 @@ const PatternMiniChart = ({ chartData, barsAgo = 0, support, resistance }) => {
     const pad   = (yMax - yMin) * 0.1 || 1;
     const domain = [yMin - pad, yMax + pad];
 
-    // Highlight the pattern formation bar
-    const highlightDate  = slice[patternIdx]?.date;
-    const highlightBefore = slice[Math.max(0, patternIdx - 1)]?.date;
+    // Candles that form the pattern — encircle the whole group. Fall back to the
+    // single formation bar when the detector didn't provide the candle list.
+    const patternDates = useMemo(() => {
+        if (ohlcBars && ohlcBars.length) return new Set(ohlcBars.map(b => b.date));
+        const d = slice[patternIdx]?.date;
+        return d ? new Set([d]) : new Set();
+    }, [ohlcBars, slice, patternIdx]);
 
     return (
         <div style={{ width: '100%', height: 100 }}>
@@ -708,10 +750,6 @@ const PatternMiniChart = ({ chartData, barsAgo = 0, support, resistance }) => {
                     <CartesianGrid strokeDasharray="2 4" stroke="#374151" opacity={0.25} vertical={false} />
                     <XAxis dataKey="date" hide />
                     <YAxis domain={domain} hide />
-                    {/* Pattern zone highlight */}
-                    {highlightDate && highlightBefore && (
-                        <ReferenceLine x={highlightDate} stroke="#FDD405" strokeWidth={14} strokeOpacity={0.18} />
-                    )}
                     {/* Support line */}
                     {support != null && (
                         <ReferenceLine y={support} stroke="#10b981" strokeDasharray="3 3" strokeWidth={1.2}
@@ -725,6 +763,7 @@ const PatternMiniChart = ({ chartData, barsAgo = 0, support, resistance }) => {
                     {/* Invisible line so recharts initialises the axis scale */}
                     <Line dataKey="close" stroke="transparent" dot={false} legendType="none" isAnimationActive={false} />
                     <Customized component={(props) => <MiniCandleLayer {...props} data={slice} />} />
+                    <Customized component={(props) => <PatternCircleLayer {...props} data={slice} patternDates={patternDates} />} />
                 </ComposedChart>
             </ResponsiveContainer>
         </div>
@@ -831,12 +870,6 @@ const PatternModal = ({ pattern, ohlcBars, chartData, chartSlice, support, resis
                                        tickLine={false} axisLine={false} orientation="right"
                                        tickFormatter={v => `₹${Math.round(v)}`} width={60} />
                                 <Tooltip content={<OHLCTooltip />} />
-                                {/* Pattern bar highlights */}
-                                {slicedData.map((d, i) =>
-                                    patternBarDates.has(d.date)
-                                        ? <ReferenceLine key={i} x={d.date} stroke="#FDD405" strokeWidth={14} strokeOpacity={0.15} />
-                                        : null
-                                )}
                                 {support != null && (
                                     <ReferenceLine y={support} stroke="#10b981" strokeDasharray="3 3" strokeWidth={1} />
                                 )}
@@ -845,6 +878,7 @@ const PatternModal = ({ pattern, ohlcBars, chartData, chartSlice, support, resis
                                 )}
                                 <Line dataKey="close" stroke="transparent" dot={false} legendType="none" isAnimationActive={false} />
                                 <Customized component={(props) => <MiniCandleLayer {...props} data={slicedData} />} />
+                                <Customized component={(props) => <PatternCircleLayer {...props} data={slicedData} patternDates={patternBarDates} />} />
                                 <Customized component={(props) => (
                                     <PatternAnnotationLayer
                                         {...props}
@@ -1104,6 +1138,7 @@ export const PatternDetectionSection = ({ patternSummary, chartData = null }) =>
                                                         barsAgo={barsAgo}
                                                         support={support}
                                                         resistance={resistance}
+                                                        ohlcBars={ohlcBars}
                                                     />
 
                                                     <div className="border-t border-zinc-200 dark:border-zinc-700/40 pt-2 mt-2 flex items-center justify-between">
