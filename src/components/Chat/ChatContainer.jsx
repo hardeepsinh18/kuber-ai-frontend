@@ -11,13 +11,12 @@ import { useAuth } from '../../context/AuthContext';
 import { useChatHistory } from '../../context/ChatHistoryContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useChatMode } from '../../context/ChatModeContext';
+import { getApiBase } from '../../lib/apiBase';
 
-// API Base URL - unset = same-origin (Vercel proxies /api/* to AWS).
-// Supports both Vite and Next-style env names for deployment safety.
-const _raw = import.meta.env.VITE_API_BASE || import.meta.env.NEXT_PUBLIC_API_URL;
-const API_BASE = (_raw && _raw.startsWith('http')) ? _raw.replace(/\/$/, '') : '';
-const API_ENDPOINT = API_BASE ? `${API_BASE}/api/v1/chat` : '/api/v1/chat';
-const FEEDBACK_ENDPOINT = API_BASE ? `${API_BASE}/api/v1/feedback` : '/api/v1/feedback';
+// API base — '' = same-origin relative /api/* (behind CloudFront/ALB). Set VITE_API_BASE for dev.
+const API_BASE = getApiBase();
+const API_ENDPOINT = `${API_BASE}/api/v1/chat`;
+const FEEDBACK_ENDPOINT = `${API_BASE}/api/v1/feedback`;
 // Default 120s: multi-symbol comparisons + fundamentals + LLM can exceed 60s on EC2.
 const REQUEST_TIMEOUT_MS = Number(import.meta.env.VITE_CHAT_TIMEOUT_MS || 120000);
 

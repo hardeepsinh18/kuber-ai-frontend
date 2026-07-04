@@ -5,8 +5,9 @@ import {
     MessageSquare, Search, ChevronLeft, ChevronRight,
     RefreshCw, TrendingUp, Zap, Database, X
 } from 'lucide-react';
+import { getApiBase } from '../../lib/apiBase';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE = getApiBase();   // '' = same-origin (/api/v1/...); set VITE_API_BASE for dev
 const ADMIN_KEY = import.meta.env.VITE_ADMIN_LOGS_SECRET || '';
 const API_PREFIX = '/api/v1';
 

@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { X, TrendingUp, BarChart2, CandlestickChart, BookOpen, Check } from 'lucide-react';
+import { getApiBase } from '../../lib/apiBase';
 
-const _raw = import.meta.env.VITE_API_BASE || import.meta.env.NEXT_PUBLIC_API_URL;
-const API_BASE = (_raw && _raw.startsWith('http')) ? _raw.replace(/\/$/, '') : '';
-const SCANNER_ENDPOINT = API_BASE ? `${API_BASE}/api/v1/scanner` : '/api/v1/scanner';
+const API_BASE = getApiBase();
+const SCANNER_ENDPOINT = `${API_BASE}/api/v1/scanner`;
 
 const CHART_PATTERNS = [
     { name: 'Head & Shoulders'       },

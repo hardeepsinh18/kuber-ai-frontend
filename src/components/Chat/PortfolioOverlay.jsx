@@ -5,18 +5,14 @@ import {
 } from 'lucide-react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import { supabase } from '../../lib/supabase'
+import { getApiBase } from '../../lib/apiBase'
 
-// In production Vercel proxies /portfolio-api/* → EC2:8001/api/*
-// Set VITE_PORTFOLIO_API_BASE=http://localhost:8001 for local dev
-const _raw = import.meta.env.VITE_PORTFOLIO_API_BASE
-const PORTFOLIO_BASE = (_raw && _raw.startsWith('http')) ? _raw.replace(/\/$/, '') : ''
-const UPLOAD_ENDPOINT = PORTFOLIO_BASE
-  ? `${PORTFOLIO_BASE}/api/v1/portfolio/upload-and-analyze`
-  : '/portfolio-api/v1/portfolio/upload-and-analyze'
-
-// History endpoints live on the main backend — Vercel proxies /api/* there
-const HISTORY_ENDPOINT  = '/api/v1/portfolio/history'
-const SNAPSHOT_ENDPOINT = (id) => `/api/v1/portfolio/history/${id}`
+// Same-origin relative /api/* (behind CloudFront/ALB). The portfolio engine is mounted on
+// the main backend, so every portfolio call goes through /api/v1/portfolio/*.
+const API_BASE = getApiBase()
+const UPLOAD_ENDPOINT   = `${API_BASE}/api/v1/portfolio/upload-and-analyze`
+const HISTORY_ENDPOINT  = `${API_BASE}/api/v1/portfolio/history`
+const SNAPSHOT_ENDPOINT = (id) => `${API_BASE}/api/v1/portfolio/history/${id}`
 
 async function getAuthHeader() {
   try {
@@ -809,9 +805,7 @@ function StockDetailPanel({ detail }) {
 
 // ── Deep Dive Tab ─────────────────────────────────────────────────────────────
 
-const DETAIL_URL = (sym) => PORTFOLIO_BASE
-  ? `${PORTFOLIO_BASE}/api/v1/portfolio/stock-detail/${sym}`
-  : `/portfolio-api/v1/portfolio/stock-detail/${sym}`
+const DETAIL_URL = (sym) => `${API_BASE}/api/v1/portfolio/stock-detail/${sym}`
 
 function DeepDiveTab({ holdings }) {
   const [selected, setSelected] = useState(null)

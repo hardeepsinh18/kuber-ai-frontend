@@ -4,8 +4,9 @@
  * Falls back gracefully when backend does not yet expose these (e.g. 404).
  */
 
-const _raw = import.meta.env.VITE_API_BASE || import.meta.env.NEXT_PUBLIC_API_URL;
-const API_BASE = (_raw && _raw.startsWith('http')) ? _raw.replace(/\/$/, '') : '';
+import { getApiBase } from './apiBase';
+
+const API_BASE = getApiBase();   // '' = same-origin relative /api/*
 
 function getHeaders(accessToken) {
   const headers = { 'Content-Type': 'application/json' };
@@ -14,15 +15,15 @@ function getHeaders(accessToken) {
 }
 
 function chatsUrl() {
-  return API_BASE ? `${API_BASE}/api/v1/chats` : '/api/v1/chats';
+  return `${API_BASE}/api/v1/chats`;
 }
 
 function chatUrl(id) {
-  return API_BASE ? `${API_BASE}/api/v1/chats/${id}` : `/api/v1/chats/${id}`;
+  return `${API_BASE}/api/v1/chats/${id}`;
 }
 
 function messagesUrl(id) {
-  return API_BASE ? `${API_BASE}/api/v1/chats/${id}/messages` : `/api/v1/chats/${id}/messages`;
+  return `${API_BASE}/api/v1/chats/${id}/messages`;
 }
 
 async function safeJson(res) {
