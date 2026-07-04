@@ -525,24 +525,7 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                         </div>
 
                         <div className="space-y-4 pl-3">
-                            {/* Chart Patterns sub-header */}
-                            <div>
-                                <div className="flex items-center gap-2 mb-2.5">
-                                    <CandlestickChart size={12} className="text-zinc-300" />
-                                    <span className="text-[11.5px] font-semibold uppercase tracking-[0.08em] text-zinc-300">Chart Patterns</span>
-                                </div>
-                                <div className="flex flex-wrap gap-1.5">
-                                    {CHART_PATTERNS.map(s => (
-                                        <ScannerBtn key={s.name} name={s.name}
-                                            hoverClass="hover:border-[#FDD405]/50 hover:bg-[#FDD405]/8 hover:text-white dark:hover:bg-[#FDD405]/8 dark:hover:border-[#FDD405]/50 dark:hover:text-white"
-                                        />
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Inner divider */}
-                            <div className="border-t border-white/5 ml-0" />
-
+                            {/* Chart Patterns removed from the scanner UI (CHART_PATTERNS array kept for later re-enable). */}
                             {/* Candlestick Patterns sub-header */}
                             <div>
                                 <div className="flex items-center gap-2 mb-2.5">
