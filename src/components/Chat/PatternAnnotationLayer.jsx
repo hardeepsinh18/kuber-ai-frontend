@@ -31,6 +31,8 @@ const PatternAnnotationLayer = ({
     curve = [],
     skeleton = [],
     neckline = null,
+    band = null,
+    midline = [],
     windowStartDate = null,
     data = [],
 }) => {
@@ -68,8 +70,37 @@ const PatternAnnotationLayer = ({
     const winX = windowStartDate ? getX(windowStartDate) : cLeft;
     const leftBound = Math.max(cLeft, winX ?? cLeft);
 
+    // A 2-point line [{date,price},{date,price}] → pixel endpoints + a slope evaluator.
+    const lineXY = (ln) => {
+        if (!ln || ln.length < 2) return null;
+        const x1 = getX(ln[0].date), y1 = yAxis.scale(ln[0].price);
+        const x2 = getX(ln[1].date), y2 = yAxis.scale(ln[1].price);
+        if ([x1, y1, x2, y2].some(v => v == null || isNaN(v))) return null;
+        const slope = x2 !== x1 ? (y2 - y1) / (x2 - x1) : 0;
+        return { x1, y1, x2, y2, at: (x) => y1 + slope * (x - x1) };
+    };
+
     return (
         <g>
+            {/* Shaded channel band between the two parallel lines (drawn first, behind) */}
+            {band && (() => {
+                const U = lineXY(band.upper), L = lineXY(band.lower);
+                if (!U || !L) return null;
+                const xL = Math.max(leftBound, Math.min(U.x1, U.x2));
+                const xR = cRight;
+                const pts = `${xL},${U.at(xL)} ${xR},${U.at(xR)} ${xR},${L.at(xR)} ${xL},${L.at(xL)}`;
+                return <polygon points={pts} fill="#4FC3F7" opacity={0.12} stroke="none" />;
+            })()}
+
+            {/* Dashed channel midline */}
+            {midline.length >= 2 && (() => {
+                const M = lineXY(midline);
+                if (!M) return null;
+                const xL = Math.max(leftBound, Math.min(M.x1, M.x2));
+                return <line x1={xL} y1={M.at(xL)} x2={cRight} y2={M.at(cRight)}
+                             stroke="#4FC3F7" strokeWidth={1.2} strokeDasharray="5 4" opacity={0.8} />;
+            })()}
+
             {/* Smooth curve (rounding bottom) */}
             {curve.length >= 2 && (() => {
                 const pts = curve

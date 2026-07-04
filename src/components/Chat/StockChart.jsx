@@ -348,10 +348,12 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
         const curve = a.curve || [];
         const skeleton = a.skeleton || [];
         const neckline = a.neckline || null;
+        const band = a.band || null;
+        const midline = a.midline || [];
         return {
-            trendlines, hlines, markers, curve, skeleton, neckline,
+            trendlines, hlines, markers, curve, skeleton, neckline, band, midline,
             windowStartDate: a.window_start_date || null,
-            has: !!(trendlines.length || hlines.length || markers.length || curve.length || skeleton.length),
+            has: !!(trendlines.length || hlines.length || markers.length || curve.length || skeleton.length || band),
         };
     }, [patternOverlays]);
 
@@ -368,6 +370,8 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                     curve={patternAnn.curve}
                     skeleton={patternAnn.skeleton}
                     neckline={patternAnn.neckline}
+                    band={patternAnn.band}
+                    midline={patternAnn.midline}
                     windowStartDate={patternAnn.windowStartDate}
                     data={layerData}
                 />
