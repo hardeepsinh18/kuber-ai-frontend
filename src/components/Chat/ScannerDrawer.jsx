@@ -80,15 +80,16 @@ const ScannerDrawer = ({ data, onAnalyze, onClose }) => {
                 </div>
             </div>
 
-            {/* Table header */}
-            <div className="grid grid-cols-[28px_1fr_80px] px-3 py-2 flex-shrink-0"
-                 style={{ borderBottom: '1px solid rgba(253,212,5,0.4)', background: 'rgba(253,212,5,0.06)' }}>
-                <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color: '#FDD405' }}>#</span>
-                <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color: '#FDD405' }}>Stock</span>
-                <span className="text-[9px] font-bold uppercase tracking-widest text-right" style={{ color: '#FDD405' }}>Signal</span>
+            {/* Table header — gold background like the indicator table */}
+            <div className="grid grid-cols-[32px_1fr_72px_64px] px-3 py-2.5 flex-shrink-0"
+                 style={{ backgroundColor: '#FDD405' }}>
+                <span className="text-[10px] font-bold text-zinc-900">#</span>
+                <span className="text-[10px] font-bold text-zinc-900">Stock</span>
+                <span className="text-[10px] font-bold text-zinc-900 text-right">Signal</span>
+                <span className="text-[10px] font-bold text-zinc-900 text-right"></span>
             </div>
 
-            {/* Stock list */}
+            {/* Stock rows */}
             <div className="flex-1 overflow-y-auto">
                 {raw.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full gap-3 px-6 text-center">
@@ -106,26 +107,32 @@ const ScannerDrawer = ({ data, onAnalyze, onClose }) => {
                             <div
                                 key={i}
                                 onClick={() => onAnalyze(sym)}
-                                className="group grid grid-cols-[28px_1fr_80px] items-center px-3 py-2.5 cursor-pointer transition-colors duration-100"
-                                style={{ borderBottom: '1px solid rgba(253,212,5,0.15)' }}
+                                className="group grid grid-cols-[32px_1fr_72px_64px] items-center px-3 py-3 cursor-pointer transition-colors duration-100"
+                                style={{ borderBottom: '1px solid rgba(253,212,5,0.2)' }}
                                 onMouseEnter={e => e.currentTarget.style.background = 'rgba(253,212,5,0.07)'}
                                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                             >
+                                {/* Rank */}
                                 <span className="text-[10px] font-mono text-zinc-600 select-none">{i + 1}</span>
 
+                                {/* Symbol */}
                                 <span className="text-[13px] font-semibold text-white">{sym}</span>
 
+                                {/* Signal metric */}
                                 <div className="text-right">
-                                    {metric ? (
+                                    {metric && (
                                         <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold ${METRIC_STYLES[metric.type]}`}>
                                             {metric.label}
                                         </span>
-                                    ) : (
-                                        <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-black px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                                              style={{ backgroundColor: '#FDD405' }}>
-                                            Analyze <TrendingUp size={9} />
-                                        </span>
                                     )}
+                                </div>
+
+                                {/* Analyze button — on hover */}
+                                <div className="text-right">
+                                    <span className="inline-flex items-center gap-0.5 px-2 py-1 rounded text-[10px] font-bold text-zinc-900 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+                                          style={{ backgroundColor: '#FDD405' }}>
+                                        Analyze <TrendingUp size={9} />
+                                    </span>
                                 </div>
                             </div>
                         );
