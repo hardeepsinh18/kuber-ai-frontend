@@ -81,15 +81,27 @@ const ScannerDrawer = ({ data, onAnalyze, onClose }) => {
             </div>
 
             {/* Date strip */}
-            <div className="px-4 py-2 flex-shrink-0"
-                 style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                <p className="text-[10px] text-zinc-600">
-                    📅 {date || 'Today'} · Tap any stock to deep-dive
-                </p>
+            <div className="flex items-center justify-between px-4 py-2 flex-shrink-0"
+                 style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(253,212,5,0.03)' }}>
+                <span className="text-[10px] font-medium text-zinc-500 tracking-wide uppercase">
+                    {date || 'Today'}
+                </span>
+                <span className="text-[10px] text-zinc-600">Click any row to analyze</span>
             </div>
 
+            {/* Table header */}
+            {raw.length > 0 && (
+                <div className="flex items-center px-4 py-2 flex-shrink-0"
+                     style={{ borderBottom: '1px solid rgba(253,212,5,0.15)', background: 'rgba(253,212,5,0.04)' }}>
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-600 w-7 flex-shrink-0">#</span>
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-600 flex-1">Symbol</span>
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-600 w-20 text-right">Signal</span>
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-600 w-16 text-right">Action</span>
+                </div>
+            )}
+
             {/* Stock list */}
-            <div className="flex-1 overflow-y-auto py-1">
+            <div className="flex-1 overflow-y-auto">
                 {raw.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full gap-3 px-6 text-center">
                         <span className="text-4xl">🔍</span>
@@ -99,56 +111,66 @@ const ScannerDrawer = ({ data, onAnalyze, onClose }) => {
                         </p>
                     </div>
                 ) : (
-                    <ul>
-                        {raw.map((stock, i) => {
-                            const sym    = cleanSymbol(stock.Symbol);
-                            const metric = keyMetric(stock);
-                            return (
-                                <li
-                                    key={i}
-                                    onClick={() => onAnalyze(sym)}
-                                    className="group relative flex items-center gap-3 px-4 py-3 cursor-pointer transition-all duration-150"
-                                    style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
-                                    onMouseEnter={e => {
-                                        e.currentTarget.style.background = 'rgba(253,212,5,0.05)';
-                                        e.currentTarget.style.borderLeft = '2px solid rgba(253,212,5,0.5)';
-                                        e.currentTarget.style.paddingLeft = '14px';
-                                    }}
-                                    onMouseLeave={e => {
-                                        e.currentTarget.style.background = 'transparent';
-                                        e.currentTarget.style.borderLeft = 'none';
-                                        e.currentTarget.style.paddingLeft = '16px';
-                                    }}
-                                >
-                                    {/* Rank */}
-                                    <span className="text-[11px] font-mono text-zinc-700 w-5 flex-shrink-0 text-right select-none">
-                                        {String(i + 1).padStart(2, '0')}
-                                    </span>
-
-                                    {/* Symbol + metric */}
-                                    <div className="flex-1 min-w-0">
-                                        <div className="text-[13px] font-bold text-white tracking-wide">
-                                            {sym}
-                                        </div>
-                                        {metric && (
-                                            <span className={`inline-block mt-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold font-mono ${METRIC_STYLES[metric.type]}`}>
-                                                {metric.label}
+                    <table className="w-full border-collapse">
+                        <tbody>
+                            {raw.map((stock, i) => {
+                                const sym    = cleanSymbol(stock.Symbol);
+                                const metric = keyMetric(stock);
+                                const isEven = i % 2 === 0;
+                                return (
+                                    <tr
+                                        key={i}
+                                        onClick={() => onAnalyze(sym)}
+                                        className="group cursor-pointer transition-all duration-100"
+                                        style={{
+                                            borderBottom: '1px solid rgba(255,255,255,0.04)',
+                                            background: isEven ? 'rgba(255,255,255,0.01)' : 'transparent',
+                                        }}
+                                        onMouseEnter={e => {
+                                            e.currentTarget.style.background = 'rgba(253,212,5,0.06)';
+                                            e.currentTarget.style.borderLeft = '2px solid #FDD405';
+                                        }}
+                                        onMouseLeave={e => {
+                                            e.currentTarget.style.background = isEven ? 'rgba(255,255,255,0.01)' : 'transparent';
+                                            e.currentTarget.style.borderLeft = 'none';
+                                        }}
+                                    >
+                                        {/* Rank */}
+                                        <td className="pl-4 pr-1 py-3 w-7">
+                                            <span className="text-[10px] font-mono text-zinc-700 select-none">
+                                                {String(i + 1).padStart(2, '0')}
                                             </span>
-                                        )}
-                                    </div>
+                                        </td>
 
-                                    {/* Analyze button — visible on hover */}
-                                    <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-                                        <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-black"
-                                             style={{ backgroundColor: '#FDD405' }}>
-                                            Analyze
-                                            <TrendingUp size={10} />
-                                        </div>
-                                    </div>
-                                </li>
-                            );
-                        })}
-                    </ul>
+                                        {/* Symbol */}
+                                        <td className="py-3 pr-2">
+                                            <span className="text-[13px] font-bold text-white tracking-wide">
+                                                {sym}
+                                            </span>
+                                        </td>
+
+                                        {/* Metric badge */}
+                                        <td className="py-3 pr-2 w-20 text-right">
+                                            {metric && (
+                                                <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold font-mono ${METRIC_STYLES[metric.type]}`}>
+                                                    {metric.label}
+                                                </span>
+                                            )}
+                                        </td>
+
+                                        {/* Analyze button */}
+                                        <td className="py-3 pr-4 w-16 text-right">
+                                            <div className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold text-black opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+                                                 style={{ backgroundColor: '#FDD405' }}>
+                                                Go
+                                                <TrendingUp size={9} />
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
                 )}
             </div>
 
