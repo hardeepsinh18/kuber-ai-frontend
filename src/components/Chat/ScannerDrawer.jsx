@@ -107,6 +107,7 @@ const ScannerDrawer = ({ data, onAnalyze, onClose }) => {
                                 return (
                                     <tr
                                         key={i}
+                                        className="group"
                                         style={{ borderBottom: '1px solid rgba(253,212,5,0.25)' }}
                                         onMouseEnter={e => e.currentTarget.style.background = 'rgba(253,212,5,0.07)'}
                                         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
@@ -130,7 +131,7 @@ const ScannerDrawer = ({ data, onAnalyze, onClose }) => {
                                         <td className="px-3 py-2.5 text-center">
                                             <button
                                                 onClick={() => onAnalyze(sym)}
-                                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-bold text-zinc-900 hover:opacity-80 transition-opacity"
+                                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-bold text-zinc-900 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
                                                 style={{ backgroundColor: '#FDD405' }}
                                             >
                                                 Analyze <TrendingUp size={10} />
