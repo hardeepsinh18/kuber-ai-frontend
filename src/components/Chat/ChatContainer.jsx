@@ -898,23 +898,50 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 // "what about it", "tell me about it", "analyze it" etc.
                 || /\b(what about it|tell me (more )?about it|analyze it|performance of it)\b/i.test(normalized)
                 // Short queries (≤6 words) containing a bare "it" pronoun — catches
-                // "is it good", "will it go up", "can I buy it", "is it safe"
-                // Long queries are excluded to avoid false matches like "is it a good time for markets"
-                || (/\bit\b/i.test(normalized) && wordCount <= 6);
+                // "is it good", "will it go up", "can I buy it", "is it safe".
+                // Case-sensitive (it|It) NOT /i: all-caps "IT" is the sector, so
+                // "top IT companies"/"IT sector outlook" must NOT read as the pronoun.
+                || (/\b(it|It)\b/.test(normalized) && wordCount <= 6);
 
             // Relative sector / entity references that need the active stock for context
             const hasSameRef = /\b(same sector|same segment|in the same|its sector|that sector|in this sector|same (peers?|companies|stocks?))\b/i.test(normalized);
 
-            // Screener / discovery queries are always new topics — never inherit active stock
-            const isScreenerQuery = /\bwhich\s+\S+\s+(stock|stocks?|company|companies|share|shares?|etf)\b/i.test(normalized)
-                || /\b(best stock|top stocks?|best performing stock|which sector|best sector|recommend.*stock)\b/i.test(normalized);
+            // Screener / discovery queries are always new topics — never inherit active stock.
+            // Robust: a plural stocks/companies ask paired with a discovery verb/adjective,
+            // OR "which … stock/company", OR a "best/top … sector" ask. Catches
+            // "which high dividend stocks", "best pharma stocks", "top IT companies".
+            const isScreenerQuery =
+                (/\b(stocks|shares|companies|scrips|etfs)\b/i.test(normalized)
+                    && /\b(which|what|list|show|find|give|suggest|recommend|best|top|cheap|undervalued|dividend|multibagger|penny|good|under|below|high[-\s]?growth)\b/i.test(normalized))
+                || /\bwhich\s+[\w\s]{0,30}\b(stock|company|share|etf)\b/i.test(normalized)
+                || /\b(best|top|which)\s+sectors?\b/i.test(normalized);
 
-            // True follow-up: has an explicit pronoun/relative reference OR is a very short
-            // (≤3 word) bare question with no stock mentioned — e.g. "buy or sell", "is it good".
-            // ≤4 is intentionally NOT used: "tell me about X" (4 words) has an explicit new
-            // stock name and must never inherit the previous context.
-            const isFollowUp = confidentSymbols.length === 0 && !!activeStock && !isScreenerQuery
-                && (hasPronounRef || hasSameRef || wordCount <= 3);
+            // Market / index queries are also new topics (unless a pronoun ties them to the
+            // active stock) — "how is the market", "nifty today" must not inherit a prior stock.
+            const isMarketOrIndexQuery = /\b(nifty|sensex|bank\s?nifty|fin\s?nifty|indices|market mood|how is the market|market today|sector performance)\b/i.test(normalized);
+
+            // A pronoun / relative-sector reference always ties the query to the active stock,
+            // and WINS over screener/market detection (e.g. "what about its stock price").
+            const refersToPrev = hasPronounRef || hasSameRef;
+
+            // True follow-up: explicitly references the previous stock, OR is a very short
+            // (≤3 word) bare question that isn't a screener/market ask ("buy or sell", "is it good").
+            const isFollowUp = confidentSymbols.length === 0 && !!activeStock
+                && (refersToPrev || (wordCount <= 3 && !isScreenerQuery && !isMarketOrIndexQuery));
+
+            // K-056: a clear topic change (screener / market / index with no pronoun tie)
+            // must DROP the stale active stock, so it can't leak into this or later queries.
+            if (confidentSymbols.length === 0 && (isScreenerQuery || isMarketOrIndexQuery) && !refersToPrev) {
+                activeContextSymbolRef.current = null;
+            }
+
+            // context_stock is a follow-up hint for the backend. Send it for genuine or
+            // ambiguous follow-ups, but NEVER when the user named a new stock or asked a
+            // screener/market/index question — otherwise an unrelated query is answered as
+            // a follow-up on the old stock (the core K-056 leak).
+            const isNewTopic = confidentSymbols.length > 0
+                || ((isScreenerQuery || isMarketOrIndexQuery) && !refersToPrev);
+            const sendContextStock = !!activeStock && !isNewTopic;
 
             // Only send the previous stock as a hint for genuine follow-ups.
             // For new-topic queries (screeners, explicit company names, sector switches)
@@ -971,7 +998,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                     risk_level: 'medium',
                     symbols: symbolsToSend,
                 }),
-                ...(activeStock && { context_stock: activeStock }),
+                ...(sendContextStock && { context_stock: activeStock }),
                 ...(chartResolution && { chart_resolution: chartResolution }),
                 ...(chartPeriod && { chart_period: chartPeriod }),
                 ...(conversationHistory.length > 0 && { chat_history: conversationHistory }),
