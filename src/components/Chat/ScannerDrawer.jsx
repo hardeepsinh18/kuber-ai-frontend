@@ -80,16 +80,7 @@ const ScannerDrawer = ({ data, onAnalyze, onClose }) => {
                 </div>
             </div>
 
-            {/* Table header — gold background like the indicator table */}
-            <div className="grid grid-cols-[32px_1fr_72px_64px] px-3 py-2.5 flex-shrink-0"
-                 style={{ backgroundColor: '#FDD405' }}>
-                <span className="text-[10px] font-bold text-zinc-900">#</span>
-                <span className="text-[10px] font-bold text-zinc-900">Stock</span>
-                <span className="text-[10px] font-bold text-zinc-900 text-right">Signal</span>
-                <span className="text-[10px] font-bold text-zinc-900 text-right"></span>
-            </div>
-
-            {/* Stock rows */}
+            {/* Table */}
             <div className="flex-1 overflow-y-auto">
                 {raw.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full gap-3 px-6 text-center">
@@ -100,43 +91,56 @@ const ScannerDrawer = ({ data, onAnalyze, onClose }) => {
                         </p>
                     </div>
                 ) : (
-                    raw.map((stock, i) => {
-                        const sym    = cleanSymbol(stock.Symbol);
-                        const metric = keyMetric(stock);
-                        return (
-                            <div
-                                key={i}
-                                onClick={() => onAnalyze(sym)}
-                                className="group grid grid-cols-[32px_1fr_72px_64px] items-center px-3 py-3 cursor-pointer transition-colors duration-100"
-                                style={{ borderBottom: '1px solid rgba(253,212,5,0.2)' }}
-                                onMouseEnter={e => e.currentTarget.style.background = 'rgba(253,212,5,0.07)'}
-                                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                            >
-                                {/* Rank */}
-                                <span className="text-[10px] font-mono text-zinc-600 select-none">{i + 1}</span>
+                    <table className="w-full border-collapse">
+                        <thead>
+                            <tr style={{ backgroundColor: '#FDD405' }}>
+                                <th className="text-left text-[11px] font-bold text-zinc-900 px-3 py-2.5 w-8">#</th>
+                                <th className="text-left text-[11px] font-bold text-zinc-900 px-2 py-2.5">Stock</th>
+                                <th className="text-center text-[11px] font-bold text-zinc-900 px-2 py-2.5">Signal</th>
+                                <th className="text-center text-[11px] font-bold text-zinc-900 px-3 py-2.5">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {raw.map((stock, i) => {
+                                const sym    = cleanSymbol(stock.Symbol);
+                                const metric = keyMetric(stock);
+                                return (
+                                    <tr
+                                        key={i}
+                                        style={{ borderBottom: '1px solid rgba(253,212,5,0.25)' }}
+                                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(253,212,5,0.07)'}
+                                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                    >
+                                        <td className="px-3 py-2.5 text-[11px] font-mono text-zinc-600 w-8">{i + 1}</td>
 
-                                {/* Symbol */}
-                                <span className="text-[13px] font-semibold text-white">{sym}</span>
+                                        <td className="px-2 py-2.5">
+                                            <span className="text-[13px] font-semibold text-white">{sym}</span>
+                                        </td>
 
-                                {/* Signal metric */}
-                                <div className="text-right">
-                                    {metric && (
-                                        <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold ${METRIC_STYLES[metric.type]}`}>
-                                            {metric.label}
-                                        </span>
-                                    )}
-                                </div>
+                                        <td className="px-2 py-2.5 text-center">
+                                            {metric ? (
+                                                <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold ${METRIC_STYLES[metric.type]}`}>
+                                                    {metric.label}
+                                                </span>
+                                            ) : (
+                                                <span className="text-zinc-700 text-[10px]">—</span>
+                                            )}
+                                        </td>
 
-                                {/* Analyze button — on hover */}
-                                <div className="text-right">
-                                    <span className="inline-flex items-center gap-0.5 px-2 py-1 rounded text-[10px] font-bold text-zinc-900 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
-                                          style={{ backgroundColor: '#FDD405' }}>
-                                        Analyze <TrendingUp size={9} />
-                                    </span>
-                                </div>
-                            </div>
-                        );
-                    })
+                                        <td className="px-3 py-2.5 text-center">
+                                            <button
+                                                onClick={() => onAnalyze(sym)}
+                                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-bold text-zinc-900 hover:opacity-80 transition-opacity"
+                                                style={{ backgroundColor: '#FDD405' }}
+                                            >
+                                                Analyze <TrendingUp size={10} />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
                 )}
             </div>
 
