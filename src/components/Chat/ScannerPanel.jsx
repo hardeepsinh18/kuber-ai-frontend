@@ -529,13 +529,13 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                             {/* Candlestick Patterns sub-header */}
                             <div>
                                 <div className="flex items-center gap-2 mb-2.5">
-                                    <BarChart2 size={12} className="text-zinc-300" />
-                                    <span className="text-[11.5px] font-semibold uppercase tracking-[0.08em] text-zinc-300">Candlestick Patterns</span>
+                                    <BarChart2 size={12} className="text-zinc-500 dark:text-zinc-300" />
+                                    <span className="text-[11.5px] font-semibold uppercase tracking-[0.08em] text-zinc-500 dark:text-zinc-300">Candlestick Patterns</span>
                                 </div>
                                 <div className="flex flex-wrap gap-1.5">
                                     {CANDLESTICK_PATTERNS.map(s => (
                                         <ScannerBtn key={s.name} name={s.name}
-                                            hoverClass="hover:border-[#FDD405]/50 hover:bg-[#FDD405]/8 hover:text-white dark:hover:bg-[#FDD405]/8 dark:hover:border-[#FDD405]/50 dark:hover:text-white"
+                                            hoverClass="hover:border-[#FDD405]/50 hover:bg-[#FDD405]/8 hover:text-zinc-900 dark:hover:bg-[#FDD405]/8 dark:hover:border-[#FDD405]/50 dark:hover:text-white"
                                         />
                                     ))}
                                 </div>
@@ -544,7 +544,7 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                     </div>
 
                     {/* Section divider */}
-                    <div className="border-t border-white/8" />
+                    <div className="border-t border-zinc-100 dark:border-white/8" />
 
                     {/* ── MOMENTUM INDICATORS ── */}
                     <div>
@@ -556,14 +556,14 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                         <div className="flex flex-wrap gap-1.5 pl-3">
                             {MOMENTUM_SCANNERS.map(s => (
                                 <ScannerBtn key={s.name} name={s.name}
-                                    hoverClass="hover:border-[#FDD405]/50 hover:bg-[#FDD405]/8 hover:text-white dark:hover:bg-[#FDD405]/8 dark:hover:border-[#FDD405]/50 dark:hover:text-white"
+                                    hoverClass="hover:border-[#FDD405]/50 hover:bg-[#FDD405]/8 hover:text-zinc-900 dark:hover:bg-[#FDD405]/8 dark:hover:border-[#FDD405]/50 dark:hover:text-white"
                                 />
                             ))}
                         </div>
                     </div>
 
                     {/* Section divider */}
-                    <div className="border-t border-white/8" />
+                    <div className="border-t border-zinc-100 dark:border-white/8" />
 
                     {/* ── FUNDAMENTAL SCREENS ── */}
                     <div>
@@ -575,7 +575,7 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                         <div className="flex flex-wrap gap-1.5 pl-3">
                             {FUNDAMENTAL_SCANNER_NAMES.map(name => (
                                 <ScannerBtn key={name} name={name}
-                                    hoverClass="hover:border-[#FDD405]/50 hover:bg-[#FDD405]/8 hover:text-white dark:hover:bg-[#FDD405]/8 dark:hover:border-[#FDD405]/50 dark:hover:text-white"
+                                    hoverClass="hover:border-[#FDD405]/50 hover:bg-[#FDD405]/8 hover:text-zinc-900 dark:hover:bg-[#FDD405]/8 dark:hover:border-[#FDD405]/50 dark:hover:text-white"
                                 />
                             ))}
                         </div>
