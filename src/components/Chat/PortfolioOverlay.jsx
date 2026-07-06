@@ -4,7 +4,7 @@ import {
   CheckCircle2, RefreshCw, ChevronDown, ChevronRight, Clock,
 } from 'lucide-react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
-import { supabase } from '../../lib/supabase'
+import { getIdToken } from '../../lib/supabase'
 import { getApiBase } from '../../lib/apiBase'
 
 // Same-origin relative /api/* (behind CloudFront/ALB). The portfolio engine is mounted on
@@ -16,10 +16,11 @@ const SNAPSHOT_ENDPOINT = (id) => `${API_BASE}/api/v1/portfolio/history/${id}`
 
 async function getAuthHeader() {
   try {
-    if (!supabase) return {}
-    const { data } = await supabase.auth.getSession()
-    const token = data?.session?.access_token
-    return token ? { 'X-Supabase-Auth': `Bearer ${token}` } : {}
+    const token = await getIdToken()
+    if (!token) return {}
+    // Cognito ID token. Authorization is primary; X-Supabase-Auth kept as an alias
+    // so backend routes that read either header keep working through the cutover.
+    return { Authorization: `Bearer ${token}`, 'X-Supabase-Auth': `Bearer ${token}` }
   } catch {
     return {}
   }

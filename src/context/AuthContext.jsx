@@ -1,17 +1,52 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
+// Side-effect import runs Amplify.configure(); helpers below drive the session.
+import { authConfigured, getIdToken } from '../lib/supabase';
+import {
+  signIn as cognitoSignIn,
+  signUp as cognitoSignUp,
+  signInWithRedirect,
+  signOut as cognitoSignOut,
+  fetchAuthSession,
+  fetchUserAttributes,
+  getCurrentUser,
+} from 'aws-amplify/auth';
+import { Hub } from 'aws-amplify/utils';
 
 const DEMO_KEY = 'kuberai_demo_user';
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser]       = useState(null);
-  const [session, setSession] = useState(null);
+  const [user, setUser]     = useState(null);
+  const [idToken, setIdToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Build our normalized user ({id, email, user_metadata.full_name}) from Cognito
+  // and cache the ID token. Same shape components already expect.
+  const syncFromCognito = async () => {
+    try {
+      const session = await fetchAuthSession();
+      const token = session?.tokens?.idToken?.toString() ?? null;
+      if (!token) { setUser(null); setIdToken(null); return; }
+      let email = '', fullName = '', id = '';
+      try {
+        const attrs = await fetchUserAttributes();
+        email = attrs?.email || '';
+        fullName = attrs?.name || (email ? email.split('@')[0] : '');
+        id = attrs?.sub || '';
+      } catch (_) { /* attributes may be unavailable for some token types */ }
+      if (!id) {
+        try { const cu = await getCurrentUser(); id = cu?.userId || cu?.username || ''; } catch (_) {}
+      }
+      setIdToken(token);
+      setUser({ id, email, user_metadata: { full_name: fullName } });
+    } catch {
+      setUser(null); setIdToken(null);
+    }
+  };
+
   useEffect(() => {
-    if (!supabase) {
-      // Demo mode — restore from localStorage
+    if (!authConfigured) {
+      // Demo mode — restore from localStorage (unchanged behavior when unconfigured)
       try {
         const saved = localStorage.getItem(DEMO_KEY);
         if (saved) setUser(JSON.parse(saved));
@@ -20,121 +55,116 @@ export function AuthProvider({ children }) {
       return;
     }
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    // Initial load — also completes any pending Google hosted-UI redirect (?code=…)
+    syncFromCognito().finally(() => setLoading(false));
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
+    // Auth events: sign-in (incl. Google redirect), sign-out, token refresh
+    const unlisten = Hub.listen('auth', ({ payload }) => {
+      switch (payload.event) {
+        case 'signedIn':
+        case 'signInWithRedirect':
+        case 'tokenRefresh':
+          syncFromCognito();
+          break;
+        case 'signedOut':
+        case 'tokenRefresh_failure':
+        case 'signInWithRedirect_failure':
+          setUser(null); setIdToken(null);
+          break;
+        default:
+          break;
+      }
     });
 
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-          setSession(session);
-          setUser(session?.user ?? null);
-        });
-      }
+      if (document.visibilityState === 'visible') syncFromCognito();
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => {
-      subscription.unsubscribe();
+      unlisten();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 
   const signInWithEmail = async (email, password) => {
-    if (!supabase) {
-      // Demo: accept any non-empty credentials
+    if (!authConfigured) {
       if (!email || !password) throw new Error('Enter your email and password');
-      const demoUser = {
-        id: 'demo',
-        email,
-        user_metadata: { full_name: email.split('@')[0] },
-      };
+      const demoUser = { id: 'demo', email, user_metadata: { full_name: email.split('@')[0] } };
       localStorage.setItem(DEMO_KEY, JSON.stringify(demoUser));
       setUser(demoUser);
       return demoUser;
     }
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-    return data;
+    const res = await cognitoSignIn({ username: email, password });
+    await syncFromCognito();
+    return res;
   };
 
   const signUpWithEmail = async (email, password, metadata = {}) => {
-    if (!supabase) {
-      // Demo: treat sign-up same as sign-in
+    if (!authConfigured) {
       if (!email || !password) throw new Error('Enter your email and password');
-      const demoUser = {
-        id: 'demo',
-        email,
-        user_metadata: { full_name: metadata.full_name || email.split('@')[0] },
-      };
+      const demoUser = { id: 'demo', email, user_metadata: { full_name: metadata.full_name || email.split('@')[0] } };
       localStorage.setItem(DEMO_KEY, JSON.stringify(demoUser));
       setUser(demoUser);
       return demoUser;
     }
-    const { data, error } = await supabase.auth.signUp({
-      email, password,
-      // Dynamic per-domain: confirmation link returns to whichever site the user signed up on.
-      options: { data: metadata, emailRedirectTo: window.location.origin },
+    // Cognito verifies email out-of-band per pool settings (confirmation code/link).
+    const res = await cognitoSignUp({
+      username: email,
+      password,
+      options: { userAttributes: { email, ...(metadata.full_name ? { name: metadata.full_name } : {}) } },
     });
-    if (error) throw error;
-    return data;
+    return res;
   };
 
   const signInWithGoogle = async () => {
-    if (!supabase) throw new Error('Google sign-in requires Supabase');
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      // Dynamic per-domain: aws.72street.ai returns to aws, kuber-uat returns to kuber-uat.
-      // No hardcoded domain, so UAT (Vercel) is unaffected.
-      options: { redirectTo: window.location.origin },
-    });
-    if (error) throw error;
-    return data;
+    if (!authConfigured) throw new Error('Google sign-in requires Cognito');
+    // Redirects to the Cognito hosted UI (Google federation); returns to
+    // window.location.origin, so aws.72street.ai comes back to itself.
+    await signInWithRedirect({ provider: 'Google' });
   };
 
-  // Force a token refresh and return the fresh access token (or null on failure).
-  // Used by the chat flow to recover from a 401 without making the user re-sign-in.
+  // Force a token refresh and return the fresh ID token (or null on failure).
+  // Used by the chat flow to recover from a 401 without a full re-sign-in.
   const refreshSession = async () => {
-    if (!supabase) return null;
+    if (!authConfigured) return null;
     try {
-      const { data, error } = await supabase.auth.refreshSession();
-      if (error || !data?.session) return null;
-      setSession(data.session);
-      setUser(data.session.user ?? null);
-      return data.session.access_token ?? null;
+      const session = await fetchAuthSession({ forceRefresh: true });
+      const token = session?.tokens?.idToken?.toString() ?? null;
+      setIdToken(token);
+      if (token) await syncFromCognito();
+      return token;
     } catch {
       return null;
     }
   };
 
   const signOut = async () => {
-    if (!supabase) {
+    if (!authConfigured) {
       localStorage.removeItem(DEMO_KEY);
       setUser(null);
       return;
     }
-    await supabase.auth.signOut();
+    await cognitoSignOut();
+    setUser(null);
+    setIdToken(null);
   };
 
   const value = {
     user,
-    session,
+    // Back-compat shape: some code reads session?.access_token.
+    session: idToken ? { access_token: idToken } : null,
     loading,
     isAuthenticated: !!user,
-    accessToken: session?.access_token ?? null,
+    // The Cognito ID token — attached to /api as Authorization: Bearer and validated
+    // by the backend (aud = app client id, carries email). Name kept as accessToken.
+    accessToken: idToken,
     signInWithEmail,
     signUpWithEmail,
     signInWithGoogle,
     signOut,
     refreshSession,
-    supabaseConfigured: !!supabase,
+    // Key name kept so consumers (e.g. ChatHistoryContext) don't change.
+    supabaseConfigured: authConfigured,
   };
 
   return (
