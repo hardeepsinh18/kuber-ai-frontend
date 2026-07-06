@@ -21,10 +21,10 @@ const keyMetric = (r) => {
 };
 
 const METRIC_STYLES = {
-    bull:    'bg-emerald-500/12 text-emerald-400 border border-emerald-500/20',
-    bear:    'bg-red-500/12 text-red-400 border border-red-500/20',
-    neutral: 'bg-zinc-700/50 text-zinc-400 border border-zinc-600/40',
-    price:   'bg-zinc-700/50 text-zinc-300 border border-zinc-600/40',
+    bull:    'bg-emerald-500/10 text-emerald-600 border border-emerald-500/25 dark:bg-emerald-500/12 dark:text-emerald-400 dark:border-emerald-500/20',
+    bear:    'bg-red-500/10 text-red-600 border border-red-500/25 dark:bg-red-500/12 dark:text-red-400 dark:border-red-500/20',
+    neutral: 'bg-zinc-100 text-zinc-600 border border-zinc-200 dark:bg-zinc-700/50 dark:text-zinc-400 dark:border-zinc-600/40',
+    price:   'bg-zinc-100 text-zinc-700 border border-zinc-200 dark:bg-zinc-700/50 dark:text-zinc-300 dark:border-zinc-600/40',
 };
 
 const cleanSymbol = (sym) => (sym || '').replace(/\.(NS|BO)$/i, '');
