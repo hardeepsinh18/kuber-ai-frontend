@@ -79,7 +79,9 @@ export function AuthProvider({ children }) {
       return demoUser;
     }
     const { data, error } = await supabase.auth.signUp({
-      email, password, options: { data: metadata },
+      email, password,
+      // Dynamic per-domain: confirmation link returns to whichever site the user signed up on.
+      options: { data: metadata, emailRedirectTo: window.location.origin },
     });
     if (error) throw error;
     return data;
@@ -87,7 +89,12 @@ export function AuthProvider({ children }) {
 
   const signInWithGoogle = async () => {
     if (!supabase) throw new Error('Google sign-in requires Supabase');
-    const { data, error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      // Dynamic per-domain: aws.72street.ai returns to aws, kuber-uat returns to kuber-uat.
+      // No hardcoded domain, so UAT (Vercel) is unaffected.
+      options: { redirectTo: window.location.origin },
+    });
     if (error) throw error;
     return data;
   };
