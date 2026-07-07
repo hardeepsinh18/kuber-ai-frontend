@@ -27,13 +27,22 @@ export function AuthProvider({ children }) {
       const session = await fetchAuthSession();
       const token = session?.tokens?.idToken?.toString() ?? null;
       if (!token) { setUser(null); setIdToken(null); return; }
-      let email = '', fullName = '', id = '';
-      try {
-        const attrs = await fetchUserAttributes();
-        email = attrs?.email || '';
-        fullName = attrs?.name || (email ? email.split('@')[0] : '');
-        id = attrs?.sub || '';
-      } catch (_) { /* attributes may be unavailable for some token types */ }
+      // Read identity from the ID token claims first — hosted-UI / Google OAuth
+      // tokens lack the aws.cognito.signin.user.admin scope that
+      // fetchUserAttributes() needs, so that call fails for them. The ID token
+      // (openid+email+profile) already carries sub/email/name.
+      const claims = session?.tokens?.idToken?.payload ?? {};
+      let email = claims.email || '';
+      let fullName = claims.name || (email ? email.split('@')[0] : '');
+      let id = claims.sub || '';
+      if (!email || !id) {
+        try {
+          const attrs = await fetchUserAttributes();
+          email = email || attrs?.email || '';
+          fullName = claims.name || attrs?.name || (email ? email.split('@')[0] : '');
+          id = id || attrs?.sub || '';
+        } catch (_) { /* attributes may be unavailable for some token types */ }
+      }
       if (!id) {
         try { const cu = await getCurrentUser(); id = cu?.userId || cu?.username || ''; } catch (_) {}
       }
