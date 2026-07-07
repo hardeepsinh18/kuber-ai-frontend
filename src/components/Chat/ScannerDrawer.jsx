@@ -1,24 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { X, TrendingUp } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
-
-const keyMetric = (r) => {
-    if (r['Breakout_%'] != null)   return { label: `+${r['Breakout_%']}%`,     type: 'bull' };
-    if (r['Gap_Up_%'] != null)     return { label: `↑ ${r['Gap_Up_%']}%`,      type: 'bull' };
-    if (r['Gap_Down_%'] != null)   return { label: `↓ ${r['Gap_Down_%']}%`,    type: 'bear' };
-    if (r['Chg_%'] != null) {
-        const v = r['Chg_%'];
-        return { label: `${v >= 0 ? '+' : ''}${v}%`, type: v >= 0 ? 'bull' : 'bear' };
-    }
-    if (r['RSI'] != null)          return { label: `RSI ${r['RSI']}`,          type: 'neutral' };
-    if (r['PE'] != null)           return { label: `P/E ${r['PE']}`,           type: 'neutral' };
-    if (r['ROE_%'] != null)        return { label: `ROE ${r['ROE_%']}%`,       type: 'bull' };
-    if (r['EPS_Growth_%'] != null) return { label: `EPS +${r['EPS_Growth_%']}%`, type: 'bull' };
-    if (r['Div_Yield_%'] != null)  return { label: `yield ${r['Div_Yield_%']}%`, type: 'neutral' };
-    if (r['Vol_Ratio'] != null)    return { label: `vol ×${r['Vol_Ratio']}`,   type: 'neutral' };
-    if (r['Close'] != null)        return { label: `₹${r['Close']}`,           type: 'price' };
-    return null;
-};
+import { getScannerSignal } from '../../lib/scannerSignal';
 
 const METRIC_STYLES = {
     bull:    'bg-emerald-500/10 text-emerald-600 border border-emerald-500/25 dark:bg-emerald-500/12 dark:text-emerald-400 dark:border-emerald-500/20',
@@ -106,7 +89,7 @@ const ScannerDrawer = ({ data, onAnalyze, onClose }) => {
                         <tbody>
                             {raw.map((stock, i) => {
                                 const sym    = cleanSymbol(stock.Symbol);
-                                const metric = keyMetric(stock);
+                                const metric = getScannerSignal(stock.matched_scanners || scanner, stock);
                                 return (
                                     <tr
                                         key={i}

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { X, TrendingUp, BarChart2, CandlestickChart, BookOpen, Check } from 'lucide-react';
+import { getScannerSignal } from '../../lib/scannerSignal';
 
 const _raw = import.meta.env.VITE_API_BASE || import.meta.env.NEXT_PUBLIC_API_URL;
 const API_BASE = (_raw && _raw.startsWith('http')) ? _raw.replace(/\/$/, '') : '';
@@ -139,25 +140,14 @@ const SCANNER_EMOJI = {
     'Quality Pick':              '⭐',
 };
 
-function formatResults(name, results, universe, seconds) {
+function formatResults(name, scannerNames, results, universe, seconds) {
     if (results.length === 0) {
         return `**${name}** found no matching stocks in ${universe} today (scanned in ${seconds}s).`;
     }
-    const keyMetric = (r) => {
-        if (r['Breakout_%'] != null)   return ` +${r['Breakout_%']}%`;
-        if (r['Gap_Up_%'] != null)     return ` gap +${r['Gap_Up_%']}%`;
-        if (r['Gap_Down_%'] != null)   return ` gap -${r['Gap_Down_%']}%`;
-        if (r['Chg_%'] != null)        return ` ${r['Chg_%'] >= 0 ? '+' : ''}${r['Chg_%']}%`;
-        if (r['RSI'] != null)          return ` RSI ${r['RSI']}`;
-        if (r['PE'] != null)           return ` P/E ${r['PE']}`;
-        if (r['ROE_%'] != null)        return ` ROE ${r['ROE_%']}%`;
-        if (r['EPS_Growth_%'] != null) return ` EPS +${r['EPS_Growth_%']}%`;
-        if (r['Div_Yield_%'] != null)  return ` yield ${r['Div_Yield_%']}%`;
-        if (r['Vol_Ratio'] != null)    return ` vol ×${r['Vol_Ratio']}`;
-        if (r['Close'] != null)        return ` ₹${r['Close']}`;
-        return '';
-    };
-    const rows = results.map((r, i) => `${i + 1}. **${r.Symbol}**${keyMetric(r)}`).join('\n');
+    const rows = results.map((r, i) => {
+        const sig = getScannerSignal(scannerNames, r);
+        return `${i + 1}. **${r.Symbol}**${sig ? ` ${sig.label}` : ''}`;
+    }).join('\n');
     return [`## ${name} — ${results.length} stocks found`, `_${universe} · scanned in ${seconds}s_`, '', rows].join('\n');
 }
 
@@ -344,7 +334,7 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                     ? names[0]
                     : `${names.join(' + ')}`;
 
-                const msg = formatResults(label, intersected, universe_, dur);
+                const msg = formatResults(label, names, intersected, universe_, dur);
                 setScanning(false);
                 setScanDone({ count: intersected.length, msg });
                 setSelected(new Set());
