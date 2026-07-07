@@ -357,31 +357,11 @@ const OverallHealthScore = ({ score, label, summary, ratingsSum }) => {
 };
 
 /* ─── FINANCIAL SCORE CARD (collapsible 2-col grid) ─────────────────────── */
-const FIN_SCORE_INFO = 'Composite of the fundamental metrics below (P/E vs sector, ROE, ROCE, net margin, debt/equity, revenue & profit growth). Each metric is rated and normalized to 100. ≥70 = Strong · 50-69 = Average · 35-49 = Weak · <35 = Poor.';
-
 const FinancialScoreCard = ({ fund, symbol }) => {
     const [open, setOpen] = React.useState(false);
     const ratios = fund?.ratios ?? {};
     const hist   = fund?.historical ?? null;
     const years  = hist?.years ?? ['FY22', 'FY23', 'FY24', 'FY25', 'FY26'];
-
-    // Financial quality score: backend fund.score when present, else derived
-    // from the per-metric ratings (strong=1, watch=0.5, risk=0 → % of max)
-    const ratingsSum = fund?.ratings_summary ?? computeRatings(ratios);
-    const { strong = 0, watch = 0, risk = 0 } = ratingsSum || {};
-    const ratedCount = strong + watch + risk;
-    const finScore = fund?.score != null
-        ? Math.round(fund.score)
-        : (ratedCount ? Math.round(((strong + watch * 0.5) / ratedCount) * 100) : null);
-    const finLabel = fund?.label
-        || (finScore == null ? null
-            : finScore >= 70 ? 'Strong'
-            : finScore >= 50 ? 'Average'
-            : finScore >= 35 ? 'Weak' : 'Poor');
-    const finColor =
-        finScore >= 70 ? '#22c55e' :
-        finScore >= 50 ? '#FDD405' :
-        finScore >= 35 ? '#fb923c' : '#ef4444';
 
     const getR = (key) => {
         const v = ratios[key];
@@ -417,45 +397,7 @@ const FinancialScoreCard = ({ fund, symbol }) => {
                       : <ChevronDown size={15} className="text-zinc-500 dark:text-zinc-400 flex-shrink-0" />}
             </button>
             {open && (
-                <div className="p-3 space-y-3 bg-zinc-50 dark:bg-[#1C1B15]">
-                    {/* Score banner — same design language as the Technical Score Card */}
-                    {finScore != null && (
-                        <div className="flex items-center justify-between p-3 rounded-xl"
-                             style={{ background: `${finColor}12`, border: `1.5px solid ${finColor}30` }}>
-                            <div>
-                                <div className="flex items-center gap-1.5 mb-1">
-                                    <div className="text-[10px] text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">Financial Quality Score</div>
-                                    <InfoTip text={FIN_SCORE_INFO} />
-                                </div>
-                                <div className="text-3xl font-extrabold leading-none" style={{ color: finColor }}>
-                                    {finScore}<span className="text-base font-semibold opacity-60">/100</span>
-                                </div>
-                                <div className="text-xs font-bold mt-1" style={{ color: finColor }}>{finLabel}</div>
-                            </div>
-                            <div className="flex flex-col items-end gap-2">
-                                {strong > 0 && (
-                                    <span className="text-[11px] px-2.5 py-1 rounded-full font-semibold"
-                                          style={{ background: 'rgba(34,197,94,0.10)', color: '#22c55e' }}>
-                                        ✓ {strong} strong metric{strong > 1 ? 's' : ''}
-                                    </span>
-                                )}
-                                {watch > 0 && (
-                                    <span className="text-[11px] px-2.5 py-1 rounded-full font-semibold"
-                                          style={{ background: 'rgba(253,212,5,0.10)', color: '#FDD405' }}>
-                                        → {watch} to watch
-                                    </span>
-                                )}
-                                {risk > 0 && (
-                                    <span className="text-[11px] px-2.5 py-1 rounded-full font-semibold"
-                                          style={{ background: 'rgba(239,68,68,0.10)', color: '#ef4444' }}>
-                                        ⚠ {risk} risk flag{risk > 1 ? 's' : ''}
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="grid grid-cols-1 xs:grid-cols-2 gap-3">
+                <div className="p-3 grid grid-cols-1 xs:grid-cols-2 gap-3 bg-zinc-50 dark:bg-[#1C1B15]">
                     {pe != null && (
                         <MetricCard title="Price tag" subtitle="P/E RATIO" badge={peLabel}
                             bottomLabel={`You pay ~${Math.round(pe)} yrs of profit`}
@@ -513,7 +455,6 @@ const FinancialScoreCard = ({ fund, symbol }) => {
                     {peers?.length > 0 && (
                         <PeerRankCard peers={peers} group={peerGroup} rank={peerRank} />
                     )}
-                    </div>
                 </div>
             )}
         </div>
