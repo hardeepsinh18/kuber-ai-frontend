@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { X, TrendingUp, BarChart2, CandlestickChart, BookOpen, Check } from 'lucide-react';
 import { getApiBase } from '../../lib/apiBase';
+import { getScannerSignal } from '../../lib/scannerSignal';
 
 const API_BASE = getApiBase();
 const SCANNER_ENDPOINT = `${API_BASE}/api/v1/scanner`;
@@ -139,25 +140,14 @@ const SCANNER_EMOJI = {
     'Quality Pick':              '⭐',
 };
 
-function formatResults(name, results, universe, seconds) {
+function formatResults(name, scannerNames, results, universe, seconds) {
     if (results.length === 0) {
         return `**${name}** found no matching stocks in ${universe} today (scanned in ${seconds}s).`;
     }
-    const keyMetric = (r) => {
-        if (r['Breakout_%'] != null)   return ` +${r['Breakout_%']}%`;
-        if (r['Gap_Up_%'] != null)     return ` gap +${r['Gap_Up_%']}%`;
-        if (r['Gap_Down_%'] != null)   return ` gap -${r['Gap_Down_%']}%`;
-        if (r['Chg_%'] != null)        return ` ${r['Chg_%'] >= 0 ? '+' : ''}${r['Chg_%']}%`;
-        if (r['RSI'] != null)          return ` RSI ${r['RSI']}`;
-        if (r['PE'] != null)           return ` P/E ${r['PE']}`;
-        if (r['ROE_%'] != null)        return ` ROE ${r['ROE_%']}%`;
-        if (r['EPS_Growth_%'] != null) return ` EPS +${r['EPS_Growth_%']}%`;
-        if (r['Div_Yield_%'] != null)  return ` yield ${r['Div_Yield_%']}%`;
-        if (r['Vol_Ratio'] != null)    return ` vol ×${r['Vol_Ratio']}`;
-        if (r['Close'] != null)        return ` ₹${r['Close']}`;
-        return '';
-    };
-    const rows = results.map((r, i) => `${i + 1}. **${r.Symbol}**${keyMetric(r)}`).join('\n');
+    const rows = results.map((r, i) => {
+        const sig = getScannerSignal(scannerNames, r);
+        return `${i + 1}. **${r.Symbol}**${sig ? ` ${sig.label}` : ''}`;
+    }).join('\n');
     return [`## ${name} — ${results.length} stocks found`, `_${universe} · scanned in ${seconds}s_`, '', rows].join('\n');
 }
 
@@ -344,7 +334,7 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                     ? names[0]
                     : `${names.join(' + ')}`;
 
-                const msg = formatResults(label, intersected, universe_, dur);
+                const msg = formatResults(label, names, intersected, universe_, dur);
                 setScanning(false);
                 setScanDone({ count: intersected.length, msg });
                 setSelected(new Set());
@@ -529,13 +519,13 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                             {/* Candlestick Patterns sub-header */}
                             <div>
                                 <div className="flex items-center gap-2 mb-2.5">
-                                    <BarChart2 size={12} className="text-zinc-300" />
-                                    <span className="text-[11.5px] font-semibold uppercase tracking-[0.08em] text-zinc-300">Candlestick Patterns</span>
+                                    <BarChart2 size={12} className="text-zinc-500 dark:text-zinc-300" />
+                                    <span className="text-[11.5px] font-semibold uppercase tracking-[0.08em] text-zinc-500 dark:text-zinc-300">Candlestick Patterns</span>
                                 </div>
                                 <div className="flex flex-wrap gap-1.5">
                                     {CANDLESTICK_PATTERNS.map(s => (
                                         <ScannerBtn key={s.name} name={s.name}
-                                            hoverClass="hover:border-[#FDD405]/50 hover:bg-[#FDD405]/8 hover:text-white dark:hover:bg-[#FDD405]/8 dark:hover:border-[#FDD405]/50 dark:hover:text-white"
+                                            hoverClass="hover:border-[#FDD405]/50 hover:bg-[#FDD405]/8 hover:text-zinc-900 dark:hover:bg-[#FDD405]/8 dark:hover:border-[#FDD405]/50 dark:hover:text-white"
                                         />
                                     ))}
                                 </div>
@@ -544,7 +534,7 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                     </div>
 
                     {/* Section divider */}
-                    <div className="border-t border-white/8" />
+                    <div className="border-t border-zinc-100 dark:border-white/8" />
 
                     {/* ── MOMENTUM INDICATORS ── */}
                     <div>
@@ -556,14 +546,14 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                         <div className="flex flex-wrap gap-1.5 pl-3">
                             {MOMENTUM_SCANNERS.map(s => (
                                 <ScannerBtn key={s.name} name={s.name}
-                                    hoverClass="hover:border-[#FDD405]/50 hover:bg-[#FDD405]/8 hover:text-white dark:hover:bg-[#FDD405]/8 dark:hover:border-[#FDD405]/50 dark:hover:text-white"
+                                    hoverClass="hover:border-[#FDD405]/50 hover:bg-[#FDD405]/8 hover:text-zinc-900 dark:hover:bg-[#FDD405]/8 dark:hover:border-[#FDD405]/50 dark:hover:text-white"
                                 />
                             ))}
                         </div>
                     </div>
 
                     {/* Section divider */}
-                    <div className="border-t border-white/8" />
+                    <div className="border-t border-zinc-100 dark:border-white/8" />
 
                     {/* ── FUNDAMENTAL SCREENS ── */}
                     <div>
@@ -575,7 +565,7 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                         <div className="flex flex-wrap gap-1.5 pl-3">
                             {FUNDAMENTAL_SCANNER_NAMES.map(name => (
                                 <ScannerBtn key={name} name={name}
-                                    hoverClass="hover:border-[#FDD405]/50 hover:bg-[#FDD405]/8 hover:text-white dark:hover:bg-[#FDD405]/8 dark:hover:border-[#FDD405]/50 dark:hover:text-white"
+                                    hoverClass="hover:border-[#FDD405]/50 hover:bg-[#FDD405]/8 hover:text-zinc-900 dark:hover:bg-[#FDD405]/8 dark:hover:border-[#FDD405]/50 dark:hover:text-white"
                                 />
                             ))}
                         </div>
