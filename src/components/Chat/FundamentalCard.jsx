@@ -300,7 +300,9 @@ const PeerRankCard = ({ peers, group, rank }) => {
 };
 
 /* ─── OVERALL HEALTH SCORE banner ───────────────────────────────── */
-const OverallHealthScore = ({ score, label, summary, ratingsSum }) => {
+const COMPONENT_LABELS = { technical: 'TECH', financial: 'FIN', management: 'MGMT' };
+
+const OverallHealthScore = ({ score, label, summary, ratingsSum, components }) => {
     const { theme } = useTheme();
     const isDark = theme === 'dark';
     const s = Math.min(100, Math.max(0, score || 0));
@@ -337,6 +339,15 @@ const OverallHealthScore = ({ score, label, summary, ratingsSum }) => {
                     {summary || label || 'Healthy company.'}
                 </p>
                 <div className="flex flex-wrap gap-1.5">
+                    {components && Object.entries(components).map(([k, v]) => (
+                        <span key={k} className={clsx(
+                            'flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border',
+                            isDark ? 'bg-white/5 text-white/80 border-white/15' : 'bg-white text-zinc-700 border-zinc-300'
+                        )}>
+                            <span className="opacity-60">{COMPONENT_LABELS[k] || k.toUpperCase()}</span>
+                            {v}
+                        </span>
+                    ))}
                     {[
                         { dot: 'bg-emerald-500', text: `${strong} STRONG` },
                         { dot: 'bg-amber-400',   text: `${watch} WATCH` },
@@ -1728,6 +1739,7 @@ export default function FundamentalScoreCard({ scoreCard, symbol }) {
     const fund    = scoreCard?.fundamental;
     const tech    = scoreCard?.technical;
     const horizon = scoreCard?.horizon;
+    const overall = scoreCard?.overall;   // blended: avg of tech/fin/mgmt pillars
     if (!fund && !tech) return null;
 
     const ratingsSum = fund?.ratings_summary
@@ -1747,12 +1759,13 @@ export default function FundamentalScoreCard({ scoreCard, symbol }) {
             ) : (
                 /* No horizon — show individual cards directly */
                 <>
-                    {fund?.score != null && (
+                    {(overall?.score != null || fund?.score != null) && (
                         <OverallHealthScore
-                            score={fund.score}
-                            label={fund.label}
-                            summary={fund.summary}
+                            score={overall?.score ?? fund?.score}
+                            label={overall?.label ?? fund?.label}
+                            summary={overall ? null : fund?.summary}
                             ratingsSum={ratingsSum}
+                            components={overall?.components}
                         />
                     )}
 
