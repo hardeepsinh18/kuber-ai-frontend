@@ -1,4 +1,4 @@
-# KuberAI — AI Stock Market Assistant
+# Venty-AI — AI Stock Market Assistant
 
 An AI-powered financial assistant for Indian equity markets. Ask about stocks, get technical analysis, strategy recommendations, and market overviews.
 
