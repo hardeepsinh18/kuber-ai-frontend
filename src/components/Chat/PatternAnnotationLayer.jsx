@@ -30,6 +30,7 @@ const PatternAnnotationLayer = ({
     markers = [],
     curve = [],
     skeleton = [],
+    projection = [],
     neckline = null,
     band = null,
     midline = [],
@@ -70,6 +71,30 @@ const PatternAnnotationLayer = ({
     const winX = windowStartDate ? getX(windowStartDate) : cLeft;
     const leftBound = Math.max(cLeft, winX ?? cLeft);
 
+    // Right boundary of the pattern region — the rightmost date present in the
+    // annotation geometry (last skeleton/projection/marker point). Lines are clamped
+    // to this instead of the chart's right edge so a pattern that formed weeks ago
+    // doesn't smear its neckline/trendlines across unrelated recent candles. On the
+    // candle view (auto-scrolled to "now") that smear is what looked cluttered.
+    // Forming patterns naturally reach ~now (their skeleton tail is the latest close),
+    // so they still extend to the right; completed patterns stop at the pattern's end.
+    const _annDates = [
+        ...skeleton.map(p => p?.date),
+        ...projection.map(p => p?.date),
+        ...curve.map(p => p?.date),
+        ...midline.map(p => p?.date),
+        ...markers.map(m => m?.date),
+        ...trendlines.flat().map(p => p?.date),
+        ...(band ? [...(band.upper || []), ...(band.lower || [])].map(p => p?.date) : []),
+    ].filter(Boolean);
+    let rightBound = cRight;
+    if (_annDates.length) {
+        let maxDate = _annDates[0];
+        for (const d of _annDates) if (+new Date(d) > +new Date(maxDate)) maxDate = d;
+        const rx = getX(maxDate);
+        if (rx != null && !isNaN(rx)) rightBound = Math.min(cRight, Math.max(leftBound + 8, rx));
+    }
+
     // A 2-point line [{date,price},{date,price}] → pixel endpoints + a slope evaluator.
     const lineXY = (ln) => {
         if (!ln || ln.length < 2) return null;
@@ -87,7 +112,7 @@ const PatternAnnotationLayer = ({
                 const U = lineXY(band.upper), L = lineXY(band.lower);
                 if (!U || !L) return null;
                 const xL = Math.max(leftBound, Math.min(U.x1, U.x2));
-                const xR = cRight;
+                const xR = rightBound;
                 const pts = `${xL},${U.at(xL)} ${xR},${U.at(xR)} ${xR},${L.at(xR)} ${xL},${L.at(xL)}`;
                 return <polygon points={pts} fill="#4FC3F7" opacity={0.12} stroke="none" />;
             })()}
@@ -97,7 +122,7 @@ const PatternAnnotationLayer = ({
                 const M = lineXY(midline);
                 if (!M) return null;
                 const xL = Math.max(leftBound, Math.min(M.x1, M.x2));
-                return <line x1={xL} y1={M.at(xL)} x2={cRight} y2={M.at(cRight)}
+                return <line x1={xL} y1={M.at(xL)} x2={rightBound} y2={M.at(rightBound)}
                              stroke="#4FC3F7" strokeWidth={1.2} strokeDasharray="5 4" opacity={0.8} />;
             })()}
 
@@ -123,9 +148,9 @@ const PatternAnnotationLayer = ({
                 const slope = x2 !== x1 ? (y2 - y1) / (x2 - x1) : 0;
                 const startX = Math.max(leftBound, Math.min(x1, x2));
                 const startY = y1 + slope * (startX - x1);
-                const endY = y1 + slope * (cRight - x1);
+                const endY = y1 + slope * (rightBound - x1);
                 return (
-                    <line key={`tl${i}`} x1={startX} y1={startY} x2={cRight} y2={endY}
+                    <line key={`tl${i}`} x1={startX} y1={startY} x2={rightBound} y2={endY}
                           stroke={tl[0].color || TREND_COLOR} strokeWidth={1.6}
                           opacity={0.9} strokeLinecap="round" />
                 );
@@ -144,15 +169,53 @@ const PatternAnnotationLayer = ({
                 );
             })()}
 
-            {/* Horizontal levels — confined to the pattern region, no price text */}
+            {/* Dashed projection — after the neckline break, extend down/up to the measured target */}
+            {projection.length >= 2 && (() => {
+                const pts = projection
+                    .map(p => ({ x: getX(p.date), y: yAxis.scale(p.price) }))
+                    .filter(p => p.x != null && p.y != null && !isNaN(p.x) && !isNaN(p.y));
+                if (pts.length < 2) return null;
+                const dPath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+                return (
+                    <path d={dPath} fill="none" stroke="#4FC3F7" strokeWidth={1.8}
+                          strokeDasharray="6 5" opacity={0.9}
+                          strokeLinecap="round" strokeLinejoin="round" />
+                );
+            })()}
+
+            {/* Horizontal levels — Target (green) and Stop-loss (red), each with a price chip
+                pinned to the right end so it's clear which line is which. */}
             {hlines.map((hl, j) => {
                 const y = yAxis.scale(hl.price);
                 if (y == null || isNaN(y)) return null;
+                const label = hl.label || '';
+                const isTarget = /^\s*target/i.test(label);
+                const isStop   = /^\s*(stop|sl)/i.test(label);
+                const color = isTarget ? '#00FF88' : isStop ? '#FF4444' : (hl.color || '#FDD405');
                 const dash = hl.linestyle === ':' ? '2 4' : '5 3';
+                const chip = isTarget ? `Target ₹${Number(hl.price).toFixed(2)}`
+                           : isStop   ? `SL ₹${Number(hl.price).toFixed(2)}`
+                           : null;
+                const w = chip ? chip.length * 6.0 + 12 : 0;
+                const cx = rightBound - w - 2;
                 return (
-                    <line key={`hl${j}`} x1={leftBound} y1={y} x2={cRight} y2={y}
-                          stroke={hl.color || '#FDD405'} strokeWidth={1.2}
-                          strokeDasharray={dash} opacity={0.85} />
+                    <g key={`hl${j}`}>
+                        <line x1={leftBound} y1={y} x2={chip ? cx - 2 : rightBound} y2={y}
+                              stroke={color} strokeWidth={1.3}
+                              strokeDasharray={dash} opacity={0.9} />
+                        {chip && (
+                            <g>
+                                <rect x={cx} y={y - 8} width={w} height={16} rx={3}
+                                      fill="#0b0b0b" stroke={color} strokeWidth={0.75} opacity={0.95} />
+                                <text x={cx + w / 2} y={y + 3.5} textAnchor="middle" fontSize={9.5}
+                                      fontWeight={600} fill={color}
+                                      fontFamily="ui-monospace, Menlo, monospace"
+                                      style={{ pointerEvents: 'none' }}>
+                                    {chip}
+                                </text>
+                            </g>
+                        )}
+                    </g>
                 );
             })}
 
@@ -162,7 +225,7 @@ const PatternAnnotationLayer = ({
                 if (y == null || isNaN(y)) return null;
                 const label = neckline.label || `₹${neckline.price}`;
                 const w = label.length * 6.2 + 10;
-                const x = cRight - w - 2;
+                const x = rightBound - w - 2;
                 return (
                     <g>
                         <rect x={x} y={y - 8} width={w} height={16} rx={3}

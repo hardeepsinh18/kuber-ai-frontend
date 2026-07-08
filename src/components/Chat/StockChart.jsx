@@ -353,11 +353,12 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
         const markers = a.markers || [];
         const curve = a.curve || [];
         const skeleton = a.skeleton || [];
+        const projection = a.projection || [];
         const neckline = a.neckline || null;
         const band = a.band || null;
         const midline = a.midline || [];
         return {
-            trendlines, hlines, markers, curve, skeleton, neckline, band, midline,
+            trendlines, hlines, markers, curve, skeleton, projection, neckline, band, midline,
             windowStartDate: a.window_start_date || null,
             has: !!(trendlines.length || hlines.length || markers.length || curve.length || skeleton.length || band),
         };
@@ -375,6 +376,7 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                     markers={patternAnn.markers}
                     curve={patternAnn.curve}
                     skeleton={patternAnn.skeleton}
+                    projection={patternAnn.projection}
                     neckline={patternAnn.neckline}
                     band={patternAnn.band}
                     midline={patternAnn.midline}
