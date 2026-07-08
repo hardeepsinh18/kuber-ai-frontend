@@ -106,10 +106,11 @@ const ThinkingPaths = ({ steps = [], isThinking = true, className = '', processi
                         )}
                     </div>
                 ) : (
-                    /* ── Done state: neutral collapsible card ── */
+                    /* ── Done state: theme-aware collapsible card ── */
                     <div
                         className="rounded-xl border cursor-pointer transition-all duration-200
-                                   bg-zinc-900/30 border-zinc-700/40 hover:bg-zinc-800/30"
+                                   bg-white/80 border-[#FDD405]/50 hover:bg-white hover:border-[#FDD405]
+                                   dark:bg-zinc-900/30 dark:border-zinc-700/40 dark:hover:bg-zinc-800/30 dark:hover:border-zinc-700/40"
                         onClick={() => setIsExpanded(!isExpanded)}
                         role="button" tabIndex={0}
                         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsExpanded(!isExpanded); } }}
@@ -117,16 +118,16 @@ const ThinkingPaths = ({ steps = [], isThinking = true, className = '', processi
                     >
                         <div className="flex items-center justify-between px-4 py-2.5">
                             <div className="flex items-center gap-2.5">
-                                <Cpu size={13} className="text-zinc-500" />
-                                <span className="text-xs font-medium text-zinc-500">Analysis steps</span>
+                                <Cpu size={13} className="text-zinc-600 dark:text-zinc-500" />
+                                <span className="text-xs font-medium text-zinc-600 dark:text-zinc-500">Analysis steps</span>
                                 {processingTime > 0 && (
-                                    <span className="text-[11px] font-mono px-1.5 py-0.5 rounded bg-zinc-200/60 dark:bg-zinc-700/50 text-zinc-500 dark:text-zinc-400">
+                                    <span className="text-[11px] font-mono px-1.5 py-0.5 rounded bg-[#FDD405]/25 text-zinc-700 dark:bg-zinc-700/50 dark:text-zinc-400">
                                         {displayTime}s
                                     </span>
                                 )}
                             </div>
                             <ChevronDown size={14}
-                                className={clsx('text-zinc-400 dark:text-zinc-500 transition-transform duration-200', isExpanded && 'rotate-180')} />
+                                className={clsx('text-zinc-500 dark:text-zinc-500 transition-transform duration-200', isExpanded && 'rotate-180')} />
                         </div>
 
                         {isExpanded && visibleSteps.length > 0 && (
