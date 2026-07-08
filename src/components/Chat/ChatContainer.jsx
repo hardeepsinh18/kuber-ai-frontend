@@ -239,6 +239,7 @@ const extractStockSymbols = (query) => {
         'hdfclife': 'HDFCLIFE',
         'sbilife': 'SBILIFE',
         'bajajfinsv': 'BAJAJFINSV',
+        'bajajhfl': 'BAJAJHFL',
         'britannia': 'BRITANNIA',
         'heromotoco': 'HEROMOTOCO',
         'eichermot': 'EICHERMOT',
@@ -260,6 +261,11 @@ const extractStockSymbols = (query) => {
         'asian paint': 'ASIANPAINT',
         'bajaj finance': 'BAJFINANCE',
         'bajaj finserv': 'BAJAJFINSV',
+        // Bajaj Housing Finance (NSE: BAJAJHFL) — must precede the greedy single-word
+        // 'bajaj' → BAJFINANCE alias so "bajaj housing finance" doesn't resolve to the parent.
+        'bajaj housing finance': 'BAJAJHFL',
+        'bajaj housing': 'BAJAJHFL',
+        'bajaj hfl': 'BAJAJHFL',
         'sun pharma': 'SUNPHARMA',
         'dr reddy': 'DRREDDY',
         'tata steel': 'TATASTEEL',
