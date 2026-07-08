@@ -60,7 +60,7 @@ const extractChartPeriod = (query) => {
 
 /**
  * Detect what specific information the user is asking for.
- * Returns: 'pe_ratio' | 'news' | 'technicals' | 'chart' | 'full'
+ * Returns: 'pe_ratio' | 'news' | 'technicals' | 'chart' | 'verdict' | 'full'
  * Used by MessageBubble to hide irrelevant sections and keep answers focused.
  */
 const extractQueryIntent = (query) => {
@@ -78,9 +78,15 @@ const extractQueryIntent = (query) => {
     // BEFORE the focused checks so a mixed query is never mistaken for a single-aspect one.
     const wantsFull =
         hasFundamental ||
-        /analy|overview|detail|in.?depth|complete|everything|\bfull\b|tell me about|should i (buy|sell|invest)|worth (buying|investing|it)|deep dive|buy or sell/i.test(q);
+        /analy|overview|detail|in.?depth|complete|everything|\bfull\b|tell me about|deep dive/i.test(q);
     const aspectCount = [hasFundamental, hasTechnical, hasNews, hasChart].filter(Boolean).length;
     if (wantsFull || aspectCount >= 2) return 'full';
+
+    // K-002: buy/sell decision queries get a focused verdict view (signal + score +
+    // valuation + management tone) instead of defaulting to the full wall of cards
+    if (/should i (buy|sell|invest)|worth (buying|investing|it)|good (buy|investment)|buy or sell|\bgood stock\b/i.test(q)) {
+        return 'verdict';
+    }
 
     // Single fundamental metric queries — only show price header + text answer
     if (/\bp[/\s-]?e\b|pe ratio|p\/e ratio|price.{0,6}earn|price to earn/i.test(q)) return 'pe_ratio';
@@ -1121,6 +1127,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             const indicatorsTable = responseData.indicators_table || null;
             const scoreCard = responseData.score_card || null;
             const managementSentiment = responseData.management_sentiment || null;
+            const annualReportIntelligence = responseData.annual_report_intelligence || null;
             const companyFilings = responseData.company_filings || null;
             const recentDevelopments = responseData.recent_developments || null;
             const aiTake = responseData.ai_take || null;
@@ -1143,6 +1150,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 indicatorsTable,
                 scoreCard,
                 managementSentiment,
+                annualReportIntelligence,
                 companyFilings,
                 recentDevelopments,
                 aiTake,
@@ -1310,6 +1318,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                                 indicatorsTable={msg.indicatorsTable}
                                 scoreCard={msg.scoreCard}
                                 managementSentiment={msg.managementSentiment}
+                                annualReportIntelligence={msg.annualReportIntelligence}
                                 companyFilings={msg.companyFilings}
                                 recentDevelopments={msg.recentDevelopments}
                                 aiTake={msg.aiTake}

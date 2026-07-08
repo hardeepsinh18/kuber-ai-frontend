@@ -7,6 +7,7 @@ import { useStreamingText } from '../../hooks/useStreamingText';
 import StockChart from './StockChart';
 import FundamentalScoreCard, { PatternDetectionSection } from './FundamentalCard';
 import ManagementSentiment from './ManagementSentiment';
+import AnnualReportIntelligence from './AnnualReportIntelligence';
 import CompanyFilings from './CompanyFilings';
 import RecentDevelopments from './RecentDevelopments';
 import AITake from './AITake';
@@ -473,7 +474,7 @@ const HorizonChoice = ({ symbol, onChoice }) => {
     );
 };
 
-const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, isScannerResult = false, chartData = null, metadata = {}, signal = null, patternSummary = null, technicalSummary = null, indicatorsTable = null, scoreCard = null, managementSentiment = null, companyFilings = null, recentDevelopments = null, aiTake = null, suggestedFollowUps = null, newsHeadlines = null, queryIntent = 'full', onFollowUpClick = null, onStreamingDone = null, messageId = null, onFeedback = null, responseMode = null }) => {
+const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, isScannerResult = false, chartData = null, metadata = {}, signal = null, patternSummary = null, technicalSummary = null, indicatorsTable = null, scoreCard = null, managementSentiment = null, annualReportIntelligence = null, companyFilings = null, recentDevelopments = null, aiTake = null, suggestedFollowUps = null, newsHeadlines = null, queryIntent = 'full', onFollowUpClick = null, onStreamingDone = null, messageId = null, onFeedback = null, responseMode = null }) => {
     const isUser = role === 'user';
 
     // Use streaming hook for AI messages
@@ -506,15 +507,19 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
     // 'full'       → show everything
     // isFull must be declared BEFORE isEffectivelyDone which references it.
     const isFull        = queryIntent === 'full';
+    // K-002: 'verdict' = decision queries ("should I buy X") — focused view with
+    // signal, score, valuation and management tone; no filings/news/indicator dump
+    const isVerdict     = queryIntent === 'verdict';
     const showAtAGlance  = queryIntent !== 'news';
-    const showChart      = isFull || queryIntent === 'chart' || queryIntent === 'technicals';
+    const showChart      = isFull || isVerdict || queryIntent === 'chart' || queryIntent === 'technicals';
     const showNews       = isFull || queryIntent === 'news';
     const showTechnicals = isFull || queryIntent === 'technicals';
-    const showFundCard   = isFull;
+    const showFundCard   = isFull || isVerdict;
     const showIndicators = isFull || queryIntent === 'technicals';
     const showPatterns   = isFull || queryIntent === 'technicals';
-    const showAITake     = isFull;
-    const showManagement = isFull;
+    const showAITake     = isFull || isVerdict;
+    const showManagement = isFull || isVerdict;
+    const showARIntel    = isFull || isVerdict;
     const showDevelopments = isFull;
     const showFilings    = isFull;
 
@@ -543,7 +548,10 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
 
     const showDisclaimer = !isUser && isEffectivelyDone && hasDisclaimerText(content || displayedText);
     const strippedText = !isUser ? stripResponseChrome(rawText) : rawText;
-    const textToDisplay = (!isUser && queryIntent !== 'full') ? filterByIntent(strippedText, queryIntent) : strippedText;
+    // K-002: verdict answers keep their full narrative — only the four single-aspect
+    // intents get the opening-paragraph filter
+    const textToDisplay = (!isUser && queryIntent !== 'full' && queryIntent !== 'verdict')
+        ? filterByIntent(strippedText, queryIntent) : strippedText;
 
     const relevantNews = React.useMemo(() => {
         const headlines = Array.isArray(newsHeadlines) ? newsHeadlines : [];
@@ -960,7 +968,10 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                                 td: ({ children }) => {
                                     const textStr = [children].flat().map(c => typeof c === 'string' ? c : '').join('');
                                     const isPositive = /\+[\d.]+%/.test(textStr);
-                                    const isNegative = /-\d/.test(textStr);
+                                    // K-143: only color genuinely negative values — a bare /-\d/
+                                    // painted dates ("2024-25"), ranges ("10-15%") and fiscal years red
+                                    const isNegative = /(?<!\d)[−-][\d.,]+%/.test(textStr)
+                                        || /^\s*[−-]\s*₹?[\d.,]+\s*$/.test(textStr);
                                     return (
                                         <td className={clsx(
                                             "px-4 py-3 text-[15px] align-top",
@@ -1001,6 +1012,9 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
 
                     {/* ── Management Sentiment (earnings-call/annual-report tone) ── */}
                     {showManagement && <ManagementSentiment data={managementSentiment} />}
+
+                    {/* ── Annual Report Intelligence (analyst-style read of the annual report) ── */}
+                    {showARIntel && <AnnualReportIntelligence data={annualReportIntelligence} />}
 
                     {/* ── Recent Developments (material company events) ── */}
                     {showDevelopments && <RecentDevelopments data={recentDevelopments} />}

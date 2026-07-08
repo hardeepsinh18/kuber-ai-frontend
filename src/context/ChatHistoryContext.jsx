@@ -127,6 +127,20 @@ export function ChatHistoryProvider({ children }) {
                             ...(m.suggestedFollowUps?.length ? { _suggestedFollowUps: m.suggestedFollowUps } : {}),
                             ...(m.processingTime != null ? { _processingTime: m.processingTime } : {}),
                             ...(m.signal != null ? { _signal: m.signal } : {}),
+                            // K-042/K-105: persist the structured cards + display mode so a
+                            // chat rehydrated from the server (other device / cleared
+                            // localStorage) renders the same rich answer, not bare text
+                            ...(m.scoreCard != null ? { _scoreCard: m.scoreCard } : {}),
+                            ...(m.indicatorsTable != null ? { _indicatorsTable: m.indicatorsTable } : {}),
+                            ...(m.patternSummary != null ? { _patternSummary: m.patternSummary } : {}),
+                            ...(m.technicalSummary != null ? { _technicalSummary: m.technicalSummary } : {}),
+                            ...(m.managementSentiment != null ? { _managementSentiment: m.managementSentiment } : {}),
+                            ...(m.annualReportIntelligence != null ? { _annualReportIntelligence: m.annualReportIntelligence } : {}),
+                            ...(m.companyFilings != null ? { _companyFilings: m.companyFilings } : {}),
+                            ...(m.recentDevelopments != null ? { _recentDevelopments: m.recentDevelopments } : {}),
+                            ...(m.aiTake != null ? { _aiTake: m.aiTake } : {}),
+                            ...(m.queryIntent != null ? { _queryIntent: m.queryIntent } : {}),
+                            ...(m.responseMode != null ? { _responseMode: m.responseMode } : {}),
                         },
                     }));
                     if (newOnes.length > 0) {
@@ -229,6 +243,18 @@ export function ChatHistoryProvider({ children }) {
                         processingTime: m.metadata?._processingTime ?? undefined,
                         signal: m.metadata?._signal ?? undefined,
                         chartData: m.metadata?._chartData ?? undefined,
+                        // K-042/K-105: restore structured cards + display mode
+                        scoreCard: m.metadata?._scoreCard ?? undefined,
+                        indicatorsTable: m.metadata?._indicatorsTable ?? undefined,
+                        patternSummary: m.metadata?._patternSummary ?? undefined,
+                        technicalSummary: m.metadata?._technicalSummary ?? undefined,
+                        managementSentiment: m.metadata?._managementSentiment ?? undefined,
+                        annualReportIntelligence: m.metadata?._annualReportIntelligence ?? undefined,
+                        companyFilings: m.metadata?._companyFilings ?? undefined,
+                        recentDevelopments: m.metadata?._recentDevelopments ?? undefined,
+                        aiTake: m.metadata?._aiTake ?? undefined,
+                        queryIntent: m.metadata?._queryIntent ?? undefined,
+                        responseMode: m.metadata?._responseMode ?? undefined,
                         metadata: m.metadata ?? undefined,
                     }));
                     setMessages(msgs);
