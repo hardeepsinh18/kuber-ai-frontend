@@ -1,0 +1,35 @@
+name: Deploy UAT Frontend
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['**.md']
+  workflow_dispatch: {}
+concurrency: { group: uat-frontend-deploy, cancel-in-progress: false }
+permissions: { id-token: write, contents: read }
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - name: Build (UAT Cognito env)
+        run: |
+          {
+            echo "VITE_COGNITO_USER_POOL_ID=${{ vars.VITE_COGNITO_USER_POOL_ID }}"
+            echo "VITE_COGNITO_CLIENT_ID=${{ vars.VITE_COGNITO_CLIENT_ID }}"
+            echo "VITE_COGNITO_REGION=${{ vars.VITE_COGNITO_REGION }}"
+            echo "VITE_COGNITO_DOMAIN=${{ vars.VITE_COGNITO_DOMAIN }}"
+          } > .env.production
+          npm ci || npm install
+          npm run build
+      - name: Configure AWS (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - name: Deploy to S3 + invalidate CloudFront
+        run: |
+          aws s3 sync dist "s3://${{ vars.S3_BUCKET }}/" --delete
+          aws cloudfront create-invalidation --distribution-id "${{ vars.CLOUDFRONT_ID }}" --paths '/*'
+          echo "Deployed to https://aws.72street.ai"
