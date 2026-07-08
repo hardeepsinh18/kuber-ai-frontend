@@ -33,6 +33,10 @@ import PatternAnnotationLayer from './PatternAnnotationLayer';
  * - Responsive
  * - Smooth animations
  */
+// Hide chart-pattern overlays that formed longer ago than this (bars ≈ trading days).
+// Mirrors the same freshness rule used by the Pattern Detection card in FundamentalCard.
+const MAX_PATTERN_AGE_DAYS = 30;
+
 // Find closest matching date in the chart data array.
 // Falls back to nearest date so pattern markers always render even when
 // the exact pivot date falls outside the visible chart window.
@@ -340,7 +344,9 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
     // trendlines, pivot labels, curve, horizontal levels), confined to the pattern
     // region. Sourced from the top chart pattern's `annotations` payload.
     const patternAnn = useMemo(() => {
-        const cp = patternOverlays?.chart_pattern_details?.[0];
+        // Use the most recent qualifying pattern; skip stale formations (e.g. 115 bars ago).
+        const cp = (patternOverlays?.chart_pattern_details || [])
+            .find(p => (p?.bars_ago ?? 0) <= MAX_PATTERN_AGE_DAYS) || null;
         const a = cp?.annotations || {};
         const trendlines = a.trendlines || [];
         const hlines = a.hlines || [];

@@ -1128,6 +1128,10 @@ const ChartPatternCard = ({ cp }) => {
 };
 
 /* ─── PATTERN DETECTION & RESISTANCE ALERT ───────────────────────────────── */
+// Hide patterns that formed longer ago than this (bars ≈ trading days on a daily chart).
+// Keeps the section focused on recent formations instead of stale ones from months back.
+const MAX_PATTERN_AGE_DAYS = 30;
+
 export const PatternDetectionSection = ({ patternSummary, chartData = null }) => {
     const [open, setOpen] = React.useState(false);
     const [selectedPattern, setSelectedPattern] = useState(null);
@@ -1150,8 +1154,14 @@ export const PatternDetectionSection = ({ patternSummary, chartData = null }) =>
         return map;
     }, [patternSummary, candlestickDetails]);
 
-    const hasPatterns = candlestickNames.length > 0 || chartPatternDetails.length > 0;
-    const topChartPattern = chartPatternDetails[0] || null;
+    // Only surface patterns formed within the last MAX_PATTERN_AGE_DAYS bars (~days).
+    // Older formations (e.g. a Head & Shoulders from 115 bars ago) are stale and hidden.
+    const isRecent = (barsAgo) => (barsAgo ?? 0) <= MAX_PATTERN_AGE_DAYS;
+    const recentCandlestickNames = candlestickNames.filter(name => isRecent(detailMap[name]?.bars_ago));
+    const recentChartPatterns = chartPatternDetails.filter(cp => isRecent(cp?.bars_ago));
+
+    const hasPatterns = recentCandlestickNames.length > 0 || recentChartPatterns.length > 0;
+    const topChartPattern = recentChartPatterns[0] || null;
 
     return (
         <>
@@ -1177,15 +1187,15 @@ export const PatternDetectionSection = ({ patternSummary, chartData = null }) =>
                             </div>
                         )}
 
-                        <div className={`grid gap-3 ${candlestickNames.length > 0 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                        <div className={`grid gap-3 ${recentCandlestickNames.length > 0 ? 'grid-cols-2' : 'grid-cols-1'}`}>
                             {/* Left: Candle Patterns */}
-                            {candlestickNames.length > 0 && (
+                            {recentCandlestickNames.length > 0 && (
                                 <div className="min-w-0 overflow-hidden">
                                     <p className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wide mb-2">
                                         Candle Pattern
                                     </p>
                                     <div className="flex flex-col gap-3">
-                                        {candlestickNames.slice(0, 1).map((name, i) => {
+                                        {recentCandlestickNames.slice(0, 1).map((name, i) => {
                                             const detail   = detailMap[name] || {};
                                             const barsAgo  = detail.bars_ago ?? 0;
                                             const strength = detail.strength;
