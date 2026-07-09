@@ -205,7 +205,8 @@ const extractStockSymbols = (query) => {
         'infosys': 'INFY',
         'infy': 'INFY',
         'reliance': 'RELIANCE',
-        'hdfc': 'HDFCBANK',
+        // bare 'hdfc' intentionally NOT aliased — HDFC Group is ambiguous
+        // (HDFCBANK / HDFCLIFE / HDFCAMC); backend shows the disambiguation list
         'wipro': 'WIPRO',
         'techm': 'TECHM',
         'bccl': 'BHARATCOAL',
@@ -254,6 +255,10 @@ const extractStockSymbols = (query) => {
         'apollohosp': 'APOLLOHOSP',
         // Multi-word company names
         'hdfc bank': 'HDFCBANK',
+        'hdfc life insurance': 'HDFCLIFE',
+        'hdfc life': 'HDFCLIFE',
+        'hdfc amc': 'HDFCAMC',
+        'hdfc asset management': 'HDFCAMC',
         'steel authority': 'SAIL',
         'steel authority of india': 'SAIL',
         'sail steel': 'SAIL',
