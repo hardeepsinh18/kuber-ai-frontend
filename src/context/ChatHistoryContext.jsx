@@ -129,7 +129,11 @@ export function ChatHistoryProvider({ children }) {
                             ...(m.signal != null ? { _signal: m.signal } : {}),
                             // K-042/K-105: persist the structured cards + display mode so a
                             // chat rehydrated from the server (other device / cleared
-                            // localStorage) renders the same rich answer, not bare text
+                            // localStorage) renders the same rich answer, not bare text.
+                            // chartData is stripped from localStorage (quota) but the server
+                            // (jsonb) can hold it — persist here so the chart survives a
+                            // device switch, matching the restore path in loadChat().
+                            ...(m.chartData != null ? { _chartData: m.chartData } : {}),
                             ...(m.scoreCard != null ? { _scoreCard: m.scoreCard } : {}),
                             ...(m.indicatorsTable != null ? { _indicatorsTable: m.indicatorsTable } : {}),
                             ...(m.patternSummary != null ? { _patternSummary: m.patternSummary } : {}),

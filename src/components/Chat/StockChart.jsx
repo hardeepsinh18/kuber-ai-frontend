@@ -538,7 +538,7 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
             </div>
 
             {/* Chart type selector */}
-            <div className="flex gap-2 mb-4">
+            <div className="flex flex-wrap gap-2 mb-4">
                 <button
                     onClick={() => setChartType('area')}
                     aria-label="Area chart"
@@ -633,8 +633,8 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                 </div>
             </div>
 
-            {/* Chart + Today's Market Stats side panel */}
-            <div className="flex gap-4">
+            {/* Chart + Today's Market Stats side panel — stacks on mobile, side-by-side ≥ sm */}
+            <div className="flex flex-col sm:flex-row gap-4">
                 <div className={clsx("h-[260px] sm:h-[340px] overflow-hidden", atAGlance ? "flex-1" : "w-full")}>
                     {chartType === 'candle' ? (
                         /* Candle view: scrollable bars + sticky Y-axis panel */
@@ -682,7 +682,7 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                 </div>
 
                 {atAGlance && (
-                    <div className="w-40 xl:w-44 flex-shrink-0 bg-zinc-100 dark:bg-zinc-800/50 rounded-xl p-3 border border-zinc-200 dark:border-zinc-700/40 self-start">
+                    <div className="w-full sm:w-40 xl:w-44 flex-shrink-0 bg-zinc-100 dark:bg-zinc-800/50 rounded-xl p-3 border border-zinc-200 dark:border-zinc-700/40 self-start">
                         <p className="text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-3">Today's Market Stats</p>
                         {[
                             atAGlance.open != null ? { label: 'Open', value: `₹${Number(atAGlance.open).toLocaleString('en-IN', { maximumFractionDigits: 0 })}` } : null,
