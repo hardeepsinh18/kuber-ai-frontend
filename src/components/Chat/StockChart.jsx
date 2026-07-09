@@ -196,7 +196,7 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
 
     const isPositive = priceChange.value >= 0;
 
-    // Zoomed data slice for Area / Line / OHFL views
+    // Zoomed data slice for Area / Line / OHLC views
     const displayData = useMemo(() =>
         visibleCount ? data.slice(-visibleCount) : data,
         [data, visibleCount]
@@ -579,7 +579,7 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                     )}
                 >
                     <BarChart3 className="w-4 h-4" />
-                    OHFL
+                    OHLC
                 </button>
                 <button
                     onClick={() => setChartType('candle')}

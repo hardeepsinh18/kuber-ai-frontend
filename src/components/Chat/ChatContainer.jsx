@@ -1182,6 +1182,8 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                     id: genId(),
                     role: 'ai',
                     content: '⏱️ Request timed out. The query may be too complex — try asking about one stock at a time, or retry in a moment.',
+                    isError: true,
+                    failedQuery: normalized,
                 }]);
                 isLoadingRef.current = false;
                 setIsLoading(false);
@@ -1207,7 +1209,9 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             setMessages(prev => [...prev, {
                 id: errorMessageId,
                 role: 'ai',
-                content: `⚠️ ${userErrorMsg}`
+                content: `⚠️ ${userErrorMsg}`,
+                isError: true,
+                failedQuery: normalized,
             }]);
         } finally {
             if (requestId === activeRequestIdRef.current) {
@@ -1331,6 +1335,22 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                                 onFeedback={msg.role === 'ai' ? handleFeedback : null}
                                 responseMode={msg.role === 'ai' ? (msg.responseMode || null) : null}
                             />
+
+                            {/* Retry — re-send the failed query so the user never loses it */}
+                            {msg.role === 'ai' && msg.isError && msg.failedQuery && (
+                                <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 md:px-8 -mt-1 mb-2">
+                                    <button
+                                        onClick={() => handleSend(msg.failedQuery)}
+                                        disabled={isLoading}
+                                        aria-label="Retry the failed request"
+                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
+                                                   bg-[#FDD405] text-black hover:brightness-95
+                                                   disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                    >
+                                        <span className="text-base leading-none">↻</span> Retry
+                                    </button>
+                                </div>
+                            )}
                         </React.Fragment>
                     ))}
 
