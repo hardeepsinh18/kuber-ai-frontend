@@ -125,11 +125,23 @@ const filterByIntent = (text, intent) => {
 const extractVerdict = (md) => {
     if (!md || typeof md !== 'string') return { verdict: null, body: md };
     const lines = md.split('\n');
+    const isQuote = (l) => /^\s*>/.test(l);
+    // Lazy continuation: in markdown, non-blank lines directly after a "> ..."
+    // line belong to the same blockquote even without a leading ">".
+    const blockEnd = (i) => {
+        let j = i + 1;
+        while (j < lines.length) {
+            const l = lines[j];
+            if (isQuote(l)) { j++; continue; }
+            if (l.trim() !== '' && !/^\s*(#{1,6}\s|```)/.test(l)) { j++; continue; }
+            break;
+        }
+        return j;
+    };
     let start = -1, end = -1;
     for (let i = 0; i < lines.length; i++) {
-        if (/^\s*>/.test(lines[i])) {
-            let j = i;
-            while (j < lines.length && /^\s*>/.test(lines[j])) j++;
+        if (isQuote(lines[i])) {
+            const j = blockEnd(i);
             const block = lines.slice(i, j).join('\n');
             if (/verdict\s*:/i.test(block)) { start = i; end = j; break; }
             i = j; // skip past this non-verdict blockquote
@@ -1074,6 +1086,10 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                         {!isUser && isStreaming && !isComplete && (
                             <span className="inline-block w-[2px] h-4 bg-zinc-400 dark:bg-zinc-500 ml-0.5 animate-pulse"></span>
                         )}
+                        {/* Short/Long term choice — directly below the question text */}
+                        {!isUser && isEffectivelyDone && onFollowUpClick && hasHorizonQuestion(contentBody) && (
+                            <HorizonChoice symbol={primarySymbolLabel} onChoice={onFollowUpClick} />
+                        )}
                     </div>
 
                     {/* ── Post-text structured sections — hidden while streaming, fade in after ── */}
@@ -1188,8 +1204,11 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                         </div>
                     )}
 
-                    {/* ── Suggested follow-up chips — bottom of response ── */}
-                    {isEffectivelyDone && Array.isArray(suggestedFollowUps) && suggestedFollowUps.length > 0 && onFollowUpClick && (
+                    {/* ── Suggested follow-up chips — bottom of response.
+                        Hidden on horizon questions ("short term or long term?"):
+                        the user must answer the question first, not get distracted
+                        by unrelated suggestions. They show on the actual answer. ── */}
+                    {isEffectivelyDone && !hasHorizonQuestion(contentBody) && Array.isArray(suggestedFollowUps) && suggestedFollowUps.length > 0 && onFollowUpClick && (
                         <div className="flex flex-wrap gap-2 pt-3">
                             {suggestedFollowUps.map((label) => (
                                 <button

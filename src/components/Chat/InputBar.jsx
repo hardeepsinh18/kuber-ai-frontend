@@ -62,35 +62,9 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
                     <div className="relative flex flex-col rounded-[11px] overflow-hidden transition-all duration-300
                                     bg-white dark:bg-[#1a1a1a]">
 
-                        {/* Short / Long term quick-reply buttons */}
-                        {horizonQuestion && onHorizonChoice && (
-                            <div className="flex gap-3 px-4 pt-3 pb-1 justify-center">
-                                {['Short Term', 'Long Term'].map((label) => {
-                                    const isShort = label === 'Short Term';
-                                    const cleanSymbol = horizonSymbol ? horizonSymbol.replace(/\.(NS|BO|BSE)$/i, '').replace(/-EQ$/i, '').replace(/^(NSE:|BSE:)/i, '') : '';
-                                    const sym = cleanSymbol ? `${cleanSymbol} ` : '';
-                                    const query = isShort
-                                        ? `${sym}short term trading — entry, target, stop loss`
-                                        : `${sym}long term investment — fundamentals, growth outlook`;
-                                    return (
-                                        <button
-                                            key={label}
-                                            type="button"
-                                            onClick={() => onHorizonChoice(query)}
-                                            className="px-6 py-2 rounded-full text-[13px] font-medium
-                                                       text-zinc-500 dark:text-zinc-400
-                                                       bg-white/60 dark:bg-zinc-900/40
-                                                       border border-zinc-200/70 dark:border-zinc-800/55
-                                                       hover:text-zinc-900 dark:hover:text-zinc-200
-                                                       hover:border-[#FDD405]/70 dark:hover:border-[#FDD405]/45
-                                                       hover:bg-amber-50/80 dark:hover:bg-[#FDD405]/10
-                                                       transition-all duration-150">
-                                            {label}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        )}
+                        {/* Short / Long term quick-reply buttons moved into the chat:
+                            MessageBubble renders the highlighted HorizonChoice directly
+                            below the "short term or long term?" question. */}
 
                         {/* Textarea row */}
                         <div className="px-4 pt-3 pb-1">
