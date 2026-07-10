@@ -546,9 +546,19 @@ const HorizonChoice = ({ symbol, onChoice }) => {
 const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, isScannerResult = false, chartData = null, metadata = {}, signal = null, patternSummary = null, technicalSummary = null, indicatorsTable = null, scoreCard = null, managementSentiment = null, annualReportIntelligence = null, companyFilings = null, recentDevelopments = null, aiTake = null, suggestedFollowUps = null, newsHeadlines = null, queryIntent = 'full', onFollowUpClick = null, onStreamingDone = null, messageId = null, onFeedback = null, responseMode = null }) => {
     const isUser = role === 'user';
 
+    // Pull the "> Verdict:" blockquote out of the FULL response before the
+    // typewriter starts: the API returns the complete answer up front (like
+    // price/chart data), so the verdict card can render instantly below the
+    // price header instead of waiting for the typewriter to reach the last
+    // lines. The typewriter then types only the remaining body.
+    const { verdict: hoistedVerdict, body: bodyForTyping } = React.useMemo(
+        () => (!isUser ? extractVerdict(content) : { verdict: null, body: content }),
+        [isUser, content]
+    );
+
     // Use streaming hook for AI messages
     const { displayedText, isComplete } = useStreamingText(
-        content,
+        bodyForTyping,
         !isUser && isStreaming,
         'line',
         2,
@@ -596,7 +606,7 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
     // response but we only show the opening paragraph. "Effectively done" = the first
     // section heading has appeared in the stream, meaning the direct answer is complete.
     // Disclaimer + chips appear immediately at that point instead of waiting 20-25s.
-    const rawText = (!isUser && isStreaming) ? displayedText : content;
+    const rawText = (!isUser && isStreaming) ? displayedText : bodyForTyping;
     const isEffectivelyDone = !isStreaming || (
         !isFull && isStreaming && /\n#{1,4}[^a-zA-Z\n]*[a-zA-Z]/m.test(rawText)
     );
@@ -621,17 +631,6 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
     // intents get the opening-paragraph filter
     const textToDisplay = (!isUser && queryIntent !== 'full' && queryIntent !== 'verdict')
         ? filterByIntent(strippedText, queryIntent) : strippedText;
-
-    // Hoist the "> Verdict:" blockquote out of the narrative the moment it
-    // appears — including mid-stream — so the verdict shows up top (below the
-    // price header, above the chart) without waiting for the full answer.
-    // The card grows as the verdict streams in; it never renders at the bottom.
-    const { verdict: hoistedVerdict, body: contentBody } = React.useMemo(
-        () => (!isUser
-            ? extractVerdict(textToDisplay)
-            : { verdict: null, body: textToDisplay }),
-        [isUser, textToDisplay]
-    );
 
     const relevantNews = React.useMemo(() => {
         const headlines = Array.isArray(newsHeadlines) ? newsHeadlines : [];
@@ -1074,13 +1073,13 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                                 ),
                             }}
                         >
-                            {contentBody}
+                            {textToDisplay}
                         </ReactMarkdown>
                         {!isUser && isStreaming && !isComplete && (
                             <span className="inline-block w-[2px] h-4 bg-zinc-400 dark:bg-zinc-500 ml-0.5 animate-pulse"></span>
                         )}
                         {/* Short/Long term choice — directly below the question text */}
-                        {!isUser && isEffectivelyDone && onFollowUpClick && hasHorizonQuestion(contentBody) && (
+                        {!isUser && isEffectivelyDone && onFollowUpClick && hasHorizonQuestion(textToDisplay) && (
                             <HorizonChoice symbol={primarySymbolLabel} onChoice={onFollowUpClick} />
                         )}
                     </div>
@@ -1151,7 +1150,7 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                         Hidden on horizon questions ("short term or long term?"):
                         the user must answer the question first, not get distracted
                         by unrelated suggestions. They show on the actual answer. ── */}
-                    {isEffectivelyDone && !hasHorizonQuestion(contentBody) && Array.isArray(suggestedFollowUps) && suggestedFollowUps.length > 0 && onFollowUpClick && (
+                    {isEffectivelyDone && !hasHorizonQuestion(textToDisplay) && Array.isArray(suggestedFollowUps) && suggestedFollowUps.length > 0 && onFollowUpClick && (
                         <div className="flex flex-wrap gap-2 pt-3">
                             {suggestedFollowUps.map((label) => (
                                 <button
