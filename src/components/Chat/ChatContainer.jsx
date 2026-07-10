@@ -1049,7 +1049,27 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 }
             };
 
-            let response = await doFetch();
+            // Resilient fetch: backend deploy restarts (~30s) and gateway blips
+            // surface as dropped connections or 502/503/504. Retry ONCE after a
+            // short pause instead of instantly failing the user's query. A
+            // user-initiated Stop bumps activeRequestIdRef, so it never retries.
+            let response;
+            try {
+                response = await doFetch();
+            } catch (e) {
+                if (requestId !== activeRequestIdRef.current) return;
+                if (e.name === 'AbortError') {
+                    throw new Error('The request timed out — the server may be busy. Please retry.');
+                }
+                await new Promise(r => setTimeout(r, 2500));
+                if (requestId !== activeRequestIdRef.current) return;
+                response = await doFetch();
+            }
+            if ([502, 503, 504].includes(response.status)) {
+                await new Promise(r => setTimeout(r, 2500));
+                if (requestId !== activeRequestIdRef.current) return;
+                response = await doFetch();
+            }
 
             // On 401, the access token has likely expired. Force a single refresh
             // and retry once before surfacing "session expired" to the user.
@@ -1210,7 +1230,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             let userErrorMsg = "Something went wrong. Please try again.";
             if (err.message) {
                 // Already-mapped HTTP errors (from the !response.ok block above) are safe to show
-                const safe = /session expired|too many requests|not found|server encountered|request failed/i.test(err.message);
+                const safe = /session expired|too many requests|not found|server encountered|request failed|timed out/i.test(err.message);
                 if (safe) userErrorMsg = err.message;
                 else if (/network|fetch|failed to fetch|load failed|networkerror/i.test(err.message)) {
                     userErrorMsg = "Network error — check your connection and try again.";
