@@ -589,11 +589,14 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
     // K-002: 'verdict' = decision queries ("should I buy X") — focused view with
     // signal, score, valuation and management tone; no filings/news/indicator dump
     const isVerdict     = queryIntent === 'verdict';
+    // 'fundamentals' = "fundamentals of X" — price header + verdict + fundamentals
+    // text + financial score cards ONLY (no chart, no technicals, no mgmt/filings)
+    const isFundamentals = queryIntent === 'fundamentals';
     const showAtAGlance  = queryIntent !== 'news';
     const showChart      = isFull || isVerdict || queryIntent === 'chart' || queryIntent === 'technicals';
     const showNews       = isFull || queryIntent === 'news';
     const showTechnicals = isFull || queryIntent === 'technicals';
-    const showFundCard   = isFull || isVerdict;
+    const showFundCard   = isFull || isVerdict || isFundamentals;
     const showIndicators = isFull || queryIntent === 'technicals';
     const showPatterns   = isFull || queryIntent === 'technicals';
     const showAITake     = isFull || isVerdict;
@@ -629,7 +632,7 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
     const strippedText = !isUser ? stripResponseChrome(rawText) : rawText;
     // K-002: verdict answers keep their full narrative — only the four single-aspect
     // intents get the opening-paragraph filter
-    const textToDisplay = (!isUser && queryIntent !== 'full' && queryIntent !== 'verdict')
+    const textToDisplay = (!isUser && queryIntent !== 'full' && queryIntent !== 'verdict' && queryIntent !== 'fundamentals')
         ? filterByIntent(strippedText, queryIntent) : strippedText;
 
     const relevantNews = React.useMemo(() => {
@@ -1095,7 +1098,9 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
 
                     {/* ── Fundamental score card (Health Score + Financial metrics) ── */}
                     {showFundCard && <FundamentalScoreCard
-                        scoreCard={scoreCard}
+                        scoreCard={isFundamentals && scoreCard
+                            ? { ...scoreCard, technical: null }   // fundamentals view: no Technical Score Card
+                            : scoreCard}
                         symbol={primarySymbolLabel}
                     />}
 

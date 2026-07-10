@@ -72,14 +72,20 @@ const extractQueryIntent = (query) => {
     const hasNews        = /\bnews\b|\bheadlines?\b|latest news|recent news|what'?s new/i.test(q);
     const hasChart       = /\bchart\b|\bgraph\b|\bplot\b|\bcandlestick\b|price chart/i.test(q);
 
+    const aspectCount = [hasFundamental, hasTechnical, hasNews, hasChart].filter(Boolean).length;
+
+    // "fundamentals of X" (single aspect) → fundamentals-only view: price header,
+    // verdict, fundamentals text + financial score cards. No chart, no technicals,
+    // no management/filings wall. Checked BEFORE wantsFull so "fundamental
+    // analysis" doesn't fall into the /analy/ full-view trap.
+    if (hasFundamental && aspectCount === 1) return 'fundamentals';
+
     // Broad / analysis / multi-aspect queries → full response, no section filtering.
-    // Covers "fundamentals", "full analysis", "overview", "should I buy", and any query
-    // asking for MORE THAN ONE aspect (e.g. "fundamentals AND technicals"). This must run
+    // Covers "full analysis", "overview", "tell me about", and any query asking for
+    // MORE THAN ONE aspect (e.g. "fundamentals AND technicals"). This must run
     // BEFORE the focused checks so a mixed query is never mistaken for a single-aspect one.
     const wantsFull =
-        hasFundamental ||
         /analy|overview|detail|in.?depth|complete|everything|\bfull\b|tell me about|deep dive/i.test(q);
-    const aspectCount = [hasFundamental, hasTechnical, hasNews, hasChart].filter(Boolean).length;
     if (wantsFull || aspectCount >= 2) return 'full';
 
     // K-002: buy/sell decision queries get a focused verdict view (signal + score +
