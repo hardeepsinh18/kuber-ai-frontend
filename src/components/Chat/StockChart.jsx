@@ -114,7 +114,7 @@ const MAX_BAR_PX = 24;
 const DEFAULT_BAR_PX = 11;
 
 const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAGlance = null }) => {
-    const [chartType, setChartType] = useState('area');
+    const [chartType, setChartType] = useState('candle');
     const [candleRange, setCandleRange] = useState(66); // default 3M
     const [barPx, setBarPx] = useState(DEFAULT_BAR_PX);
     const [visibleCount, setVisibleCount] = useState(null); // null = show all data
@@ -540,6 +540,20 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
             {/* Chart type selector */}
             <div className="flex flex-wrap gap-2 mb-4">
                 <button
+                    onClick={() => setChartType('candle')}
+                    aria-label="Candlestick chart"
+                    aria-pressed={chartType === 'candle'}
+                    className={clsx(
+                        "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
+                        chartType === 'candle'
+                            ? "bg-[#FDD405] text-black font-semibold"
+                            : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/60"
+                    )}
+                >
+                    <BarChart2 className="w-4 h-4" />
+                    Candles
+                </button>
+                <button
                     onClick={() => setChartType('area')}
                     aria-label="Area chart"
                     aria-pressed={chartType === 'area'}
@@ -554,20 +568,6 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                     Area
                 </button>
                 <button
-                    onClick={() => setChartType('line')}
-                    aria-label="Line chart"
-                    aria-pressed={chartType === 'line'}
-                    className={clsx(
-                        "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
-                        chartType === 'line'
-                            ? "bg-[#FDD405] text-black font-semibold"
-                            : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/60"
-                    )}
-                >
-                    <LineChartIcon className="w-4 h-4" />
-                    Line
-                </button>
-                <button
                     onClick={() => setChartType('ohlc')}
                     aria-label="OHLC bar chart"
                     aria-pressed={chartType === 'ohlc'}
@@ -580,20 +580,6 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                 >
                     <BarChart3 className="w-4 h-4" />
                     OHLC
-                </button>
-                <button
-                    onClick={() => setChartType('candle')}
-                    aria-label="Candlestick chart"
-                    aria-pressed={chartType === 'candle'}
-                    className={clsx(
-                        "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
-                        chartType === 'candle'
-                            ? "bg-[#FDD405] text-black font-semibold"
-                            : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/60"
-                    )}
-                >
-                    <BarChart2 className="w-4 h-4" />
-                    Candles
                 </button>
 
                 <div className="flex items-center gap-1 ml-auto">
