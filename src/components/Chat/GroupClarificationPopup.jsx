@@ -1,31 +1,18 @@
 import { createPortal } from 'react-dom';
 import { useEffect } from 'react';
 
-const SECTOR_COLOR = {
-    'IT Services':    '#6366f1',
-    'Automobiles':    '#f59e0b',
-    'Steel / Metals': '#64748b',
-    'Power':          '#f97316',
-    'FMCG':           '#10b981',
-    'Chemicals':      '#8b5cf6',
-    'Telecom':        '#06b6d4',
-    'Banking':        '#3b82f6',
-    'Insurance':      '#ec4899',
-    'Infrastructure': '#84cc16',
-    'Diversified':    '#a78bfa',
-    'Realty':         '#fb923c',
-    'Defence':        '#94a3b8',
-};
-
-const nameColor = (name) => {
-    const palette = ['#6366f1','#8b5cf6','#f59e0b','#10b981','#3b82f6','#f97316','#06b6d4','#ec4899'];
-    let h = 0;
-    for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
-    return palette[Math.abs(h) % palette.length];
-};
-
+/**
+ * Company disambiguation selector — shown when a query maps to a business group
+ * (e.g. "HDFC" → HDFC Bank / HDFC AMC / HDFC Life, "Tata Motors" → TMPV / TMCV).
+ * Rendered as a brand-themed list panel that sits directly above the input box,
+ * sharing its width and gold border so it reads as part of the composer.
+ * Theme-aware (light + dark) — the portal lives under <html class="dark|light">.
+ */
 const GroupClarificationPopup = ({ groupName, candidates, onSelect, onDismiss, disabled }) => {
     const root = document.getElementById('kuberai-popup-root');
+
+    const tickerOf = (c) =>
+        (c.ticker || '').replace('.NS', '').replace('.BO', '') || c.name;
 
     useEffect(() => {
         if (!root || !candidates?.length) return;
@@ -34,11 +21,8 @@ const GroupClarificationPopup = ({ groupName, candidates, onSelect, onDismiss, d
             if (idx >= 1 && idx <= Math.min(candidates.length, 6)) {
                 e.preventDefault();
                 // Send the ticker (e.g. "TMPV"), not the name — the LLM collapses long
-                // successor names (e.g. "Tata Motors Passenger Vehicles") back to the
-                // ambiguous parent, which would re-trigger this same disambiguation.
-                const c = candidates[idx - 1];
-                const t = (c.ticker || '').replace('.NS', '').replace('.BO', '') || c.name;
-                if (!disabled) onSelect(t);
+                // successor names back to the ambiguous parent, re-triggering this popup.
+                if (!disabled) onSelect(tickerOf(candidates[idx - 1]));
             }
             if (e.key === 'Escape') onDismiss();
         };
@@ -51,155 +35,118 @@ const GroupClarificationPopup = ({ groupName, candidates, onSelect, onDismiss, d
     const shown = candidates.slice(0, 6);
 
     return createPortal(
-        <div style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 99999,
-            pointerEvents: 'none',
-            display: 'flex',
-            alignItems: 'flex-end',
-            justifyContent: 'center',
-            paddingBottom: '112px',
-            paddingLeft: '16px',
-            paddingRight: '16px',
-        }}>
+        <div className="fixed inset-0 z-[99999] pointer-events-none flex items-end justify-center px-4 pb-[104px]">
             <div
-                className="gcp-card"
-                style={{
-                    pointerEvents: 'auto',
-                    width: '100%',
-                    maxWidth: '560px',
-                    borderRadius: '20px',
-                    overflow: 'hidden',
-                    background: 'rgba(12, 12, 16, 0.97)',
-                    backdropFilter: 'blur(20px)',
-                    WebkitBackdropFilter: 'blur(20px)',
-                    border: '1px solid rgba(255,255,255,0.07)',
-                    boxShadow: '0 -2px 16px rgba(139,92,246,0.08), 0 24px 64px rgba(0,0,0,0.7)',
-                    fontFamily: 'Inter, system-ui, sans-serif',
-                }}
+                className="pointer-events-auto w-full max-w-3xl overflow-hidden rounded-2xl
+                           bg-white dark:bg-[#1a1a1a]
+                           border border-[#FDD405]/70 dark:border-[#FDD405]/35
+                           shadow-[0_16px_48px_rgba(0,0,0,0.18)] dark:shadow-[0_16px_48px_rgba(0,0,0,0.6)]
+                           animate-in fade-in slide-in-from-bottom-2 duration-200"
             >
                 {/* Header */}
-                <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '14px 16px 12px',
-                    borderBottom: '1px solid rgba(255,255,255,0.05)',
-                }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        {/* Animated purple dot */}
-                        <span style={{
-                            width: '8px', height: '8px', borderRadius: '50%',
-                            background: 'radial-gradient(circle, #c4b5fd, #7c3aed)',
-                            boxShadow: '0 0 8px rgba(167,139,250,0.6)',
-                            flexShrink: 0, display: 'inline-block',
-                        }} />
-                        <div>
-                            <span style={{ fontSize: '13px', fontWeight: 600, color: '#f4f4f5' }}>
-                                {groupName}
-                            </span>
-                            <span style={{ fontSize: '12px', color: '#71717a', marginLeft: '6px' }}>
-                                · select a company
-                            </span>
-                        </div>
+                <div className="flex items-center justify-between px-4 py-2.5 border-b border-zinc-100 dark:border-white/8">
+                    <div className="flex items-center gap-2 min-w-0">
+                        <span className="w-2 h-2 rounded-full flex-shrink-0 bg-[#FDD405]
+                                         shadow-[0_0_8px_rgba(253,212,5,0.6)]" />
+                        <span className="text-[13px] font-semibold text-zinc-900 dark:text-white truncate">
+                            {groupName}
+                        </span>
+                        <span className="text-[12px] text-zinc-400 dark:text-zinc-500 flex-shrink-0">
+                            · select a company
+                        </span>
                     </div>
                     <button
                         type="button"
                         onClick={onDismiss}
-                        style={{
-                            background: 'rgba(255,255,255,0.05)',
-                            border: 'none',
-                            borderRadius: '6px',
-                            color: '#71717a',
-                            width: '24px', height: '24px',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            cursor: 'pointer',
-                            fontSize: '15px', lineHeight: 1,
-                            transition: 'background 0.1s, color 0.1s',
-                        }}
-                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#d4d4d8'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#71717a'; }}
+                        aria-label="Dismiss"
+                        className="w-6 h-6 flex items-center justify-center rounded-md flex-shrink-0
+                                   text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100
+                                   dark:text-zinc-500 dark:hover:text-zinc-200 dark:hover:bg-zinc-800
+                                   transition-colors text-[15px] leading-none"
                     >×</button>
                 </div>
 
-                {/* Candidate rows */}
-                {shown.map((c, i) => {
-                    const ticker = (c.ticker || '').replace('.NS', '').replace('.BO', '');
-                    const name = c.name || ticker;
-                    const sector = c.sector || '';
-                    const initial = name.charAt(0).toUpperCase();
-                    const color = SECTOR_COLOR[sector] || nameColor(name);
-                    return (
-                        <button
-                            key={c.ticker || i}
-                            type="button"
-                            disabled={disabled}
-                            className={`gcp-row${i === shown.length - 1 ? ' last' : ''}`}
-                            onClick={() => onSelect(ticker || name)}
-                        >
-                            {/* Avatar */}
-                            <span style={{
-                                width: '34px', height: '34px', borderRadius: '10px',
-                                background: `${color}22`,
-                                border: `1px solid ${color}44`,
-                                color: color,
-                                fontSize: '13px', fontWeight: 700,
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                flexShrink: 0,
-                            }}>
-                                {initial}
-                            </span>
+                {/* Candidate list */}
+                <div role="listbox" aria-label={`${groupName} companies`}>
+                    {shown.map((c, i) => {
+                        const ticker = (c.ticker || '').replace('.NS', '').replace('.BO', '');
+                        const name = c.name || ticker;
+                        const sector = c.sector || '';
+                        const initial = (name.charAt(0) || '?').toUpperCase();
+                        return (
+                            <button
+                                key={c.ticker || i}
+                                type="button"
+                                role="option"
+                                disabled={disabled}
+                                onClick={() => onSelect(ticker || name)}
+                                className="group relative flex items-center gap-3 w-full text-left px-4 py-2.5
+                                           border-b border-zinc-100 dark:border-white/5 last:border-b-0
+                                           hover:bg-[#FDD405]/10 dark:hover:bg-[#FDD405]/8
+                                           disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                {/* Gold left accent on hover */}
+                                <span className="absolute left-0 top-1/2 -translate-y-1/2 h-0 w-[3px] rounded-r
+                                                 bg-[#FDD405] group-hover:h-7 transition-all duration-150" />
 
-                            {/* Name + ticker */}
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                                <p style={{ fontSize: '13px', fontWeight: 600, color: '#f4f4f5', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                    {name}
-                                </p>
-                                <p style={{ fontSize: '11px', color: '#52525b', margin: '1px 0 0', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                    <span style={{ color: '#71717a', fontWeight: 500 }}>{ticker}</span>
-                                    {sector && (
-                                        <>
-                                            <span style={{ color: '#3f3f46' }}>·</span>
-                                            <span style={{ color: color, opacity: 0.85 }}>{sector}</span>
-                                        </>
-                                    )}
-                                </p>
-                            </div>
+                                {/* Avatar — brand gold, consistent across companies */}
+                                <span className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0
+                                                 text-[13px] font-extrabold
+                                                 bg-[#FDD405]/15 border border-[#FDD405]/30
+                                                 text-amber-600 dark:text-[#FDD405]">
+                                    {initial}
+                                </span>
 
-                            {/* Keyboard shortcut + chevron */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-                                <span style={{
-                                    width: '18px', height: '18px', borderRadius: '4px',
-                                    background: 'rgba(255,255,255,0.05)',
-                                    border: '1px solid rgba(255,255,255,0.08)',
-                                    color: '#52525b', fontSize: '10px', fontWeight: 600,
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                }}>{i + 1}</span>
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3f3f46" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M9 18l6-6-6-6"/>
-                                </svg>
-                            </div>
-                        </button>
-                    );
-                })}
+                                {/* Name + ticker/sector */}
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-[13px] font-semibold text-zinc-900 dark:text-zinc-100 truncate">
+                                        {name}
+                                    </p>
+                                    <p className="text-[11px] mt-0.5 flex items-center gap-1.5 truncate">
+                                        <span className="text-zinc-500 dark:text-zinc-400 font-medium">{ticker}</span>
+                                        {sector && (
+                                            <>
+                                                <span className="text-zinc-300 dark:text-zinc-600">·</span>
+                                                <span className="text-zinc-400 dark:text-zinc-500 truncate">{sector}</span>
+                                            </>
+                                        )}
+                                    </p>
+                                </div>
 
-                {/* Footer */}
-                <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '5px',
-                    padding: '9px 16px',
-                    borderTop: '1px solid rgba(255,255,255,0.04)',
-                }}>
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#3f3f46" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="2" y="4" width="20" height="16" rx="2"/>
-                        <path d="M8 10h.01M12 10h.01M16 10h.01M8 14h8"/>
-                    </svg>
-                    <span style={{ fontSize: '10px', color: '#3f3f46', letterSpacing: '0.01em' }}>
-                        Press <kbd style={{ fontFamily: 'inherit', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '3px', padding: '0 3px', fontSize: '10px', color: '#52525b' }}>1</kbd>–<kbd style={{ fontFamily: 'inherit', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '3px', padding: '0 3px', fontSize: '10px', color: '#52525b' }}>{shown.length}</kbd> or click · <kbd style={{ fontFamily: 'inherit', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '3px', padding: '0 3px', fontSize: '10px', color: '#52525b' }}>Esc</kbd> to dismiss
-                    </span>
+                                {/* Number key + chevron */}
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                    <span className="w-5 h-5 rounded-md flex items-center justify-center text-[11px] font-bold
+                                                     bg-zinc-100 text-zinc-500 border border-zinc-200
+                                                     dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700
+                                                     group-hover:bg-[#FDD405] group-hover:text-black group-hover:border-[#FDD405]
+                                                     transition-colors">
+                                        {i + 1}
+                                    </span>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                         className="text-zinc-300 dark:text-zinc-600 group-hover:text-[#FDD405] transition-colors"
+                                         stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M9 18l6-6-6-6" />
+                                    </svg>
+                                </div>
+                            </button>
+                        );
+                    })}
+                </div>
+
+                {/* Footer hint */}
+                <div className="flex items-center justify-center gap-1.5 px-4 py-2
+                                border-t border-zinc-100 dark:border-white/5
+                                text-[10px] text-zinc-400 dark:text-zinc-600">
+                    <span>Press</span>
+                    <kbd className="px-1 rounded bg-zinc-100 border border-zinc-200 text-zinc-500
+                                    dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400">1</kbd>
+                    <span>–</span>
+                    <kbd className="px-1 rounded bg-zinc-100 border border-zinc-200 text-zinc-500
+                                    dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400">{shown.length}</kbd>
+                    <span>or click ·</span>
+                    <kbd className="px-1 rounded bg-zinc-100 border border-zinc-200 text-zinc-500
+                                    dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400">Esc</kbd>
+                    <span>to dismiss</span>
                 </div>
             </div>
         </div>,
