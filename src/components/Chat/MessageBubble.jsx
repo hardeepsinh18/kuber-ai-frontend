@@ -622,15 +622,15 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
     const textToDisplay = (!isUser && queryIntent !== 'full' && queryIntent !== 'verdict')
         ? filterByIntent(strippedText, queryIntent) : strippedText;
 
-    // Hoist the "> Verdict:" blockquote out of the narrative once streaming is
-    // done, so it renders as a standalone card below the price header and above
-    // the chart. While streaming it stays inline (blockquote renderer) to avoid
-    // mid-stream reflow.
+    // Hoist the "> Verdict:" blockquote out of the narrative the moment it
+    // appears — including mid-stream — so the verdict shows up top (below the
+    // price header, above the chart) without waiting for the full answer.
+    // The card grows as the verdict streams in; it never renders at the bottom.
     const { verdict: hoistedVerdict, body: contentBody } = React.useMemo(
-        () => ((!isUser && !isStreaming)
+        () => (!isUser
             ? extractVerdict(textToDisplay)
             : { verdict: null, body: textToDisplay }),
-        [isUser, isStreaming, textToDisplay]
+        [isUser, textToDisplay]
     );
 
     const relevantNews = React.useMemo(() => {
@@ -987,7 +987,10 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                                 ),
                                 blockquote: ({ children }) => {
                                     const raw = getChildText(children).toLowerCase();
-                                    const isVerdict = /verdict:/i.test(raw);
+                                    const isVerdict = /verdict\s*:/i.test(raw);
+                                    // Verdict blockquotes are hoisted above the chart by
+                                    // extractVerdict; never render them inline at the bottom.
+                                    if (isVerdict && !isUser) return null;
                                     if (isVerdict) {
                                         const isBull = /\b(buy|accumulate|bullish|upside|breakout|strong|yes)\b/.test(raw);
                                         const isBear = /\b(sell|exit|bearish|downside|breakdown|avoid|no)\b/.test(raw);
@@ -1122,60 +1125,10 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
 
 
 
-                    {/* ── Mode badge + Feedback thumbs ─────────────────── */}
-                    {((messageId && onFeedback) || responseMode) && (
-                        <div className="mt-3 flex items-center gap-2">
-                            {responseMode && (
-                                <span className={clsx(
-                                    "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border",
-                                    responseMode === 'snap'
-                                        ? "bg-amber-50 border-amber-200 text-amber-600 dark:bg-amber-900/20 dark:border-amber-700 dark:text-[#FDD405]"
-                                        : "bg-zinc-100 border-zinc-200 text-zinc-500 dark:bg-zinc-800/60 dark:border-zinc-700 dark:text-zinc-400"
-                                )}>
-                                    {responseMode === 'snap' ? '⚡ Snap' : '🔍 Analyst'}
-                                </span>
-                            )}
-                            {messageId && onFeedback && (
-                                <>
-                                    <button
-                                        type="button"
-                                        aria-label="Helpful"
-                                        onClick={() => handleFeedback(1)}
-                                        disabled={feedbackRating !== null}
-                                        className={clsx(
-                                            'p-1.5 rounded-lg transition-all text-sm leading-none',
-                                            feedbackRating === 1
-                                                ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30'
-                                                : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700/50',
-                                            feedbackRating !== null && feedbackRating !== 1 && 'opacity-30 cursor-not-allowed'
-                                        )}
-                                    >
-                                        👍
-                                    </button>
-                                    <button
-                                        type="button"
-                                        aria-label="Not helpful"
-                                        onClick={() => handleFeedback(-1)}
-                                        disabled={feedbackRating !== null}
-                                        className={clsx(
-                                            'p-1.5 rounded-lg transition-all text-sm leading-none',
-                                            feedbackRating === -1
-                                                ? 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30'
-                                                : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700/50',
-                                            feedbackRating !== null && feedbackRating !== -1 && 'opacity-30 cursor-not-allowed'
-                                        )}
-                                    >
-                                        👎
-                                    </button>
-                                    {feedbackRating !== null && (
-                                        <span className="text-[11px] text-zinc-400 dark:text-zinc-500 ml-0.5">
-                                            {feedbackRating === 1 ? 'Thanks!' : 'Got it'}
-                                        </span>
-                                    )}
-                                </>
-                            )}
-                        </div>
-                    )}
+                    {/* Mode badge + feedback thumbs row removed (2026-07-10, user request):
+                        the "🔍 Analyst / 👍 👎" strip under every response was visual noise.
+                        handleFeedback/feedbackRating kept in state in case feedback returns
+                        elsewhere later. */}
 
                     </div>{/* end post-text fade wrapper */}
 
