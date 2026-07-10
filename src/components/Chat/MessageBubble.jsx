@@ -117,6 +117,73 @@ const filterByIntent = (text, intent) => {
 };
 
 
+// ─── Verdict hoist ────────────────────────────────────────────────────────────
+// Pull the "> **Verdict:** …" blockquote out of the narrative so it can render
+// as a standalone card below the price header and above the chart. Returns the
+// verdict's inner markdown + the body with that blockquote removed (other
+// blockquotes are left untouched).
+const extractVerdict = (md) => {
+    if (!md || typeof md !== 'string') return { verdict: null, body: md };
+    const lines = md.split('\n');
+    let start = -1, end = -1;
+    for (let i = 0; i < lines.length; i++) {
+        if (/^\s*>/.test(lines[i])) {
+            let j = i;
+            while (j < lines.length && /^\s*>/.test(lines[j])) j++;
+            const block = lines.slice(i, j).join('\n');
+            if (/verdict\s*:/i.test(block)) { start = i; end = j; break; }
+            i = j; // skip past this non-verdict blockquote
+        }
+    }
+    if (start === -1) return { verdict: null, body: md };
+    const verdict = lines.slice(start, end)
+        .map((l) => l.replace(/^\s*>\s?/, ''))
+        .join('\n')
+        .trim();
+    const body = [...lines.slice(0, start), ...lines.slice(end)]
+        .join('\n')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+    return { verdict, body };
+};
+
+// Standalone Verdict card — same styling as the inline blockquote verdict, but
+// positioned above the chart. Bull/bear/neutral tint inferred from the text.
+const VerdictCard = ({ text }) => {
+    if (!text) return null;
+    const raw = text.toLowerCase();
+    const isBull = /\b(buy|accumulate|bullish|upside|breakout|strong|yes)\b/.test(raw);
+    const isBear = /\b(sell|exit|bearish|downside|breakdown|avoid|no)\b/.test(raw);
+    const borderColor = isBull ? '#22c55e' : isBear ? '#ef4444' : '#FDD405';
+    const bgTint = isBull ? 'rgba(34,197,94,0.07)' : isBear ? 'rgba(239,68,68,0.07)' : 'rgba(253,212,5,0.08)';
+    const label = isBull ? '🟢 Verdict' : isBear ? '🔴 Verdict' : '🟡 Verdict';
+    return (
+        <div className="mb-4 rounded-xl overflow-hidden" style={{ border: `1.5px solid ${borderColor}40` }}>
+            <div className="px-3 py-1 text-[10px] font-bold tracking-widest uppercase"
+                 style={{ backgroundColor: `${borderColor}18`, color: borderColor }}>
+                {label}
+            </div>
+            <div className="px-4 py-3 text-[14px] font-medium text-zinc-800 dark:text-zinc-100"
+                 style={{ backgroundColor: bgTint }}>
+                <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                        p: ({ children }) => <p className="m-0 leading-relaxed">{children}</p>,
+                        strong: ({ children }) => <strong className="font-bold">{children}</strong>,
+                        em: ({ children }) => <em className="italic text-zinc-500 dark:text-zinc-400 font-normal">{children}</em>,
+                        a: ({ href, children }) => (
+                            <a href={href} target="_blank" rel="noopener noreferrer"
+                               className="text-amber-700 dark:text-[#FDD405] underline underline-offset-2">{children}</a>
+                        ),
+                    }}
+                >
+                    {text}
+                </ReactMarkdown>
+            </div>
+        </div>
+    );
+};
+
 // ─── Verdict / Signal Card ────────────────────────────────────────────────────
 const SignalCard = ({ signal }) => {
     if (!signal || !signal.recommendation) return null;
@@ -553,6 +620,17 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
     const textToDisplay = (!isUser && queryIntent !== 'full' && queryIntent !== 'verdict')
         ? filterByIntent(strippedText, queryIntent) : strippedText;
 
+    // Hoist the "> Verdict:" blockquote out of the narrative once streaming is
+    // done, so it renders as a standalone card below the price header and above
+    // the chart. While streaming it stays inline (blockquote renderer) to avoid
+    // mid-stream reflow.
+    const { verdict: hoistedVerdict, body: contentBody } = React.useMemo(
+        () => ((!isUser && !isStreaming)
+            ? extractVerdict(textToDisplay)
+            : { verdict: null, body: textToDisplay }),
+        [isUser, isStreaming, textToDisplay]
+    );
+
     const relevantNews = React.useMemo(() => {
         const headlines = Array.isArray(newsHeadlines) ? newsHeadlines : [];
         if (!headlines.length) return [];
@@ -725,6 +803,9 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                             </div>
                         );
                     })()}
+
+                    {/* ── Verdict — hoisted above the chart once complete ── */}
+                    {hoistedVerdict && <VerdictCard text={hoistedVerdict} />}
 
                     {/* ── Chart(s) ────────────────────────────────────── */}
                     {showChart && <ChartSection
@@ -988,7 +1069,7 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                                 ),
                             }}
                         >
-                            {textToDisplay}
+                            {contentBody}
                         </ReactMarkdown>
                         {!isUser && isStreaming && !isComplete && (
                             <span className="inline-block w-[2px] h-4 bg-zinc-400 dark:bg-zinc-500 ml-0.5 animate-pulse"></span>
