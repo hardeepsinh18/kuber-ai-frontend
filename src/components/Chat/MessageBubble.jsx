@@ -517,38 +517,28 @@ const hasHorizonQuestion = (text) => {
 
 const HorizonChoice = ({ symbol, onChoice }) => {
     const base = symbol ? `${symbol} ` : '';
+    const options = [
+        { label: 'Short Term', query: `${base}short term trading — entry, target, stop loss` },
+        { label: 'Long Term',  query: `${base}long term investment — fundamentals, growth outlook` },
+    ];
     return (
-        <div className="flex flex-wrap gap-3 mt-5 mb-2">
-            <button
-                type="button"
-                onClick={() => onChoice(`${base}short term trading — entry, target, stop loss`)}
-                className="flex items-center gap-2 px-6 py-3 rounded-2xl
-                           bg-gradient-to-r from-[#FDD405] to-[#FDD405]
-                           text-black font-bold text-[14px]
-                           shadow-[0_2px_18px_rgba(253,212,5,0.40)]
-                           hover:shadow-[0_4px_28px_rgba(253,212,5,0.60)]
-                           hover:from-[#FDD405] hover:to-[#FDD405]/80
-                           hover:scale-[1.03] active:scale-[0.97]
-                           transition-all duration-150">
-                <span>⚡</span>
-                Short Term
-            </button>
-            <button
-                type="button"
-                onClick={() => onChoice(`${base}long term investment — fundamentals, growth outlook`)}
-                className="flex items-center gap-2 px-6 py-3 rounded-2xl
-                           bg-zinc-800/70 dark:bg-zinc-800/80
-                           border border-zinc-600/60 dark:border-zinc-700/60
-                           text-zinc-200 dark:text-zinc-200
-                           font-bold text-[14px]
-                           hover:bg-amber-950/50 dark:hover:bg-amber-950/40
-                           hover:border-amber-600/50
-                           hover:text-amber-300
-                           hover:scale-[1.03] active:scale-[0.97]
-                           transition-all duration-150">
-                <span>🏛️</span>
-                Long Term
-            </button>
+        <div className="flex flex-wrap gap-2.5 mt-4 mb-1">
+            {options.map(({ label, query }) => (
+                <button
+                    key={label}
+                    type="button"
+                    onClick={() => onChoice(query)}
+                    className="px-5 py-2 rounded-full text-[13px] font-semibold
+                               text-zinc-700 dark:text-zinc-200
+                               bg-white dark:bg-zinc-800/70
+                               border border-zinc-300/70 dark:border-zinc-600/60
+                               hover:border-[#FDD405] dark:hover:border-[#FDD405]/70
+                               hover:bg-[#FDD405]/10 dark:hover:bg-[#FDD405]/10
+                               active:scale-[0.97]
+                               transition-all duration-150">
+                    {label}
+                </button>
+            ))}
         </div>
     );
 };
