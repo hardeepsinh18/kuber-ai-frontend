@@ -610,8 +610,10 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
     // section heading has appeared in the stream, meaning the direct answer is complete.
     // Disclaimer + chips appear immediately at that point instead of waiting 20-25s.
     const rawText = (!isUser && isStreaming) ? displayedText : bodyForTyping;
+    // 'fundamentals' carries heavy score cards like 'full' — wait for the whole
+    // answer instead of the first-heading shortcut used by the light intents.
     const isEffectivelyDone = !isStreaming || (
-        !isFull && isStreaming && /\n#{1,4}[^a-zA-Z\n]*[a-zA-Z]/m.test(rawText)
+        !isFull && !isFundamentals && isStreaming && /\n#{1,4}[^a-zA-Z\n]*[a-zA-Z]/m.test(rawText)
     );
 
     // Cards below the text should be hidden while streaming and fade in after.

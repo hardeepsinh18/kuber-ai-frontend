@@ -1771,15 +1771,9 @@ export default function FundamentalScoreCard({ scoreCard, symbol }) {
             ) : (
                 /* No horizon — show individual cards directly */
                 <>
-                    {(overall?.score != null || fund?.score != null) && (
-                        <OverallHealthScore
-                            score={overall?.score ?? fund?.score}
-                            label={overall?.label ?? fund?.label}
-                            summary={overall ? null : fund?.summary}
-                            ratingsSum={ratingsSum}
-                            components={overall?.components}
-                        />
-                    )}
+                    {/* Overall Health Score banner removed (2026-07-10, user request) —
+                        the Technical/Financial score cards below carry the detail;
+                        OverallHealthScore component kept above for potential reuse. */}
 
                     {tech && <TechnicalScoreCard tech={tech} />}
 
