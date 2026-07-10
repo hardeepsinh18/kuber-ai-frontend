@@ -1409,14 +1409,7 @@ const KuberScoreBanner = ({ horizon, tech, fund, ratingsSum, symbol }) => {
                     {/* ── Fundamental Engine ── */}
                     {fund ? (
                         <>
-                            {fund.score != null && (
-                                <OverallHealthScore
-                                    score={fund.score}
-                                    label={fund.label}
-                                    summary={fund.summary}
-                                    ratingsSum={ratingsSum}
-                                />
-                            )}
+                            {/* Overall Health banner removed here too (2026-07-10) */}
 
                             {/* ── Technical Engine ── */}
                             {tech && <TechnicalScoreCard tech={tech} />}
