@@ -1132,7 +1132,9 @@ const ChartPatternCard = ({ cp }) => {
 /* ─── PATTERN DETECTION & RESISTANCE ALERT ───────────────────────────────── */
 // Hide patterns that formed longer ago than this (bars ≈ trading days on a daily chart).
 // Keeps the section focused on recent formations instead of stale ones from months back.
-const MAX_PATTERN_AGE_DAYS = 30;
+// Product rule: only a pattern that formed/broke out within the last ~2 weeks counts as
+// "forming now" — kept in sync with StockChart's MAX_PATTERN_AGE_DAYS.
+const MAX_PATTERN_AGE_DAYS = 14;
 
 export const PatternDetectionSection = ({ patternSummary, chartData = null }) => {
     const [open, setOpen] = React.useState(false);
