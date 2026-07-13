@@ -236,21 +236,6 @@ const QuickAnswer = ({
     return (
         <div className="space-y-3" style={{ animation: 'slideUpFade 0.4s cubic-bezier(0.22,1,0.36,1) both' }}>
 
-            {/* ── Header ─────────────────────────────────────────── */}
-            <div>
-                <div className="flex items-start justify-between gap-3">
-                    <h2 className="text-[26px] sm:text-[30px] font-black uppercase tracking-tight leading-none text-zinc-900 dark:text-white">
-                        Quick Answer
-                    </h2>
-                    <span className="text-[9px] font-bold uppercase tracking-[0.3em] text-zinc-400 dark:text-zinc-600 mt-1.5 flex-shrink-0">
-                        Kuber AI
-                    </span>
-                </div>
-                <p className="text-[12px] text-zinc-500 dark:text-zinc-400 mt-1.5">
-                    The instant read. Verdict, live chart, overall score and reasoning, all on one screen, understood in under ten seconds.
-                </p>
-            </div>
-
             {/* ── Company card ───────────────────────────────────── */}
             {(companyName || price != null) && (
                 <Card className="px-4 py-3.5 flex items-center gap-3">
