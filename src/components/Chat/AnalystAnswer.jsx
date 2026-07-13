@@ -7,7 +7,7 @@ import StockChart from './StockChart';
 import {
     BRAND, fmtINR, InlineMd, Card, MiniLabel, SectionBanner,
     CompanyCard, VerdictBand, MarketStatsCard, buildMarketStats,
-    ScoreGrid, getScores, ScorecardHeader, MetricCell, IndicatorsTable,
+    ScoreGrid, getScores, ScorecardHeader, MetricCell,
 } from './answerKit';
 import {
     TechnicalScoreCard as TechnicalDetailCard,
@@ -200,7 +200,7 @@ const PatternSection = ({ patternSummary, chartData, symbolLabel, indicatorsTabl
 };
 
 /* ─── TECHNICAL SCORECARD ────────────────────────────────────────────────── */
-const TechnicalScorecard = ({ tech, technicalSummary, indicatorsTable, score, indicatorsAsOf }) => {
+const TechnicalScorecard = ({ tech, technicalSummary, indicatorsTable, score }) => {
     const rows = Array.isArray(indicatorsTable) ? indicatorsTable.slice(0, 8) : [];
     const fallbackCells = [];
     if (!rows.length && technicalSummary) {
@@ -240,9 +240,8 @@ const TechnicalScorecard = ({ tech, technicalSummary, indicatorsTable, score, in
                 </ul>
             )}
 
-            {/* Original interactive detail — full score breakdown + indicators table */}
+            {/* Original interactive detail — full score breakdown */}
             {tech && <TechnicalDetailCard tech={tech} />}
-            <IndicatorsTable rows={indicatorsTable} asOfDate={indicatorsAsOf} />
         </Card>
     );
 };
@@ -614,8 +613,7 @@ const AnalystAnswer = ({
             )}
 
             <TechnicalScorecard tech={scoreCard?.technical} technicalSummary={technicalSummary}
-                                indicatorsTable={indicatorsTable} score={scores.technical}
-                                indicatorsAsOf={metadata?.indicators_as_of} />
+                                indicatorsTable={indicatorsTable} score={scores.technical} />
 
             <FundamentalScorecard fund={scoreCard?.fundamental} score={scores.fundamental}
                                   symbolLabel={symbolLabel} />
