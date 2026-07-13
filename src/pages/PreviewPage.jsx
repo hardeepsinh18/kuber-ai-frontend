@@ -179,28 +179,51 @@ const MOCK_MGMT = {
     tone_label: 'Bullish',
     period: 'Q1 FY27',
     summary: 'Management tone is confident — deal wins called out, margin guidance retained.',
+    aspects: [
+        { key: 'demand', label: 'Demand Outlook', sentiment: 'bullish' },
+        { key: 'margins', label: 'Margins', sentiment: 'neutral' },
+        { key: 'guidance', label: 'Guidance', sentiment: 'bullish' },
+    ],
+    quotes: [
+        { text: 'The bank’s focus on technology and customer acquisition has positioned it well for future growth.' },
+    ],
 };
 
 const MOCK_ARI = {
     company_story: 'Management commentary in the latest annual report emphasized margin expansion and continued investment in AI-led delivery.',
     future_outlook: 'Overall tone scored positive against the prior year’s filing.',
     confidence: 0.88,
-    growth_drivers: ['AI-led services', 'Cloud transformation'],
+    fiscal_year: 'FY2026',
+    pdf_url: 'https://www.tcs.com/investors',
+    growth_drivers: ['AI-led services scaling across top accounts', 'Cloud transformation deal pipeline at record high'],
+    risk_radar: [
+        { title: 'Currency headwinds', category: 'Macro', severity: 'medium' },
+        { title: 'Visa & talent costs', category: 'Operational', severity: 'low' },
+    ],
 };
 
 const MOCK_DEVELOPMENTS = {
     items: [
-        { title: 'Board approved a ₹18,000 crore share buyback and confirmed a new leadership hire to head the AI practice.', category: 'Buyback', importance: 'high', date: '2026-07-10' },
-        { title: 'Won a large multi-year cloud transformation deal with a European bank.', category: 'Order Win', importance: 'high', date: '2026-07-08' },
+        { title: 'Board approved a ₹18,000 crore share buyback and confirmed a new leadership hire to head the AI practice.', category: 'Buyback', importance: 'high', date: '2026-07-10', url: 'https://www.nseindia.com', summary: 'Record date to be announced' },
+        { title: 'Won a large multi-year cloud transformation deal with a European bank.', category: 'Order Win', importance: 'high', date: '2026-07-08', url: 'https://www.nseindia.com' },
     ],
 };
 
 const MOCK_FILINGS = {
     total: 12,
     groups: [
-        { label: 'announcements', count: 6, items: [{ title: 'No adverse regulatory filings in the past quarter; promoter holding steady with no pledged shares on record.' }] },
-        { label: 'quarterly results', count: 4, items: [] },
-        { label: 'investor meets', count: 2, items: [] },
+        {
+            label: 'annual reports', count: 2, items: [
+                { title: 'TATAPOWER Annual Report FY2026', period: 'FY2026', url: 'https://www.tcs.com/investors' },
+                { title: 'TATAPOWER Annual Report FY2025', period: 'FY2025', url: 'https://www.tcs.com/investors' },
+            ],
+        },
+        {
+            label: 'earnings calls', count: 4, items: [
+                { title: 'Q1 FY27 Earnings Call Transcript', period: 'Q1 FY27', url: 'https://www.tcs.com/investors' },
+            ],
+        },
+        { label: 'announcements', count: 6, items: [{ title: 'Press Release — buyback record date', date: '2026-07-10', url: 'https://www.nseindia.com' }] },
     ],
 };
 

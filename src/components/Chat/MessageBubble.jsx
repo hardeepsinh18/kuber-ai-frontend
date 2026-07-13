@@ -13,6 +13,7 @@ import RecentDevelopments from './RecentDevelopments';
 import AITake from './AITake';
 import QuickAnswer from './QuickAnswer';
 import AnalystAnswer from './AnalystAnswer';
+import { IndicatorsTable } from './answerKit';
 
 const normalizeSymbol = (s) => {
     const raw = String(s || "").trim();
@@ -428,81 +429,6 @@ const ChartSection = ({ chartData, resolveSymbol, patternSummary, atAGlance }) =
                             atAGlance={atAGlance}
                         />
                     ))}
-                </div>
-            )}
-        </div>
-    );
-};
-
-// ─── Expandable Indicators Table ─────────────────────────────────────────────
-const IndicatorsTable = ({ rows, asOfDate }) => {
-    const [open, setOpen] = React.useState(false);
-    if (!rows || rows.length === 0) return null;
-
-    const dateLabel = asOfDate
-        ? new Date(asOfDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-        : null;
-
-    return (
-        <div className="mt-4 border border-zinc-200 dark:border-zinc-700/50 rounded-xl overflow-hidden bg-white dark:bg-[#1C1B15]">
-            {/* Toggle header */}
-            <button
-                onClick={() => setOpen(o => !o)}
-                className="w-full flex items-center justify-between px-4 py-3 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-left"
-            >
-                <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-zinc-900 dark:text-white">
-                        Technical Indicators
-                    </span>
-                    {dateLabel && (
-                        <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                            as of {dateLabel}
-                        </span>
-                    )}
-                </div>
-                {open
-                    ? <ChevronUp size={14} className="text-zinc-500 dark:text-zinc-400 flex-shrink-0" />
-                    : <ChevronDown size={14} className="text-zinc-500 dark:text-zinc-400 flex-shrink-0" />
-                }
-            </button>
-
-            {/* Table */}
-            {open && (
-                <div className="px-3 pb-3 pt-2">
-                    <div className="overflow-x-auto rounded-lg overflow-hidden border border-[#FDD405]">
-                        <table className="w-full text-[13px] border-collapse table-fixed">
-                            <colgroup>
-                                <col className="w-1/4" />
-                                <col className="w-1/4" />
-                                <col className="w-1/2" />
-                            </colgroup>
-                            <thead>
-                                <tr className="bg-[#FDD405]">
-                                    <th className="text-center px-4 py-2.5 text-[13px] font-bold text-black">Indicator</th>
-                                    <th className="text-center px-4 py-2.5 text-[13px] font-bold text-black">Value</th>
-                                    <th className="text-center px-4 py-2.5 text-[13px] font-bold text-black">Signal</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {rows.map((row, i) => (
-                                    <tr
-                                        key={i}
-                                        className="border-b border-[#FDD405] last:border-0 hover:bg-zinc-50 dark:hover:bg-zinc-800/20 transition-colors"
-                                    >
-                                        <td className="px-4 py-2 font-medium text-zinc-800 dark:text-zinc-200 text-center">
-                                            {row.indicator}
-                                        </td>
-                                        <td className="px-4 py-2 text-center font-mono text-zinc-900 dark:text-white">
-                                            {row.value || '—'}
-                                        </td>
-                                        <td className="px-4 py-2 text-zinc-600 dark:text-zinc-300 text-center">
-                                            {row.signal || '—'}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
                 </div>
             )}
         </div>

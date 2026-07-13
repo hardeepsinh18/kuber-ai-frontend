@@ -1777,3 +1777,6 @@ export default function FundamentalScoreCard({ scoreCard, symbol }) {
         </>
     );
 }
+
+// Individual detail cards — embedded by AnalystAnswer inside its scorecard sections
+export { TechnicalScoreCard, FinancialScoreCard, FiveYearScoreCard };

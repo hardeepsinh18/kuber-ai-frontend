@@ -2,13 +2,19 @@ import React from 'react';
 import { clsx } from 'clsx';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Gauge, PieChart, Newspaper, ChevronDown, ChevronUp } from 'lucide-react';
+import { Gauge, PieChart, Newspaper, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 import StockChart from './StockChart';
 import {
     BRAND, fmtINR, InlineMd, Card, MiniLabel, SectionBanner,
     CompanyCard, VerdictBand, MarketStatsCard, buildMarketStats,
-    ScoreGrid, getScores, ScorecardHeader, MetricCell,
+    ScoreGrid, getScores, ScorecardHeader, MetricCell, IndicatorsTable,
 } from './answerKit';
+import {
+    TechnicalScoreCard as TechnicalDetailCard,
+    FinancialScoreCard as FinancialDetailCard,
+    FiveYearScoreCard,
+} from './FundamentalCard';
+import ManagementSentiment from './ManagementSentiment';
 
 /**
  * AnalystAnswer — "one tap deeper" layout for Analyst mode.
@@ -194,7 +200,7 @@ const PatternSection = ({ patternSummary, chartData, symbolLabel, indicatorsTabl
 };
 
 /* ─── TECHNICAL SCORECARD ────────────────────────────────────────────────── */
-const TechnicalScorecard = ({ tech, technicalSummary, indicatorsTable, score }) => {
+const TechnicalScorecard = ({ tech, technicalSummary, indicatorsTable, score, indicatorsAsOf }) => {
     const rows = Array.isArray(indicatorsTable) ? indicatorsTable.slice(0, 8) : [];
     const fallbackCells = [];
     if (!rows.length && technicalSummary) {
@@ -233,6 +239,10 @@ const TechnicalScorecard = ({ tech, technicalSummary, indicatorsTable, score }) 
                     ))}
                 </ul>
             )}
+
+            {/* Original interactive detail — full score breakdown + indicators table */}
+            {tech && <TechnicalDetailCard tech={tech} />}
+            <IndicatorsTable rows={indicatorsTable} asOfDate={indicatorsAsOf} />
         </Card>
     );
 };
@@ -256,7 +266,7 @@ const getRatio = (v) => {
     return [v, null, null];
 };
 
-const FundamentalScorecard = ({ fund, score }) => {
+const FundamentalScorecard = ({ fund, score, symbolLabel }) => {
     if (!fund) return null;
     const ratios = fund.ratios || {};
 
@@ -331,6 +341,10 @@ const FundamentalScorecard = ({ fund, score }) => {
                     </div>
                 </>
             )}
+
+            {/* Original interactive detail — full ratio tables, 5-year history, peer rank */}
+            <FinancialDetailCard fund={fund} symbol={symbolLabel} />
+            {fund?.historical && <FiveYearScoreCard fund={fund} />}
         </Card>
     );
 };
@@ -351,12 +365,26 @@ const fmtDevDate = (d) => {
     } catch { return ''; }
 };
 
+const SEV_COLOR = { high: '#ef4444', medium: '#fb923c', low: '#22c55e' };
+
+/* Clickable doc/announcement title — opens the source in a new tab */
+const DocLink = ({ url, children }) => url ? (
+    <a href={url} target="_blank" rel="noopener noreferrer"
+       className="inline-flex items-start gap-1 text-zinc-700 dark:text-zinc-300 hover:text-amber-700 dark:hover:text-[#FDD405] hover:underline transition-colors">
+        <span className="flex-1 min-w-0">{children}</span>
+        <ExternalLink size={10} className="mt-[3px] flex-shrink-0 opacity-60" />
+    </a>
+) : <span>{children}</span>;
+
 const SentimentalScorecard = ({ managementSentiment, annualReportIntelligence, recentDevelopments, companyFilings, score }) => {
     const ari = annualReportIntelligence;
-    const devItems = Array.isArray(recentDevelopments?.items) ? recentDevelopments.items.slice(0, 3) : [];
+    const devItems = Array.isArray(recentDevelopments?.items) ? recentDevelopments.items.slice(0, 4) : [];
     const filingGroups = Array.isArray(companyFilings?.groups) ? companyFilings.groups.filter(g => g?.count > 0) : [];
     const hasAny = score != null || managementSentiment?.summary || ari?.company_story || devItems.length > 0 || filingGroups.length > 0;
     if (!hasAny) return null;
+
+    const drivers = Array.isArray(ari?.growth_drivers) ? ari.growth_drivers.slice(0, 3) : [];
+    const risks = Array.isArray(ari?.risk_radar) ? ari.risk_radar.slice(0, 4) : [];
 
     return (
         <Card className="p-4">
@@ -369,23 +397,63 @@ const SentimentalScorecard = ({ managementSentiment, annualReportIntelligence, r
                 </p>
             )}
 
+            {/* Original interactive management-tone card — gauge, aspects, quotes */}
+            <ManagementSentiment data={managementSentiment} />
+
             {ari?.company_story && (
                 <SentimentBlock label="Annual report intelligence">
                     {ari.company_story}
                     {ari.future_outlook ? ` ${ari.future_outlook}` : ''}
+                    {drivers.length > 0 && (
+                        <ul className="mt-2 space-y-1">
+                            {drivers.map((d, i) => (
+                                <li key={i} className="flex items-start gap-1.5">
+                                    <span className="mt-[6px] w-1 h-1 rounded-full flex-shrink-0" style={{ backgroundColor: BRAND }} />
+                                    {d}
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                    {risks.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                            {risks.map((r, i) => (
+                                <span key={i} className="px-2 py-0.5 rounded-full text-[9.5px] font-semibold border"
+                                      style={{ color: SEV_COLOR[r?.severity] || SEV_COLOR.medium,
+                                               borderColor: `${SEV_COLOR[r?.severity] || SEV_COLOR.medium}55` }}>
+                                    {r?.title || r}
+                                </span>
+                            ))}
+                        </div>
+                    )}
+                    {ari.pdf_url && (
+                        <a href={ari.pdf_url} target="_blank" rel="noopener noreferrer"
+                           className="mt-2.5 inline-flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.12em]
+                                      text-amber-700 dark:text-[#FDD405] hover:underline">
+                            Read the full annual report{ari.fiscal_year ? ` ${ari.fiscal_year}` : ''} <ExternalLink size={10} />
+                        </a>
+                    )}
                 </SentimentBlock>
             )}
 
             {devItems.length > 0 && (
                 <SentimentBlock label="Announcements">
-                    <ul className="space-y-1.5">
+                    <ul className="space-y-2">
                         {devItems.map((it, i) => (
-                            <li key={i} className="flex items-start justify-between gap-3">
-                                <span className="flex-1 min-w-0">{it.title}</span>
-                                {fmtDevDate(it.date) && (
-                                    <span className="text-[9px] font-extrabold uppercase tracking-wider text-amber-600 dark:text-[#FDD405] flex-shrink-0 mt-0.5">
-                                        {fmtDevDate(it.date)}
-                                    </span>
+                            <li key={i}>
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="flex-1 min-w-0">
+                                        <DocLink url={it.url}>{it.title}</DocLink>
+                                    </div>
+                                    {fmtDevDate(it.date) && (
+                                        <span className="text-[9px] font-extrabold uppercase tracking-wider text-amber-600 dark:text-[#FDD405] flex-shrink-0 mt-0.5">
+                                            {fmtDevDate(it.date)}
+                                        </span>
+                                    )}
+                                </div>
+                                {(it.category || it.summary) && (
+                                    <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5 line-clamp-1">
+                                        {[it.category, it.summary].filter(Boolean).join(' · ')}
+                                    </p>
                                 )}
                             </li>
                         ))}
@@ -397,10 +465,29 @@ const SentimentalScorecard = ({ managementSentiment, annualReportIntelligence, r
                 <SentimentBlock label="Company filings">
                     {companyFilings.total > 0 ? `${companyFilings.total} filings tracked — ` : ''}
                     {filingGroups.slice(0, 4).map(g => `${g.count} ${g.label}`).join(' · ')}
-                    {(() => {
-                        const latest = filingGroups[0]?.items?.[0];
-                        return latest?.title ? `. Latest: ${latest.title}` : '';
-                    })()}
+                    {filingGroups.map((g) => (
+                        Array.isArray(g.items) && g.items.length > 0 && (
+                            <div key={g.label} className="mt-2.5">
+                                <p className="text-[8.5px] font-extrabold uppercase tracking-[0.15em] text-zinc-400 dark:text-zinc-500 mb-1">
+                                    {g.label}
+                                </p>
+                                <ul className="space-y-1">
+                                    {g.items.slice(0, 4).map((doc, i) => (
+                                        <li key={i} className="flex items-start justify-between gap-3">
+                                            <div className="flex-1 min-w-0">
+                                                <DocLink url={doc.url}>{doc.title}</DocLink>
+                                            </div>
+                                            {(doc.period || fmtDevDate(doc.date)) && (
+                                                <span className="text-[9px] font-extrabold uppercase tracking-wider text-amber-600 dark:text-[#FDD405] flex-shrink-0 mt-0.5">
+                                                    {doc.period || fmtDevDate(doc.date)}
+                                                </span>
+                                            )}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )
+                    ))}
                 </SentimentBlock>
             )}
         </Card>
@@ -474,9 +561,11 @@ const AnalystAnswer = ({
             )}
 
             <TechnicalScorecard tech={scoreCard?.technical} technicalSummary={technicalSummary}
-                                indicatorsTable={indicatorsTable} score={scores.technical} />
+                                indicatorsTable={indicatorsTable} score={scores.technical}
+                                indicatorsAsOf={metadata?.indicators_as_of} />
 
-            <FundamentalScorecard fund={scoreCard?.fundamental} score={scores.fundamental} />
+            <FundamentalScorecard fund={scoreCard?.fundamental} score={scores.fundamental}
+                                  symbolLabel={symbolLabel} />
 
             <SentimentalScorecard
                 managementSentiment={managementSentiment}
