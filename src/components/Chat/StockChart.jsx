@@ -654,7 +654,12 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                                 style={{ scrollbarWidth: 'thin', scrollbarColor: '#374151 transparent' }}
                             >
                                 <div style={{
-                                    width: `${Math.max(candleData.length * barPx, 300)}px`,
+                                    // Pattern view: fit the WHOLE pattern into the visible window
+                                    // (no horizontal scroll). Elsewhere keep the fixed-bar-width
+                                    // scrollable strip. Candles auto-size to bandwidth either way.
+                                    width: (isQuick && patternAnn.has)
+                                        ? '100%'
+                                        : `${Math.max(candleData.length * barPx, 300)}px`,
                                     minWidth: '100%',
                                     height: '100%',
                                 }}>
