@@ -105,11 +105,14 @@ export const scoreColor = (s) => (s >= 70 ? '#22c55e' : s >= 50 ? BRAND : '#ef44
 
 /* ─── verdict helpers ────────────────────────────────────────────────────── */
 export const deriveVerdict = (text) => {
-    const raw = String(text || '').toLowerCase();
+    let raw = String(text || '').toLowerCase();
     if (!raw) return null;
+    // Negated calls must not trigger the verdict word they contain —
+    // "not a screaming buy", "isn't a sell" etc.
+    raw = raw.replace(/\b(?:not|isn'?t|is\s+not|no\s+longer|don'?t|do\s+not)\s+(?:a\s+|an\s+)?(?:screaming\s+|clear\s+|strong\s+|obvious\s+)?(?:buy|sell)\b/g, ' ');
     if (/\b(buy|accumulate|bullish|breakout)\b/.test(raw)) return 'BUY';
     if (/\b(sell|exit|avoid|bearish|breakdown)\b/.test(raw)) return 'SELL';
-    if (/\b(hold|wait|neutral|sideways)\b/.test(raw)) return 'HOLD';
+    if (/\b(hold|wait|neutral|sideways|cautious)\b/.test(raw)) return 'HOLD';
     return null;
 };
 
@@ -160,6 +163,23 @@ export const extractLevelsFromText = (text, refPrice = null) => {
         stop: grab(LEVEL_RES.stop),
         target: grab(LEVEL_RES.target),
     };
+};
+
+/* Generic price-level scan: every ₹/Rs amount near the live price mentioned in
+   the text ("bounce above ₹162", "if ₹145 breaks"). The nearest one below the
+   price reads as the downside level, the nearest above as the upside level. */
+export const extractNearbyLevels = (text, price) => {
+    if (price == null) return { below: null, above: null };
+    const re = /(?:rs\.?|₹)\s*([\d,]+(?:\.\d+)?)/gi;
+    let below = null, above = null, m;
+    while ((m = re.exec(String(text || ''))) !== null) {
+        const n = Number(m[1].replace(/,/g, ''));
+        if (!Number.isFinite(n) || n <= 0) continue;
+        if (n < price * 0.7 || n > price * 1.3) continue; // trading levels sit near the price
+        if (n < price && (below == null || n > below)) below = n;
+        if (n > price && (above == null || n < above)) above = n;
+    }
+    return { below, above };
 };
 
 /* ─── Company card — name · NSE:SYM chips · price · day change ───────────── */
@@ -230,18 +250,32 @@ export const VerdictBand = ({ signal, verdictText, content, aiTake, price, patte
     ].filter(Boolean).join('\n');
     const textLevels = extractLevelsFromText(levelSourceText, price);
 
-    // Last-resort levels from the backend's own pattern engine: support acts as
-    // the stop-loss reference and resistance as the target (swapped for SELL);
-    // for a BUY, the live price is the de-facto entry. Only values on the right
-    // side of the current price are used — bad data is dropped, not shown.
+    // Fallback ladder so the band is complete for every stock:
+    //   1. pattern engine — support → stop-loss, resistance → target (swapped for SELL)
+    //   2. price levels mentioned in the text ("bounce above ₹162", "if ₹145 breaks")
+    //   3. deterministic risk defaults from the live price (−5% stop / +10% target)
+    // The live price is the de-facto entry. Values on the wrong side of the price
+    // are dropped, never shown.
     const support = patternSummary?.support != null ? Number(patternSummary.support) : null;
     const resistance = patternSummary?.resistance != null ? Number(patternSummary.resistance) : null;
     const isSell = rec === 'SELL';
     const below = (v) => (v != null && (price == null || v < price) ? v : null);
     const above = (v) => (v != null && (price == null || v > price) ? v : null);
-    const fbEntry = rec === 'BUY' ? price : null;
-    const fbStop = isSell ? above(resistance) : below(support);
-    const fbTarget = isSell ? below(support) : above(resistance);
+    // Round like a price tick: whole rupees above ₹100, 5-paise steps below
+    const tick = (v) => (v == null ? null : v >= 100 ? Math.round(v) : Math.round(v * 20) / 20);
+
+    const fbEntry = price;
+    let fbStop = isSell ? above(resistance) : below(support);
+    let fbTarget = isSell ? below(support) : above(resistance);
+    if (fbStop == null || fbTarget == null) {
+        const nearby = extractNearbyLevels(levelSourceText, price);
+        if (fbStop == null) fbStop = isSell ? nearby.above : nearby.below;
+        if (fbTarget == null) fbTarget = isSell ? nearby.below : nearby.above;
+    }
+    if (price != null) {
+        if (fbStop == null) fbStop = tick(price * (isSell ? 1.05 : 0.95));
+        if (fbTarget == null) fbTarget = tick(price * (isSell ? 0.90 : 1.10));
+    }
 
     const fmtLevel = (sigVal, parsed, fb) => {
         if (sigVal != null) return fmtINR(sigVal, 2);

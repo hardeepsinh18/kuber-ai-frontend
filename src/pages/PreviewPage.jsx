@@ -276,10 +276,33 @@ const MOCK_METADATA_ICICI = {
 const MOCK_PATTERN_ICICI = { support: 1382, resistance: 1495, candlestick: [], summary: 'Consolidating near highs.' };
 const MOCK_CONTENT_ICICI = `🟢 **BUY** — ICICI Bank is a long-term compounder firing on all cylinders, but with RSI >70 and FII outflows, a short-term dip is likely. Medium-term investors can accumulate on dips.`;
 
+/* GAEL case: no signal, no pattern — levels must come from nearby ₹ numbers in
+   the text (₹162 above → target, ₹145 below → stop) and the negated "not a
+   screaming buy" must NOT derive a BUY verdict. */
+const MOCK_METADATA_GAEL = {
+    symbols: ['GAEL'],
+    at_a_glance: { symbol: 'GAEL', price: 149.09, change_percent: 0.0, volume: 1200000 },
+};
+const MOCK_CONTENT_GAEL = `Neutral-to-cautious. GAEL is not a value trap, but it's not a screaming buy either. Wait for a clear bounce above ₹162 or evidence of margin/profit recovery before adding. If ₹145 breaks, risk of further downside is high.`;
+
 export default function PreviewPage() {
     return (
         <div className="min-h-screen bg-[#090A07] py-10">
             <div className="max-w-4xl mx-auto px-4">
+                {/* ── QUICK ANSWER: no signal, no pattern → text-nearby levels ── */}
+                <MessageBubble role="user" content="gael analysis" isStreaming={false} />
+                <MessageBubble
+                    role="assistant"
+                    content={MOCK_CONTENT_GAEL}
+                    isStreaming={false}
+                    metadata={MOCK_METADATA_GAEL}
+                    responseMode="snap"
+                    messageId="preview-quick-nearby"
+                    onFeedback={() => {}}
+                />
+
+                <div className="my-10 border-t border-zinc-800" />
+
                 {/* ── QUICK ANSWER: no signal, no text levels → pattern fallback ── */}
                 <MessageBubble role="user" content="icici bank" isStreaming={false} />
                 <MessageBubble
