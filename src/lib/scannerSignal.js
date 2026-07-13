@@ -53,6 +53,17 @@ export function getScannerSignal(scannerNames, row) {
         ? scannerNames
         : String(scannerNames || '').split(' + ');
 
+    // 0. Chart Patterns scanner shows the pattern name + direction (its whole point).
+    //    e.g. "Double Top · bearish → ₹305 (Triggered)"
+    if (names.some(n => (n?.trim?.() ?? n) === 'Chart Patterns') && row.Pattern) {
+        const dir  = String(row.Direction || '').toLowerCase();
+        const type = dir === 'bullish' ? 'bull' : dir === 'bearish' ? 'bear' : 'neutral';
+        const tgt  = fmtNum(row.Target);
+        const tier = row.Tier ? ` (${row.Tier})` : '';
+        const arrow = tgt != null ? ` → ₹${tgt}` : '';
+        return { label: `${row.Pattern}${dir ? ` · ${dir}` : ''}${arrow}${tier}`, type };
+    }
+
     // 1. A selected fundamental scanner shows ITS metric
     for (const name of names) {
         const spec = FUNDAMENTAL_SIGNALS[name?.trim?.() ?? name];

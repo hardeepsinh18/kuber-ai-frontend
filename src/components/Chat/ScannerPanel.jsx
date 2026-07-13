@@ -89,6 +89,7 @@ const CONFLICTS = {
 
 const SCANNER_EMOJI = {
     // Chart patterns
+    'Chart Patterns':            '📐',
     'Head & Shoulders':          '🏔️',
     'Inverse H&S':               '🌊',
     'Double Top':                '🔝',
@@ -515,7 +516,18 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                         </div>
 
                         <div className="space-y-4 pl-3">
-                            {/* Chart Patterns removed from the scanner UI (CHART_PATTERNS array kept for later re-enable). */}
+                            {/* Chart Patterns — one scan lists every stock forming a pattern (H&S, Double Top/Bottom, Triangle, Channel…). */}
+                            <div>
+                                <div className="flex items-center gap-2 mb-2.5">
+                                    <TrendingUp size={12} className="text-zinc-500 dark:text-zinc-300" />
+                                    <span className="text-[11.5px] font-semibold uppercase tracking-[0.08em] text-zinc-500 dark:text-zinc-300">Chart Patterns</span>
+                                </div>
+                                <div className="flex flex-wrap gap-1.5">
+                                    <ScannerBtn name="Chart Patterns"
+                                        hoverClass="hover:border-[#FDD405]/50 hover:bg-[#FDD405]/8 hover:text-zinc-900 dark:hover:bg-[#FDD405]/8 dark:hover:border-[#FDD405]/50 dark:hover:text-white"
+                                    />
+                                </div>
+                            </div>
                             {/* Candlestick Patterns sub-header */}
                             <div>
                                 <div className="flex items-center gap-2 mb-2.5">
