@@ -233,6 +233,10 @@ const extractStockSymbols = (query) => {
         'asian': 'ASIANPAINT',
         'ultracemco': 'ULTRACEMCO',
         'ltim': 'LTIM',
+        // HCL Technologies is a solo listed company — bare "hcl"/"hcl tech" must
+        // resolve directly, never trigger the backend's fuzzy "Tech Group" popup
+        // (it was sweeping in unrelated TAALTECH/RACLGEAR on the word "tech").
+        'hcl': 'HCLTECH',
         'hcltech': 'HCLTECH',
         'sunpharma': 'SUNPHARMA',
         'drreddy': 'DRREDDY',
@@ -273,6 +277,8 @@ const extractStockSymbols = (query) => {
         'kotak bank': 'KOTAKBANK',
         'state bank': 'SBIN',
         'tech mahindra': 'TECHM',
+        'hcl tech': 'HCLTECH',
+        'hcl technologies': 'HCLTECH',
         'bharat coal': 'BHARATCOAL',
         'asian paints': 'ASIANPAINT',
         'asian paint': 'ASIANPAINT',
