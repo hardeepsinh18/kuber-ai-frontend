@@ -15,6 +15,7 @@ import {
     FiveYearScoreCard,
 } from './FundamentalCard';
 import ManagementSentiment from './ManagementSentiment';
+import CompanyFilings from './CompanyFilings';
 
 /**
  * AnalystAnswer — "one tap deeper" layout for Analyst mode.
@@ -350,12 +351,31 @@ const FundamentalScorecard = ({ fund, score, symbolLabel }) => {
 };
 
 /* ─── SENTIMENTAL SCORECARD ──────────────────────────────────────────────── */
-const SentimentBlock = ({ label, children }) => (
-    <div className="mt-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-black/30 px-3.5 py-3">
-        <MiniLabel className="mb-1.5">{label}</MiniLabel>
-        <div className="text-[11.5px] leading-relaxed text-zinc-700 dark:text-zinc-300">{children}</div>
-    </div>
-);
+/* Collapsible dropdown block — yellow mini-label header, chevron toggle */
+const SentimentBlock = ({ label, badge = null, defaultOpen = true, children }) => {
+    const [open, setOpen] = React.useState(defaultOpen);
+    return (
+        <div className="mt-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-black/30 px-3.5 py-3">
+            <button onClick={() => setOpen(o => !o)}
+                    className="w-full flex items-center justify-between gap-2 text-left"
+                    aria-expanded={open}>
+                <span className="flex items-center gap-2 min-w-0">
+                    <MiniLabel>{label}</MiniLabel>
+                    {badge && (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold bg-[#FDD405]/10 text-amber-600 dark:text-[#FDD405]/90 flex-shrink-0">
+                            {badge}
+                        </span>
+                    )}
+                </span>
+                {open ? <ChevronUp size={13} className="text-zinc-400 dark:text-zinc-500 flex-shrink-0" />
+                      : <ChevronDown size={13} className="text-zinc-400 dark:text-zinc-500 flex-shrink-0" />}
+            </button>
+            {open && (
+                <div className="mt-2 text-[11.5px] leading-relaxed text-zinc-700 dark:text-zinc-300">{children}</div>
+            )}
+        </div>
+    );
+};
 
 const fmtDevDate = (d) => {
     if (!d) return '';
@@ -401,7 +421,8 @@ const SentimentalScorecard = ({ managementSentiment, annualReportIntelligence, r
             <ManagementSentiment data={managementSentiment} />
 
             {ari?.company_story && (
-                <SentimentBlock label="Annual report intelligence">
+                <SentimentBlock label="Annual report intelligence"
+                                badge={ari.fiscal_year || (ari.confidence != null ? `${Math.round(ari.confidence * 100)}% confidence` : null)}>
                     {ari.company_story}
                     {ari.future_outlook ? ` ${ari.future_outlook}` : ''}
                     {drivers.length > 0 && (
@@ -436,7 +457,7 @@ const SentimentalScorecard = ({ managementSentiment, annualReportIntelligence, r
             )}
 
             {devItems.length > 0 && (
-                <SentimentBlock label="Announcements">
+                <SentimentBlock label="Announcements" badge={`${devItems.length} recent`}>
                     <ul className="space-y-2">
                         {devItems.map((it, i) => (
                             <li key={i}>
@@ -461,35 +482,8 @@ const SentimentalScorecard = ({ managementSentiment, annualReportIntelligence, r
                 </SentimentBlock>
             )}
 
-            {filingGroups.length > 0 && (
-                <SentimentBlock label="Company filings">
-                    {companyFilings.total > 0 ? `${companyFilings.total} filings tracked — ` : ''}
-                    {filingGroups.slice(0, 4).map(g => `${g.count} ${g.label}`).join(' · ')}
-                    {filingGroups.map((g) => (
-                        Array.isArray(g.items) && g.items.length > 0 && (
-                            <div key={g.label} className="mt-2.5">
-                                <p className="text-[8.5px] font-extrabold uppercase tracking-[0.15em] text-zinc-400 dark:text-zinc-500 mb-1">
-                                    {g.label}
-                                </p>
-                                <ul className="space-y-1">
-                                    {g.items.slice(0, 4).map((doc, i) => (
-                                        <li key={i} className="flex items-start justify-between gap-3">
-                                            <div className="flex-1 min-w-0">
-                                                <DocLink url={doc.url}>{doc.title}</DocLink>
-                                            </div>
-                                            {(doc.period || fmtDevDate(doc.date)) && (
-                                                <span className="text-[9px] font-extrabold uppercase tracking-wider text-amber-600 dark:text-[#FDD405] flex-shrink-0 mt-0.5">
-                                                    {doc.period || fmtDevDate(doc.date)}
-                                                </span>
-                                            )}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )
-                    ))}
-                </SentimentBlock>
-            )}
+            {/* Original filings panel — grouped chip links, "backed by N primary documents" */}
+            {filingGroups.length > 0 && <CompanyFilings data={companyFilings} />}
         </Card>
     );
 };

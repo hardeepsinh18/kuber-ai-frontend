@@ -213,17 +213,28 @@ const MOCK_FILINGS = {
     total: 12,
     groups: [
         {
-            label: 'annual reports', count: 2, items: [
-                { title: 'TATAPOWER Annual Report FY2026', period: 'FY2026', url: 'https://www.tcs.com/investors' },
-                { title: 'TATAPOWER Annual Report FY2025', period: 'FY2025', url: 'https://www.tcs.com/investors' },
+            type: 'annual_report', label: 'Annual Reports', count: 2, items: [
+                { title: 'TCS Annual Report FY2026', period: 'FY2026', url: 'https://www.tcs.com/investors' },
+                { title: 'TCS Annual Report FY2025', period: 'FY2025', url: 'https://www.tcs.com/investors' },
             ],
         },
         {
-            label: 'earnings calls', count: 4, items: [
-                { title: 'Q1 FY27 Earnings Call Transcript', period: 'Q1 FY27', url: 'https://www.tcs.com/investors' },
+            type: 'transcript', label: 'Earnings Calls', count: 4, items: [
+                { title: 'Q1 FY27 Earnings Call Transcript', period: 'Q1FY27', url: 'https://www.tcs.com/investors' },
+                { title: 'Q4 FY26 Earnings Call Transcript', period: 'Q4FY26', url: 'https://www.tcs.com/investors' },
             ],
         },
-        { label: 'announcements', count: 6, items: [{ title: 'Press Release — buyback record date', date: '2026-07-10', url: 'https://www.nseindia.com' }] },
+        {
+            type: 'investor_presentation', label: 'Investor Presentations', count: 4, items: [
+                { title: 'Q1 FY27 Investor Presentation', period: 'Q1FY27', url: 'https://www.tcs.com/investors' },
+            ],
+        },
+        {
+            type: 'announcement', label: 'Announcements', count: 4, items: [
+                { title: 'Press Release — buyback record date', date: '2026-07-10', url: 'https://www.nseindia.com' },
+                { title: 'Press Release — leadership appointment', date: '2026-06-18', url: 'https://www.nseindia.com' },
+            ],
+        },
     ],
 };
 
