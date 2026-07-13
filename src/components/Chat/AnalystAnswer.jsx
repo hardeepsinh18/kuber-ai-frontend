@@ -2,7 +2,7 @@ import React from 'react';
 import { clsx } from 'clsx';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Gauge, PieChart, Newspaper, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
+import { Gauge, PieChart, Newspaper, ChevronDown, ChevronUp, ExternalLink, BookText, Mic2, BarChart3, Megaphone, FileText } from 'lucide-react';
 import StockChart from './StockChart';
 import {
     BRAND, fmtINR, InlineMd, Card, MiniLabel, SectionBanner,
@@ -15,7 +15,6 @@ import {
     FiveYearScoreCard,
 } from './FundamentalCard';
 import ManagementSentiment from './ManagementSentiment';
-import CompanyFilings from './CompanyFilings';
 
 /**
  * AnalystAnswer — "one tap deeper" layout for Analyst mode.
@@ -385,6 +384,29 @@ const fmtDevDate = (d) => {
     } catch { return ''; }
 };
 
+/* ── filings chips — same data/behaviour as the classic Company Filings panel ── */
+const FILING_ICON = {
+    annual_report: BookText,
+    transcript: Mic2,
+    investor_presentation: BarChart3,
+    announcement: Megaphone,
+    quarterly_results: FileText,
+};
+
+const fmtFilingDate = (d) => {
+    if (!d) return null;
+    try {
+        const dt = new Date(d);
+        return isNaN(dt) ? null : dt.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' });
+    } catch { return null; }
+};
+
+// Announcements rarely have a clean quarter — prefer the date; else the period; else a clipped title.
+const filingChipLabel = (type, item) => {
+    if (type === 'announcement') return fmtFilingDate(item.date) || item.period || (item.title || '').slice(0, 22);
+    return item.period || fmtFilingDate(item.date) || (item.title || '').slice(0, 22);
+};
+
 const SEV_COLOR = { high: '#ef4444', medium: '#fb923c', low: '#22c55e' };
 
 /* Clickable doc/announcement title — opens the source in a new tab */
@@ -482,8 +504,45 @@ const SentimentalScorecard = ({ managementSentiment, annualReportIntelligence, r
                 </SentimentBlock>
             )}
 
-            {/* Original filings panel — grouped chip links, "backed by N primary documents" */}
-            {filingGroups.length > 0 && <CompanyFilings data={companyFilings} />}
+            {/* Company filings — same grouped chip links, styled like the blocks above */}
+            {filingGroups.length > 0 && (
+                <SentimentBlock label="Company filings"
+                                badge={companyFilings.total > 0 ? `backed by ${companyFilings.total} primary documents` : null}>
+                    <div className="space-y-3">
+                        {filingGroups.map((g) => {
+                            const Icon = FILING_ICON[g.type] || FileText;
+                            return (
+                                <div key={g.type || g.label}>
+                                    <div className="text-[11px] font-semibold text-zinc-600 dark:text-zinc-300 mb-1.5 inline-flex items-center gap-1.5">
+                                        <Icon size={13} strokeWidth={2} className="text-amber-600 dark:text-[#FDD405]" />
+                                        {g.label} <span className="text-zinc-400 dark:text-zinc-600 font-normal">({g.count})</span>
+                                    </div>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {(Array.isArray(g.items) ? g.items : []).map((it, i) => {
+                                            const label = filingChipLabel(g.type, it);
+                                            return it.url ? (
+                                                <a key={i} href={it.url} target="_blank" rel="noopener noreferrer"
+                                                   title={it.title}
+                                                   className="text-[11px] px-2.5 py-1 rounded-lg font-medium border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:border-amber-500/60 dark:hover:border-[#FDD405]/60 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
+                                                    {label}<span className="ml-1 opacity-60">↗</span>
+                                                </a>
+                                            ) : (
+                                                <span key={i} title={it.title}
+                                                      className="text-[11px] px-2.5 py-1 rounded-lg font-medium border border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400">
+                                                    {label}
+                                                </span>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                        <div className="text-[9.5px] text-zinc-400 dark:text-zinc-600">
+                            Source documents filed with NSE/BSE. Click to open the original PDF.
+                        </div>
+                    </div>
+                </SentimentBlock>
+            )}
         </Card>
     );
 };
