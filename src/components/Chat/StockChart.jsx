@@ -367,6 +367,24 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
         };
     }, [patternOverlays]);
 
+    // Auto-frame the pattern: when a chart pattern is present, open the candle view
+    // zoomed to the pattern's window (+~35% context) instead of the default 3M, so the
+    // shape fills the frame and reads cleanly (like the verifier). Runs once per chart;
+    // the 1M/3M/6M/1Y buttons still let the user override.
+    const autoFramedRef = useRef(false);
+    useEffect(() => {
+        if (autoFramedRef.current) return;
+        if (chartType !== 'candle') return;
+        if (!patternAnn.has || !patternAnn.windowStartDate || !data.length) return;
+        const startPrefix = String(patternAnn.windowStartDate).slice(0, 10);
+        const startIdx = data.findIndex(d => String(d.date).slice(0, 10) >= startPrefix);
+        if (startIdx < 0) return;
+        const span = data.length - startIdx;
+        const framed = Math.min(data.length, Math.max(40, Math.round(span * 1.35)));
+        setCandleRange(framed);
+        autoFramedRef.current = true;
+    }, [patternAnn, data, chartType]);
+
     // Render the annotation overlay as a Recharts <Customized> layer for a given
     // data array (each chart type plots a different slice).
     const renderPatternLayer = (layerData) => (

@@ -136,7 +136,7 @@ const WhyThisVerdict = ({ verdictText, content, signal }) => {
 const PatternSection = ({ patternSummary, chartData, symbolLabel, indicatorsTable }) => {
     if (!patternSummary) return null;
     const cp = (Array.isArray(patternSummary.chart_pattern_details) ? patternSummary.chart_pattern_details : [])
-        .find(p => p && (p.name || p.direction)) || null;
+        .find(p => p && (p.pattern || p.name || p.direction)) || null;
     const support = patternSummary.support;
     const resistance = patternSummary.resistance;
     const summaryText = patternSummary.summary;
@@ -149,7 +149,12 @@ const PatternSection = ({ patternSummary, chartData, symbolLabel, indicatorsTabl
         .find(r => /volume/i.test(r?.indicator || ''));
 
     const patternCellText = cp
-        ? `${cp.name || 'Pattern'}${resistance != null ? `, breakout above ${fmtINR(resistance)}` : cp.direction ? ` — ${cp.direction}` : ''}`
+        ? [
+            cp.pattern || cp.name || 'Pattern',
+            cp.direction || null,
+            cp.target != null ? `target ${fmtINR(cp.target)}` : null,
+            (cp.bars_ago ?? 0) > 0 ? `${cp.bars_ago} bars ago` : 'forming',
+          ].filter(Boolean).join(' · ')
         : summaryText;
     const volumeCellText = volRow
         ? `${volRow.value || ''}${volRow.signal ? ` — ${volRow.signal}` : ''}`.trim()
