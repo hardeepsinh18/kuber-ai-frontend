@@ -89,6 +89,41 @@ const CardHeader = ({ children }) => (
     <h4 className="text-[14px] font-bold text-zinc-900 dark:text-white">{children}</h4>
 );
 
+/* Parse ₹ levels (entry / stop loss / target) out of the answer text when the
+   structured signal doesn't carry them. Handles "Entry ₹818", "🛑 Stop ₹802",
+   "**Target** ₹850", "target of Rs 1,850" and ranges like "₹810–818". */
+const LEVEL_CONNECT = '(?:\\s+(?:price|zone|level|point|of|at|near|around))?[\\*_]*\\s*[:=–—-]?\\s*[\\*_]*\\s*';
+const LEVEL_NUM = '(?:rs\\.?|₹)?\\s*([\\d,]+(?:\\.\\d+)?)(?!\\s*%)(?:\\s*[–—-]\\s*(?:rs\\.?|₹)?\\s*([\\d,]+(?:\\.\\d+)?))?';
+const LEVEL_RES = {
+    entry:  new RegExp('\\bentry' + LEVEL_CONNECT + LEVEL_NUM, 'i'),
+    stop:   new RegExp('\\bstop(?:[\\s-]*loss)?' + LEVEL_CONNECT + LEVEL_NUM, 'i'),
+    target: new RegExp('\\btarget' + LEVEL_CONNECT + LEVEL_NUM, 'i'),
+};
+
+const extractLevelsFromText = (text, refPrice = null) => {
+    const t = String(text || '');
+    const toNum = (s) => {
+        const n = Number(String(s ?? '').replace(/,/g, ''));
+        return Number.isFinite(n) && n > 0 ? n : null;
+    };
+    // Sanity: a real trading level sits in the vicinity of the current price —
+    // rejects years ("2026"), percentages and stray small numbers.
+    const plausible = (n) => n != null && (refPrice == null || (n >= refPrice * 0.3 && n <= refPrice * 3));
+    const grab = (re) => {
+        const m = t.match(re);
+        if (!m) return null;
+        const lo = toNum(m[1]);
+        if (!plausible(lo)) return null;
+        const hi = toNum(m[2]);
+        return { lo, hi: plausible(hi) ? hi : null };
+    };
+    return {
+        entry: grab(LEVEL_RES.entry),
+        stop: grab(LEVEL_RES.stop),
+        target: grab(LEVEL_RES.target),
+    };
+};
+
 /* Derive verdict word when the backend signal is missing */
 const deriveVerdict = (text) => {
     const raw = String(text || '').toLowerCase();
@@ -143,14 +178,27 @@ const QuickAnswer = ({
     const absChange = price != null && pct != null ? price - price / (1 + pct / 100) : null;
     const isUp = pct != null ? pct >= 0 : true;
 
-    /* verdict band */
+    /* verdict band — levels come from the structured signal when present,
+       otherwise they're parsed out of the answer text itself */
     const rec = signal?.recommendation
         ? String(signal.recommendation).toUpperCase()
         : deriveVerdict(verdictText || content);
+    const levelSourceText = [
+        verdictText,
+        content,
+        ...(Array.isArray(signal?.why) ? signal.why : []),
+        ...(Array.isArray(aiTake?.bullets) ? aiTake.bullets.map(b => b?.text) : []),
+    ].filter(Boolean).join('\n');
+    const textLevels = extractLevelsFromText(levelSourceText, price);
+    const fmtLevel = (sigVal, parsed) => {
+        if (sigVal != null) return fmtINR(sigVal, 2);
+        if (!parsed) return null;
+        return parsed.hi ? `₹${fmtNum(parsed.lo)}–${fmtNum(parsed.hi)}` : fmtINR(parsed.lo, 2);
+    };
     const levels = [
-        { label: 'Entry', value: fmtINR(signal?.ideal_entry) },
-        { label: 'Stop Loss', value: fmtINR(signal?.stop_loss) },
-        { label: 'Target', value: fmtINR(signal?.target) },
+        { label: 'Entry', value: fmtLevel(signal?.ideal_entry, textLevels.entry) },
+        { label: 'Stop Loss', value: fmtLevel(signal?.stop_loss, textLevels.stop) },
+        { label: 'Target', value: fmtLevel(signal?.target, textLevels.target) },
     ].filter(l => l.value);
 
     /* chart — single primary chart in quick view */

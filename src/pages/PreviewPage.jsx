@@ -163,10 +163,44 @@ const MOCK_FOLLOW_UPS = [
 
 const MOCK_CONTENT = `⚠️ **WAIT** | High P/E, ROE, and DY • Technical: RSI 40 (Neutral) — no clear trend • Fundamental/Momentum: P/E 27.4, ROE 46.12%, DY 3.41% — strong fundamentals • Risk: Low volume 0.8x avg, MACD -28.5 (Bearish) — caution ⚡ Entry ₹2,310.`;
 
+/* Real-world case: backend sends NO structured signal — entry/stop/target
+   live only inside the answer text (the HDFC Bank quick-answer bug). */
+const MOCK_CONTENT_NO_SIGNAL = `🟢 **BUY** — Price above key EMAs, bullish MACD crossover
+
+- Technical: Trading above EMA21/50; MACD bullish, RSI neutral at 61
+- Fundamental: Strong P/E (18.8), solid ROE (13.8%), large cap eligibility
+- Risk: ATR ₹16.02 signals moderate volatility; watch for profit booking near highs
+
+⚡ Entry ₹818 | 🛑 Stop ₹802 | 🎯 Target ₹850`;
+
+const MOCK_METADATA_HDFC = {
+    symbols: ['HDFCBANK'],
+    at_a_glance: {
+        symbol: 'HDFCBANK',
+        price: 817.05,
+        change_percent: 0.0,
+        volume: 11000000,
+    },
+};
+
 export default function PreviewPage() {
     return (
         <div className="min-h-screen bg-[#090A07] py-10">
             <div className="max-w-4xl mx-auto px-4">
+                {/* ── QUICK ANSWER: no structured signal, levels parsed from text ── */}
+                <MessageBubble role="user" content="hdfc bank" isStreaming={false} />
+                <MessageBubble
+                    role="assistant"
+                    content={MOCK_CONTENT_NO_SIGNAL}
+                    isStreaming={false}
+                    metadata={MOCK_METADATA_HDFC}
+                    responseMode="snap"
+                    messageId="preview-quick-nosignal"
+                    onFeedback={() => {}}
+                />
+
+                <div className="my-10 border-t border-zinc-800" />
+
                 {/* ── QUICK ANSWER layout (snap mode) ── */}
                 <MessageBubble role="user" content="Should I buy TCS?" isStreaming={false} />
                 <MessageBubble
