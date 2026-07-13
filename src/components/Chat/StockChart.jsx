@@ -35,9 +35,10 @@ import PatternAnnotationLayer from './PatternAnnotationLayer';
  */
 // Hide chart-pattern overlays that formed longer ago than this (bars ≈ trading days).
 // Mirrors the same freshness rule used by the Pattern Detection card in FundamentalCard.
-// Product rule: on the 1-year chart, only draw a pattern that formed/broke out
-// within the last ~2 weeks — anything older is stale for a "forming now" call.
-const MAX_PATTERN_AGE_DAYS = 14;
+// Product rule: ~30 trading days — recent enough to be actionable, but wide enough to
+// include already-triggered patterns (broken out ~3-4 weeks ago), which read cleaner
+// than half-formed ones. Kept in sync with FundamentalCard's MAX_PATTERN_AGE_DAYS.
+const MAX_PATTERN_AGE_DAYS = 30;
 
 // Find closest matching date in the chart data array.
 // Falls back to nearest date so pattern markers always render even when
