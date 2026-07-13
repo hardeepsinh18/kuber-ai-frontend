@@ -121,6 +121,40 @@ const MOCK_NEWS = [
     { title: 'TCS Q1FY27 results preview: Revenue growth expected at 3–5% in constant currency terms', source: 'NDTV Profit', url: '#', sentiment: 'bullish' },
 ];
 
+/* ── Quick (snap) mode mocks — mirrors the QUICK ANSWER reference design ── */
+const MOCK_SCORE_CARD_QUICK = {
+    ...MOCK_SCORE_CARD,
+    overall: {
+        score: 74,
+        label: 'Strong',
+        components: { technical: 78, financial: 65, management: 82 },
+        method: 'Average of Technical, Financial and Management tone scores.',
+    },
+};
+
+const MOCK_SIGNAL_QUICK = {
+    recommendation: 'BUY',
+    confidence_pct: 71,
+    risk: 'medium',
+    ideal_entry: 2320,
+    target: 2520,
+    stop_loss: 2240,
+    upside_pct: 8.2,
+    downside_pct: 3.8,
+    risk_reward: 2.5,
+    why: [
+        'Breaking out of a five month base on volume **1.4x** the daily average.',
+        'Trading above both the 50 and 200 day moving average, trend stays constructive.',
+        'Valuation sits above its own five year average, so size the position accordingly.',
+    ],
+};
+
+const MOCK_NEWS_QUICK = [
+    { title: 'Board approves share buyback worth ₹18,000 crore, record date awaited', source: '2 days ago', url: '#', sentiment: 'bullish' },
+    { title: 'Wins large multi year cloud transformation deal with a European bank', source: '4 days ago', url: '#', sentiment: 'bullish' },
+    { title: 'Q1 operating margin beats street estimates despite currency headwinds', source: '1 week ago', url: '#', sentiment: 'bullish' },
+];
+
 const MOCK_FOLLOW_UPS = [
     'Should I buy TCS now?',
     'Technical analysis for TCS — support & resistance',
@@ -133,6 +167,29 @@ export default function PreviewPage() {
     return (
         <div className="min-h-screen bg-[#090A07] py-10">
             <div className="max-w-4xl mx-auto px-4">
+                {/* ── QUICK ANSWER layout (snap mode) ── */}
+                <MessageBubble role="user" content="Should I buy TCS?" isStreaming={false} />
+                <MessageBubble
+                    role="assistant"
+                    content={MOCK_CONTENT}
+                    isStreaming={false}
+                    chartData={MOCK_CHART}
+                    metadata={MOCK_METADATA}
+                    signal={MOCK_SIGNAL_QUICK}
+                    technicalSummary={MOCK_TECHNICAL_SUMMARY}
+                    patternSummary={MOCK_PATTERN}
+                    scoreCard={MOCK_SCORE_CARD_QUICK}
+                    newsHeadlines={MOCK_NEWS_QUICK}
+                    suggestedFollowUps={MOCK_FOLLOW_UPS}
+                    onFollowUpClick={() => {}}
+                    responseMode="snap"
+                    messageId="preview-quick-1"
+                    onFeedback={() => {}}
+                />
+
+                <div className="my-10 border-t border-zinc-800" />
+
+                {/* ── Classic analyst layout ── */}
                 <MessageBubble role="user" content="Show me TCS fundamentals and valuation" isStreaming={false} />
                 <MessageBubble
                     role="assistant"

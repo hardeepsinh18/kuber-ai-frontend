@@ -113,8 +113,9 @@ const MIN_BAR_PX = 6;
 const MAX_BAR_PX = 24;
 const DEFAULT_BAR_PX = 11;
 
-const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAGlance = null }) => {
-    const [chartType, setChartType] = useState('candle');
+const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAGlance = null, variant = 'default', defaultType = null }) => {
+    const isQuick = variant === 'quick';
+    const [chartType, setChartType] = useState(defaultType || 'candle');
     const [candleRange, setCandleRange] = useState(66); // default 3M
     const [barPx, setBarPx] = useState(DEFAULT_BAR_PX);
     const [visibleCount, setVisibleCount] = useState(null); // null = show all data
@@ -503,9 +504,24 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
         }
     };
 
+    // Chart type chips — quick variant leads with Area (the "instant read" default)
+    const TYPE_DEFS = {
+        candle: { label: 'Candles', aria: 'Candlestick chart', Icon: BarChart2 },
+        area:   { label: 'Area',    aria: 'Area chart',        Icon: Activity },
+        line:   { label: 'Line',    aria: 'Line chart',        Icon: LineChartIcon },
+        ohlc:   { label: 'OHLC',    aria: 'OHLC bar chart',    Icon: BarChart3 },
+    };
+    const typeOrder = isQuick ? ['area', 'line', 'ohlc', 'candle'] : ['candle', 'area', 'ohlc'];
+
     return (
-        <div className={clsx("w-full my-4 rounded-xl border border-zinc-200 dark:border-zinc-700/50 bg-white dark:bg-zinc-900/60 p-4", className)}>
-            {/* Header */}
+        <div className={clsx(
+            isQuick
+                ? "w-full"
+                : "w-full my-4 rounded-xl border border-zinc-200 dark:border-zinc-700/50 bg-white dark:bg-zinc-900/60 p-4",
+            className
+        )}>
+            {/* Header — hidden in quick variant (the company card above already names the stock) */}
+            {!isQuick && (
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                     {atAGlance?.logo_url ? (
@@ -536,51 +552,37 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                     </div>
                 </div>
             </div>
+            )}
 
             {/* Chart type selector */}
-            <div className="flex flex-wrap gap-2 mb-4">
-                <button
-                    onClick={() => setChartType('candle')}
-                    aria-label="Candlestick chart"
-                    aria-pressed={chartType === 'candle'}
-                    className={clsx(
-                        "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
-                        chartType === 'candle'
-                            ? "bg-[#FDD405] text-black font-semibold"
-                            : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/60"
-                    )}
-                >
-                    <BarChart2 className="w-4 h-4" />
-                    Candles
-                </button>
-                <button
-                    onClick={() => setChartType('area')}
-                    aria-label="Area chart"
-                    aria-pressed={chartType === 'area'}
-                    className={clsx(
-                        "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
-                        chartType === 'area'
-                            ? "bg-[#FDD405] text-black font-semibold"
-                            : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/60"
-                    )}
-                >
-                    <Activity className="w-4 h-4" />
-                    Area
-                </button>
-                <button
-                    onClick={() => setChartType('ohlc')}
-                    aria-label="OHLC bar chart"
-                    aria-pressed={chartType === 'ohlc'}
-                    className={clsx(
-                        "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
-                        chartType === 'ohlc'
-                            ? "bg-[#FDD405] text-black font-semibold"
-                            : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/60"
-                    )}
-                >
-                    <BarChart3 className="w-4 h-4" />
-                    OHLC
-                </button>
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+                <div className={clsx(
+                    "flex flex-wrap items-center gap-1",
+                    isQuick && "p-1 rounded-xl border border-zinc-200 dark:border-zinc-700/60 bg-zinc-50 dark:bg-black/30"
+                )}>
+                    {typeOrder.map((key) => {
+                        const { label, aria, Icon } = TYPE_DEFS[key];
+                        const active = chartType === key;
+                        return (
+                            <button
+                                key={key}
+                                onClick={() => setChartType(key)}
+                                aria-label={aria}
+                                aria-pressed={active}
+                                className={clsx(
+                                    "flex items-center gap-1.5 rounded-lg font-medium transition-all",
+                                    isQuick ? "px-3 py-1 text-[12px]" : "px-3 py-1.5 text-sm gap-2",
+                                    active
+                                        ? "bg-[#FDD405] text-black font-semibold"
+                                        : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/60"
+                                )}
+                            >
+                                <Icon className={isQuick ? "w-3.5 h-3.5" : "w-4 h-4"} />
+                                {label}
+                            </button>
+                        );
+                    })}
+                </div>
 
                 <div className="flex items-center gap-1 ml-auto">
                     {/* Range selector — candle only */}
@@ -688,8 +690,8 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
             </div>
 
 
-            {/* Footer info */}
-            {chart_metadata.start_date && chart_metadata.end_date && (
+            {/* Footer info — hidden in quick variant to keep the card minimal */}
+            {!isQuick && chart_metadata.start_date && chart_metadata.end_date && (
                 <div className="flex items-center gap-2 mt-4 text-xs text-zinc-500 dark:text-zinc-400">
                     <Calendar className="w-3.5 h-3.5" />
                     <span>{chart_metadata.start_date} to {chart_metadata.end_date}</span>

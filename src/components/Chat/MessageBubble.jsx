@@ -11,6 +11,7 @@ import AnnualReportIntelligence from './AnnualReportIntelligence';
 import CompanyFilings from './CompanyFilings';
 import RecentDevelopments from './RecentDevelopments';
 import AITake from './AITake';
+import QuickAnswer from './QuickAnswer';
 
 const normalizeSymbol = (s) => {
     const raw = String(s || "").trim();
@@ -543,6 +544,43 @@ const HorizonChoice = ({ symbol, onChoice }) => {
     );
 };
 
+// ─── Shared bottom chrome: disclaimer box + follow-up chips ──────────────────
+// Used by both the classic document layout and the Quick Answer layout.
+const DisclaimerBox = () => (
+    <div className="mt-4 flex items-start gap-2.5 px-3.5 py-2.5 rounded-xl"
+        style={{
+            background: 'linear-gradient(135deg, rgba(253,212,5,0.10) 0%, rgba(253,212,5,0.06) 100%)',
+            border: '1px solid rgba(253,212,5,0.30)',
+        }}>
+        <span className="text-[13px] mt-0.5 flex-shrink-0">⚠️</span>
+        <p className="text-[11px] leading-relaxed text-zinc-500 dark:text-zinc-400 m-0">
+            <span className="font-semibold text-[#FDD405]">Disclaimer: </span>
+            {DISCLAIMER_TEXT}
+        </p>
+    </div>
+);
+
+const FollowUpChips = ({ chips, onClick }) => (
+    <div className="flex flex-wrap gap-2 pt-3">
+        {chips.map((label) => (
+            <button
+                key={label}
+                type="button"
+                onClick={() => onClick(label)}
+                className="px-3.5 py-1.5 text-[12px] font-medium rounded-full
+                           text-zinc-500 dark:text-zinc-400
+                           bg-white dark:bg-zinc-800/70
+                           border border-zinc-200/80 dark:border-zinc-700/60
+                           hover:text-zinc-900 dark:hover:text-white
+                           hover:border-[#FDD405]/70 dark:hover:border-[#FDD405]/60
+                           hover:bg-amber-50/80 dark:hover:bg-[#FDD405]/10
+                           shadow-sm transition-all duration-150 truncate max-w-[260px]">
+                {label}
+            </button>
+        ))}
+    </div>
+);
+
 const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, isScannerResult = false, chartData = null, metadata = {}, signal = null, patternSummary = null, technicalSummary = null, indicatorsTable = null, scoreCard = null, managementSentiment = null, annualReportIntelligence = null, companyFilings = null, recentDevelopments = null, aiTake = null, suggestedFollowUps = null, newsHeadlines = null, queryIntent = 'full', onFollowUpClick = null, onStreamingDone = null, messageId = null, onFeedback = null, responseMode = null }) => {
     const isUser = role === 'user';
 
@@ -556,10 +594,26 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
         [isUser, content]
     );
 
-    // Use streaming hook for AI messages
+    // Quick (snap) mode renders the one-screen QUICK ANSWER layout instead of the
+    // classic document — but only when the response actually carries stock data.
+    // Clarification questions ("short term or long term?") and disambiguation
+    // prompts keep the classic layout so their interactive chips still work.
+    const isQuickLayout = !isUser
+        && responseMode === 'snap'
+        && !isScannerResult
+        && !metadata?.disambiguation?.ambiguous
+        && !hasHorizonQuestion(content || '')
+        && (metadata?.at_a_glance?.price != null
+            || signal?.recommendation
+            || scoreCard?.overall
+            || scoreCard?.technical
+            || scoreCard?.fundamental);
+
+    // Use streaming hook for AI messages — the Quick Answer is "the instant read",
+    // so it skips the typewriter and renders the whole screen at once.
     const { displayedText, isComplete } = useStreamingText(
         bodyForTyping,
-        !isUser && isStreaming,
+        !isUser && isStreaming && !isQuickLayout,
         'line',
         2,
         30
@@ -692,6 +746,27 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                             <path d="M0 0 C0 10 8 14 10 16 L0 16 Z" fill="#FDD405"/>
                         </svg>
                     </div>
+                </div>
+            ) : isQuickLayout ? (
+                // Quick (snap) mode — one-screen QUICK ANSWER layout
+                <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 md:px-8">
+                    <QuickAnswer
+                        content={bodyForTyping}
+                        verdictText={hoistedVerdict}
+                        metadata={metadata}
+                        signal={signal}
+                        scoreCard={scoreCard}
+                        managementSentiment={managementSentiment}
+                        aiTake={aiTake}
+                        chartData={chartData}
+                        news={relevantNews.length > 0 ? relevantNews : (Array.isArray(newsHeadlines) ? newsHeadlines : [])}
+                        symbolLabel={primarySymbolLabel}
+                        patternSummary={patternSummary}
+                    />
+                    {showDisclaimer && <DisclaimerBox />}
+                    {Array.isArray(suggestedFollowUps) && suggestedFollowUps.length > 0 && onFollowUpClick && (
+                        <FollowUpChips chips={suggestedFollowUps} onClick={onFollowUpClick} />
+                    )}
                 </div>
             ) : (
                 // AI analysis — full-width document
@@ -1139,43 +1214,14 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                     </div>{/* end post-text fade wrapper */}
 
                     {/* ── Disclaimer — amber highlighted box, always last ── */}
-                    {showDisclaimer && (
-                        <div className="mt-4 flex items-start gap-2.5 px-3.5 py-2.5 rounded-xl"
-                            style={{
-                                background: 'linear-gradient(135deg, rgba(253,212,5,0.10) 0%, rgba(253,212,5,0.06) 100%)',
-                                border: '1px solid rgba(253,212,5,0.30)',
-                            }}>
-                            <span className="text-[13px] mt-0.5 flex-shrink-0">⚠️</span>
-                            <p className="text-[11px] leading-relaxed text-zinc-500 dark:text-zinc-400 m-0">
-                                <span className="font-semibold text-[#FDD405]">Disclaimer: </span>
-                                {DISCLAIMER_TEXT}
-                            </p>
-                        </div>
-                    )}
+                    {showDisclaimer && <DisclaimerBox />}
 
                     {/* ── Suggested follow-up chips — bottom of response.
                         Hidden on horizon questions ("short term or long term?"):
                         the user must answer the question first, not get distracted
                         by unrelated suggestions. They show on the actual answer. ── */}
                     {isEffectivelyDone && !hasHorizonQuestion(textToDisplay) && Array.isArray(suggestedFollowUps) && suggestedFollowUps.length > 0 && onFollowUpClick && (
-                        <div className="flex flex-wrap gap-2 pt-3">
-                            {suggestedFollowUps.map((label) => (
-                                <button
-                                    key={label}
-                                    type="button"
-                                    onClick={() => onFollowUpClick(label)}
-                                    className="px-3.5 py-1.5 text-[12px] font-medium rounded-full
-                                               text-zinc-500 dark:text-zinc-400
-                                               bg-white dark:bg-zinc-800/70
-                                               border border-zinc-200/80 dark:border-zinc-700/60
-                                               hover:text-zinc-900 dark:hover:text-white
-                                               hover:border-[#FDD405]/70 dark:hover:border-[#FDD405]/60
-                                               hover:bg-amber-50/80 dark:hover:bg-[#FDD405]/10
-                                               shadow-sm transition-all duration-150 truncate max-w-[260px]">
-                                    {label}
-                                </button>
-                            ))}
-                        </div>
+                        <FollowUpChips chips={suggestedFollowUps} onClick={onFollowUpClick} />
                     )}
 
                 </div>
