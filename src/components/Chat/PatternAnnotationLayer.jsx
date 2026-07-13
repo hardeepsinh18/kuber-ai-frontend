@@ -21,6 +21,11 @@ import React from 'react';
  */
 
 const TREND_COLOR = '#4FC3F7';
+// Match the verifier's clean palette: the pattern skeleton/curve are a SUBTLE light-grey
+// (not a thick bright-blue slash through the candles), and the measured-move projection is
+// the brand gold. Channel bands / trendlines keep their own colours from the annotation.
+const SKELETON_COLOR = '#C9D2DD';
+const PROJECTION_COLOR = '#FDD405';
 
 const PatternAnnotationLayer = ({
     xAxisMap,
@@ -134,7 +139,7 @@ const PatternAnnotationLayer = ({
                 if (pts.length < 2) return null;
                 const dPath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
                 return (
-                    <path d={dPath} fill="none" stroke={TREND_COLOR} strokeWidth={1.6}
+                    <path d={dPath} fill="none" stroke={SKELETON_COLOR} strokeWidth={1.7}
                           opacity={0.9} strokeLinecap="round" strokeLinejoin="round" />
                 );
             })()}
@@ -164,8 +169,8 @@ const PatternAnnotationLayer = ({
                 if (pts.length < 2) return null;
                 const dPath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
                 return (
-                    <path d={dPath} fill="none" stroke="#4FC3F7" strokeWidth={2.2}
-                          opacity={0.95} strokeLinecap="round" strokeLinejoin="round" />
+                    <path d={dPath} fill="none" stroke={SKELETON_COLOR} strokeWidth={1.7}
+                          opacity={0.9} strokeLinecap="round" strokeLinejoin="round" />
                 );
             })()}
 
@@ -177,7 +182,7 @@ const PatternAnnotationLayer = ({
                 if (pts.length < 2) return null;
                 const dPath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
                 return (
-                    <path d={dPath} fill="none" stroke="#4FC3F7" strokeWidth={1.8}
+                    <path d={dPath} fill="none" stroke={PROJECTION_COLOR} strokeWidth={1.8}
                           strokeDasharray="6 5" opacity={0.9}
                           strokeLinecap="round" strokeLinejoin="round" />
                 );
