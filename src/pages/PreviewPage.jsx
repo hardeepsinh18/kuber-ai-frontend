@@ -267,10 +267,34 @@ const MOCK_METADATA_HDFC = {
     },
 };
 
+/* ICICI case: no signal AND no levels in the text — the band must fall back
+   to pattern-engine levels (support → stop, resistance → target, CMP → entry). */
+const MOCK_METADATA_ICICI = {
+    symbols: ['ICICIBANK'],
+    at_a_glance: { symbol: 'ICICIBANK', price: 1431.6, change_percent: 0.0, volume: 9800000 },
+};
+const MOCK_PATTERN_ICICI = { support: 1382, resistance: 1495, candlestick: [], summary: 'Consolidating near highs.' };
+const MOCK_CONTENT_ICICI = `🟢 **BUY** — ICICI Bank is a long-term compounder firing on all cylinders, but with RSI >70 and FII outflows, a short-term dip is likely. Medium-term investors can accumulate on dips.`;
+
 export default function PreviewPage() {
     return (
         <div className="min-h-screen bg-[#090A07] py-10">
             <div className="max-w-4xl mx-auto px-4">
+                {/* ── QUICK ANSWER: no signal, no text levels → pattern fallback ── */}
+                <MessageBubble role="user" content="icici bank" isStreaming={false} />
+                <MessageBubble
+                    role="assistant"
+                    content={MOCK_CONTENT_ICICI}
+                    isStreaming={false}
+                    metadata={MOCK_METADATA_ICICI}
+                    patternSummary={MOCK_PATTERN_ICICI}
+                    responseMode="snap"
+                    messageId="preview-quick-fallback"
+                    onFeedback={() => {}}
+                />
+
+                <div className="my-10 border-t border-zinc-800" />
+
                 {/* ── QUICK ANSWER: no structured signal, levels parsed from text ── */}
                 <MessageBubble role="user" content="hdfc bank" isStreaming={false} />
                 <MessageBubble

@@ -116,12 +116,23 @@ export const deriveVerdict = (text) => {
 /* Parse ₹ levels (entry / stop loss / target) out of the answer text when the
    structured signal doesn't carry them. Handles "Entry ₹818", "🛑 Stop ₹802",
    "**Target** ₹850", "target of Rs 1,850" and ranges like "₹810–818". */
-const LEVEL_CONNECT = '(?:\\s+(?:price|zone|level|point|of|at|near|around))?[\\*_]*\\s*[:=–—-]?\\s*[\\*_]*\\s*';
+const LEVEL_PAD = '[\\*_]*\\s*[:=–—-]?\\s*[\\*_]*\\s*';
+const LEVEL_CONNECT = '(?:\\s+(?:price|zone|level|point|of|at|near|around))?' + LEVEL_PAD;
 const LEVEL_NUM = '(?:rs\\.?|₹)?\\s*([\\d,]+(?:\\.\\d+)?)(?!\\s*%)(?:\\s*[–—-]\\s*(?:rs\\.?|₹)?\\s*([\\d,]+(?:\\.\\d+)?))?';
 const LEVEL_RES = {
-    entry:  new RegExp('\\bentry' + LEVEL_CONNECT + LEVEL_NUM, 'i'),
-    stop:   new RegExp('\\bstop(?:[\\s-]*loss)?' + LEVEL_CONNECT + LEVEL_NUM, 'i'),
-    target: new RegExp('\\btarget' + LEVEL_CONNECT + LEVEL_NUM, 'i'),
+    entry: [
+        new RegExp('\\bentry' + LEVEL_CONNECT + LEVEL_NUM, 'i'),
+        new RegExp('\\b(?:buy|accumulate)\\s+(?:zone|at|near|around|above|between|on\\s+dips\\s+to)' + LEVEL_PAD + LEVEL_NUM, 'i'),
+    ],
+    stop: [
+        new RegExp('\\bstop(?:[\\s-]*loss)?' + LEVEL_CONNECT + LEVEL_NUM, 'i'),
+        new RegExp('\\bsl\\b' + LEVEL_CONNECT + LEVEL_NUM, 'i'),
+    ],
+    target: [
+        new RegExp('\\btargets?' + LEVEL_CONNECT + LEVEL_NUM, 'i'),
+        new RegExp('\\btgt\\b' + LEVEL_CONNECT + LEVEL_NUM, 'i'),
+        new RegExp('\\bbook\\s+profits?\\s+(?:at|near|around)' + LEVEL_PAD + LEVEL_NUM, 'i'),
+    ],
 };
 
 export const extractLevelsFromText = (text, refPrice = null) => {
@@ -133,13 +144,16 @@ export const extractLevelsFromText = (text, refPrice = null) => {
     // Sanity: a real trading level sits in the vicinity of the current price —
     // rejects years ("2026"), percentages and stray small numbers.
     const plausible = (n) => n != null && (refPrice == null || (n >= refPrice * 0.3 && n <= refPrice * 3));
-    const grab = (re) => {
-        const m = t.match(re);
-        if (!m) return null;
-        const lo = toNum(m[1]);
-        if (!plausible(lo)) return null;
-        const hi = toNum(m[2]);
-        return { lo, hi: plausible(hi) ? hi : null };
+    const grab = (regexes) => {
+        for (const re of regexes) {
+            const m = t.match(re);
+            if (!m) continue;
+            const lo = toNum(m[1]);
+            if (!plausible(lo)) continue;
+            const hi = toNum(m[2]);
+            return { lo, hi: plausible(hi) ? hi : null };
+        }
+        return null;
     };
     return {
         entry: grab(LEVEL_RES.entry),
@@ -202,7 +216,7 @@ export const CompanyCard = ({ metadata = {}, symbolLabel = '' }) => {
 };
 
 /* ─── KUBER VERDICT band — BUY/SELL/HOLD + Entry / Stop Loss / Target ────── */
-export const VerdictBand = ({ signal, verdictText, content, aiTake, price }) => {
+export const VerdictBand = ({ signal, verdictText, content, aiTake, price, patternSummary = null }) => {
     const rec = signal?.recommendation
         ? String(signal.recommendation).toUpperCase()
         : deriveVerdict(verdictText || content);
@@ -215,15 +229,29 @@ export const VerdictBand = ({ signal, verdictText, content, aiTake, price }) => 
         ...(Array.isArray(aiTake?.bullets) ? aiTake.bullets.map(b => b?.text) : []),
     ].filter(Boolean).join('\n');
     const textLevels = extractLevelsFromText(levelSourceText, price);
-    const fmtLevel = (sigVal, parsed) => {
+
+    // Last-resort levels from the backend's own pattern engine: support acts as
+    // the stop-loss reference and resistance as the target (swapped for SELL);
+    // for a BUY, the live price is the de-facto entry. Only values on the right
+    // side of the current price are used — bad data is dropped, not shown.
+    const support = patternSummary?.support != null ? Number(patternSummary.support) : null;
+    const resistance = patternSummary?.resistance != null ? Number(patternSummary.resistance) : null;
+    const isSell = rec === 'SELL';
+    const below = (v) => (v != null && (price == null || v < price) ? v : null);
+    const above = (v) => (v != null && (price == null || v > price) ? v : null);
+    const fbEntry = rec === 'BUY' ? price : null;
+    const fbStop = isSell ? above(resistance) : below(support);
+    const fbTarget = isSell ? below(support) : above(resistance);
+
+    const fmtLevel = (sigVal, parsed, fb) => {
         if (sigVal != null) return fmtINR(sigVal, 2);
-        if (!parsed) return null;
-        return parsed.hi ? `₹${fmtNum(parsed.lo)}–${fmtNum(parsed.hi)}` : fmtINR(parsed.lo, 2);
+        if (parsed) return parsed.hi ? `₹${fmtNum(parsed.lo)}–${fmtNum(parsed.hi)}` : fmtINR(parsed.lo, 2);
+        return fb != null ? fmtINR(fb, 2) : null;
     };
     const levels = [
-        { label: 'Entry', value: fmtLevel(signal?.ideal_entry, textLevels.entry) },
-        { label: 'Stop Loss', value: fmtLevel(signal?.stop_loss, textLevels.stop) },
-        { label: 'Target', value: fmtLevel(signal?.target, textLevels.target) },
+        { label: 'Entry', value: fmtLevel(signal?.ideal_entry, textLevels.entry, fbEntry) },
+        { label: 'Stop Loss', value: fmtLevel(signal?.stop_loss, textLevels.stop, fbStop) },
+        { label: 'Target', value: fmtLevel(signal?.target, textLevels.target, fbTarget) },
     ].filter(l => l.value);
 
     return (

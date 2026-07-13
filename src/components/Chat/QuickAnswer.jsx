@@ -75,7 +75,7 @@ const QuickAnswer = ({
             <CompanyCard metadata={metadata} symbolLabel={symbolLabel} />
 
             <VerdictBand signal={signal} verdictText={verdictText} content={content}
-                         aiTake={aiTake} price={price} />
+                         aiTake={aiTake} price={price} patternSummary={patternSummary} />
 
             {/* ── Chart + Today's Market Stats ───────────────────── */}
             {(chart || stats.length > 0) && (
