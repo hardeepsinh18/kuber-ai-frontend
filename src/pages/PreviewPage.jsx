@@ -163,6 +163,56 @@ const MOCK_FOLLOW_UPS = [
 
 const MOCK_CONTENT = `⚠️ **WAIT** | High P/E, ROE, and DY • Technical: RSI 40 (Neutral) — no clear trend • Fundamental/Momentum: P/E 27.4, ROE 46.12%, DY 3.41% — strong fundamentals • Risk: Low volume 0.8x avg, MACD -28.5 (Bearish) — caution ⚡ Entry ₹2,310.`;
 
+/* ── Analyst (one-tap-deeper) mocks ── */
+const MOCK_CONTENT_ANALYST = `Breaking out of a multi month ascending triangle on strong volume, with a golden cross active. Fundamentals stay healthy on low debt, though valuation is rich. Stay out below the triangle's rising support; target at the measured move.
+
+## Technical picture
+
+Price is trading above both the 50 and 200 day moving averages and the MACD line crossed above its signal line last week. Volume on the breakout day ran **1.4x** the 20 day average.
+
+## Fundamental picture
+
+TCS remains the highest-ROE large cap IT name. Revenue growth is moderating versus prior year, and the stock trades at a premium to its own five-year valuation band.`;
+
+const MOCK_MGMT = {
+    tone_score: 82,
+    tone_label: 'Bullish',
+    period: 'Q1 FY27',
+    summary: 'Management tone is confident — deal wins called out, margin guidance retained.',
+};
+
+const MOCK_ARI = {
+    company_story: 'Management commentary in the latest annual report emphasized margin expansion and continued investment in AI-led delivery.',
+    future_outlook: 'Overall tone scored positive against the prior year’s filing.',
+    confidence: 0.88,
+    growth_drivers: ['AI-led services', 'Cloud transformation'],
+};
+
+const MOCK_DEVELOPMENTS = {
+    items: [
+        { title: 'Board approved a ₹18,000 crore share buyback and confirmed a new leadership hire to head the AI practice.', category: 'Buyback', importance: 'high', date: '2026-07-10' },
+        { title: 'Won a large multi-year cloud transformation deal with a European bank.', category: 'Order Win', importance: 'high', date: '2026-07-08' },
+    ],
+};
+
+const MOCK_FILINGS = {
+    total: 12,
+    groups: [
+        { label: 'announcements', count: 6, items: [{ title: 'No adverse regulatory filings in the past quarter; promoter holding steady with no pledged shares on record.' }] },
+        { label: 'quarterly results', count: 4, items: [] },
+        { label: 'investor meets', count: 2, items: [] },
+    ],
+};
+
+const MOCK_PATTERN_ANALYST = {
+    ...MOCK_PATTERN,
+    support: 2260,
+    resistance: 2340,
+    chart_pattern_details: [
+        { name: 'Ascending Triangle', direction: 'bullish', strength: 'Moderate', bars_ago: 4 },
+    ],
+};
+
 /* Real-world case: backend sends NO structured signal — entry/stop/target
    live only inside the answer text (the HDFC Bank quick-answer bug). */
 const MOCK_CONTENT_NO_SIGNAL = `🟢 **BUY** — Price above key EMAs, bullish MACD crossover
@@ -223,19 +273,23 @@ export default function PreviewPage() {
 
                 <div className="my-10 border-t border-zinc-800" />
 
-                {/* ── Classic analyst layout ── */}
+                {/* ── ANALYST ANSWER layout (one tap deeper) ── */}
                 <MessageBubble role="user" content="Show me TCS fundamentals and valuation" isStreaming={false} />
                 <MessageBubble
                     role="assistant"
-                    content={MOCK_CONTENT}
+                    content={MOCK_CONTENT_ANALYST}
                     isStreaming={false}
                     chartData={MOCK_CHART}
                     metadata={MOCK_METADATA}
-                    signal={MOCK_SIGNAL}
+                    signal={MOCK_SIGNAL_QUICK}
                     technicalSummary={MOCK_TECHNICAL_SUMMARY}
-                    patternSummary={MOCK_PATTERN}
+                    patternSummary={MOCK_PATTERN_ANALYST}
                     indicatorsTable={MOCK_INDICATORS}
-                    scoreCard={MOCK_SCORE_CARD}
+                    scoreCard={MOCK_SCORE_CARD_QUICK}
+                    managementSentiment={MOCK_MGMT}
+                    annualReportIntelligence={MOCK_ARI}
+                    recentDevelopments={MOCK_DEVELOPMENTS}
+                    companyFilings={MOCK_FILINGS}
                     newsHeadlines={MOCK_NEWS}
                     suggestedFollowUps={MOCK_FOLLOW_UPS}
                     onFollowUpClick={() => {}}

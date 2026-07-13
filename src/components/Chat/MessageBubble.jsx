@@ -12,6 +12,7 @@ import CompanyFilings from './CompanyFilings';
 import RecentDevelopments from './RecentDevelopments';
 import AITake from './AITake';
 import QuickAnswer from './QuickAnswer';
+import AnalystAnswer from './AnalystAnswer';
 
 const normalizeSymbol = (s) => {
     const raw = String(s || "").trim();
@@ -594,12 +595,11 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
         [isUser, content]
     );
 
-    // Quick (snap) mode renders the one-screen QUICK ANSWER layout instead of the
-    // classic document — but only when the response actually carries stock data.
-    // Clarification questions ("short term or long term?") and disambiguation
+    // Structured one-screen layouts: Quick (snap) renders QUICK ANSWER, Analyst
+    // renders ANALYST ANSWER — but only when the response actually carries stock
+    // data. Clarification questions ("short term or long term?") and disambiguation
     // prompts keep the classic layout so their interactive chips still work.
-    const isQuickLayout = !isUser
-        && responseMode === 'snap'
+    const structuredEligible = !isUser
         && !isScannerResult
         && !metadata?.disambiguation?.ambiguous
         && !hasHorizonQuestion(content || '')
@@ -608,12 +608,15 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
             || scoreCard?.overall
             || scoreCard?.technical
             || scoreCard?.fundamental);
+    const isQuickLayout = structuredEligible && responseMode === 'snap';
+    const isAnalystLayout = structuredEligible && responseMode === 'analyst';
+    const isStructuredLayout = isQuickLayout || isAnalystLayout;
 
-    // Use streaming hook for AI messages — the Quick Answer is "the instant read",
-    // so it skips the typewriter and renders the whole screen at once.
+    // Use streaming hook for AI messages — the structured layouts are "the instant
+    // read", so they skip the typewriter and render the whole screen at once.
     const { displayedText, isComplete } = useStreamingText(
         bodyForTyping,
-        !isUser && isStreaming && !isQuickLayout,
+        !isUser && isStreaming && !isStructuredLayout,
         'line',
         2,
         30
@@ -747,22 +750,42 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                         </svg>
                     </div>
                 </div>
-            ) : isQuickLayout ? (
-                // Quick (snap) mode — one-screen QUICK ANSWER layout
+            ) : isStructuredLayout ? (
+                // Structured one-screen layouts — QUICK ANSWER / ANALYST ANSWER
                 <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 md:px-8">
-                    <QuickAnswer
-                        content={bodyForTyping}
-                        verdictText={hoistedVerdict}
-                        metadata={metadata}
-                        signal={signal}
-                        scoreCard={scoreCard}
-                        managementSentiment={managementSentiment}
-                        aiTake={aiTake}
-                        chartData={chartData}
-                        news={relevantNews.length > 0 ? relevantNews : (Array.isArray(newsHeadlines) ? newsHeadlines : [])}
-                        symbolLabel={primarySymbolLabel}
-                        patternSummary={patternSummary}
-                    />
+                    {isQuickLayout ? (
+                        <QuickAnswer
+                            content={bodyForTyping}
+                            verdictText={hoistedVerdict}
+                            metadata={metadata}
+                            signal={signal}
+                            scoreCard={scoreCard}
+                            managementSentiment={managementSentiment}
+                            aiTake={aiTake}
+                            chartData={chartData}
+                            news={relevantNews.length > 0 ? relevantNews : (Array.isArray(newsHeadlines) ? newsHeadlines : [])}
+                            symbolLabel={primarySymbolLabel}
+                            patternSummary={patternSummary}
+                        />
+                    ) : (
+                        <AnalystAnswer
+                            content={bodyForTyping}
+                            verdictText={hoistedVerdict}
+                            metadata={metadata}
+                            signal={signal}
+                            scoreCard={scoreCard}
+                            managementSentiment={managementSentiment}
+                            annualReportIntelligence={annualReportIntelligence}
+                            recentDevelopments={recentDevelopments}
+                            companyFilings={companyFilings}
+                            aiTake={aiTake}
+                            chartData={chartData}
+                            technicalSummary={technicalSummary}
+                            indicatorsTable={indicatorsTable}
+                            patternSummary={patternSummary}
+                            symbolLabel={primarySymbolLabel}
+                        />
+                    )}
                     {showDisclaimer && <DisclaimerBox />}
                     {Array.isArray(suggestedFollowUps) && suggestedFollowUps.length > 0 && onFollowUpClick && (
                         <FollowUpChips chips={suggestedFollowUps} onClick={onFollowUpClick} />
