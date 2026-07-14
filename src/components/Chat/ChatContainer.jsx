@@ -1020,12 +1020,21 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
 
             const dynamicSteps = generateThinkingSteps(normalized, symbolsToSend);
 
-            // Last 10 turns for conversation continuity
+            // Last 8 turns for conversation continuity, with each message CAPPED in length.
+            // Analyst answers run ~2,500 words each; sending them in full made chat_history
+            // balloon to 100 KB+ after a few turns and overflow the backend's LLM context —
+            // which surfaced as an intermittent "Something went wrong" that worsened the longer
+            // the chat ran. Capping each message keeps enough context for continuity without
+            // the bloat. Assistant answers are trimmed harder (the opening verdict is the gist).
+            const _cap = (text, n) => {
+                const t = typeof text === 'string' ? text : '';
+                return t.length > n ? t.slice(0, n).trimEnd() + ' …' : t;
+            };
             const conversationHistory = messagesRef.current
-                .slice(-10)
+                .slice(-8)
                 .map((m) => ({
                     role: m.role === 'user' ? 'user' : 'assistant',
-                    content: typeof m.content === 'string' ? m.content : ''
+                    content: m.role === 'user' ? _cap(m.content, 600) : _cap(m.content, 1200),
                 }))
                 .filter((m) => m.content.trim());
 
