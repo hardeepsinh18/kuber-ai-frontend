@@ -238,6 +238,12 @@ const extractStockSymbols = (query) => {
         // (it was sweeping in unrelated TAALTECH/RACLGEAR on the word "tech").
         'hcl': 'HCLTECH',
         'hcltech': 'HCLTECH',
+        // Diensten Tech (NSE Emerge SME) — missing from the backend's main-board
+        // symbol master, so bare "dtl" was fuzzy-matched into a fake "Dtl Group"
+        // popup (TIL/GTL/DLF). Alias forces direct resolution via the symbol hint.
+        'dtl': 'DTL',
+        'diensten': 'DTL',
+        'diensten tech': 'DTL',
         'sunpharma': 'SUNPHARMA',
         'drreddy': 'DRREDDY',
         'cipla': 'CIPLA',
@@ -986,6 +992,16 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             //   "tell me more"      → "tell me more for TATAELXSI"  (≤4 words, appended)
             //   "in the same sector…" → sent as-is (symbolsToSend provides context)
             let effectiveQuery = rewrittenQuery;
+            // Bare one-token stock query ("dtl" → "DTL"): send "analyze DTL" instead.
+            // The backend demotes a keyword-less STOCK_QUERY to UNKNOWN when it can't
+            // resolve the symbol in its name master (SME/Emerge listings like DTL),
+            // replying with a generic help message — or worse, a fuzzy fake-group
+            // popup. "analyze X" passes its financial-keyword gate so the symbol
+            // hint is honored and real stock data comes back.
+            const bareToken = rewrittenQuery.trim().replace(/[.,!?;:()'"]/g, '');
+            if (confidentSymbols.length === 1 && bareToken.toUpperCase() === confidentSymbols[0]) {
+                effectiveQuery = `analyze ${confidentSymbols[0]}`;
+            }
             if (isFollowUp) {
                 const withPronouns = normalized.replace(
                     /\b(it|this|that|them|those|the stock|that stock|the company|this stock)\b/gi,
