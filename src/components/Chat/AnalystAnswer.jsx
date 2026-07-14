@@ -152,7 +152,6 @@ const PatternSection = ({ patternSummary, chartData, symbolLabel, indicatorsTabl
         ? [
             cp.pattern || cp.name || 'Pattern',
             cp.direction || null,
-            cp.target != null ? `target ${fmtINR(cp.target)}` : null,
             (cp.bars_ago ?? 0) > 0 ? `${cp.bars_ago} bars ago` : 'forming',
           ].filter(Boolean).join(' · ')
         : summaryText;

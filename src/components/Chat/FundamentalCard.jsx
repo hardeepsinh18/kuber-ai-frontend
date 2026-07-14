@@ -1105,13 +1105,7 @@ const ChartPatternCard = ({ cp }) => {
                     <span className="text-[9px] text-zinc-400 group-hover:text-zinc-200 transition-colors">tap to expand →</span>
                 </div>
 
-                {cp.target && (
-                    <div className="mt-1.5 flex gap-2 text-[10px]">
-                        <span className="text-zinc-400">Target</span>
-                        <span className="font-mono font-semibold text-emerald-400">₹{Number(cp.target).toLocaleString('en-IN', {maximumFractionDigits: 0})}</span>
-                        {cp.stop && (<><span className="text-zinc-600">|</span><span className="text-zinc-400">Stop</span><span className="font-mono text-rose-400">₹{Number(cp.stop).toLocaleString('en-IN', {maximumFractionDigits: 0})}</span></>)}
-                    </div>
-                )}
+                {/* Target / Stop intentionally not shown for chart patterns (product decision). */}
             </button>
 
             {modalOpen && (

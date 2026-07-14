@@ -21,11 +21,10 @@ import React from 'react';
  */
 
 const TREND_COLOR = '#4FC3F7';
-// Match the verifier's clean palette: the pattern skeleton/curve are a SUBTLE light-grey
-// (not a thick bright-blue slash through the candles), and the measured-move projection is
-// the brand gold. Channel bands / trendlines keep their own colours from the annotation.
+// The pattern skeleton/curve are a SUBTLE light-grey (not a thick bright-blue slash through
+// the candles). Channel bands / trendlines keep their own colours from the annotation.
+// Target/stop lines and the measured-move projection are intentionally not drawn (kept clean).
 const SKELETON_COLOR = '#C9D2DD';
-const PROJECTION_COLOR = '#FDD405';
 
 const PatternAnnotationLayer = ({
     xAxisMap,
@@ -174,55 +173,11 @@ const PatternAnnotationLayer = ({
                 );
             })()}
 
-            {/* Dashed projection — after the neckline break, extend down/up to the measured target */}
-            {projection.length >= 2 && (() => {
-                const pts = projection
-                    .map(p => ({ x: getX(p.date), y: yAxis.scale(p.price) }))
-                    .filter(p => p.x != null && p.y != null && !isNaN(p.x) && !isNaN(p.y));
-                if (pts.length < 2) return null;
-                const dPath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
-                return (
-                    <path d={dPath} fill="none" stroke={PROJECTION_COLOR} strokeWidth={1.8}
-                          strokeDasharray="6 5" opacity={0.9}
-                          strokeLinecap="round" strokeLinejoin="round" />
-                );
-            })()}
+            {/* Measured-move projection intentionally NOT drawn — product decision to keep the
+                pattern chart clean (no dashed target line). The pattern shape + markers are enough. */}
 
-            {/* Horizontal levels — Target (green) and Stop-loss (red), each with a price chip
-                pinned to the right end so it's clear which line is which. */}
-            {hlines.map((hl, j) => {
-                const y = yAxis.scale(hl.price);
-                if (y == null || isNaN(y)) return null;
-                const label = hl.label || '';
-                const isTarget = /^\s*target/i.test(label);
-                const isStop   = /^\s*(stop|sl)/i.test(label);
-                const color = isTarget ? '#00FF88' : isStop ? '#FF4444' : (hl.color || '#FDD405');
-                const dash = hl.linestyle === ':' ? '2 4' : '5 3';
-                const chip = isTarget ? `Target ₹${Number(hl.price).toFixed(2)}`
-                           : isStop   ? `SL ₹${Number(hl.price).toFixed(2)}`
-                           : null;
-                const w = chip ? chip.length * 6.0 + 12 : 0;
-                const cx = rightBound - w - 2;
-                return (
-                    <g key={`hl${j}`}>
-                        <line x1={leftBound} y1={y} x2={chip ? cx - 2 : rightBound} y2={y}
-                              stroke={color} strokeWidth={1.3}
-                              strokeDasharray={dash} opacity={0.9} />
-                        {chip && (
-                            <g>
-                                <rect x={cx} y={y - 8} width={w} height={16} rx={3}
-                                      fill="#0b0b0b" stroke={color} strokeWidth={0.75} opacity={0.95} />
-                                <text x={cx + w / 2} y={y + 3.5} textAnchor="middle" fontSize={9.5}
-                                      fontWeight={600} fill={color}
-                                      fontFamily="ui-monospace, Menlo, monospace"
-                                      style={{ pointerEvents: 'none' }}>
-                                    {chip}
-                                </text>
-                            </g>
-                        )}
-                    </g>
-                );
-            })}
+            {/* Target / Stop-loss horizontal lines intentionally NOT drawn — product decision to
+                keep the pattern chart clean. Levels are not shown on the chart or in the caption. */}
 
             {/* Neckline price tag — pinned to the right end of the neckline */}
             {neckline && neckline.price != null && (() => {
