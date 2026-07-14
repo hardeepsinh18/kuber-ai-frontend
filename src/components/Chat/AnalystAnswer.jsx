@@ -148,11 +148,23 @@ const PatternSection = ({ patternSummary, chartData, symbolLabel, indicatorsTabl
     const volRow = (Array.isArray(indicatorsTable) ? indicatorsTable : [])
         .find(r => /volume/i.test(r?.indicator || ''));
 
+    // Show the exact breakout candle's date ("broke out 8 Jul 2026") instead of "X bars ago".
+    // The date is read from the pattern's own chart_slice (RDS), so it matches bars_ago exactly;
+    // falls back to the bars-ago count if the slice/date is unavailable. Forming = no breakout yet.
+    const _MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const _fmtDate = (iso) => {
+        const m = iso && String(iso).slice(0, 10).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        return m ? `${Number(m[3])} ${_MONTHS[Number(m[2]) - 1]} ${m[1]}` : null;
+    };
+    const _barsAgo = cp?.bars_ago ?? 0;
+    const _slice = Array.isArray(cp?.chart_slice) ? cp.chart_slice : [];
+    const _brkDate = _barsAgo > 0 && _slice.length
+        ? _fmtDate(_slice[_slice.length - 1 - _barsAgo]?.date) : null;
     const patternCellText = cp
         ? [
             cp.pattern || cp.name || 'Pattern',
             cp.direction || null,
-            (cp.bars_ago ?? 0) > 0 ? `${cp.bars_ago} bars ago` : 'forming',
+            _barsAgo > 0 ? (_brkDate ? `broke out ${_brkDate}` : `${_barsAgo} bars ago`) : 'forming',
           ].filter(Boolean).join(' · ')
         : summaryText;
     const volumeCellText = volRow
