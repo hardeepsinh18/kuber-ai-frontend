@@ -1,8 +1,9 @@
 import { useState, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
-import { ScanLine } from 'lucide-react';
+import { ScanLine, Rocket } from 'lucide-react';
 import ScannerPanel from './ScannerPanel';
+import IpoPanel from './IpoPanel';
 
 const QUERIES = [
     'Show me TCS fundamentals and valuation',
@@ -27,6 +28,7 @@ const fadeUp = (delay = 0) => ({
 const StartScreen = ({ onStartChat, onScannerResult, responseMode, setResponseMode }) => {
     const [input, setInput] = useState('');
     const [scannerOpen, setScannerOpen] = useState(false);
+    const [ipoOpen, setIpoOpen] = useState(false);
     const inputRef = useRef(null);
 
     const autoResize = useCallback((el) => {
@@ -116,6 +118,19 @@ const StartScreen = ({ onStartChat, onScannerResult, responseMode, setResponseMo
                                             <ScanLine size={12} />
                                             Scanners
                                         </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setIpoOpen(true)}
+                                            className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-semibold
+                                                       text-zinc-500 dark:text-zinc-400
+                                                       hover:text-zinc-900 dark:hover:text-zinc-100
+                                                       border border-zinc-300/60 dark:border-zinc-700/60
+                                                       hover:border-[#FDD405]/60 dark:hover:border-[#FDD405]/50
+                                                       hover:bg-amber-50/40 dark:hover:bg-amber-950/15
+                                                       transition-all duration-150">
+                                            <Rocket size={12} />
+                                            IPOs
+                                        </button>
                                     </div>
                                     <button
                                         onClick={send}
@@ -171,6 +186,10 @@ const StartScreen = ({ onStartChat, onScannerResult, responseMode, setResponseMo
                 onSelectScanner={onScannerResult || ((msg) => onStartChat(msg, 'stock'))}
                 onClose={() => setScannerOpen(false)}
             />
+        )}
+
+        {ipoOpen && (
+            <IpoPanel onClose={() => setIpoOpen(false)} />
         )}
     </>
     );
