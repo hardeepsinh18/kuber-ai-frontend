@@ -49,8 +49,9 @@ const labelFor = (providedLabel, ownScore, shownScore, kind) => {
     return scoreWord(shownScore, kind);
 };
 
-/* Compact markdown for the expandable full analysis */
-const proseComponents = {
+/* Compact markdown for the expandable full analysis.
+   Exported: ComparisonAnswer renders the head-to-head body with the same theme. */
+export const proseComponents = {
     p: ({ children }) => <p className="mb-3 last:mb-0 text-[12.5px] leading-relaxed text-zinc-600 dark:text-zinc-300">{children}</p>,
     strong: ({ children }) => <strong className="font-bold text-zinc-900 dark:text-white">{children}</strong>,
     em: ({ children }) => <em className="italic text-zinc-500 dark:text-zinc-400">{children}</em>,

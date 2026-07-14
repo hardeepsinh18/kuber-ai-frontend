@@ -13,6 +13,7 @@ import RecentDevelopments from './RecentDevelopments';
 import AITake from './AITake';
 import QuickAnswer from './QuickAnswer';
 import AnalystAnswer from './AnalystAnswer';
+import ComparisonAnswer from './ComparisonAnswer';
 import { IndicatorsTable } from './answerKit';
 
 const normalizeSymbol = (s) => {
@@ -536,13 +537,23 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
             || scoreCard?.fundamental);
     const isQuickLayout = structuredEligible && responseMode === 'snap';
     const isAnalystLayout = structuredEligible && responseMode === 'analyst';
-    const isStructuredLayout = isQuickLayout || isAnalystLayout;
+    // "X vs Y" head-to-head answers get their own layout in BOTH modes — the
+    // single-stock Quick/Analyst screens would render one company's scorecards
+    // around a buried comparison. Backend sets metadata.comparison; the content
+    // sniff covers answers generated before that flag existed.
+    const isComparisonAnswer = !isUser
+        && !isScannerResult
+        && !metadata?.disambiguation?.ambiguous
+        && (metadata?.comparison === true
+            || (((metadata?.comparison_symbols?.length || 0) >= 2 || (metadata?.symbols?.length || 0) >= 2)
+                && /head to head|## comparison scorecard/i.test(content || '')));
+    const isStructuredLayout = !isComparisonAnswer && (isQuickLayout || isAnalystLayout);
 
     // Use streaming hook for AI messages — the structured layouts are "the instant
     // read", so they skip the typewriter and render the whole screen at once.
     const { displayedText, isComplete } = useStreamingText(
         bodyForTyping,
-        !isUser && isStreaming && !isStructuredLayout,
+        !isUser && isStreaming && !isStructuredLayout && !isComparisonAnswer,
         'line',
         2,
         30
@@ -675,6 +686,19 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                             <path d="M0 0 C0 10 8 14 10 16 L0 16 Z" fill="#FDD405"/>
                         </svg>
                     </div>
+                </div>
+            ) : isComparisonAnswer ? (
+                // Head-to-head comparison — dedicated layout, both modes
+                <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 md:px-8">
+                    <ComparisonAnswer
+                        content={bodyForTyping}
+                        metadata={metadata}
+                        chartData={chartData}
+                    />
+                    {showDisclaimer && <DisclaimerBox />}
+                    {Array.isArray(suggestedFollowUps) && suggestedFollowUps.length > 0 && onFollowUpClick && (
+                        <FollowUpChips chips={suggestedFollowUps} onClick={onFollowUpClick} />
+                    )}
                 </div>
             ) : isStructuredLayout ? (
                 // Structured one-screen layouts — QUICK ANSWER / ANALYST ANSWER
