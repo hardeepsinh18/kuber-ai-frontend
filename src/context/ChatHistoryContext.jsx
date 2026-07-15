@@ -98,11 +98,20 @@ export function ChatHistoryProvider({ children }) {
             const hasNewMessages = messages.length > syncedMessageCountRef.current;
             if (hasMessages) {
                 const title = chatStorage.getTitleFromMessages(messages);
-                const msgsForStorage = messages.map(({ chartData: _cd, ...rest }) => rest);
                 try {
-                    chatStorage.saveChatMessages(chatId, msgsForStorage);
+                    // Keep chartData in localStorage so the chart (and its pattern overlay)
+                    // survives a refresh / chat switch directly — no backend round-trip needed.
+                    chatStorage.saveChatMessages(chatId, messages);
                 } catch {
-                    // localStorage quota full — messages are safely on the server, no pruning
+                    // Over quota with chartData included — retry WITHOUT it (stripped). Those
+                    // charts are still on the server (metadata._chartData) and get restored by
+                    // loadChat()'s backend hydration, so nothing is lost.
+                    try {
+                        const stripped = messages.map(({ chartData: _cd, ...rest }) => rest);
+                        chatStorage.saveChatMessages(chatId, stripped);
+                    } catch {
+                        // still over quota — messages are safely on the server, no pruning
+                    }
                 }
                 setChatList((prev) => {
                     const next = prev.map((c) =>
