@@ -611,74 +611,6 @@ const genId = () =>
         ? crypto.randomUUID()
         : `msg_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
-/**
- * Cards-early streaming client. POSTs to /chat/stream (SSE) and:
- *   - calls onMeta(meta) when the 'meta' event arrives (~5s: chart/pattern/score cards)
- *   - returns the 'done' event payload (the SAME ChatResponse /chat returns)
- *   - THROWS on any problem (non-200, wrong content-type, 'error' event, no 'done')
- * The caller catches the throw and falls back to the normal /chat fetch, so streaming
- * can never regress the working path.
- */
-async function streamChat(url, payload, headers, signal, onMeta) {
-    const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload), signal });
-    const ctype = res.headers.get('content-type') || '';
-    if (!res.ok || !ctype.includes('text/event-stream') || !res.body) {
-        throw new Error(`stream unavailable (${res.status})`);
-    }
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-    let done = null;
-    for (;;) {
-        const { value, done: rdone } = await reader.read();
-        if (rdone) break;
-        buffer += decoder.decode(value, { stream: true });
-        let sep;
-        while ((sep = buffer.indexOf('\n\n')) >= 0) {
-            const raw = buffer.slice(0, sep);
-            buffer = buffer.slice(sep + 2);
-            let ev = 'message', data = '';
-            for (const line of raw.split('\n')) {
-                if (line.startsWith('event:')) ev = line.slice(6).trim();
-                else if (line.startsWith('data:')) data += line.slice(5).trimStart();
-            }
-            if (!data) continue;
-            let parsed;
-            try { parsed = JSON.parse(data); } catch { continue; }
-            if (ev === 'meta') { try { onMeta && onMeta(parsed); } catch { /* non-fatal */ } }
-            else if (ev === 'done') { done = parsed; }
-            else if (ev === 'error') { throw new Error(parsed?.error || 'stream error'); }
-        }
-    }
-    if (!done) throw new Error('stream ended without done');
-    return done;
-}
-
-/** Preliminary "cards only" message rendered on the 'meta' event (prose fills in on 'done'). */
-function buildCardMessage(id, meta, queryIntent, responseMode) {
-    const rawChartData = meta.chart_data || null;
-    const hasOhlcv = (d) => d && (d.ohlcv || d.candles || d.data || (Array.isArray(d.dates) && d.dates.length > 0) || (Array.isArray(d.close) && d.close.length > 0));
-    const chartData = (!rawChartData || typeof rawChartData !== 'object') ? null
-        : (Array.isArray(rawChartData) ? (rawChartData.every(hasOhlcv) ? rawChartData : null) : (hasOhlcv(rawChartData) ? rawChartData : null));
-    return {
-        id, role: 'ai',
-        content: '',                 // prose arrives on the 'done' event
-        streamingCards: true,        // flag: cards preview, analysis still generating
-        chartData,
-        metadata: meta.metadata || null,
-        patternSummary: meta.pattern_summary || null,
-        technicalSummary: meta.technical_summary || null,
-        indicatorsTable: meta.indicators_table || null,
-        scoreCard: meta.score_card || null,
-        managementSentiment: meta.management_sentiment || null,
-        annualReportIntelligence: meta.annual_report_intelligence || null,
-        companyFilings: meta.company_filings || null,
-        recentDevelopments: meta.recent_developments || null,
-        aiTake: meta.ai_take || null,
-        queryIntent, responseMode,
-    };
-}
-
 /** Strip exchange suffix to get bare NSE ticker */
 const cleanSymbol = (s) =>
     s ? String(s).replace(/\.(NS|BO|BSE)$/i, '').replace(/^(NSE:|BSE:)/i, '').toUpperCase().trim() : null;
@@ -1138,42 +1070,6 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             if (accessToken) {
                 headers.Authorization = `Bearer ${accessToken}`;
             }
-
-            // ── Cards-early streaming ─────────────────────────────────────────────
-            // Try /chat/stream first: it renders the chart/pattern/score cards at ~5s (on the
-            // 'meta' event) then delivers the SAME response on 'done'. On ANY problem we fall
-            // through to the normal /chat fetch below — the working path is never removed.
-            let responseData = null;
-            let streamMsgId = null;
-            // Kill-switch: run  localStorage.setItem('kuber_stream','0')  in the browser console
-            // to instantly disable streaming (falls back to the normal /chat fetch) — no redeploy.
-            const _streamOn = (() => { try { return localStorage.getItem('kuber_stream') !== '0'; } catch { return true; } })();
-            if (_streamOn) try {
-                const _sc = new AbortController();
-                abortControllerRef.current = _sc;
-                const _scTimeout = setTimeout(() => _sc.abort(), REQUEST_TIMEOUT_MS);
-                try {
-                    responseData = await streamChat(`${API_ENDPOINT}/stream`, payload, headers, _sc.signal, (meta) => {
-                        if (requestId !== activeRequestIdRef.current) return;
-                        streamMsgId = genId();
-                        setShowThinking(false);
-                        setStreamingMessageId(streamMsgId);
-                        setMessages(prev => [...prev, buildCardMessage(streamMsgId, meta, queryIntent, responseMode)]);
-                    });
-                } finally {
-                    clearTimeout(_scTimeout);
-                }
-            } catch (_streamErr) {
-                if (requestId !== activeRequestIdRef.current) return;
-                // Streaming unavailable/failed → drop any preview card and fall back to /chat.
-                if (streamMsgId) {
-                    const _dead = streamMsgId; streamMsgId = null;
-                    setMessages(prev => prev.filter(m => m.id !== _dead));
-                }
-                responseData = null;
-            }
-
-            if (responseData === null) {
             const doFetch = async () => {
                 const controller = new AbortController();
                 abortControllerRef.current = controller;
@@ -1243,8 +1139,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 throw new Error(msg);
             }
 
-            responseData = await response.json();
-            } // end fallback fetch (skipped when streaming already produced responseData)
+            const responseData = await response.json();
 
             // Always log response for diagnostics (browser DevTools → Console)
             console.log('[KuberAI] Response content:', responseData?.content || responseData?.answer);
@@ -1307,11 +1202,11 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             const suggestedFollowUps = Array.isArray(responseData.suggested_follow_ups) ? responseData.suggested_follow_ups : null;
             const newsHeadlines = responseData.news_headlines || null;
 
-            // Create the AI message (or finalize the streamed cards-preview in place).
-            const aiMessageId = streamMsgId || genId();
-            setStreamingMessageId(aiMessageId); // Mark as streaming so the prose types out
-
-            const _aiMsg = {
+            // Create AI message with streaming
+            const aiMessageId = genId();
+            setStreamingMessageId(aiMessageId); // Mark this message as streaming
+            
+            setMessages(prev => [...prev, {
                 id: aiMessageId,
                 role: 'ai',
                 content: aiResponseText,
@@ -1334,11 +1229,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 sourceDocuments: responseData.source_documents || [],
                 processingTime: timeTaken,
                 responseMode,
-            };
-            // Streamed → replace the cards-preview message in place (no flicker); else append.
-            setMessages(prev => streamMsgId
-                ? prev.map(m => (m.id === streamMsgId ? _aiMsg : m))
-                : [...prev, _aiMsg]);
+            }]);
 
             // MessageBubble calls onStreamingDone when its animation finishes.
             // Safety fallback clears streaming state if the callback never fires (45s max).
