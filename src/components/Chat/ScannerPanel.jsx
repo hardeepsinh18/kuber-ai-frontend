@@ -186,11 +186,9 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
     // Multi-select state
     const [selected, setSelected] = useState(new Set());
 
-    // Derive which scanners are blocked by the current selection
+    // Single-select mode: nothing is ever blocked by conflicts — only one scanner can be
+    // picked at a time, so every scanner stays selectable (clicking replaces the current pick).
     const disabledByConflict = new Set();
-    for (const sel of selected) {
-        CONFLICTS[sel]?.forEach(c => disabledByConflict.add(c));
-    }
 
     const conflictReasonFor = (name) => {
         const reasons = [];
@@ -200,14 +198,11 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
         return reasons.length ? `Conflicts with: ${reasons.join(', ')}` : undefined;
     };
 
+    // Single-select: only ONE scanner at a time. Clicking a scanner selects just that one
+    // (replacing any previous pick); clicking the already-selected one clears the selection.
     const toggleScanner = (name) => {
         if (scanning) return;
-        setSelected(prev => {
-            const next = new Set(prev);
-            if (next.has(name)) next.delete(name);
-            else next.add(name);
-            return next;
-        });
+        setSelected(prev => (prev.has(name) ? new Set() : new Set([name])));
     };
 
     // Rotate loading messages
@@ -409,7 +404,7 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                     <div>
                         <h2 className="text-[15px] font-semibold text-zinc-900 dark:text-white">Stock Scanners</h2>
                         <p className="text-[12px] text-zinc-400 dark:text-zinc-500 mt-0.5">
-                            Select one or more · combine signals · run scan
+                            Select a scanner · run scan
                         </p>
                     </div>
 
