@@ -238,6 +238,12 @@ const extractStockSymbols = (query) => {
         // (it was sweeping in unrelated TAALTECH/RACLGEAR on the word "tech").
         'hcl': 'HCLTECH',
         'hcltech': 'HCLTECH',
+        // Jio Financial Services is the only listed "Jio" company — resolve any
+        // jio-phrase ("jio financestock", "jio finance stock") via the single
+        // word. Deliberately NO multi-word 'jio finance' alias: its substring
+        // rewrite would mangle "jio financestock" into "JIOFINstock".
+        'jio': 'JIOFIN',
+        'jiofin': 'JIOFIN',
         // Diensten Tech (NSE Emerge SME) — missing from the backend's main-board
         // symbol master, so bare "dtl" was fuzzy-matched into a fake "Dtl Group"
         // popup (TIL/GTL/DLF). Alias forces direct resolution via the symbol hint.
