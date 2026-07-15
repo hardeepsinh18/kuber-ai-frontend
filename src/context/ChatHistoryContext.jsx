@@ -227,14 +227,16 @@ export function ChatHistoryProvider({ children }) {
                 id: m.id ?? (crypto.randomUUID?.() ?? `msg_${Date.now()}_${Math.random().toString(36).slice(2)}`),
                 content: typeof m.content === 'string' ? m.content : String(m.content ?? ''),
             }));
-        if (localMsgs.length > 0) {
-            setMessages(localMsgs);
-            syncedMessageCountRef.current = localMsgs.length;
-            return;
-        }
-        setMessages([]);
+        // Show the localStorage copy immediately (instant open). It has every field EXCEPT
+        // chartData, which is stripped to stay under the localStorage quota (see persist above).
+        // So ALWAYS hydrate from the backend below (it holds _chartData) and merge it in — the
+        // old early-return skipped that fetch, so the chart + its pattern overlay disappeared on
+        // every refresh / chat switch.
+        const hasLocal = localMsgs.length > 0;
+        setMessages(hasLocal ? localMsgs : []);
+        if (hasLocal) syncedMessageCountRef.current = localMsgs.length;
         if (accessToken) {
-            setIsChatLoading(true);
+            if (!hasLocal) setIsChatLoading(true);
             chatsApi.getChat(id, accessToken).then((data) => {
                 if (data && data.messages && data.messages.length > 0) {
                     const msgs = data.messages.map((m) => ({
@@ -261,13 +263,27 @@ export function ChatHistoryProvider({ children }) {
                         responseMode: m.metadata?._responseMode ?? undefined,
                         metadata: m.metadata ?? undefined,
                     }));
-                    setMessages(msgs);
-                    syncedMessageCountRef.current = msgs.length;
-                    chatStorage.saveChatMessages(id, msgs);
+                    if (hasLocal) {
+                        // Merge by index: fill chartData (stripped from localStorage) + the
+                        // pattern overlay into the already-shown messages, without clobbering
+                        // any local-only message. Backend appends are order-preserving, so index
+                        // alignment holds.
+                        setMessages(prev => prev.map((pm, i) => (
+                            msgs[i]
+                                ? { ...pm,
+                                    chartData: pm.chartData ?? msgs[i].chartData,
+                                    patternSummary: pm.patternSummary ?? msgs[i].patternSummary }
+                                : pm
+                        )));
+                    } else {
+                        setMessages(msgs);
+                        syncedMessageCountRef.current = msgs.length;
+                        chatStorage.saveChatMessages(id, msgs);
+                    }
                 }
                 setChatLoadError(null);
             }).catch(() => {
-                setChatLoadError('Failed to load chat. Please try again.');
+                if (!hasLocal) setChatLoadError('Failed to load chat. Please try again.');
             }).finally(() => {
                 setIsChatLoading(false);
             });
