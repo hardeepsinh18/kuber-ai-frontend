@@ -765,6 +765,20 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
         }
     }, [routeChatId, routeChatIdParam, currentChatId, loadChat]);
 
+    // Keep the URL in sync with the active chat so a REFRESH restores it. A brand-new chat
+    // started on the "/" route gets a currentChatId but the URL stays bare — so a refresh landed
+    // on "/" and showed a fresh chat, "losing" the one the user was in. Sync it via
+    // history.replaceState (NOT react-router navigate) so we don't remount ChatContainer or
+    // reload the in-flight message. Only once there are messages (never a phantom empty chat).
+    useEffect(() => {
+        if (currentChatId && messages.length > 0) {
+            const want = `/chat/${currentChatId}`;
+            if (typeof window !== 'undefined' && window.location.pathname !== want) {
+                window.history.replaceState(null, '', want);
+            }
+        }
+    }, [currentChatId, messages.length]);
+
     // Reliable scroll helper — sets scrollTop directly on the container instead of
     // using scrollIntoView, which can scroll the wrong ancestor when nested inside
     // overflow:hidden parents.
