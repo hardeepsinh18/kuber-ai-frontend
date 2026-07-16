@@ -559,9 +559,31 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
         30
     );
 
+    // The Analyst layout runs its own reveal (typewriter on the verdict prose, then a
+    // card cascade) and reports completion itself via onDone. The body typewriter above
+    // is disabled for it, so its isComplete fires instantly — firing onStreamingDone
+    // from here would clear the parent's streaming id before the reveal even starts.
+    const selfRevealing = isAnalystLayout;
+
+    // The disclaimer and follow-up chips live below AnalystAnswer, so they must wait for
+    // its cascade — otherwise they sit under a half-typed paragraph while the cards are
+    // still arriving.
+    const [analystRevealDone, setAnalystRevealDone] = React.useState(!isStreaming);
+    const handleAnalystDone = React.useCallback(() => {
+        setAnalystRevealDone(true);
+        if (onStreamingDone) {
+            try {
+                onStreamingDone();
+            } catch (err) {
+                if (typeof console !== 'undefined') console.error('streaming done callback error:', err);
+            }
+        }
+    }, [onStreamingDone]);
+    const tailVisible = !isAnalystLayout || analystRevealDone;
+
     // Notify parent when streaming finishes so it can clear streamingMessageId
     React.useEffect(() => {
-        if (isComplete && onStreamingDone) {
+        if (isComplete && onStreamingDone && !selfRevealing) {
             try {
                 onStreamingDone();
             } catch (err) {
@@ -570,7 +592,7 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
             }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isComplete]);
+    }, [isComplete, selfRevealing]);
 
     // Intent-based visibility: show only sections relevant to what the user asked.
     // 'pe_ratio'   → price header + text only
@@ -734,10 +756,12 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                             indicatorsTable={indicatorsTable}
                             patternSummary={patternSummary}
                             symbolLabel={primarySymbolLabel}
+                            streaming={isStreaming}
+                            onDone={handleAnalystDone}
                         />
                     )}
-                    {showDisclaimer && <DisclaimerBox />}
-                    {Array.isArray(suggestedFollowUps) && suggestedFollowUps.length > 0 && onFollowUpClick && (
+                    {showDisclaimer && tailVisible && <DisclaimerBox />}
+                    {tailVisible && Array.isArray(suggestedFollowUps) && suggestedFollowUps.length > 0 && onFollowUpClick && (
                         <FollowUpChips chips={suggestedFollowUps} onClick={onFollowUpClick} />
                     )}
                 </div>

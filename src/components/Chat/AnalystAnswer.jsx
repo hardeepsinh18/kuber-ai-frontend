@@ -4,6 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Gauge, PieChart, Newspaper, ChevronDown, ChevronUp, ExternalLink, BookText, Mic2, BarChart3, Megaphone, FileText } from 'lucide-react';
 import StockChart from './StockChart';
+import { useStreamingText } from '../../hooks/useStreamingText';
 import {
     BRAND, fmtINR, InlineMd, Card, MiniLabel, SectionBanner,
     CompanyCard, VerdictBand, MarketStatsCard, buildMarketStats,
@@ -96,23 +97,36 @@ const firstParagraph = (md) => {
 };
 
 /* ─── WHY THIS VERDICT ───────────────────────────────────────────────────── */
-const WhyThisVerdict = ({ verdictText, content, signal }) => {
+// The prose Kuber types out. Kept as its own helper because AnalystAnswer needs the
+// same string to drive the typewriter that WhyThisVerdict renders.
+const verdictSummary = (verdictText, content, signal) =>
+    verdictText
+    || firstParagraph(content)
+    || (Array.isArray(signal?.why) && signal.why.length ? signal.why.join(' ') : null);
+
+const WhyThisVerdict = ({ verdictText, content, signal, typedSummary = null, caret = false }) => {
     const [open, setOpen] = React.useState(false);
-    const summary = verdictText
-        || firstParagraph(content)
-        || (Array.isArray(signal?.why) && signal.why.length ? signal.why.join(' ') : null);
+    const summary = verdictSummary(verdictText, content, signal);
     const hasFull = typeof content === 'string' && content.trim().length > (summary || '').length + 80;
     if (!summary && !hasFull) return null;
+
+    // While typing, render the partial text and hide "Read full analysis" — offering to
+    // expand an analysis that is still appearing reads as broken.
+    const shown = typedSummary != null ? typedSummary : summary;
+    const typing = typedSummary != null && typedSummary !== summary;
 
     return (
         <Card className="px-4 py-3.5">
             <MiniLabel>Why this verdict</MiniLabel>
             {summary && (
                 <div className="mt-1.5 text-[13px] leading-relaxed text-zinc-700 dark:text-zinc-300">
-                    <InlineMd>{summary.replace(/^\**\s*verdict\s*:?\**\s*/i, '')}</InlineMd>
+                    <InlineMd>{(shown || '').replace(/^\**\s*verdict\s*:?\**\s*/i, '')}</InlineMd>
+                    {caret && typing && (
+                        <span className="inline-block w-[2px] h-[13px] ml-0.5 -mb-[1px] bg-amber-500 dark:bg-[#FDD405] animate-pulse" />
+                    )}
                 </div>
             )}
-            {hasFull && (
+            {hasFull && !typing && (
                 <>
                     {open && (
                         <div className="mt-3 pt-3 border-t border-zinc-100 dark:border-zinc-800">
@@ -131,6 +145,43 @@ const WhyThisVerdict = ({ verdictText, content, signal }) => {
             )}
         </Card>
     );
+};
+
+/* ─── STAGED REVEAL ──────────────────────────────────────────────────────────
+ * Cards below the prose fade in one after another once the typewriter finishes,
+ * so the screen builds the way an analyst talks through it instead of landing as
+ * a finished dashboard. Returns how many stages are currently visible.
+ * When `active` is false (history reload, reduced motion) everything is visible
+ * from the first render — a re-read must never re-run the animation. */
+// `animate` = should this reveal ever animate; `start` = has the cue (typing finished)
+// arrived. These are deliberately separate: collapsing them into one flag makes
+// "animating but not started yet" indistinguishable from "never animate", which shows
+// every card during the typing and then yanks them back to cascade.
+const useStagedReveal = (count, animate, start, startAfterMs = 400, staggerMs = 380) => {
+    const [visible, setVisible] = React.useState(animate ? 0 : count);
+    React.useEffect(() => {
+        if (!animate) { setVisible(count); return; }   // history reload / reduced motion
+        if (!start) { setVisible(0); return; }          // still typing — hold them back
+        const timers = [];
+        for (let i = 1; i <= count; i++) {
+            timers.push(setTimeout(() => setVisible(i), startAfterMs + (i - 1) * staggerMs));
+        }
+        return () => timers.forEach(clearTimeout);
+    }, [animate, start, count, startAfterMs, staggerMs]);
+    return visible;
+};
+
+// Wrapper that fades a section in. Rendered only once its stage arrives, so the
+// chart and score cards never mount (or fetch) before they are shown.
+const Stage = ({ show, children }) => (
+    show ? <div style={{ animation: 'slideUpFade 0.42s cubic-bezier(0.22,1,0.36,1) both' }}>{children}</div> : null
+);
+
+const prefersReducedMotion = () => {
+    try {
+        return typeof window !== 'undefined' && window.matchMedia
+            && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    } catch { return false; }
 };
 
 /* ─── PATTERN DETECTION ──────────────────────────────────────────────────── */
@@ -748,6 +799,8 @@ const AnalystAnswer = ({
     indicatorsTable = null,
     patternSummary = null,
     symbolLabel = '',
+    streaming = false,
+    onDone = null,
 }) => {
     const aag = metadata?.at_a_glance || {};
     const price = aag.price != null ? Number(aag.price) : null;
@@ -761,6 +814,32 @@ const AnalystAnswer = ({
     const hasScores = scores.overall != null || scores.technical != null
         || scores.fundamental != null || scores.sentimental != null;
 
+    // Freeze the decision to animate at mount. The parent clears its streaming id the
+    // moment we report done, and a mid-flight flip would otherwise snap the remaining
+    // cards in at once.
+    const [animate] = React.useState(() => !!streaming && !prefersReducedMotion());
+
+    // Type the "why this verdict" prose. ~45ms/2 words puts a typical 50-word summary
+    // at roughly 2.5s — long enough to read as thinking, short enough not to stall.
+    const summary = verdictSummary(verdictText, content, signal);
+    const { displayedText, isComplete } = useStreamingText(summary || '', animate, 'line', 2, 45);
+
+    // Cards cascade only once the prose has finished typing.
+    const REVEAL_STAGES = 5;
+    const revealed = useStagedReveal(REVEAL_STAGES, animate, isComplete);
+    const shown = (n) => !animate || revealed >= n;
+
+    // Tell the parent the answer has fully landed, so it can stop treating this message
+    // as streaming (scroll-follow, spinner). Fires once the last card is in.
+    const doneRef = React.useRef(false);
+    React.useEffect(() => {
+        if (doneRef.current || !onDone) return;
+        if (!animate || (isComplete && revealed >= REVEAL_STAGES)) {
+            doneRef.current = true;
+            try { onDone(); } catch (err) { console.error('AnalystAnswer onDone error:', err); }
+        }
+    }, [animate, isComplete, revealed, onDone]);
+
     return (
         <div className="space-y-3" style={{ animation: 'slideUpFade 0.4s cubic-bezier(0.22,1,0.36,1) both' }}>
 
@@ -769,47 +848,60 @@ const AnalystAnswer = ({
             <VerdictBand signal={signal} verdictText={verdictText} content={content}
                          aiTake={aiTake} price={price} patternSummary={patternSummary} />
 
-            <WhyThisVerdict verdictText={verdictText} content={content} signal={signal} />
+            <WhyThisVerdict verdictText={verdictText} content={content} signal={signal}
+                            typedSummary={animate ? displayedText : null} caret={animate} />
 
             {(chart || stats.length > 0) && (
-                <div className={clsx('grid gap-3', chart && stats.length > 0 ? 'lg:grid-cols-[1fr_230px]' : 'grid-cols-1')}>
-                    {chart && (
-                        <Card className="p-3 min-w-0">
-                            <StockChart
-                                chartData={chart}
-                                symbol={symbolLabel}
-                                variant="quick"
-                                defaultType="area"
-                            />
-                        </Card>
-                    )}
-                    <MarketStatsCard stats={stats} />
-                </div>
+                <Stage show={shown(1)}>
+                    <div className={clsx('grid gap-3', chart && stats.length > 0 ? 'lg:grid-cols-[1fr_230px]' : 'grid-cols-1')}>
+                        {chart && (
+                            <Card className="p-3 min-w-0">
+                                <StockChart
+                                    chartData={chart}
+                                    symbol={symbolLabel}
+                                    variant="quick"
+                                    defaultType="area"
+                                />
+                            </Card>
+                        )}
+                        <MarketStatsCard stats={stats} />
+                    </div>
+                </Stage>
             )}
 
-            <PatternSection patternSummary={patternSummary} chartData={chartData}
-                            symbolLabel={symbolLabel} indicatorsTable={indicatorsTable} />
+            <Stage show={shown(2)}>
+                <PatternSection patternSummary={patternSummary} chartData={chartData}
+                                symbolLabel={symbolLabel} indicatorsTable={indicatorsTable} />
+            </Stage>
 
             {hasScores && (
-                <>
-                    <SectionBanner>Kuber AI Score</SectionBanner>
-                    <ScoreGrid scoreCard={scoreCard} managementSentiment={managementSentiment} />
-                </>
+                <Stage show={shown(3)}>
+                    <div className="space-y-3">
+                        <SectionBanner>Kuber AI Score</SectionBanner>
+                        <ScoreGrid scoreCard={scoreCard} managementSentiment={managementSentiment} />
+                    </div>
+                </Stage>
             )}
 
-            <TechnicalScorecard tech={scoreCard?.technical} technicalSummary={technicalSummary}
-                                indicatorsTable={indicatorsTable} score={scores.technical} />
+            <Stage show={shown(4)}>
+                <div className="space-y-3">
+                    <TechnicalScorecard tech={scoreCard?.technical} technicalSummary={technicalSummary}
+                                        indicatorsTable={indicatorsTable} score={scores.technical} />
 
-            <FundamentalScorecard fund={scoreCard?.fundamental} score={scores.fundamental}
-                                  symbolLabel={symbolLabel} />
+                    <FundamentalScorecard fund={scoreCard?.fundamental} score={scores.fundamental}
+                                          symbolLabel={symbolLabel} />
+                </div>
+            </Stage>
 
-            <SentimentalScorecard
-                managementSentiment={managementSentiment}
-                annualReportIntelligence={annualReportIntelligence}
-                recentDevelopments={recentDevelopments}
-                companyFilings={companyFilings}
-                score={scores.sentimental}
-            />
+            <Stage show={shown(5)}>
+                <SentimentalScorecard
+                    managementSentiment={managementSentiment}
+                    annualReportIntelligence={annualReportIntelligence}
+                    recentDevelopments={recentDevelopments}
+                    companyFilings={companyFilings}
+                    score={scores.sentimental}
+                />
+            </Stage>
 
             {/* ── Footer strip ───────────────────────────────────── */}
             <div className="flex items-center justify-between border-t border-zinc-200 dark:border-zinc-800 pt-2.5">
