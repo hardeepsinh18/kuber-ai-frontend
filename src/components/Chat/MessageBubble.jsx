@@ -81,6 +81,12 @@ const filterByIntent = (text, intent) => {
     if (!text || intent === 'full') return text;
     const lines = text.split('\n');
 
+    // Screening/list answers are a heading + a markdown table ("Top PSU stocks
+    // by dividend yield" → the dividend table). The paragraph filter below cuts
+    // at the first heading and excludes table rows, which annihilates the whole
+    // answer to an empty bubble. For table answers, the table IS the answer.
+    if (lines.filter(l => /^\s*\|/.test(l)).length >= 3) return text;
+
     const isDisclaimer     = l => /^\s*[\*]*disclaimer[\*]*/i.test(l.trim()) || /multi.factor analysis for education/i.test(l) || /consult a sebi/i.test(l) || /past performance does not/i.test(l);
     const isTableRow       = l => /^\s*\|/.test(l);
     const isSignalLine     = l => /^[⚠️🟢🔴🟡⚡🎯]+\s*(wait|buy|sell|hold|weak|strong)/i.test(l.trim()) || /^[⚡🎯🔴]\s*(entry|stop|target)/i.test(l.trim());
@@ -117,7 +123,10 @@ const filterByIntent = (text, intent) => {
             : lines;
     }
 
-    return filtered.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+    const out = filtered.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+    // Never filter an answer down to nothing — an empty bubble reads as the app
+    // failing. If both passes stripped everything, show the full answer instead.
+    return out || text;
 };
 
 
