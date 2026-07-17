@@ -3,13 +3,17 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
+  test: {
+    environment: 'jsdom',
+    include: ['src/**/*.test.{js,jsx}'],
+  },
   build: {
     // Split vendor chunks so browser can cache them independently
     rollupOptions: {
       output: {
         manualChunks: {
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'chart-vendor': ['recharts'],
+          'chart-vendor': ['recharts', 'lightweight-charts'],
           'markdown-vendor': ['react-markdown', 'remark-gfm'],
           'supabase-vendor': ['@supabase/supabase-js'],
           'motion-vendor': ['framer-motion'],
@@ -25,6 +29,6 @@ export default defineConfig({
   },
   // Faster dependency pre-bundling
   optimizeDeps: {
-    include: ['react', 'react-dom', 'recharts', 'react-markdown'],
+    include: ['react', 'react-dom', 'recharts', 'react-markdown', 'lightweight-charts'],
   },
 })
