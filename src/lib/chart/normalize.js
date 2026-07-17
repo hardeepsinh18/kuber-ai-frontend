@@ -34,5 +34,12 @@ export const normalizeOhlc = (chartData) => {
 
 export const toAreaData = (bars) => bars.map((b) => ({ time: b.time, value: b.close }));
 
+// Candles need a complete OHLC set. A row with a valid close but a null open,
+// high or low is legitimate for the area view and must survive normalizeOhlc —
+// but lightweight-charts' CandlestickSeries cannot render it, so it is dropped
+// here. This mirrors the render-time skip the previous Recharts CandleLayer did
+// (StockChart.jsx:80) while keeping the row available to toAreaData.
 export const toCandleData = (bars) =>
-    bars.map(({ time, open, high, low, close }) => ({ time, open, high, low, close }));
+    bars
+        .filter((b) => b.open != null && b.high != null && b.low != null && b.close != null)
+        .map(({ time, open, high, low, close }) => ({ time, open, high, low, close }));

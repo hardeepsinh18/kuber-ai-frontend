@@ -74,6 +74,13 @@ describe('toAreaData', () => {
     it('projects close onto value', () => {
         expect(toAreaData(normalizeOhlc(chartData))[0]).toEqual({ time: '2026-07-01', value: 102 });
     });
+
+    it('keeps rows with null OHLC — area only needs close', () => {
+        const bars = normalizeOhlc({
+            dates: ['2026-07-01'], close: [102], volume: [1000],
+        });
+        expect(toAreaData(bars)).toEqual([{ time: '2026-07-01', value: 102 }]);
+    });
 });
 
 describe('toCandleData', () => {
@@ -81,5 +88,30 @@ describe('toCandleData', () => {
         expect(toCandleData(normalizeOhlc(chartData))[0]).toEqual({
             time: '2026-07-01', open: 100, high: 105, low: 99, close: 102,
         });
+    });
+
+    it('drops rows with a null open, high or low so LWC never sees null OHLC', () => {
+        const bars = normalizeOhlc({
+            dates: ['2026-07-01', '2026-07-02', '2026-07-03', '2026-07-04'],
+            open: [100, null, 104, 106],
+            high: [105, 106, null, 111],
+            low: [99, 101, 103, null],
+            close: [102, 104, 106, 108],
+            volume: [1000, 2000, 3000, 4000],
+        });
+        // normalizeOhlc keeps all four rows — every close is valid and positive.
+        expect(bars).toHaveLength(4);
+        // toCandleData keeps only the row with a complete OHLC set.
+        const candles = toCandleData(bars);
+        expect(candles).toHaveLength(1);
+        expect(candles[0].time).toBe('2026-07-01');
+    });
+
+    it('tolerates a missing open/high/low array entirely', () => {
+        const bars = normalizeOhlc({
+            dates: ['2026-07-01'], close: [102], volume: [1000],
+        });
+        expect(bars).toHaveLength(1);
+        expect(toCandleData(bars)).toHaveLength(0);
     });
 });
