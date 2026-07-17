@@ -1,0 +1,127 @@
+import React, { useEffect, useRef, useState } from 'react';
+import { CandlestickSeries, AreaSeries } from 'lightweight-charts';
+import { useChart } from '../../lib/chart/useChart';
+import { toCandleData, toAreaData } from '../../lib/chart/normalize';
+import { formatPrice, formatVolume } from '../../lib/chart/formatters';
+import { toHeikinAshi } from '../../lib/chartTransforms';
+
+const BULL = '#26a69a';
+const BEAR = '#ef5350';
+
+// toHeikinAshi works in the Recharts row shape ({date,...}); adapt across the
+// boundary rather than forking the transform.
+const heikinBars = (bars) =>
+    toHeikinAshi(bars.map((b) => ({ ...b, date: b.time })))
+        .map(({ date, open, high, low, close }) => ({ time: date, open, high, low, close }));
+
+const ChartPanel = ({ chartType, bars, theme, className }) => {
+    const containerRef = useRef(null);
+    const seriesRef = useRef(null);
+    const { chartRef } = useChart(containerRef, { theme });
+    const [hover, setHover] = useState(null);
+
+    // Rebuild the series when the type changes; setData when the bars change.
+    useEffect(() => {
+        const chart = chartRef.current;
+        if (!chart || !bars.length) return;
+
+        if (seriesRef.current) {
+            chart.removeSeries(seriesRef.current);
+            seriesRef.current = null;
+        }
+
+        let series;
+        if (chartType === 'area') {
+            series = chart.addSeries(AreaSeries, {
+                lineColor: BULL,
+                topColor: `${BULL}66`,
+                bottomColor: `${BULL}0d`,
+                lineWidth: 2,
+            });
+            series.setData(toAreaData(bars));
+        } else {
+            series = chart.addSeries(CandlestickSeries, {
+                upColor: BULL,
+                downColor: BEAR,
+                borderVisible: false,
+                wickUpColor: BULL,
+                wickDownColor: BEAR,
+            });
+            series.setData(toCandleData(chartType === 'heikin' ? heikinBars(bars) : bars));
+        }
+
+        seriesRef.current = series;
+        chart.timeScale().fitContent();
+    }, [chartType, bars, chartRef]);
+
+    // Crosshair -> legend. Falling back to the last bar keeps the readout
+    // populated when the cursor leaves, rather than blanking.
+    useEffect(() => {
+        const chart = chartRef.current;
+        if (!chart) return;
+
+        const onMove = (param) => {
+            const series = seriesRef.current;
+            if (!series || !param.time) {
+                setHover(null);
+                return;
+            }
+            const d = param.seriesData.get(series);
+            if (!d) {
+                setHover(null);
+                return;
+            }
+            const bar = bars.find((b) => b.time === param.time);
+            setHover({
+                open: d.open, high: d.high, low: d.low,
+                close: d.close ?? d.value,
+                volume: bar?.volume ?? null,
+            });
+        };
+
+        chart.subscribeCrosshairMove(onMove);
+        return () => chart.unsubscribeCrosshairMove(onMove);
+    }, [bars, chartRef]);
+
+    const shown = hover ?? (bars.length ? bars[bars.length - 1] : null);
+    const isBull = shown && shown.close >= (shown.open ?? shown.close);
+    const isOhlc = chartType !== 'area' && shown?.open != null;
+
+    return (
+        <div className={className}>
+            <div className="relative w-full h-full">
+                {shown && (
+                    <div className="absolute top-1.5 left-2 z-10 pointer-events-none flex flex-wrap gap-x-2.5 gap-y-0.5 text-[11px] font-medium tabular-nums">
+                        {isOhlc ? (
+                            <>
+                                {[['O', shown.open], ['H', shown.high], ['L', shown.low], ['C', shown.close]].map(([k, v]) => (
+                                    <span key={k} className="text-zinc-500 dark:text-zinc-400">
+                                        {k}
+                                        <span className={isBull ? 'ml-1 text-emerald-600 dark:text-emerald-400' : 'ml-1 text-rose-600 dark:text-rose-400'}>
+                                            {formatPrice(v)}
+                                        </span>
+                                    </span>
+                                ))}
+                            </>
+                        ) : (
+                            <span className="text-zinc-500 dark:text-zinc-400">
+                                C<span className="ml-1 text-zinc-900 dark:text-zinc-100">{formatPrice(shown.close)}</span>
+                            </span>
+                        )}
+                        {formatVolume(shown.volume) && (
+                            <span className="text-zinc-500 dark:text-zinc-400">
+                                Vol<span className="ml-1 text-zinc-700 dark:text-zinc-300">{formatVolume(shown.volume)}</span>
+                            </span>
+                        )}
+                        {chartType === 'heikin' && (
+                            <span className="text-zinc-400 dark:text-zinc-500">Heikin-Ashi (smoothed)</span>
+                        )}
+                    </div>
+                )}
+                <div ref={containerRef} className="w-full h-full" />
+            </div>
+        </div>
+    );
+};
+
+export default ChartPanel;
