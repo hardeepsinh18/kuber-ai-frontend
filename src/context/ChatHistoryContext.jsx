@@ -92,8 +92,12 @@ export function ChatHistoryProvider({ children }) {
         if (!currentChatId || !isLoadedRef.current) return;
         if (persistTimeoutRef.current) clearTimeout(persistTimeoutRef.current);
         persistTimeoutRef.current = setTimeout(() => {
-            const chatId = currentChatIdRef.current;
-            if (!chatId) return;
+            // Use the id from THIS render's closure, not currentChatIdRef.current.
+            // The ref reads whatever chat is open when the timer fires, which is
+            // not necessarily the chat these `messages` belong to — pairing them
+            // wrongly writes one chat's messages under another chat's key.
+            const chatId = currentChatId;
+            if (!chatId || currentChatIdRef.current !== chatId) return;
             const hasMessages = messages.length > 0;
             const hasNewMessages = messages.length > syncedMessageCountRef.current;
             if (hasMessages) {
@@ -154,12 +158,37 @@ export function ChatHistoryProvider({ children }) {
                             ...(m.aiTake != null ? { _aiTake: m.aiTake } : {}),
                             ...(m.queryIntent != null ? { _queryIntent: m.queryIntent } : {}),
                             ...(m.responseMode != null ? { _responseMode: m.responseMode } : {}),
+                            // Rendered but previously never persisted, so a chat
+                            // rehydrated from the server (other device / cleared
+                            // cache) silently lost its Sources panel and Retry
+                            // button. _isError/_isClientNotice additionally keep
+                            // error bubbles OUT of chat_history after a reload —
+                            // without them a stored "⚠️ Something went wrong" comes
+                            // back indistinguishable from a real assistant turn.
+                            ...(m.sourceDocuments?.length ? { _sourceDocuments: m.sourceDocuments } : {}),
+                            ...(m.isError ? { _isError: true } : {}),
+                            ...(m.isClientNotice ? { _isClientNotice: true } : {}),
+                            ...(m.failedQuery ? { _failedQuery: m.failedQuery } : {}),
+                            ...(m.isScannerResult ? { _isScannerResult: true } : {}),
+                            // The follow-up context boundary (K-056) must survive a
+                            // reload, or the stale stock leaks back in.
+                            ...(m._topicReset ? { _topicReset: true } : {}),
                         },
                     }));
                     if (newOnes.length > 0) {
+                        // Reserve the counter BEFORE the request, not in .then().
+                        // A POST routinely outlives the 400ms debounce, so run 2
+                        // used to read the still-unadvanced start and re-send the
+                        // messages run 1 was already sending (server ends up with
+                        // m0,m1,m0,m1,m2). Roll back on failure so they retry.
+                        const sentThrough = messages.length;
+                        syncedMessageCountRef.current = sentThrough;
                         chatsApi.appendMessages(chatId, newOnes, accessToken)
-                            .then(() => { syncedMessageCountRef.current = messages.length; })
                             .catch((err) => {
+                                syncedMessageCountRef.current = Math.min(
+                                    syncedMessageCountRef.current,
+                                    start
+                                );
                                 console.warn('Chat sync to backend failed (messages safe in localStorage):', err?.message);
                             });
                     }
@@ -198,7 +227,17 @@ export function ChatHistoryProvider({ children }) {
     const newChat = useCallback(() => {
         if (currentChatId && messages.length > 0) {
             const title = chatStorage.getTitleFromMessages(messages);
-            chatStorage.saveChatMessages(currentChatId, messages);
+            // Strip chartData, exactly as the debounced persist does. Writing the
+            // raw messages here bypassed the quota guard on every new-chat click,
+            // and multi-symbol OHLCV blobs are what actually blows the quota.
+            try {
+                chatStorage.saveChatMessages(
+                    currentChatId,
+                    messages.map(({ chartData: _cd, ...rest }) => rest)
+                );
+            } catch (e) {
+                console.warn('newChat: could not cache previous chat locally:', e?.message);
+            }
             setChatList((prev) => {
                 const next = prev.map((c) =>
                     c.id === currentChatId ? { ...c, title, updatedAt: Date.now() } : c
@@ -209,18 +248,24 @@ export function ChatHistoryProvider({ children }) {
                 return next;
             });
         }
-        syncedMessageCountRef.current = 0;
-        if (accessToken) {
-            chatsApi.createChat(accessToken, 'New chat').then((serverId) => {
-                setCurrentChatId(serverId ?? (crypto.randomUUID?.() ?? `chat_${Date.now()}`));
-                setMessages([]);
-            }).catch(() => {
-                setCurrentChatId(crypto.randomUUID?.() ?? `chat_${Date.now()}`);
-                setMessages([]);
-            });
-        } else {
-            setCurrentChatId(crypto.randomUUID?.() ?? `chat_${Date.now()}`);
+
+        // Reset the sync counter ONLY when the chat actually switches. Doing it
+        // synchronously here (while currentChatId/messages still point at the old
+        // chat) meant a persist timer firing during the createChat round-trip read
+        // start=0 and re-appended EVERY message of the old chat to the server —
+        // doubling its history on the next load from another device.
+        const switchTo = (id) => {
+            syncedMessageCountRef.current = 0;
+            setCurrentChatId(id);
             setMessages([]);
+        };
+        const fallbackId = () => crypto.randomUUID?.() ?? `chat_${Date.now()}`;
+        if (accessToken) {
+            chatsApi.createChat(accessToken, 'New chat')
+                .then((serverId) => switchTo(serverId ?? fallbackId()))
+                .catch(() => switchTo(fallbackId()));
+        } else {
+            switchTo(fallbackId());
         }
     }, [currentChatId, messages, accessToken]);
 
@@ -247,6 +292,11 @@ export function ChatHistoryProvider({ children }) {
         if (accessToken) {
             if (!hasLocal) setIsChatLoading(true);
             chatsApi.getChat(id, accessToken).then((data) => {
+                // The user may have clicked another chat while this was in flight.
+                // Without this guard, B's server messages landed in state while A
+                // was open — and the persist effect then wrote B's messages under
+                // A's key, corrupting A.
+                if (currentChatIdRef.current !== id) return;
                 if (data && data.messages && data.messages.length > 0) {
                     const msgs = data.messages.map((m) => ({
                         id: m.id ?? (crypto.randomUUID?.() ?? `msg_${Date.now()}_${Math.random()}`),
@@ -270,6 +320,14 @@ export function ChatHistoryProvider({ children }) {
                         aiTake: m.metadata?._aiTake ?? undefined,
                         queryIntent: m.metadata?._queryIntent ?? undefined,
                         responseMode: m.metadata?._responseMode ?? undefined,
+                        // Mirror of the persist whitelist — keep these in sync, or a
+                        // rehydrated chat renders differently from a live one.
+                        sourceDocuments: m.metadata?._sourceDocuments ?? undefined,
+                        isError: m.metadata?._isError ?? undefined,
+                        isClientNotice: m.metadata?._isClientNotice ?? undefined,
+                        failedQuery: m.metadata?._failedQuery ?? undefined,
+                        isScannerResult: m.metadata?._isScannerResult ?? undefined,
+                        _topicReset: m.metadata?._topicReset ?? undefined,
                         metadata: m.metadata ?? undefined,
                     }));
                     if (hasLocal) {
@@ -287,13 +345,28 @@ export function ChatHistoryProvider({ children }) {
                     } else {
                         setMessages(msgs);
                         syncedMessageCountRef.current = msgs.length;
-                        chatStorage.saveChatMessages(id, msgs);
+                        // Strip the OHLCV blob from BOTH places before writing to
+                        // localStorage. The top-level `chartData` strip elsewhere
+                        // misses `metadata._chartData`, which the server round-trip
+                        // re-embeds — so a rehydrated chat wrote the full blob to
+                        // localStorage anyway and blew the quota.
+                        try {
+                            chatStorage.saveChatMessages(id, msgs.map(({ chartData: _cd, metadata, ...rest }) => {
+                                if (!metadata || !('_chartData' in metadata)) return { ...rest, metadata };
+                                const { _chartData: _mcd, ...metaRest } = metadata;
+                                return { ...rest, metadata: metaRest };
+                            }));
+                        } catch (e) {
+                            console.warn('loadChat: could not cache chat locally:', e?.message);
+                        }
                     }
                 }
                 setChatLoadError(null);
             }).catch(() => {
+                if (currentChatIdRef.current !== id) return;
                 if (!hasLocal) setChatLoadError('Failed to load chat. Please try again.');
             }).finally(() => {
+                if (currentChatIdRef.current !== id) return;
                 setIsChatLoading(false);
             });
         }
@@ -304,7 +377,9 @@ export function ChatHistoryProvider({ children }) {
         // Even if the API call below fails or is slow, this chat won't reappear on next reload
         // because the mount effect filters out pending-deletes from the server list.
         chatStorage.addPendingDelete(id);
-        chatStorage.saveChatMessages(id, []);
+        try {
+            chatStorage.saveChatMessages(id, []);
+        } catch { /* clearing can't meaningfully fail; nothing to recover */ }
         setChatList((prev) => {
             const next = prev.filter((c) => c.id !== id);
             chatStorage.saveChatList(next);
@@ -341,6 +416,10 @@ export function ChatHistoryProvider({ children }) {
             .filter((c) => c.title !== 'New chat' || chatStorage.getChatMessages(c.id).length > 0)
             .sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0)),
         currentChatId,
+        // Live ref to the open chat. `currentChatId` is captured by closure at
+        // render time, so an in-flight request can't use it to tell whether the
+        // user has since switched chats — the ref always reads current.
+        currentChatIdRef,
         messages,
         setMessages,
         isListLoading,

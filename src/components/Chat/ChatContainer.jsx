@@ -671,7 +671,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
     const { accessToken, refreshSession } = useAuth();
     const { theme } = useTheme();
     const { setChatActive } = useChatMode();
-    const { messages, setMessages, ensureCurrentChat, loadChat, currentChatId, isChatLoading, chatLoadError, setChatLoadError } = useChatHistory();
+    const { messages, setMessages, ensureCurrentChat, loadChat, currentChatId, currentChatIdRef, isChatLoading, chatLoadError, setChatLoadError } = useChatHistory();
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -720,6 +720,10 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
     useEffect(() => {
         let restored = null;
         for (let i = messages.length - 1; i >= 0; i--) {
+            // Stop at a deliberate topic change ("best pharma stocks"). Walking
+            // past it resurrects the stock discussed before the change, which is
+            // exactly the leak K-056 set out to fix.
+            if (messages[i]?._topicReset) break;
             restored = deriveSymbolFromMessage(messages[i]);
             if (restored) break;
         }
@@ -883,7 +887,11 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
         } else {
             const content = typeof data === 'string' ? data : (data?.formatted || '');
             await ensureCurrentChat();
-            setMessages(prev => [...prev, { id: genId(), role: 'assistant', content, isScannerResult: true }]);
+            // role MUST be 'ai' — the whole app uses 'ai' for model turns and the
+            // server mapping is `m.role === 'ai' ? 'assistant' : 'user'`. Using
+            // 'assistant' here persisted scanner output as a USER message, so it
+            // came back as a user bubble on reload and could become the chat title.
+            setMessages(prev => [...prev, { id: genId(), role: 'ai', content, isScannerResult: true }]);
         }
     }, [ensureCurrentChat, setMessages]);
 
@@ -908,7 +916,13 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
         if (manualInput === null) setInput('');
 
         try {
-            await ensureCurrentChat();
+            // The chat this send belongs to. Everything below is async, and the
+            // user can switch chats mid-flight — `setMessages` writes to whichever
+            // chat is open when it runs, not the one we started in. Without this
+            // anchor, asking in chat A then clicking chat B appended A's answer to
+            // B, persisted it there, and replayed it as B's context forever.
+            const sendChatId = await ensureCurrentChat();
+            const isSameChat = () => currentChatIdRef.current === sendChatId;
             const userMsgId = genId();
             setMessages(prev => [...prev, { id: userMsgId, role: 'user', content: normalized }]);
             setIsLoading(true);
@@ -985,8 +999,17 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
 
             // K-056: a clear topic change (screener / market / index with no pronoun tie)
             // must DROP the stale active stock, so it can't leak into this or later queries.
+            //
+            // Nulling the ref alone is not enough: the sync effect re-derives the ref
+            // from message history on every `messages` change, walking backwards past
+            // the symbol-less screener answer until it finds the OLD stock and restores
+            // it — so the drop survived only until the next render. Mark the boundary on
+            // the message itself so the effect stops walking there.
             if (confidentSymbols.length === 0 && (isScreenerQuery || isMarketOrIndexQuery) && !refersToPrev) {
                 activeContextSymbolRef.current = null;
+                if (isSameChat()) {
+                    setMessages(prev => prev.map(m => (m.id === userMsgId ? { ...m, _topicReset: true } : m)));
+                }
             }
 
             // context_stock is a follow-up hint for the backend. Send it for genuine or
@@ -1051,11 +1074,27 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 return t.length > n ? t.slice(0, n).trimEnd() + ' …' : t;
             };
             const conversationHistory = messagesRef.current
+                // Error bubbles ("⚠️ Something went wrong", "⏱️ Request timed out")
+                // are client-authored — the assistant never said them. Replaying
+                // them as assistant turns taught the model it had just failed, and
+                // every retry burned another of the 8 history slots.
+                .filter((m) => !m.isError && !m.isClientNotice)
                 .slice(-8)
-                .map((m) => ({
-                    role: m.role === 'user' ? 'user' : 'assistant',
-                    content: m.role === 'user' ? _cap(m.content, 600) : _cap(m.content, 1200),
-                }))
+                .map((m) => {
+                    const isUser = m.role === 'user';
+                    const entry = {
+                        role: isUser ? 'user' : 'assistant',
+                        content: isUser ? _cap(m.content, 600) : _cap(m.content, 1200),
+                    };
+                    // Hand the backend the symbols it itself resolved for this turn.
+                    // Without them it has to re-derive the subject by scraping prose,
+                    // which is how "EBITDA margin…" became the active stock.
+                    if (!isUser) {
+                        const sym = deriveSymbolFromMessage(m);
+                        if (sym) entry.symbols = [sym];
+                    }
+                    return entry;
+                })
                 .filter((m) => m.content.trim());
 
             const hasStockContext = symbolsToSend.length > 0;
@@ -1077,8 +1116,10 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 ...(conversationHistory.length > 0 && { chat_history: conversationHistory }),
             };
 
-            // Always log payload so issues can be diagnosed via browser DevTools → Console
-            console.log('[KuberAI] Request payload:', JSON.stringify(payload, null, 2));
+            // Dev only — this payload carries the user's full chat history.
+            if (import.meta.env.DEV) {
+                console.log('[KuberAI] Request payload:', JSON.stringify(payload, null, 2));
+            }
 
             const headers = { 'Content-Type': 'application/json' };
             if (accessToken) {
@@ -1155,10 +1196,21 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
 
             const responseData = await response.json();
 
-            // Always log response for diagnostics (browser DevTools → Console)
-            console.log('[KuberAI] Response content:', responseData?.content || responseData?.answer);
-            console.log('[KuberAI] Intent / confidence:', responseData?.intent, '/', responseData?.confidence);
-            console.log('[KuberAI] Response keys:', Object.keys(responseData || {}));
+            // The user switched chats while this was in flight. Committing now
+            // would append this answer to a different conversation.
+            if (!isSameChat()) {
+                if (import.meta.env.DEV) console.warn('[Context] Dropping response — chat switched mid-request');
+                setShowThinking(false);
+                setThinkingSteps([]);
+                isLoadingRef.current = false;
+                setIsLoading(false);
+                return;
+            }
+
+            if (import.meta.env.DEV) {
+                console.log('[KuberAI] Response content:', responseData?.content || responseData?.answer);
+                console.log('[KuberAI] Intent / confidence:', responseData?.intent, '/', responseData?.confidence);
+            }
 
             // Calculate processing time
             const endTime = Date.now();
@@ -1175,7 +1227,10 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             setThinkingSteps(dynamicSteps);
             
             const rawResponseText = responseData.content || responseData.answer || '';
-            // Detect backend-side error responses and substitute a helpful message
+            // Detect backend-side error responses and substitute a helpful message.
+            // The substituted text is OURS, not the model's — it is flagged as a
+            // client notice so it is never replayed to the backend as an assistant
+            // turn, and so the user gets a Retry affordance.
             const isBackendError = /^something went wrong|^an error occurred|^i('m| am) unable|^sorry,? (i|we) (could|can't|cannot)/i.test(rawResponseText.trim());
             const aiResponseText = isBackendError
                 ? "I wasn't able to process this query. If you're looking for a market scan or sector screener, try the **Scanners** tab, or ask about a specific stock like *\"Tell me about SAIL\"*."
@@ -1224,6 +1279,9 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 id: aiMessageId,
                 role: 'ai',
                 content: aiResponseText,
+                // Client-authored substitute text — excluded from chat_history and
+                // offered a Retry button, like the other error paths.
+                ...(isBackendError && { isClientNotice: true, failedQuery: normalized }),
                 chartData,
                 metadata,
                 signal,
@@ -1254,6 +1312,16 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
 
         } catch (err) {
             if (requestId !== activeRequestIdRef.current) return;
+            // A chat switch or route unmount aborts the request. Without this
+            // guard the AbortError below appended a bogus "timed out" bubble to
+            // whichever chat the user had just opened.
+            if (!isSameChat()) {
+                setShowThinking(false);
+                setThinkingSteps([]);
+                isLoadingRef.current = false;
+                setIsLoading(false);
+                return;
+            }
             if (err.name === 'AbortError') {
                 // Timeout — user-initiated stop already returned early via requestId check above
                 setShowThinking(false);
@@ -1419,7 +1487,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                             />
 
                             {/* Retry — re-send the failed query so the user never loses it */}
-                            {msg.role === 'ai' && msg.isError && msg.failedQuery && (
+                            {msg.role === 'ai' && (msg.isError || msg.isClientNotice) && msg.failedQuery && (
                                 <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 md:px-8 -mt-1 mb-2">
                                     <button
                                         onClick={() => handleSend(msg.failedQuery)}

@@ -46,13 +46,64 @@ export function saveChatList(list) {
     }
 }
 
+function isQuotaError(e) {
+    return (
+        e && (e.name === 'QuotaExceededError'
+            || e.name === 'NS_ERROR_DOM_QUOTA_REACHED'
+            || e.code === 22
+            || e.code === 1014)
+    );
+}
+
+/**
+ * Evict the least-recently-updated OTHER chats until `write` succeeds.
+ * Returns true if the write eventually went through.
+ *
+ * Without this, one oversized chat permanently wedged the origin: every
+ * subsequent save for EVERY chat threw, and the sidebar then hid those chats
+ * (its filter drops "New chat" entries with no locally stored messages), so
+ * they looked deleted.
+ */
+function writeWithEviction(key, payload, protectedChatId) {
+    try {
+        localStorage.setItem(key, payload);
+        return true;
+    } catch (e) {
+        if (!isQuotaError(e)) throw e;
+    }
+    const victims = getChatList()
+        .filter((c) => c.id && c.id !== protectedChatId)
+        .sort((a, b) => toTimestamp(a.updatedAt) - toTimestamp(b.updatedAt));
+    for (const victim of victims) {
+        try {
+            localStorage.removeItem(getStorageKey(victim.id));
+        } catch { /* ignore */ }
+        try {
+            localStorage.setItem(key, payload);
+            console.warn(`chatStorage: evicted cached messages for chat ${victim.id} to free quota`);
+            return true;
+        } catch (e) {
+            if (!isQuotaError(e)) throw e;
+        }
+    }
+    return false;
+}
+
+/**
+ * Persist a chat's messages to localStorage.
+ *
+ * THROWS on quota exhaustion (after attempting eviction). Callers rely on that
+ * to retry with a smaller payload — swallowing it here made every caller's
+ * `catch` unreachable and lost guest messages silently, since guests have no
+ * server copy to fall back on.
+ */
 export function saveChatMessages(chatId, messages) {
     if (!chatId) return;
-    try {
-        const trimmed = Array.isArray(messages) ? messages.slice(-MAX_MESSAGES_PER_CHAT) : [];
-        localStorage.setItem(getStorageKey(chatId), JSON.stringify(trimmed));
-    } catch (e) {
-        console.warn('chatStorage: saveChatMessages failed', e);
+    const trimmed = Array.isArray(messages) ? messages.slice(-MAX_MESSAGES_PER_CHAT) : [];
+    const key = getStorageKey(chatId);
+    const payload = JSON.stringify(trimmed);
+    if (!writeWithEviction(key, payload, chatId)) {
+        throw new Error(`chatStorage: quota exhausted, could not persist chat ${chatId}`);
     }
 }
 
