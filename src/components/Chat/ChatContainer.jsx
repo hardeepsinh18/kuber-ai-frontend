@@ -609,30 +609,52 @@ const _MODE_LABEL = { snap: 'Quick', analyst: 'Analyst' };
 
 // Shown after the user flips Quick <-> Analyst with a prior question — offers to
 // re-run that question in the new mode, or dismiss and ask something new.
-const ModeSwitchPrompt = ({ query, mode, onRunSame, onAskNew }) => {
+// Claude-Code-style question card: a selectable option + a free-text input field.
+const ModeSwitchPrompt = ({ query, mode, onSend, onClose }) => {
     const label = _MODE_LABEL[mode] || mode;
+    const [text, setText] = React.useState('');
+    const submit = () => onSend((text.trim() || query));
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-             onClick={onAskNew}>
-            <div className="w-full max-w-sm rounded-2xl border bg-white border-zinc-200 dark:bg-[#161514] dark:border-zinc-800 p-5 shadow-2xl"
+             onClick={onClose}>
+            <div className="w-full max-w-md rounded-2xl border bg-white border-zinc-200 dark:bg-[#161514] dark:border-zinc-800 shadow-2xl"
                  onClick={(e) => e.stopPropagation()}>
-                <p className="text-[13px] font-bold text-zinc-900 dark:text-white">Switched to {label} mode</p>
-                <p className="mt-1.5 text-[12.5px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                    Run your last question in {label} mode, or ask something new?
-                </p>
-                <div className="mt-3 px-3 py-2 rounded-lg bg-zinc-100 dark:bg-white/[0.04] text-[12px] text-zinc-700 dark:text-zinc-300 line-clamp-2">
-                    “{query}”
+                <div className="flex items-start justify-between px-5 pt-4 pb-1 gap-3">
+                    <div>
+                        <p className="text-[13px] font-bold text-zinc-900 dark:text-white">Switched to {label} mode</p>
+                        <p className="mt-1 text-[12px] text-zinc-500 dark:text-zinc-400">
+                            Run the same question in {label}, or ask something new?
+                        </p>
+                    </div>
+                    <button onClick={onClose} aria-label="Cancel"
+                        className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 text-[15px] leading-none flex-shrink-0 -mt-0.5">✕</button>
                 </div>
-                <div className="mt-4 flex gap-2">
-                    <button onClick={onRunSame}
-                        className="flex-1 px-3 py-2 rounded-lg text-[12px] font-bold text-black transition-all hover:brightness-105"
-                        style={{ backgroundColor: '#FDD405' }}>
-                        Run in {label}
-                    </button>
-                    <button onClick={onAskNew}
-                        className="flex-1 px-3 py-2 rounded-lg text-[12px] font-semibold text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors">
-                        Ask something new
-                    </button>
+
+                {/* Selectable option — re-run the last question */}
+                <button onClick={() => onSend(query)}
+                    className="mt-2.5 mx-3 w-[calc(100%-1.5rem)] flex items-center gap-2.5 text-left px-3 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 hover:border-[#FDD405] hover:bg-amber-50/60 dark:hover:bg-white/[0.03] transition-colors group">
+                    <span className="w-4 h-4 rounded-full border-2 border-zinc-300 dark:border-zinc-600 group-hover:border-[#FDD405] flex-shrink-0" />
+                    <span className="min-w-0">
+                        <span className="block text-[12px] font-semibold text-zinc-900 dark:text-white">Run my last question</span>
+                        <span className="block text-[11px] text-zinc-500 dark:text-zinc-400 truncate">“{query}”</span>
+                    </span>
+                </button>
+
+                {/* Free-text input — ask something new */}
+                <div className="px-3 pt-2.5 pb-4">
+                    <div className="flex items-center gap-2 rounded-xl border border-zinc-200 dark:border-zinc-700 focus-within:border-[#FDD405]/70 px-3 py-2 transition-colors">
+                        <input
+                            value={text}
+                            onChange={(e) => setText(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
+                            placeholder="Or ask something new…"
+                            autoFocus
+                            className="flex-1 min-w-0 bg-transparent text-[12.5px] text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 outline-none"
+                        />
+                        <button onClick={submit} aria-label="Send"
+                            className="w-7 h-7 flex items-center justify-center rounded-lg text-black text-[15px] font-bold leading-none flex-shrink-0 hover:brightness-105 transition-all"
+                            style={{ backgroundColor: '#FDD405' }}>↑</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1463,8 +1485,8 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                     <ModeSwitchPrompt
                         query={modeSwitchPrompt.query}
                         mode={modeSwitchPrompt.mode}
-                        onRunSame={() => { const q = modeSwitchPrompt.query; setModeSwitchPrompt(null); handleSend(q); }}
-                        onAskNew={() => setModeSwitchPrompt(null)}
+                        onSend={(q) => { setModeSwitchPrompt(null); handleSend(q); }}
+                        onClose={() => setModeSwitchPrompt(null)}
                     />
                 )}
             </>
@@ -1486,8 +1508,8 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             <ModeSwitchPrompt
                 query={modeSwitchPrompt.query}
                 mode={modeSwitchPrompt.mode}
-                onRunSame={() => { const q = modeSwitchPrompt.query; setModeSwitchPrompt(null); handleSend(q); }}
-                onAskNew={() => setModeSwitchPrompt(null)}
+                onSend={(q) => { setModeSwitchPrompt(null); handleSend(q); }}
+                onClose={() => setModeSwitchPrompt(null)}
             />
         )}
         <div
