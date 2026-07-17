@@ -119,13 +119,15 @@ export const deriveVerdict = (text) => {
 /* Parse ₹ levels (entry / stop loss / target) out of the answer text when the
    structured signal doesn't carry them. Handles "Entry ₹818", "🛑 Stop ₹802",
    "**Target** ₹850", "target of Rs 1,850" and ranges like "₹810–818". */
-const LEVEL_PAD = '[\\*_]*\\s*[:=–—-]?\\s*[\\*_]*\\s*';
-const LEVEL_CONNECT = '(?:\\s+(?:price|zone|level|point|of|at|near|around))?' + LEVEL_PAD;
+// Pipe included in the pad so markdown-table rows parse: "| **Entry** | ₹8,650 |"
+const LEVEL_PAD = '[\\*_|]*\\s*[:=–—-]?\\s*[\\*_|]*\\s*';
+// Up to two connect words: "entry zone near ₹X", "target of about ₹X"
+const LEVEL_CONNECT = '(?:\\s+(?:price|zone|level|point|of|at|near|around|about|below|under|above)){0,2}' + LEVEL_PAD;
 const LEVEL_NUM = '(?:rs\\.?|₹)?\\s*([\\d,]+(?:\\.\\d+)?)(?!\\s*%)(?:\\s*[–—-]\\s*(?:rs\\.?|₹)?\\s*([\\d,]+(?:\\.\\d+)?))?';
 const LEVEL_RES = {
     entry: [
         new RegExp('\\bentry' + LEVEL_CONNECT + LEVEL_NUM, 'i'),
-        new RegExp('\\b(?:buy|accumulate)\\s+(?:zone|at|near|around|above|between|on\\s+dips\\s+to)' + LEVEL_PAD + LEVEL_NUM, 'i'),
+        new RegExp('\\b(?:buy|accumulate)\\s+(?:below|under|zone|at|near|around|above|between|on\\s+dips\\s+to)' + LEVEL_PAD + LEVEL_NUM, 'i'),
     ],
     stop: [
         new RegExp('\\bstop(?:[\\s-]*loss)?' + LEVEL_CONNECT + LEVEL_NUM, 'i'),

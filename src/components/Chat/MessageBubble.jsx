@@ -526,8 +526,11 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
     // price/chart data), so the verdict card can render instantly below the
     // price header instead of waiting for the typewriter to reach the last
     // lines. The typewriter then types only the remaining body.
+    // stripResponseChrome first: the structured layouts render this body inside
+    // "Read full analysis", and without the strip the LLM's inline "💬 Ask me:"
+    // trailer (duplicated by the follow-up buttons) survived there.
     const { verdict: hoistedVerdict, body: bodyForTyping } = React.useMemo(
-        () => (!isUser ? extractVerdict(content) : { verdict: null, body: content }),
+        () => (!isUser ? extractVerdict(stripResponseChrome(content)) : { verdict: null, body: content }),
         [isUser, content]
     );
 

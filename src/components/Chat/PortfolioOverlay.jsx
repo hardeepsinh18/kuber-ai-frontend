@@ -680,7 +680,7 @@ function StockDetailPanel({ detail }) {
     ['P/B Ratio',      pb_ratio,    fmt(pb_ratio),        ''],
     ['ROE',            roe,         fmtP(roe),            q(roe, 18, 10)],
     ['Net Margin',     net_margin,  fmtP(net_margin),     q(net_margin, 15, 5)],
-    ['Debt / Equity',  null,        fmt(debt_to_equity),  debt_to_equity == null ? '' : debt_to_equity < 0.5 ? 'text-green-500' : debt_to_equity < 1.5 ? 'text-amber-500' : 'text-red-500'],
+    ['Debt-to-Equity', null,        fmt(debt_to_equity),  debt_to_equity == null ? '' : debt_to_equity < 0.5 ? 'text-green-500' : debt_to_equity < 1.5 ? 'text-amber-500' : 'text-red-500'],
     ['Revenue',        null,        fmtC(revenue_cr),     ''],
     ['Net Profit',     null,        fmtC(net_profit_cr),  ''],
     ['EBITDA',         null,        fmtC(ebitda_cr),      ''],
