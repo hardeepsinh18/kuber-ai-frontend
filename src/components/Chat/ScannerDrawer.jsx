@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
-import { X, TrendingUp } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { X, TrendingUp, ChevronRight, ChevronLeft } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { getScannerSignal } from '../../lib/scannerSignal';
 
@@ -12,11 +12,23 @@ const METRIC_STYLES = {
 
 const cleanSymbol = (sym) => (sym || '').replace(/\.(NS|BO)$/i, '');
 
+// Remember collapsed/expanded across reloads (like the chat sidebar).
+const COLLAPSE_KEY = 'scannerDrawerCollapsed';
+
 const ScannerDrawer = ({ data, onAnalyze, onClose }) => {
     const { emoji, scanner, universe, count, date, raw } = data;
     const drawerRef = useRef(null);
     const { theme } = useTheme();
     const isDark = theme === 'dark';
+
+    const [collapsed, setCollapsed] = useState(() => {
+        try { return localStorage.getItem(COLLAPSE_KEY) === '1'; } catch { return false; }
+    });
+    const toggleCollapsed = () => setCollapsed((c) => {
+        const next = !c;
+        try { localStorage.setItem(COLLAPSE_KEY, next ? '1' : '0'); } catch { /* ignore */ }
+        return next;
+    });
 
     useEffect(() => {
         const handler = (e) => { if (e.key === 'Escape') onClose(); };
@@ -24,16 +36,66 @@ const ScannerDrawer = ({ data, onAnalyze, onClose }) => {
         return () => document.removeEventListener('keydown', handler);
     }, [onClose]);
 
+    const shellStyle = {
+        background: isDark ? '#111113' : '#ffffff',
+        borderLeft: isDark ? '1px solid rgba(255,255,255,0.07)' : '1px solid rgba(0,0,0,0.08)',
+        boxShadow: isDark ? '-12px 0 48px rgba(0,0,0,0.5)' : '-12px 0 48px rgba(0,0,0,0.12)',
+    };
+
+    // ── Collapsed rail — thin strip on the right edge; click to expand ─────────
+    if (collapsed) {
+        return (
+            <div
+                className="fixed right-0 top-0 h-full z-50 flex flex-col items-center pt-4 gap-3"
+                style={{ width: '48px', ...shellStyle }}
+            >
+                <button
+                    onClick={toggleCollapsed}
+                    title="Expand Chart Patterns"
+                    aria-label="Expand Chart Patterns"
+                    className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 dark:hover:text-white dark:hover:bg-zinc-800 transition-colors">
+                    <ChevronLeft size={16} />
+                </button>
+                <button
+                    onClick={toggleCollapsed}
+                    title={scanner}
+                    className="w-8 h-8 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
+                    style={{ background: 'rgba(253,212,5,0.1)', border: '1px solid rgba(253,212,5,0.2)' }}>
+                    {emoji}
+                </button>
+                {count > 0 && (
+                    <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold text-black"
+                          style={{ backgroundColor: '#FDD405' }}>
+                        {count}
+                    </span>
+                )}
+                <button
+                    onClick={toggleCollapsed}
+                    title={scanner}
+                    className="mt-1 text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
+                    style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', letterSpacing: '0.08em' }}>
+                    {scanner}
+                </button>
+                <button
+                    onClick={onClose}
+                    title="Close"
+                    aria-label="Close Chart Patterns"
+                    className="mt-auto mb-4 w-7 h-7 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-500 dark:hover:text-white dark:hover:bg-zinc-800 transition-colors">
+                    <X size={14} />
+                </button>
+            </div>
+        );
+    }
+
+    // ── Expanded panel ─────────────────────────────────────────────────────────
     return (
         <div
             ref={drawerRef}
             className="fixed right-0 top-0 h-full z-50 flex flex-col"
             style={{
                 width: '300px',
-                background: isDark ? '#111113' : '#ffffff',
-                borderLeft: isDark ? '1px solid rgba(255,255,255,0.07)' : '1px solid rgba(0,0,0,0.08)',
                 animation: 'slideInRight 0.28s cubic-bezier(0.22,1,0.36,1)',
-                boxShadow: isDark ? '-12px 0 48px rgba(0,0,0,0.5)' : '-12px 0 48px rgba(0,0,0,0.12)',
+                ...shellStyle,
             }}
         >
             {/* Header */}
@@ -51,7 +113,7 @@ const ScannerDrawer = ({ data, onAnalyze, onClose }) => {
                         <div className="text-[10px] text-zinc-500 mt-0.5 truncate">{universe}</div>
                     </div>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="flex items-center gap-1.5 flex-shrink-0">
                     {count > 0 && (
                         <span className="px-2 py-0.5 rounded-full text-[11px] font-bold text-black"
                               style={{ backgroundColor: '#FDD405' }}>
@@ -59,7 +121,16 @@ const ScannerDrawer = ({ data, onAnalyze, onClose }) => {
                         </span>
                     )}
                     <button
+                        onClick={toggleCollapsed}
+                        title="Collapse"
+                        aria-label="Collapse Chart Patterns"
+                        className="w-7 h-7 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-500 dark:hover:text-white dark:hover:bg-zinc-800 transition-colors">
+                        <ChevronRight size={16} />
+                    </button>
+                    <button
                         onClick={onClose}
+                        title="Close"
+                        aria-label="Close Chart Patterns"
                         className="w-7 h-7 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-500 dark:hover:text-white dark:hover:bg-zinc-800 transition-colors">
                         <X size={14} />
                     </button>
