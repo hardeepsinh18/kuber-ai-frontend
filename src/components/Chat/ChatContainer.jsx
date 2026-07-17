@@ -605,6 +605,40 @@ const CHAT_MODES = [
     { key: 'analyst', label: 'Analyst' },
 ];
 
+const _MODE_LABEL = { snap: 'Quick', analyst: 'Analyst' };
+
+// Shown after the user flips Quick <-> Analyst with a prior question — offers to
+// re-run that question in the new mode, or dismiss and ask something new.
+const ModeSwitchPrompt = ({ query, mode, onRunSame, onAskNew }) => {
+    const label = _MODE_LABEL[mode] || mode;
+    return (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+             onClick={onAskNew}>
+            <div className="w-full max-w-sm rounded-2xl border bg-white border-zinc-200 dark:bg-[#161514] dark:border-zinc-800 p-5 shadow-2xl"
+                 onClick={(e) => e.stopPropagation()}>
+                <p className="text-[13px] font-bold text-zinc-900 dark:text-white">Switched to {label} mode</p>
+                <p className="mt-1.5 text-[12.5px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                    Run your last question in {label} mode, or ask something new?
+                </p>
+                <div className="mt-3 px-3 py-2 rounded-lg bg-zinc-100 dark:bg-white/[0.04] text-[12px] text-zinc-700 dark:text-zinc-300 line-clamp-2">
+                    “{query}”
+                </div>
+                <div className="mt-4 flex gap-2">
+                    <button onClick={onRunSame}
+                        className="flex-1 px-3 py-2 rounded-lg text-[12px] font-bold text-black transition-all hover:brightness-105"
+                        style={{ backgroundColor: '#FDD405' }}>
+                        Run in {label}
+                    </button>
+                    <button onClick={onAskNew}
+                        className="flex-1 px-3 py-2 rounded-lg text-[12px] font-semibold text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors">
+                        Ask something new
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // Stable unique ID generator — avoids Date.now() collisions
 const genId = () =>
     (typeof crypto !== 'undefined' && crypto.randomUUID)
@@ -685,6 +719,8 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
     const [responseMode, setResponseModeState] = useState(
         () => localStorage.getItem('kuberai_mode') || 'snap'
     );
+    const [lastQuery, setLastQuery] = useState('');                  // last question fired (for the mode-switch prompt)
+    const [modeSwitchPrompt, setModeSwitchPrompt] = useState(null);  // { query, mode } | null — shown after a mode flip
     const [scannerDrawer, setScannerDrawer] = useState(null);
     // Collapse state lives here (not in ScannerDrawer) so the chat's right-padding
     // tracks the drawer's actual width (300 expanded / 48 collapsed) and re-centers.
@@ -699,6 +735,10 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
 
     const setResponseMode = (mode) => {
         localStorage.setItem('kuberai_mode', mode);
+        // Mode actually changed and there's a prior question → offer to re-run it.
+        if (mode !== responseMode && lastQuery.trim()) {
+            setModeSwitchPrompt({ query: lastQuery, mode });
+        }
         setResponseModeState(mode);
     };
 
@@ -916,6 +956,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
 
         lastSendAtRef.current = now;
         lastSendTextRef.current = normalized;
+        setLastQuery(normalized);   // remember for the mode-switch "re-run same question?" prompt
         const requestId = ++activeRequestIdRef.current;
         isLoadingRef.current = true;
         setShowScrollButton(false);
@@ -1418,6 +1459,14 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                         onClose={() => setScannerDrawer(null)}
                     />
                 )}
+                {modeSwitchPrompt && (
+                    <ModeSwitchPrompt
+                        query={modeSwitchPrompt.query}
+                        mode={modeSwitchPrompt.mode}
+                        onRunSame={() => { const q = modeSwitchPrompt.query; setModeSwitchPrompt(null); handleSend(q); }}
+                        onAskNew={() => setModeSwitchPrompt(null)}
+                    />
+                )}
             </>
         );
     }
@@ -1431,6 +1480,14 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 onToggleCollapsed={toggleScannerCollapsed}
                 onAnalyze={(sym) => handleSend(`Analyze ${sym}`)}
                 onClose={() => setScannerDrawer(null)}
+            />
+        )}
+        {modeSwitchPrompt && (
+            <ModeSwitchPrompt
+                query={modeSwitchPrompt.query}
+                mode={modeSwitchPrompt.mode}
+                onRunSame={() => { const q = modeSwitchPrompt.query; setModeSwitchPrompt(null); handleSend(q); }}
+                onAskNew={() => setModeSwitchPrompt(null)}
             />
         )}
         <div
