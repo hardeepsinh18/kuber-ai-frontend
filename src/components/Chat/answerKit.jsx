@@ -261,6 +261,14 @@ const _longLevelCells = (lv) => {
         cells.push({ label: '3Y Target', value: `${fmtINR(lv.target_3yr, 2)}${lv.upside_3yr ? ` (${lv.upside_3yr})` : ''}` });
     return cells;
 };
+// Verdict → text colour (green = buy, amber = cautious, grey = wait, red = avoid).
+const _verdictTone = (v) => ({
+    'STRONG BUY':        'text-emerald-500 dark:text-emerald-400',
+    'CAUTIOUS BUY':      'text-amber-500 dark:text-[#FDD405]',
+    'WAIT / ACCUMULATE': 'text-zinc-600 dark:text-zinc-300',
+    'AVOID':             'text-red-500 dark:text-red-400',
+}[v] || 'text-zinc-600 dark:text-zinc-300');
+
 const HorizonRow = ({ tenor, v, cells }) => {
     const note = (!cells.length)
         ? (v?.levels?.note || v?.levels?.status || 'No trade setup at the current price.')
@@ -270,23 +278,23 @@ const HorizonRow = ({ tenor, v, cells }) => {
         : nCols === 3 ? 'grid-cols-3'
         : nCols === 2 ? 'grid-cols-2' : 'grid-cols-1';
     return (
-        <div className={clsx('grid divide-x divide-black/15', gridCls)}>
+        <div className={clsx('grid divide-x divide-zinc-200/70 dark:divide-zinc-800', gridCls)}>
             <div className="px-4 py-3">
-                <p className="text-[9px] font-extrabold uppercase tracking-[0.2em] text-black/60 mb-1">{tenor}</p>
-                <p className="text-[21px] font-black text-black leading-none">{v?.verdict || '—'}</p>
+                <p className="text-[9px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-500 mb-1">{tenor}</p>
+                <p className={clsx('text-[18px] font-black leading-none', _verdictTone(v?.verdict))}>{v?.verdict || '—'}</p>
                 {v?.confidence != null && (
-                    <p className="text-[10px] font-semibold text-black/55 mt-1.5">Confidence {v.confidence}%</p>
+                    <p className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 mt-1.5">Confidence {v.confidence}%</p>
                 )}
             </div>
             {cells.map(({ label, value }) => (
                 <div key={label} className="px-4 py-3">
-                    <p className="text-[9px] font-extrabold uppercase tracking-[0.2em] text-black/60 mb-1">{label}</p>
-                    <p className="text-[16px] font-extrabold text-black leading-none">{value}</p>
+                    <p className="text-[9px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-500 mb-1">{label}</p>
+                    <p className="text-[15px] font-bold text-zinc-900 dark:text-white leading-none">{value}</p>
                 </div>
             ))}
             {note && (
                 <div className="px-4 py-3">
-                    <p className="text-[11px] font-semibold text-black/70 leading-snug">{note}</p>
+                    <p className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 leading-snug">{note}</p>
                 </div>
             )}
         </div>
@@ -297,10 +305,13 @@ const DeterministicVerdictBand = ({ verdict }) => {
     const lg = verdict?.LONG;
     if (!sh && !lg) return null;
     return (
-        <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: BRAND }}>
-            <p className="px-4 pt-3 text-[9px] font-extrabold uppercase tracking-[0.25em] text-black/50">Kuber Verdict</p>
+        <div className="rounded-2xl overflow-hidden border bg-white border-zinc-200 dark:bg-[#141312] dark:border-zinc-800">
+            <div className="flex items-center gap-1.5 px-4 pt-3 pb-1.5">
+                <span className="w-4 h-[3px] rounded-full" style={{ backgroundColor: BRAND }} />
+                <p className="text-[9px] font-extrabold uppercase tracking-[0.25em] text-amber-600 dark:text-[#FDD405]">Kuber Verdict</p>
+            </div>
             {sh && <HorizonRow tenor="Short-Term · ≤1yr" v={sh} cells={_shortLevelCells(sh.levels)} />}
-            {sh && lg && <div className="h-px bg-black/20 mx-4" />}
+            {sh && lg && <div className="h-px bg-zinc-200 dark:bg-zinc-800" />}
             {lg && <HorizonRow tenor="Long-Term · ≥1yr" v={lg} cells={_longLevelCells(lg.levels)} />}
         </div>
     );
