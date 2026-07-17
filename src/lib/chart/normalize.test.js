@@ -81,6 +81,13 @@ describe('toAreaData', () => {
         });
         expect(toAreaData(bars)).toEqual([{ time: '2026-07-01', value: 102 }]);
     });
+
+    it('keeps a row whose open is a stale zero — area only needs close', () => {
+        const bars = normalizeOhlc({
+            dates: ['2026-07-01'], open: [0], high: [0], low: [0], close: [102], volume: [1000],
+        });
+        expect(toAreaData(bars)).toEqual([{ time: '2026-07-01', value: 102 }]);
+    });
 });
 
 describe('toCandleData', () => {
@@ -113,5 +120,44 @@ describe('toCandleData', () => {
         });
         expect(bars).toHaveLength(1);
         expect(toCandleData(bars)).toHaveLength(0);
+    });
+
+    it('drops rows where open, high or low is a stale zero', () => {
+        const bars = normalizeOhlc({
+            dates: ['2026-07-01', '2026-07-02', '2026-07-03', '2026-07-04'],
+            open: [100, 0, 104, 106],
+            high: [105, 106, 0, 111],
+            low: [99, 101, 103, 0],
+            close: [102, 104, 106, 108],
+            volume: [1000, 2000, 3000, 4000],
+        });
+        // normalizeOhlc keeps all four — every close is valid and positive.
+        expect(bars).toHaveLength(4);
+        // A zero price is stale DB data, not a real price: the legacy candle
+        // layer suppressed these bars and so must we.
+        const candles = toCandleData(bars);
+        expect(candles).toHaveLength(1);
+        expect(candles[0].time).toBe('2026-07-01');
+    });
+
+    it('drops rows where an OHLC value is NaN', () => {
+        const bars = normalizeOhlc({
+            dates: ['2026-07-01', '2026-07-02'],
+            open: [100, NaN],
+            high: [105, 106],
+            low: [99, 101],
+            close: [102, 104],
+            volume: [1000, 2000],
+        });
+        expect(toCandleData(bars)).toHaveLength(1);
+        expect(toCandleData(bars)[0].time).toBe('2026-07-01');
+    });
+
+    it('keeps a row whose prices are all positive and finite', () => {
+        const bars = normalizeOhlc({
+            dates: ['2026-07-01'],
+            open: [100], high: [105], low: [99], close: [102], volume: [1000],
+        });
+        expect(toCandleData(bars)).toHaveLength(1);
     });
 });

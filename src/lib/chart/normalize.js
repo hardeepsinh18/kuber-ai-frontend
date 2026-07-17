@@ -34,12 +34,19 @@ export const normalizeOhlc = (chartData) => {
 
 export const toAreaData = (bars) => bars.map((b) => ({ time: b.time, value: b.close }));
 
-// Candles need a complete OHLC set. A row with a valid close but a null open,
-// high or low is legitimate for the area view and must survive normalizeOhlc —
-// but lightweight-charts' CandlestickSeries cannot render it, so it is dropped
-// here. This mirrors the render-time skip the previous Recharts CandleLayer did
-// (StockChart.jsx:80) while keeping the row available to toAreaData.
+// Candles need a complete, real OHLC set. Two rules, both ported from the
+// Recharts implementation this replaces:
+//   - A row with a valid close but an absent open/high/low is legitimate for
+//     the area view (which only reads close), so normalizeOhlc keeps it — but
+//     CandlestickSeries cannot render it, so it is dropped here. Mirrors the
+//     render-time skip at StockChart.jsx:80.
+//   - A zero or NaN price is stale DB data, not a real price. The legacy row
+//     mapper coerced these to null via `||`, which the candle skip then
+//     dropped. normalizeOhlc uses `??` and preserves them, so the check has to
+//     live here instead — otherwise a stale zero draws a wick down to ₹0.
+const isRealPrice = (v) => Number.isFinite(v) && v > 0;
+
 export const toCandleData = (bars) =>
     bars
-        .filter((b) => b.open != null && b.high != null && b.low != null && b.close != null)
+        .filter((b) => isRealPrice(b.open) && isRealPrice(b.high) && isRealPrice(b.low) && isRealPrice(b.close))
         .map(({ time, open, high, low, close }) => ({ time, open, high, low, close }));
