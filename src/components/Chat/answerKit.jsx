@@ -238,7 +238,82 @@ export const CompanyCard = ({ metadata = {}, symbolLabel = '' }) => {
 };
 
 /* ─── KUBER VERDICT band — BUY/SELL/HOLD + Entry / Stop Loss / Target ────── */
-export const VerdictBand = ({ signal, verdictText, content, aiTake, price, patternSummary = null }) => {
+/* ── Deterministic verdict band (reads score_card.verdict from the engine) ────
+   Single source of truth for BOTH horizons — the card can no longer disagree
+   with the prose, and levels come from the engine (real ATR/swing) or are
+   absent. No fabricated ±5%/+10% stops. */
+const _shortLevelCells = (lv) => {
+    if (!lv || lv.actionable !== true) return [];
+    return [
+        lv.entry  != null && { label: 'Entry',     value: fmtINR(lv.entry, 2) },
+        lv.stop   != null && { label: 'Stop Loss', value: fmtINR(lv.stop, 2) },
+        lv.target != null && { label: 'Target',    value: fmtINR(lv.target, 2) },
+    ].filter(Boolean);
+};
+const _longLevelCells = (lv) => {
+    if (!lv) return [];
+    const cells = [];
+    if (Array.isArray(lv.accumulate) && lv.accumulate.length === 2)
+        cells.push({ label: 'Accumulate', value: `₹${fmtNum(lv.accumulate[0])}–${fmtNum(lv.accumulate[1])}` });
+    if (lv.trend_stop != null)
+        cells.push({ label: 'Trend Stop', value: fmtINR(lv.trend_stop, 2) });
+    if (lv.target_3yr != null)
+        cells.push({ label: '3Y Target', value: `${fmtINR(lv.target_3yr, 2)}${lv.upside_3yr ? ` (${lv.upside_3yr})` : ''}` });
+    return cells;
+};
+const HorizonRow = ({ tenor, v, cells }) => {
+    const note = (!cells.length)
+        ? (v?.levels?.note || v?.levels?.status || 'No trade setup at the current price.')
+        : null;
+    const nCols = 1 + cells.length;
+    const gridCls = nCols >= 4 ? 'grid-cols-2 sm:grid-cols-4'
+        : nCols === 3 ? 'grid-cols-3'
+        : nCols === 2 ? 'grid-cols-2' : 'grid-cols-1';
+    return (
+        <div className={clsx('grid divide-x divide-black/15', gridCls)}>
+            <div className="px-4 py-3">
+                <p className="text-[9px] font-extrabold uppercase tracking-[0.2em] text-black/60 mb-1">{tenor}</p>
+                <p className="text-[21px] font-black text-black leading-none">{v?.verdict || '—'}</p>
+                {v?.confidence != null && (
+                    <p className="text-[10px] font-semibold text-black/55 mt-1.5">Confidence {v.confidence}%</p>
+                )}
+            </div>
+            {cells.map(({ label, value }) => (
+                <div key={label} className="px-4 py-3">
+                    <p className="text-[9px] font-extrabold uppercase tracking-[0.2em] text-black/60 mb-1">{label}</p>
+                    <p className="text-[16px] font-extrabold text-black leading-none">{value}</p>
+                </div>
+            ))}
+            {note && (
+                <div className="px-4 py-3">
+                    <p className="text-[11px] font-semibold text-black/70 leading-snug">{note}</p>
+                </div>
+            )}
+        </div>
+    );
+};
+const DeterministicVerdictBand = ({ verdict }) => {
+    const sh = verdict?.SHORT;
+    const lg = verdict?.LONG;
+    if (!sh && !lg) return null;
+    return (
+        <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: BRAND }}>
+            <p className="px-4 pt-3 text-[9px] font-extrabold uppercase tracking-[0.25em] text-black/50">Kuber Verdict</p>
+            {sh && <HorizonRow tenor="Short-Term · ≤1yr" v={sh} cells={_shortLevelCells(sh.levels)} />}
+            {sh && lg && <div className="h-px bg-black/20 mx-4" />}
+            {lg && <HorizonRow tenor="Long-Term · ≥1yr" v={lg} cells={_longLevelCells(lg.levels)} />}
+        </div>
+    );
+};
+
+export const VerdictBand = ({ verdict, signal, verdictText, content, aiTake, price, patternSummary = null }) => {
+    // Preferred: the deterministic Kuber Verdict engine (score_card.verdict).
+    if (verdict && (verdict.SHORT || verdict.LONG)) {
+        return <DeterministicVerdictBand verdict={verdict} />;
+    }
+    // Fallback (messages with no computed verdict): parse the text. Levels shown
+    // only when they come from the pattern engine or the text — the old ±5%/+10%
+    // fabrication has been removed (levels are computed or absent, never invented).
     const rec = signal?.recommendation
         ? String(signal.recommendation).toUpperCase()
         : deriveVerdict(verdictText || content);
@@ -252,19 +327,15 @@ export const VerdictBand = ({ signal, verdictText, content, aiTake, price, patte
     ].filter(Boolean).join('\n');
     const textLevels = extractLevelsFromText(levelSourceText, price);
 
-    // Fallback ladder so the band is complete for every stock:
-    //   1. pattern engine — support → stop-loss, resistance → target (swapped for SELL)
-    //   2. price levels mentioned in the text ("bounce above ₹162", "if ₹145 breaks")
-    //   3. deterministic risk defaults from the live price (−5% stop / +10% target)
-    // The live price is the de-facto entry. Values on the wrong side of the price
-    // are dropped, never shown.
+    // Fallback levels — pattern engine (support → stop, resistance → target;
+    // swapped for SELL) or price levels named in the text. NO fabricated %-based
+    // levels: if neither yields a value, the cell is simply omitted (computed or
+    // absent, never invented).
     const support = patternSummary?.support != null ? Number(patternSummary.support) : null;
     const resistance = patternSummary?.resistance != null ? Number(patternSummary.resistance) : null;
     const isSell = rec === 'SELL';
     const below = (v) => (v != null && (price == null || v < price) ? v : null);
     const above = (v) => (v != null && (price == null || v > price) ? v : null);
-    // Round like a price tick: whole rupees above ₹100, 5-paise steps below
-    const tick = (v) => (v == null ? null : v >= 100 ? Math.round(v) : Math.round(v * 20) / 20);
 
     const fbEntry = price;
     let fbStop = isSell ? above(resistance) : below(support);
@@ -273,10 +344,6 @@ export const VerdictBand = ({ signal, verdictText, content, aiTake, price, patte
         const nearby = extractNearbyLevels(levelSourceText, price);
         if (fbStop == null) fbStop = isSell ? nearby.above : nearby.below;
         if (fbTarget == null) fbTarget = isSell ? nearby.below : nearby.above;
-    }
-    if (price != null) {
-        if (fbStop == null) fbStop = tick(price * (isSell ? 1.05 : 0.95));
-        if (fbTarget == null) fbTarget = tick(price * (isSell ? 0.90 : 1.10));
     }
 
     const fmtLevel = (sigVal, parsed, fb) => {

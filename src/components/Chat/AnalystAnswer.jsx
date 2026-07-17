@@ -847,7 +847,7 @@ const AnalystAnswer = ({
 
             <CompanyCard metadata={metadata} symbolLabel={symbolLabel} />
 
-            <VerdictBand signal={signal} verdictText={verdictText} content={content}
+            <VerdictBand verdict={scoreCard?.verdict} signal={signal} verdictText={verdictText} content={content}
                          aiTake={aiTake} price={price} patternSummary={patternSummary} />
 
             <WhyThisVerdict verdictText={verdictText} content={content} signal={signal}
