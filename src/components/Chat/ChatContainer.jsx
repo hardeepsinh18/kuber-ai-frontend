@@ -686,6 +686,16 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
         () => localStorage.getItem('kuberai_mode') || 'snap'
     );
     const [scannerDrawer, setScannerDrawer] = useState(null);
+    // Collapse state lives here (not in ScannerDrawer) so the chat's right-padding
+    // tracks the drawer's actual width (300 expanded / 48 collapsed) and re-centers.
+    const [scannerCollapsed, setScannerCollapsed] = useState(() => {
+        try { return localStorage.getItem('scannerDrawerCollapsed') === '1'; } catch { return false; }
+    });
+    const toggleScannerCollapsed = () => setScannerCollapsed((c) => {
+        const next = !c;
+        try { localStorage.setItem('scannerDrawerCollapsed', next ? '1' : '0'); } catch { /* ignore */ }
+        return next;
+    });
 
     const setResponseMode = (mode) => {
         localStorage.setItem('kuberai_mode', mode);
@@ -1393,7 +1403,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 <div
                     className="h-full"
                     style={{
-                        paddingRight: scannerDrawer ? '300px' : '0',
+                        paddingRight: scannerDrawer ? (scannerCollapsed ? '48px' : '300px') : '0',
                         transition: 'padding-right 0.28s cubic-bezier(0.22,1,0.36,1)',
                     }}
                 >
@@ -1402,6 +1412,8 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 {scannerDrawer && (
                     <ScannerDrawer
                         data={scannerDrawer}
+                        collapsed={scannerCollapsed}
+                        onToggleCollapsed={toggleScannerCollapsed}
                         onAnalyze={(sym) => handleSend(`Analyze ${sym}`)}
                         onClose={() => setScannerDrawer(null)}
                     />
@@ -1415,6 +1427,8 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
         {scannerDrawer && (
             <ScannerDrawer
                 data={scannerDrawer}
+                collapsed={scannerCollapsed}
+                onToggleCollapsed={toggleScannerCollapsed}
                 onAnalyze={(sym) => handleSend(`Analyze ${sym}`)}
                 onClose={() => setScannerDrawer(null)}
             />
@@ -1422,7 +1436,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
         <div
             className="flex flex-col h-full relative"
             style={{
-                paddingRight: scannerDrawer ? '300px' : '0',
+                paddingRight: scannerDrawer ? (scannerCollapsed ? '48px' : '300px') : '0',
                 transition: 'padding-right 0.28s cubic-bezier(0.22,1,0.36,1)',
             }}
         >

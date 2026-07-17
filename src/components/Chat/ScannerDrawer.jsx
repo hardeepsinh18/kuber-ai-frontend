@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { clsx } from 'clsx';
 import { X, TrendingUp, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
@@ -13,25 +13,16 @@ const METRIC_STYLES = {
 
 const cleanSymbol = (sym) => (sym || '').replace(/\.(NS|BO)$/i, '');
 
-// Remember collapsed/expanded across reloads (like the chat sidebar).
-const COLLAPSE_KEY = 'scannerDrawerCollapsed';
 const OPEN_W = 300;   // px — expanded width
 const RAIL_W = 48;    // px — collapsed rail width
 
-const ScannerDrawer = ({ data, onAnalyze, onClose }) => {
+// `collapsed` + `onToggleCollapsed` are owned by the parent (ChatContainer) so the
+// chat's right-padding can track the drawer's actual width (300 vs 48) and re-center.
+const ScannerDrawer = ({ data, onAnalyze, onClose, collapsed = false, onToggleCollapsed }) => {
     const { emoji, scanner, universe, count, date, raw } = data;
     const drawerRef = useRef(null);
     const { theme } = useTheme();
     const isDark = theme === 'dark';
-
-    const [collapsed, setCollapsed] = useState(() => {
-        try { return localStorage.getItem(COLLAPSE_KEY) === '1'; } catch { return false; }
-    });
-    const toggleCollapsed = () => setCollapsed((c) => {
-        const next = !c;
-        try { localStorage.setItem(COLLAPSE_KEY, next ? '1' : '0'); } catch { /* ignore */ }
-        return next;
-    });
 
     useEffect(() => {
         const handler = (e) => { if (e.key === 'Escape') onClose(); };
@@ -50,7 +41,7 @@ const ScannerDrawer = ({ data, onAnalyze, onClose }) => {
             {/* D-shape semicircle toggle on the drawer's left edge — mirror of the
                 chat-sidebar toggle. Slides with the drawer (same 300ms ease). */}
             <button
-                onClick={toggleCollapsed}
+                onClick={onToggleCollapsed}
                 className={clsx(
                     'hidden md:flex fixed top-1/2 -translate-y-1/2 z-[51] transition-all duration-300',
                     'w-6 h-12 rounded-l-full items-center justify-center',
@@ -80,7 +71,7 @@ const ScannerDrawer = ({ data, onAnalyze, onClose }) => {
                     /* ── Collapsed rail ── */
                     <div className="flex flex-col items-center pt-4 gap-3 h-full" style={{ width: RAIL_W }}>
                         <button
-                            onClick={toggleCollapsed}
+                            onClick={onToggleCollapsed}
                             title={scanner}
                             className="w-8 h-8 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
                             style={{ background: 'rgba(253,212,5,0.1)', border: '1px solid rgba(253,212,5,0.2)' }}>
@@ -93,7 +84,7 @@ const ScannerDrawer = ({ data, onAnalyze, onClose }) => {
                             </span>
                         )}
                         <button
-                            onClick={toggleCollapsed}
+                            onClick={onToggleCollapsed}
                             title={scanner}
                             className="mt-1 text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
                             style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', letterSpacing: '0.08em' }}>
