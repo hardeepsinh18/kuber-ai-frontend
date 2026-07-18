@@ -39,6 +39,15 @@ const ChartPanel = forwardRef(({ chartType, bars, renko, patternAnn, range, them
         zoomOut: () => scaleRange(1.7),
     }));
 
+    // Dev-only hook so the Playwright harness can assert that zoom changed the
+    // visible range. import.meta.env.DEV is false in production builds, so this
+    // is stripped from the bundle.
+    useEffect(() => {
+        if (!import.meta.env.DEV) return;
+        window.__chartVisibleRange__ = () => chartRef.current?.timeScale()?.getVisibleLogicalRange() ?? null;
+        return () => { delete window.__chartVisibleRange__; };
+    }, [chartRef]);
+
     // Rebuild the series when the type changes; setData when the bars change.
     useEffect(() => {
         const chart = chartRef.current;
@@ -93,6 +102,17 @@ const ChartPanel = forwardRef(({ chartType, bars, renko, patternAnn, range, them
             series.attachPrimitive(primitive);
             patternRef.current = primitive;
         }
+
+        // Detach this run's own series before the next run (or unmount) starts.
+        // Without this, React's dev-only StrictMode remount (mount -> cleanup ->
+        // mount) leaves seriesRef pointing at a series that belonged to the
+        // chart instance useChart's own mount effect just destroyed; the next
+        // mount's removeSeries() guard above then throws trying to remove a
+        // stale series from a brand-new chart that never owned it.
+        return () => {
+            try { chart.removeSeries(series); } catch { /* chart already disposed */ }
+            if (seriesRef.current === series) seriesRef.current = null;
+        };
     }, [chartType, bars, renko, patternAnn, chartRef]);
 
     // Crosshair -> legend. Falling back to the last bar keeps the readout
