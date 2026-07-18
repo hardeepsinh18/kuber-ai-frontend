@@ -61,6 +61,11 @@ class PatternPaneRenderer {
             // actually mentions, not the chart's right edge.
             const annDates = [
                 ...(ann.skeleton || []).map((p) => p?.date),
+                // projection is never DRAWN (deliberate — see the omission note below),
+                // but its dates still extend the pattern region, matching the reference
+                // at PatternAnnotationLayer.jsx:87. Without it, a completed pattern's
+                // lines clamp short of where the SVG twin draws them.
+                ...(ann.projection || []).map((p) => p?.date),
                 ...(ann.curve || []).map((p) => p?.date),
                 ...(ann.midline || []).map((p) => p?.date),
                 ...(ann.markers || []).map((m) => m?.date),
@@ -207,7 +212,7 @@ class PatternPaneRenderer {
                 ctx.stroke();
                 if (m.label) {
                     const above = m.at === 'high';
-                    ctx.font = '600 9px sans-serif';
+                    ctx.font = '600 9px Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
                     ctx.textAlign = 'center';
                     ctx.strokeStyle = '#0b0b0b';
                     ctx.lineWidth = 0.5;
