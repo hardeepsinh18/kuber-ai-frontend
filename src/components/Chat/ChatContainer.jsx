@@ -609,52 +609,30 @@ const _MODE_LABEL = { snap: 'Quick', analyst: 'Analyst' };
 
 // Shown after the user flips Quick <-> Analyst with a prior question — offers to
 // re-run that question in the new mode, or dismiss and ask something new.
-// Claude-Code-style question card: a selectable option + a free-text input field.
-const ModeSwitchPrompt = ({ query, mode, onSend, onClose }) => {
+// Non-blocking popover that floats just above the input bar after a mode switch.
+// Tap "Run my last question" to re-fire it in the new mode, or just type a new
+// question in the input below (sending anything dismisses it).
+const ModeSwitchPrompt = ({ query, mode, onRun, onClose }) => {
     const label = _MODE_LABEL[mode] || mode;
-    const [text, setText] = React.useState('');
-    const submit = () => onSend((text.trim() || query));
     return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-             onClick={onClose}>
-            <div className="w-full max-w-md rounded-2xl border bg-white border-zinc-200 dark:bg-[#161514] dark:border-zinc-800 shadow-2xl"
-                 onClick={(e) => e.stopPropagation()}>
-                <div className="flex items-start justify-between px-5 pt-4 pb-1 gap-3">
-                    <div>
-                        <p className="text-[13px] font-bold text-zinc-900 dark:text-white">Switched to {label} mode</p>
-                        <p className="mt-1 text-[12px] text-zinc-500 dark:text-zinc-400">
-                            Run the same question in {label}, or ask something new?
+        <div className="absolute bottom-full left-0 right-0 mb-2 px-4 sm:px-6 md:px-8 z-30 pointer-events-none">
+            <div className="max-w-4xl mx-auto flex justify-center sm:justify-start">
+                <div className="pointer-events-auto w-full max-w-sm rounded-2xl border bg-white border-zinc-200 dark:bg-[#1b1a18] dark:border-zinc-700 shadow-xl">
+                    <div className="flex items-start justify-between gap-2 px-3.5 pt-3">
+                        <p className="text-[11.5px] font-semibold text-zinc-600 dark:text-zinc-300">
+                            Switched to <span className="text-zinc-900 dark:text-white font-bold">{label}</span> — run your last question, or type a new one below.
                         </p>
+                        <button onClick={onClose} aria-label="Dismiss"
+                            className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 text-[13px] leading-none flex-shrink-0 mt-0.5">✕</button>
                     </div>
-                    <button onClick={onClose} aria-label="Cancel"
-                        className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 text-[15px] leading-none flex-shrink-0 -mt-0.5">✕</button>
-                </div>
-
-                {/* Selectable option — re-run the last question */}
-                <button onClick={() => onSend(query)}
-                    className="mt-2.5 mx-3 w-[calc(100%-1.5rem)] flex items-center gap-2.5 text-left px-3 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 hover:border-[#FDD405] hover:bg-amber-50/60 dark:hover:bg-white/[0.03] transition-colors group">
-                    <span className="w-4 h-4 rounded-full border-2 border-zinc-300 dark:border-zinc-600 group-hover:border-[#FDD405] flex-shrink-0" />
-                    <span className="min-w-0">
-                        <span className="block text-[12px] font-semibold text-zinc-900 dark:text-white">Run my last question</span>
-                        <span className="block text-[11px] text-zinc-500 dark:text-zinc-400 truncate">“{query}”</span>
-                    </span>
-                </button>
-
-                {/* Free-text input — ask something new */}
-                <div className="px-3 pt-2.5 pb-4">
-                    <div className="flex items-center gap-2 rounded-xl border border-zinc-200 dark:border-zinc-700 focus-within:border-[#FDD405]/70 px-3 py-2 transition-colors">
-                        <input
-                            value={text}
-                            onChange={(e) => setText(e.target.value)}
-                            onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
-                            placeholder="Or ask something new…"
-                            autoFocus
-                            className="flex-1 min-w-0 bg-transparent text-[12.5px] text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 outline-none"
-                        />
-                        <button onClick={submit} aria-label="Send"
-                            className="w-7 h-7 flex items-center justify-center rounded-lg text-black text-[15px] font-bold leading-none flex-shrink-0 hover:brightness-105 transition-all"
-                            style={{ backgroundColor: '#FDD405' }}>↑</button>
-                    </div>
+                    <button onClick={onRun}
+                        className="m-3 mt-2 w-[calc(100%-1.5rem)] flex items-center gap-2.5 text-left px-3 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 hover:border-[#FDD405] hover:bg-amber-50/60 dark:hover:bg-white/[0.04] transition-colors group">
+                        <span className="w-4 h-4 rounded-full border-2 border-zinc-300 dark:border-zinc-600 group-hover:border-[#FDD405] flex-shrink-0" />
+                        <span className="min-w-0">
+                            <span className="block text-[12px] font-semibold text-zinc-900 dark:text-white">Run my last question</span>
+                            <span className="block text-[11px] text-zinc-500 dark:text-zinc-400 truncate">“{query}”</span>
+                        </span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -979,6 +957,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
         lastSendAtRef.current = now;
         lastSendTextRef.current = normalized;
         setLastQuery(normalized);   // remember for the mode-switch "re-run same question?" prompt
+        setModeSwitchPrompt(null);  // any send dismisses the mode-switch popover
         const requestId = ++activeRequestIdRef.current;
         isLoadingRef.current = true;
         setShowScrollButton(false);
@@ -1481,14 +1460,6 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                         onClose={() => setScannerDrawer(null)}
                     />
                 )}
-                {modeSwitchPrompt && (
-                    <ModeSwitchPrompt
-                        query={modeSwitchPrompt.query}
-                        mode={modeSwitchPrompt.mode}
-                        onSend={(q) => { setModeSwitchPrompt(null); handleSend(q); }}
-                        onClose={() => setModeSwitchPrompt(null)}
-                    />
-                )}
             </>
         );
     }
@@ -1502,14 +1473,6 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 onToggleCollapsed={toggleScannerCollapsed}
                 onAnalyze={(sym) => handleSend(`Analyze ${sym}`)}
                 onClose={() => setScannerDrawer(null)}
-            />
-        )}
-        {modeSwitchPrompt && (
-            <ModeSwitchPrompt
-                query={modeSwitchPrompt.query}
-                mode={modeSwitchPrompt.mode}
-                onSend={(q) => { setModeSwitchPrompt(null); handleSend(q); }}
-                onClose={() => setModeSwitchPrompt(null)}
             />
         )}
         <div
@@ -1631,7 +1594,16 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                         </svg>
                     </button>
                 )}
-                {/* ── Input bar — inside the card at the bottom ── */}
+                {/* ── Input bar — with the mode-switch popover floating just above it ── */}
+                <div className="relative">
+                    {modeSwitchPrompt && (
+                        <ModeSwitchPrompt
+                            query={modeSwitchPrompt.query}
+                            mode={modeSwitchPrompt.mode}
+                            onRun={() => { const q = modeSwitchPrompt.query; setModeSwitchPrompt(null); handleSend(q); }}
+                            onClose={() => setModeSwitchPrompt(null)}
+                        />
+                    )}
                 <InputBar
                     input={input}
                     setInput={setInput}
@@ -1657,6 +1629,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                     })()}
                     onHorizonChoice={(q) => handleSend(q)}
                 />
+                </div>
 
                 {/* Group disambiguation popup — when the latest AI reply asks which company
                     (e.g. "Tata Motors" → TMPV / TMCV). Selecting a chip sends its ticker. */}
