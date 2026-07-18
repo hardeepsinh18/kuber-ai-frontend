@@ -5,6 +5,7 @@ import { toCandleData, toAreaData } from '../../lib/chart/normalize';
 import { formatPrice, formatVolume, formatTickMark, formatCrosshairDate } from '../../lib/chart/formatters';
 import { toHeikinAshi } from '../../lib/chartTransforms';
 import { RenkoSeries, renkoData, renkoTickFormatter } from '../../lib/chart/renkoSeries';
+import { PatternPrimitive } from '../../lib/chart/patternPrimitive';
 
 const BULL = '#26a69a';
 const BEAR = '#ef5350';
@@ -15,9 +16,10 @@ const heikinBars = (bars) =>
     toHeikinAshi(bars.map((b) => ({ ...b, date: b.time })))
         .map(({ date, open, high, low, close }) => ({ time: date, open, high, low, close }));
 
-const ChartPanel = ({ chartType, bars, renko, theme, className }) => {
+const ChartPanel = ({ chartType, bars, renko, patternAnn, theme, className }) => {
     const containerRef = useRef(null);
     const seriesRef = useRef(null);
+    const patternRef = useRef(null);
     const { chartRef } = useChart(containerRef, { theme });
     const [hover, setHover] = useState(null);
 
@@ -68,7 +70,14 @@ const ChartPanel = ({ chartType, bars, renko, theme, className }) => {
         }
         seriesRef.current = series;
         chart.timeScale().fitContent();
-    }, [chartType, bars, renko, chartRef]);
+
+        patternRef.current = null;
+        if (patternAnn?.has && (chartType === 'candle' || chartType === 'area')) {
+            const primitive = new PatternPrimitive(patternAnn, bars);
+            series.attachPrimitive(primitive);
+            patternRef.current = primitive;
+        }
+    }, [chartType, bars, renko, patternAnn, chartRef]);
 
     // Crosshair -> legend. Falling back to the last bar keeps the readout
     // populated when the cursor leaves, rather than blanking.
