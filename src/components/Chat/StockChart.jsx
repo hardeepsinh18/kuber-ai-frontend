@@ -106,6 +106,12 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
 
     const renkoEmpty = chartType === 'renko' && !renko.bricks.length;
 
+    const emptyRenkoMsg = (
+        <div className="flex h-full items-center justify-center px-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
+            Price hasn't moved a full brick (₹{Number((renko.brickSize || 0).toFixed(2)).toLocaleString('en-IN')}) in this range — try a longer range.
+        </div>
+    );
+
     const panel = (
         <ChartPanel
             ref={panelRef}
@@ -229,11 +235,7 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
 
             <div className="flex flex-col sm:flex-row gap-4">
                 <div className={clsx('h-[260px] sm:h-[340px] overflow-hidden', atAGlance ? 'flex-1 min-w-0' : 'w-full')}>
-                    {renkoEmpty ? (
-                        <div className="flex h-full items-center justify-center px-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
-                            Price hasn't moved a full brick (₹{Number((renko.brickSize || 0).toFixed(2)).toLocaleString('en-IN')}) in this range — try a longer range.
-                        </div>
-                    ) : expanded ? (
+                    {renkoEmpty ? emptyRenkoMsg : expanded ? (
                         <div className="flex h-full items-center justify-center text-xs text-zinc-400">Chart expanded</div>
                     ) : panel}
                 </div>
@@ -270,7 +272,7 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                 onClose={() => setExpanded(false)}
                 title={symbol || chart_metadata.symbol || 'Chart'}
             >
-                {expanded && panel}
+                {expanded && (renkoEmpty ? emptyRenkoMsg : panel)}
             </ChartFullscreen>
         </div>
     );

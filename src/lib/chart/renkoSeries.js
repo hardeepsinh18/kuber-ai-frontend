@@ -31,6 +31,23 @@ export const renkoTickFormatter = (data) => {
     };
 };
 
+// Range chips count DAILY bars, but the Renko series is indexed by brick, and
+// bricks.length is decoupled from bars.length (a brick forms only on a full
+// brick-size move). Translate the daily-bar window into the brick logical range
+// [from, last] by date cutoff — mirroring the date filter the Recharts renko
+// view used. Returns null if there are no bricks; falls back to the full span
+// when bars/range are unavailable so the view is never blank.
+export const renkoVisibleRange = (bricks, bars, rangeBars) => {
+    if (!bricks?.length) return null;
+    const to = bricks.length - 1;
+    if (!bars?.length || !rangeBars) return { from: 0, to };
+    const cutoffIdx = Math.max(bars.length - rangeBars, 0);
+    const cutoff = String(bars[cutoffIdx]?.time ?? '').slice(0, 10);
+    if (!cutoff) return { from: 0, to };
+    const first = bricks.findIndex((b) => String(b.date).slice(0, 10) >= cutoff);
+    return { from: first < 0 ? to : first, to };
+};
+
 class RenkoSeriesRenderer {
     _data = null;
     _options = null;

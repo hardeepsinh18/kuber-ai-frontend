@@ -4,7 +4,7 @@ import { useChart } from '../../lib/chart/useChart';
 import { toCandleData, toAreaData } from '../../lib/chart/normalize';
 import { formatPrice, formatVolume, formatTickMark, formatCrosshairDate } from '../../lib/chart/formatters';
 import { toHeikinAshi } from '../../lib/chartTransforms';
-import { RenkoSeries, renkoData, renkoTickFormatter } from '../../lib/chart/renkoSeries';
+import { RenkoSeries, renkoData, renkoTickFormatter, renkoVisibleRange } from '../../lib/chart/renkoSeries';
 import { PatternPrimitive } from '../../lib/chart/patternPrimitive';
 
 const BULL = '#26a69a';
@@ -124,13 +124,22 @@ const ChartPanel = forwardRef(({ chartType, bars, renko, patternAnn, range, them
         return () => chart.unsubscribeCrosshairMove(onMove);
     }, [bars, chartRef]);
 
-    // Range chips select the last N bars.
+    // Range chips select the last N daily bars. Renko is indexed by brick, not by
+    // day, so its window is translated from the daily range via renkoVisibleRange;
+    // using bars.length there would point the viewport past the brick data and
+    // render blank.
     useEffect(() => {
         const ts = chartRef.current?.timeScale();
-        if (!ts || !bars.length || !range) return;
+        if (!ts || !range) return;
+        if (chartType === 'renko') {
+            const vr = renkoVisibleRange(renko?.bricks ?? [], bars, range);
+            if (vr) ts.setVisibleLogicalRange(vr);
+            return;
+        }
+        if (!bars.length) return;
         const from = Math.max(bars.length - range, 0);
         ts.setVisibleLogicalRange({ from, to: bars.length - 1 });
-    }, [range, bars, chartType, chartRef]);
+    }, [range, bars, chartType, renko, chartRef]);
 
     const shown = hover ?? (bars.length ? bars[bars.length - 1] : null);
     const isBull = shown && shown.close >= (shown.open ?? shown.close);
