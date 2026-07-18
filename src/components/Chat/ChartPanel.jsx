@@ -2,8 +2,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import { CandlestickSeries, AreaSeries } from 'lightweight-charts';
 import { useChart } from '../../lib/chart/useChart';
 import { toCandleData, toAreaData } from '../../lib/chart/normalize';
-import { formatPrice, formatVolume } from '../../lib/chart/formatters';
+import { formatPrice, formatVolume, formatTickMark, formatCrosshairDate } from '../../lib/chart/formatters';
 import { toHeikinAshi } from '../../lib/chartTransforms';
+import { RenkoSeries, renkoData, renkoTickFormatter } from '../../lib/chart/renkoSeries';
 
 const BULL = '#26a69a';
 const BEAR = '#ef5350';
@@ -14,7 +15,7 @@ const heikinBars = (bars) =>
     toHeikinAshi(bars.map((b) => ({ ...b, date: b.time })))
         .map(({ date, open, high, low, close }) => ({ time: date, open, high, low, close }));
 
-const ChartPanel = ({ chartType, bars, theme, className }) => {
+const ChartPanel = ({ chartType, bars, renko, theme, className }) => {
     const containerRef = useRef(null);
     const seriesRef = useRef(null);
     const { chartRef } = useChart(containerRef, { theme });
@@ -31,7 +32,16 @@ const ChartPanel = ({ chartType, bars, theme, className }) => {
         }
 
         let series;
-        if (chartType === 'area') {
+        if (chartType === 'renko') {
+            const data = renkoData(renko?.bricks ?? []);
+            series = chart.addCustomSeries(new RenkoSeries(), {});
+            series.setData(data);
+            // Synthetic times must display as their real completion dates.
+            chart.applyOptions({
+                timeScale: { tickMarkFormatter: renkoTickFormatter(data) },
+                localization: { timeFormatter: renkoTickFormatter(data) },
+            });
+        } else if (chartType === 'area') {
             series = chart.addSeries(AreaSeries, {
                 lineColor: BULL,
                 topColor: `${BULL}66`,
@@ -50,9 +60,15 @@ const ChartPanel = ({ chartType, bars, theme, className }) => {
             series.setData(toCandleData(chartType === 'heikin' ? heikinBars(bars) : bars));
         }
 
+        if (chartType !== 'renko') {
+            chart.applyOptions({
+                timeScale: { tickMarkFormatter: formatTickMark },
+                localization: { timeFormatter: formatCrosshairDate },
+            });
+        }
         seriesRef.current = series;
         chart.timeScale().fitContent();
-    }, [chartType, bars, chartRef]);
+    }, [chartType, bars, renko, chartRef]);
 
     // Crosshair -> legend. Falling back to the last bar keeps the readout
     // populated when the cursor leaves, rather than blanking.
