@@ -43,3 +43,7 @@ jobs:
             exit 1
           fi
           echo "✅ No leaked secrets in dist/"
+      - name: npm audit (SEC-014, report-only)
+        # Visibility for known-vulnerable frontend deps; never blocks a release.
+        continue-on-error: true
+        run: npm audit --audit-level=high
