@@ -16,8 +16,11 @@ on:
     branches: [main]
   workflow_dispatch: {}
 
-concurrency: { group: bundle-scan-${{ github.ref }}, cancel-in-progress: true }
-permissions: { contents: read }
+concurrency:
+  group: bundle-scan-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
 
 jobs:
   scan:
