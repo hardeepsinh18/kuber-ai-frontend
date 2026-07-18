@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
 import { CandlestickSeries, AreaSeries } from 'lightweight-charts';
 import { useChart } from '../../lib/chart/useChart';
 import { toCandleData, toAreaData } from '../../lib/chart/normalize';
@@ -16,12 +16,28 @@ const heikinBars = (bars) =>
     toHeikinAshi(bars.map((b) => ({ ...b, date: b.time })))
         .map(({ date, open, high, low, close }) => ({ time: date, open, high, low, close }));
 
-const ChartPanel = ({ chartType, bars, renko, patternAnn, theme, className }) => {
+const ChartPanel = forwardRef(({ chartType, bars, renko, patternAnn, range, theme, className }, ref) => {
     const containerRef = useRef(null);
     const seriesRef = useRef(null);
     const patternRef = useRef(null);
     const { chartRef } = useChart(containerRef, { theme });
     const [hover, setHover] = useState(null);
+
+    const scaleRange = (factor) => {
+        const ts = chartRef.current?.timeScale();
+        const vr = ts?.getVisibleLogicalRange();
+        if (!ts || !vr) return;
+        const mid = (vr.from + vr.to) / 2;
+        const half = ((vr.to - vr.from) * factor) / 2;
+        ts.setVisibleLogicalRange({ from: mid - half, to: mid + half });
+    };
+
+    // Zoom buttons drive the time scale's logical range. The chart's own wheel,
+    // drag and pinch handling is native and needs no code.
+    useImperativeHandle(ref, () => ({
+        zoomIn: () => scaleRange(0.6),
+        zoomOut: () => scaleRange(1.7),
+    }));
 
     // Rebuild the series when the type changes; setData when the bars change.
     useEffect(() => {
@@ -108,6 +124,14 @@ const ChartPanel = ({ chartType, bars, renko, patternAnn, theme, className }) =>
         return () => chart.unsubscribeCrosshairMove(onMove);
     }, [bars, chartRef]);
 
+    // Range chips select the last N bars.
+    useEffect(() => {
+        const ts = chartRef.current?.timeScale();
+        if (!ts || !bars.length || !range) return;
+        const from = Math.max(bars.length - range, 0);
+        ts.setVisibleLogicalRange({ from, to: bars.length - 1 });
+    }, [range, bars, chartType, chartRef]);
+
     const shown = hover ?? (bars.length ? bars[bars.length - 1] : null);
     const isBull = shown && shown.close >= (shown.open ?? shown.close);
     const isOhlc = chartType !== 'area' && shown?.open != null;
@@ -147,6 +171,8 @@ const ChartPanel = ({ chartType, bars, renko, patternAnn, theme, className }) =>
             </div>
         </div>
     );
-};
+});
+
+ChartPanel.displayName = 'ChartPanel';
 
 export default ChartPanel;
