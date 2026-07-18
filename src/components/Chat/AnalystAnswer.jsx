@@ -862,7 +862,7 @@ const AnalystAnswer = ({
                                     chartData={chart}
                                     symbol={symbolLabel}
                                     variant="quick"
-                                    defaultType="area"
+                                    defaultType="candle"
                                 />
                             </Card>
                         )}

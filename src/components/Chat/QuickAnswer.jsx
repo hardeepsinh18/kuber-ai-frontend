@@ -87,7 +87,7 @@ const QuickAnswer = ({
                                 symbol={symbolLabel}
                                 patternOverlays={patternSummary}
                                 variant="quick"
-                                defaultType="area"
+                                defaultType="candle"
                             />
                         </Card>
                     )}
