@@ -58,6 +58,11 @@ const stripResponseChrome = (text) => {
     out = out.replace(/\n?##\s*(Intraday\s+Chart|Chart)\s*\n+/gi, '\n');
     out = out.replace(/\n*💬\s*\*?\*?Ask\s*me:?\*?\*?[\s\S]*?(?=\n##|\n---|\n━|$)/gi, '');
     out = out.replace(/\n*##\s*💬\s*Suggested Follow-ups[\s\S]*?(?=\n##|\n---|\n━|$)/gi, '');
+    // Drop the "Key Levels" section (heading + its entry/stop/target table) —
+    // product decision: no longer shown in answers. Matches any heading level and
+    // emoji, and any "Key … Levels" wording ("Key Levels", "Key Price Levels"),
+    // cutting to the next section boundary so following sections are kept.
+    out = out.replace(/\n*#{1,4}\s*[^\n]*Key[^\n]*Levels[^\n]*[\s\S]*?(?=\n#{1,4}\s|\n---|\n━|$)/gi, '');
     // Strip disclaimer from text — rendered separately as a styled box at the bottom
     out = out.replace(/\*?\*?Disclaimer:?\*?\*?[^\n]*((\n[^\n]+)*)/gi, '');
     return out.trim();
