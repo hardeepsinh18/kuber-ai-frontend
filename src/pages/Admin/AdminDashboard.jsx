@@ -6,18 +6,23 @@ import {
     RefreshCw, TrendingUp, Zap, Database, X
 } from 'lucide-react';
 import { getApiBase } from '../../lib/apiBase';
+import { getIdToken } from '../../lib/supabase';
 
 const API_BASE = getApiBase();   // '' = same-origin (/api/v1/...); set VITE_API_BASE for dev
-const ADMIN_KEY = import.meta.env.VITE_ADMIN_LOGS_SECRET || '';
 const API_PREFIX = '/api/v1';
 
-const adminFetch = (path, params = {}) => {
+// SEC-004/SEC-C-002: authenticate admin calls with the signed-in admin's own
+// Cognito ID token (verified server-side against the ADMIN_EMAILS allowlist by
+// require_admin) — NOT a shared secret baked into the JS bundle. The page only
+// renders behind AdminGuard, so a token is always available here.
+const adminFetch = async (path, params = {}) => {
     const url = new URL(`${API_BASE}${API_PREFIX}${path}`);
     Object.entries(params).forEach(([k, v]) => v != null && url.searchParams.set(k, v));
-    return fetch(url.toString(), { headers: { 'X-Admin-Key': ADMIN_KEY } }).then(r => {
-        if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
-        return r.json();
-    });
+    const token = await getIdToken();
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    const r = await fetch(url.toString(), { headers });
+    if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+    return r.json();
 };
 
 const fmt = (n) => (n == null ? '—' : Number(n).toLocaleString('en-IN'));
