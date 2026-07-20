@@ -231,9 +231,11 @@ export default function AuthPage() {
                 {/* Terms */}
                 <p style={{ textAlign: 'center', fontSize: 11, color: labelColor, marginTop: 16, lineHeight: 1.7 }}>
                     By continuing you agree to our{' '}
-                    <span style={{ color: textSub, textDecoration: 'underline', cursor: 'pointer' }}>Terms of Service</span>
+                    <a href="/terms" target="_blank" rel="noopener noreferrer"
+                       style={{ color: textSub, textDecoration: 'underline', cursor: 'pointer' }}>Terms of Service</a>
                     {' '}and{' '}
-                    <span style={{ color: textSub, textDecoration: 'underline', cursor: 'pointer' }}>Privacy Policy</span>
+                    <a href="/privacy" target="_blank" rel="noopener noreferrer"
+                       style={{ color: textSub, textDecoration: 'underline', cursor: 'pointer' }}>Privacy Policy</a>
                 </p>
 
                 {/* Footer */}

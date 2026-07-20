@@ -13,6 +13,7 @@ import { ChatModeProvider } from './context/ChatModeContext';
 import { AdminGuard } from './components/Admin/AdminGuard';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import PreviewPage from './pages/PreviewPage';
+import LegalPage from './pages/LegalPage';
 
 function AppContent() {
   const navigate = useNavigate();
@@ -100,6 +101,8 @@ function App() {
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<AuthPage />} />
+              <Route path="/terms" element={<LegalPage doc="terms" />} />
+              <Route path="/privacy" element={<LegalPage doc="privacy" />} />
               <Route path="/preview" element={<PreviewPage />} />
               <Route path="/*" element={<AppContent />} />
             </Routes>
