@@ -1,0 +1,49 @@
+name: Bundle Secret Scan
+
+# SEC-004 prevention: a VITE_* secret is inlined into the public JS bundle at build
+# time. This builds the SPA and fails if any real secret pattern appears in dist/,
+# so an admin key / API key can never ship to users again. Standalone + independent
+# of the deploy workflow (never blocks a release; goes red if a secret sneaks in).
+#
+# High-signal patterns only (opaque provider secret prefixes) — public Cognito pool
+# and client IDs are NOT secrets and are intentionally not matched.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['**.md']
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+
+concurrency:
+  group: bundle-scan-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - name: Build
+        run: |
+          npm ci || npm install
+          npm run build
+      - name: Scan bundle for leaked secrets
+        run: |
+          set -uo pipefail
+          # Opaque provider-secret formats. Any hit = a real credential in public JS.
+          PATTERNS='GOCSPX-[A-Za-z0-9_-]{10,}|\bsk-[A-Za-z0-9]{20,}|\bhf_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_\-]{35}|ADMIN_LOGS_SECRET'
+          if grep -rEn --include='*.js' --include='*.css' --include='*.html' "$PATTERNS" dist/ ; then
+            echo "::error::A secret-shaped string was found in the built bundle. Do NOT put secrets in VITE_* vars — they are inlined into public JS. Move the secret server-side."
+            exit 1
+          fi
+          echo "✅ No leaked secrets in dist/"
+      - name: npm audit (SEC-014, report-only)
+        # Visibility for known-vulnerable frontend deps; never blocks a release.
+        continue-on-error: true
+        run: npm audit --audit-level=high

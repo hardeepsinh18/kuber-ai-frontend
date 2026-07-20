@@ -605,6 +605,40 @@ const CHAT_MODES = [
     { key: 'analyst', label: 'Analyst' },
 ];
 
+const _MODE_LABEL = { snap: 'Quick', analyst: 'Analyst' };
+
+// Shown after the user flips Quick <-> Analyst with a prior question — offers to
+// re-run that question in the new mode, or dismiss and ask something new.
+// Non-blocking popover that floats just above the input bar after a mode switch.
+// Tap "Run my last question" to re-fire it in the new mode, or just type a new
+// question in the input below (sending anything dismisses it).
+const ModeSwitchPrompt = ({ query, mode, onRun, onClose }) => {
+    const label = _MODE_LABEL[mode] || mode;
+    return (
+        <div className="absolute bottom-full left-0 right-0 mb-2 px-4 sm:px-6 md:px-8 z-30 pointer-events-none">
+            <div className="max-w-4xl mx-auto flex justify-center sm:justify-start">
+                <div className="pointer-events-auto w-full max-w-sm rounded-2xl border bg-white border-zinc-200 dark:bg-[#1b1a18] dark:border-zinc-700 shadow-xl">
+                    <div className="flex items-start justify-between gap-2 px-3.5 pt-3">
+                        <p className="text-[11.5px] font-semibold text-zinc-600 dark:text-zinc-300">
+                            Switched to <span className="text-zinc-900 dark:text-white font-bold">{label}</span> — run your last question, or type a new one below.
+                        </p>
+                        <button onClick={onClose} aria-label="Dismiss"
+                            className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 text-[13px] leading-none flex-shrink-0 mt-0.5">✕</button>
+                    </div>
+                    <button onClick={onRun}
+                        className="m-3 mt-2 w-[calc(100%-1.5rem)] flex items-center gap-2.5 text-left px-3 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 hover:border-[#FDD405] hover:bg-amber-50/60 dark:hover:bg-white/[0.04] transition-colors group">
+                        <span className="w-4 h-4 rounded-full border-2 border-zinc-300 dark:border-zinc-600 group-hover:border-[#FDD405] flex-shrink-0" />
+                        <span className="min-w-0">
+                            <span className="block text-[12px] font-semibold text-zinc-900 dark:text-white">Run my last question</span>
+                            <span className="block text-[11px] text-zinc-500 dark:text-zinc-400 truncate">“{query}”</span>
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // Stable unique ID generator — avoids Date.now() collisions
 const genId = () =>
     (typeof crypto !== 'undefined' && crypto.randomUUID)
@@ -685,10 +719,26 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
     const [responseMode, setResponseModeState] = useState(
         () => localStorage.getItem('kuberai_mode') || 'snap'
     );
+    const [lastQuery, setLastQuery] = useState('');                  // last question fired (for the mode-switch prompt)
+    const [modeSwitchPrompt, setModeSwitchPrompt] = useState(null);  // { query, mode } | null — shown after a mode flip
     const [scannerDrawer, setScannerDrawer] = useState(null);
+    // Collapse state lives here (not in ScannerDrawer) so the chat's right-padding
+    // tracks the drawer's actual width (300 expanded / 48 collapsed) and re-centers.
+    const [scannerCollapsed, setScannerCollapsed] = useState(() => {
+        try { return localStorage.getItem('scannerDrawerCollapsed') === '1'; } catch { return false; }
+    });
+    const toggleScannerCollapsed = () => setScannerCollapsed((c) => {
+        const next = !c;
+        try { localStorage.setItem('scannerDrawerCollapsed', next ? '1' : '0'); } catch { /* ignore */ }
+        return next;
+    });
 
     const setResponseMode = (mode) => {
         localStorage.setItem('kuberai_mode', mode);
+        // Mode actually changed and there's a prior question → offer to re-run it.
+        if (mode !== responseMode && lastQuery.trim()) {
+            setModeSwitchPrompt({ query: lastQuery, mode });
+        }
         setResponseModeState(mode);
     };
 
@@ -906,6 +956,8 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
 
         lastSendAtRef.current = now;
         lastSendTextRef.current = normalized;
+        setLastQuery(normalized);   // remember for the mode-switch "re-run same question?" prompt
+        setModeSwitchPrompt(null);  // any send dismisses the mode-switch popover
         const requestId = ++activeRequestIdRef.current;
         isLoadingRef.current = true;
         setShowScrollButton(false);
@@ -1393,7 +1445,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 <div
                     className="h-full"
                     style={{
-                        paddingRight: scannerDrawer ? '300px' : '0',
+                        paddingRight: scannerDrawer ? (scannerCollapsed ? '48px' : '300px') : '0',
                         transition: 'padding-right 0.28s cubic-bezier(0.22,1,0.36,1)',
                     }}
                 >
@@ -1402,6 +1454,8 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 {scannerDrawer && (
                     <ScannerDrawer
                         data={scannerDrawer}
+                        collapsed={scannerCollapsed}
+                        onToggleCollapsed={toggleScannerCollapsed}
                         onAnalyze={(sym) => handleSend(`Analyze ${sym}`)}
                         onClose={() => setScannerDrawer(null)}
                     />
@@ -1415,6 +1469,8 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
         {scannerDrawer && (
             <ScannerDrawer
                 data={scannerDrawer}
+                collapsed={scannerCollapsed}
+                onToggleCollapsed={toggleScannerCollapsed}
                 onAnalyze={(sym) => handleSend(`Analyze ${sym}`)}
                 onClose={() => setScannerDrawer(null)}
             />
@@ -1422,7 +1478,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
         <div
             className="flex flex-col h-full relative"
             style={{
-                paddingRight: scannerDrawer ? '300px' : '0',
+                paddingRight: scannerDrawer ? (scannerCollapsed ? '48px' : '300px') : '0',
                 transition: 'padding-right 0.28s cubic-bezier(0.22,1,0.36,1)',
             }}
         >
@@ -1538,7 +1594,16 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                         </svg>
                     </button>
                 )}
-                {/* ── Input bar — inside the card at the bottom ── */}
+                {/* ── Input bar — with the mode-switch popover floating just above it ── */}
+                <div className="relative">
+                    {modeSwitchPrompt && (
+                        <ModeSwitchPrompt
+                            query={modeSwitchPrompt.query}
+                            mode={modeSwitchPrompt.mode}
+                            onRun={() => { const q = modeSwitchPrompt.query; setModeSwitchPrompt(null); handleSend(q); }}
+                            onClose={() => setModeSwitchPrompt(null)}
+                        />
+                    )}
                 <InputBar
                     input={input}
                     setInput={setInput}
@@ -1564,6 +1629,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                     })()}
                     onHorizonChoice={(q) => handleSend(q)}
                 />
+                </div>
 
                 {/* Group disambiguation popup — when the latest AI reply asks which company
                     (e.g. "Tata Motors" → TMPV / TMCV). Selecting a chip sends its ticker. */}
