@@ -439,6 +439,15 @@ export const ScoreGrid = ({ scoreCard, managementSentiment }) => {
     ].filter(s => s.score != null);
     if (overall == null && subScores.length === 0) return null;
 
+    // Data coverage can legitimately be partial (e.g. technical/sentiment pipelines
+    // have no rows yet for a given symbol) — say so instead of implying full
+    // three-lens coverage when only one or two lenses actually contributed.
+    const overallDesc = subScores.length >= 3
+        ? "The stock's combined Kuber AI Score across all three lenses."
+        : subScores.length === 0
+            ? "Score based on limited data — technical and sentiment analysis aren't available for this stock yet."
+            : `Based on ${subScores.map(s => s.key.charAt(0) + s.key.slice(1).toLowerCase()).join(' + ')} only — the other lens${subScores.length === 1 ? 'es aren\'t' : ' isn\'t'} available for this stock yet.`;
+
     return (
         <div className={clsx('grid gap-3 grid-cols-1',
             subScores.length > 0 ? 'sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr]' : '')}>
@@ -452,7 +461,7 @@ export const ScoreGrid = ({ scoreCard, managementSentiment }) => {
                             Overall Health
                         </p>
                         <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 leading-snug">
-                            The stock's combined Kuber AI Score across all three lenses.
+                            {overallDesc}
                         </p>
                     </div>
                 </Card>
