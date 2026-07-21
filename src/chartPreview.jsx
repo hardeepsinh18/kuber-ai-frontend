@@ -5,6 +5,7 @@
 import React, { useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
 import StockChart from './components/Chat/StockChart';
+import { ThemeProvider } from './context/ThemeContext';
 import './index.css';
 
 // Deterministic PRNG so every reload renders the identical series
@@ -82,13 +83,15 @@ const ThemeRow = ({ theme }) => (
             </h2>
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                 {Object.keys(TYPE_ARIA).map((t) => (
-                    <AutoType key={t} type={t}>
-                        <StockChart
-                            chartData={chartData}
-                            symbol="MOCKSTOCK"
-                            atAGlance={theme === 'light' ? atAGlance : null}
-                        />
-                    </AutoType>
+                    <div key={t} data-testid={`chart-${theme}-${t}`}>
+                        <AutoType type={t}>
+                            <StockChart
+                                chartData={chartData}
+                                symbol="MOCKSTOCK"
+                                atAGlance={theme === 'light' ? atAGlance : null}
+                            />
+                        </AutoType>
+                    </div>
                 ))}
             </div>
         </div>
@@ -97,9 +100,30 @@ const ThemeRow = ({ theme }) => (
 
 ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>
-        <div>
-            <ThemeRow theme="light" />
-            <ThemeRow theme="dark" />
-        </div>
+        {/* StockChart calls useTheme() (for the lightweight-charts palette), which
+            throws outside a ThemeProvider — this harness renders StockChart
+            directly, so it needs its own provider just like App.jsx's does. */}
+        <ThemeProvider>
+            <div>
+                <ThemeRow theme="light" />
+                <ThemeRow theme="dark" />
+                {/* Dedicated target for the Playwright suite (e2e/chart.spec.js).
+                    The grid above mounts 8 StockChart/ChartPanel instances at
+                    once for visual review, and ChartPanel's dev-only
+                    window.__chartVisibleRange__ hook (see ChartPanel.jsx) is a
+                    single global — whichever instance's effect commits *last*
+                    wins the assignment. Mounting this chart last in the tree,
+                    after the whole grid, makes it deterministically the one
+                    the hook (and therefore the zoom test) observes. */}
+                <div className="bg-zinc-50 p-6">
+                    <h2 className="text-sm font-bold uppercase tracking-wide mb-3 text-zinc-600">
+                        e2e target
+                    </h2>
+                    <div className="max-w-2xl" data-testid="chart-default">
+                        <StockChart chartData={chartData} symbol="MOCKSTOCK" />
+                    </div>
+                </div>
+            </div>
+        </ThemeProvider>
     </React.StrictMode>
 );

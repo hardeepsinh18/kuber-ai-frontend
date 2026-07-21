@@ -87,7 +87,7 @@ const ComparisonAnswer = ({ content, metadata = {}, chartData = null }) => {
                                 chartData={cd}
                                 symbol={cleanSymbol(cd?.chart_metadata?.symbol) || symbols[i] || ''}
                                 variant="quick"
-                                defaultType="area"
+                                defaultType="candle"
                             />
                         </Card>
                     ))}
