@@ -20,9 +20,9 @@ export default function AuthPage() {
     const { theme } = useTheme();
     const isDark = theme === 'dark';
 
-    const [email,   setEmail]   = useState('');
-    const [phone,   setPhone]   = useState('');
-    const [updates, setUpdates] = useState(true);
+    const [email,    setEmail]    = useState('');
+    const [password, setPassword] = useState('');
+    const [updates,  setUpdates]  = useState(true);
     const [error,   setError]   = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -34,9 +34,12 @@ export default function AuthPage() {
         e.preventDefault();
         if (!email.trim()) { setError('Please enter your email address'); return; }
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError('Please enter a valid email'); return; }
+        if (!password) { setError('Please enter your password'); return; }
         setError(''); setLoading(true);
         try {
-            await signInWithEmail(email.trim(), phone || 'demo1234');
+            // QA-C-001: real Cognito email+password sign-in — no phone-as-password,
+            // no hardcoded 'demo1234' fallback.
+            await signInWithEmail(email.trim(), password);
             navigate('/', { replace: true });
         } catch (err) {
             setError(err.message || 'Something went wrong');
@@ -47,8 +50,8 @@ export default function AuthPage() {
         setLoading(true);
         try {
             if (!supabaseConfigured) {
-                await signInWithEmail('google.user@gmail.com', 'demo1234');
-                navigate('/', { replace: true });
+                // QA-C-001: no fake/hardcoded login when auth isn't configured.
+                setError('Sign-in is not available right now. Please try again later.');
                 return;
             }
             const r = await signInWithGoogle();
@@ -148,26 +151,26 @@ export default function AuthPage() {
                             />
                         </div>
 
-                        {/* Phone */}
+                        {/* Password */}
                         <div>
                             <label className="block text-[11px] font-semibold uppercase tracking-widest mb-2" style={{ color: labelColor }}>
-                                Phone <span className="normal-case font-normal" style={{ color: isDark ? '#3f3f46' : '#a1a1aa' }}>(optional)</span>
+                                Password
                             </label>
-                            <div style={{
-                                display: 'flex', alignItems: 'center',
-                                background: inputBg,
-                                border: '1px solid rgba(253,212,5,0.20)',
-                                borderRadius: 10, overflow: 'hidden',
-                            }}
-                                onFocusCapture={e => e.currentTarget.style.borderColor = 'rgba(253,212,5,0.60)'}
-                                onBlurCapture={e => e.currentTarget.style.borderColor = 'rgba(253,212,5,0.20)'}>
-                                <span style={{ padding: '11px 10px 11px 14px', fontSize: 14, color: labelColor, borderRight: '1px solid rgba(253,212,5,0.12)', flexShrink: 0 }}>+91</span>
-                                <input type="tel" value={phone}
-                                    onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                                    placeholder="98765 43210"
-                                    style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: inputColor, fontSize: 14, padding: '11px 14px' }}
-                                />
-                            </div>
+                            <input
+                                type="password"
+                                value={password}
+                                onChange={e => { setPassword(e.target.value); setError(''); }}
+                                placeholder="••••••••"
+                                autoComplete="current-password"
+                                style={{
+                                    width: '100%', padding: '11px 14px', boxSizing: 'border-box',
+                                    background: inputBg,
+                                    border: '1px solid rgba(253,212,5,0.20)',
+                                    borderRadius: 10, color: inputColor, fontSize: 14, outline: 'none',
+                                }}
+                                onFocus={e => e.target.style.borderColor = 'rgba(253,212,5,0.60)'}
+                                onBlur={e => e.target.style.borderColor = 'rgba(253,212,5,0.20)'}
+                            />
                         </div>
 
                         {error && (
