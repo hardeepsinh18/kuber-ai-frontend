@@ -81,6 +81,18 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
         };
     }, [patternOverlays]);
 
+    // Candlestick pattern circle (Hammer, Engulfing, Harami, Star, ...) — highlights
+    // the exact candle(s) the backend flagged via ohlc_bars. Independent of
+    // patternAnn above (that's chart-pattern geometry only); the pattern's NAME
+    // and date live in the caption cell next to the chart (PatternSection), not
+    // on the chart itself, same "no text on the chart" convention as patternAnn.
+    const candlestickAnn = useMemo(() => {
+        const cs = (patternOverlays?.candlestick_details || [])
+            .find((p) => (p?.bars_ago ?? 0) <= MAX_PATTERN_AGE_DAYS && Array.isArray(p?.ohlc_bars) && p.ohlc_bars.length) || null;
+        if (!cs) return { has: false, dates: null };
+        return { has: true, dates: new Set(cs.ohlc_bars.map((b) => String(b.date).slice(0, 10))) };
+    }, [patternOverlays]);
+
     // Auto-frame the pattern: when one is present the chart opens on its window
     // (+~35% context) instead of the default 3M, so the shape fills the frame.
     // The range buttons still override.
@@ -119,6 +131,7 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
             bars={bars}
             renko={renko}
             patternAnn={patternAnn}
+            candlestickAnn={candlestickAnn}
             range={range}
             theme={theme}
             className="w-full h-full"

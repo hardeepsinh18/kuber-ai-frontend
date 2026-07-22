@@ -212,11 +212,31 @@ const PatternSection = ({ patternSummary, chartData, symbolLabel, indicatorsTabl
     const _slice = Array.isArray(cp?.chart_slice) ? cp.chart_slice : [];
     const _brkDate = _barsAgo > 0 && _slice.length
         ? _fmtDate(_slice[_slice.length - 1 - _barsAgo]?.date) : null;
+
+    // No classical chart pattern (e.g. Head & Shoulders needs ≥60 bars and often
+    // isn't present) -> fall back to the candlestick pattern (Hammer, Harami,
+    // Engulfing, ...) circled on the chart above. Its date comes straight off the
+    // last candle in ohlc_bars (the backend already attaches real dates there),
+    // no bars_ago math needed like the chart-pattern case.
+    const csp = !cp
+        ? (Array.isArray(patternSummary.candlestick_details) ? patternSummary.candlestick_details : [])
+            .find(p => p && Array.isArray(p.ohlc_bars) && p.ohlc_bars.length) || null
+        : null;
+    const _cspDate = csp ? _fmtDate(csp.ohlc_bars[csp.ohlc_bars.length - 1]?.date) : null;
+
     const patternCellText = cp
         ? [
             cp.pattern || cp.name || 'Pattern',
             cp.direction || null,
             _barsAgo > 0 ? (_brkDate ? `broke out ${_brkDate}` : `${_barsAgo} bars ago`) : 'forming',
+          ].filter(Boolean).join(' · ')
+        : csp
+        ? [
+            csp.name,
+            csp.direction || null,
+            (csp.bars_ago ?? 0) > 0
+                ? (_cspDate ? `formed ${_cspDate}` : `${csp.bars_ago} bars ago`)
+                : (_cspDate ? `forming — ${_cspDate}` : 'forming'),
           ].filter(Boolean).join(' · ')
         : summaryText;
     const volumeCellText = volRow
