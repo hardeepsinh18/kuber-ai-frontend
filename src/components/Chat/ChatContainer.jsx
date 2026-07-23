@@ -711,6 +711,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
     const [error, setError] = useState(null);
     const [streamingMessageId, setStreamingMessageId] = useState(null); // Track which message is streaming
     const [dismissedDisambigId, setDismissedDisambigId] = useState(null); // AI message id whose clarification popup the user dismissed
+    const [freshDisambigId, setFreshDisambigId] = useState(null); // AI message id of a disambiguation received THIS session (popup auto-shows only for these, never for reloaded history)
     const [showThinking, setShowThinking] = useState(false); // Show thinking paths
     const [thinkingSteps, setThinkingSteps] = useState([]); // Store thinking steps
     const [startTime, setStartTime] = useState(null); // Track request start time
@@ -1355,6 +1356,15 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 responseMode,
             }]);
 
+            // Auto-show the group-clarification picker only for THIS freshly-received
+            // disambiguation. On a page reload the last message may still be a
+            // disambiguation, but freshDisambigId resets to null on mount, so the popup
+            // never flashes over the loading screen — the restored bubble just shows the
+            // trimmed question instead.
+            if (metadata?.disambiguation?.suggestions?.length) {
+                setFreshDisambigId(aiMessageId);
+            }
+
             // MessageBubble calls onStreamingDone when its animation finishes.
             // Safety fallback clears streaming state if the callback never fires (45s max).
             clearStreamingTimeout();
@@ -1464,12 +1474,15 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
         );
     }
 
-    // Which AI message currently owns an active (non-dismissed) group-clarification
-    // popup. When set, that message's bubble shows only the intro question — the
-    // interactive picker replaces the redundant numbered list rendered as text.
+    // Which AI message should show the interactive clarification picker right now:
+    // the latest AI reply that is a disambiguation, was received THIS session
+    // (freshDisambigId — never a reloaded one), and hasn't been dismissed. The
+    // redundant numbered list in the bubble text is trimmed by MessageBubble in all
+    // cases, independent of this.
     const activeClarificationId = (() => {
         if (isLoading) return null;
         const lastAI = [...messages].reverse().find(m => m.role === 'ai');
+        if (!lastAI || lastAI.id !== freshDisambigId) return null;
         const d = lastAI?.metadata?.disambiguation;
         if (!d || !d.ambiguous || !Array.isArray(d.suggestions) || d.suggestions.length === 0) return null;
         if (dismissedDisambigId === lastAI.id) return null;
@@ -1552,7 +1565,6 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                                 messageId={msg.role === 'ai' ? msg.id : null}
                                 onFeedback={msg.role === 'ai' ? handleFeedback : null}
                                 responseMode={msg.role === 'ai' ? (msg.responseMode || null) : null}
-                                clarificationActive={msg.id === activeClarificationId}
                             />
 
                             {/* Retry — re-send the failed query so the user never loses it */}

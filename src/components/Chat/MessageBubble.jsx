@@ -574,21 +574,30 @@ const FollowUpChips = ({ chips, onClick }) => (
     </div>
 );
 
-const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, isScannerResult = false, chartData = null, metadata = {}, signal = null, patternSummary = null, technicalSummary = null, indicatorsTable = null, scoreCard = null, managementSentiment = null, annualReportIntelligence = null, companyFilings = null, recentDevelopments = null, aiTake = null, suggestedFollowUps = null, newsHeadlines = null, queryIntent = 'full', onFollowUpClick = null, onStreamingDone = null, messageId = null, onFeedback = null, responseMode = null, clarificationActive = false }) => {
+const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, isScannerResult = false, chartData = null, metadata = {}, signal = null, patternSummary = null, technicalSummary = null, indicatorsTable = null, scoreCard = null, managementSentiment = null, annualReportIntelligence = null, companyFilings = null, recentDevelopments = null, aiTake = null, suggestedFollowUps = null, newsHeadlines = null, queryIntent = 'full', onFollowUpClick = null, onStreamingDone = null, messageId = null, onFeedback = null, responseMode = null }) => {
     const isUser = role === 'user';
 
-    // When the interactive group-clarification picker is showing for this message,
-    // the bubble shouldn't also render the redundant numbered company list + "reply
-    // with the ticker" hint behind it. Keep just the intro question (everything up to
-    // the first "1." list item) so there's clean context above the picker. Once the
-    // popup is dismissed (clarificationActive → false) the full text renders as a
-    // fallback so the options are never lost.
+    // Group-disambiguation replies ("HDFC" → HDFC Bank / AMC / Life) carry the full
+    // numbered company list + "reply with the ticker" hint in their text AND a
+    // metadata.disambiguation payload that drives the interactive picker. Rendering
+    // the numbered list as text is pure duplication (the picker, or a re-ask, covers
+    // selection), so whenever a message is a disambiguation we keep only the intro
+    // question — everything up to the first "1." list item. Applies in every state
+    // (picker open, dismissed, or restored on reload) so the list never reappears.
+    // Only a GENUINE "which one did you mean" clarification (no symbol resolved —
+    // ambiguous and NOT auto_resolved) carries the numbered list as its whole answer.
+    // A medium-confidence auto-resolve attaches a disambiguation too (for "switch
+    // company" chips) but its content is a real stock answer that may legitimately
+    // contain a numbered list — never trim that.
+    const _dis = metadata?.disambiguation;
+    const _isDisambig = !isUser && _dis && _dis.ambiguous && !_dis.auto_resolved
+        && Array.isArray(_dis.suggestions) && _dis.suggestions.length >= 1;
     content = React.useMemo(() => {
-        if (!clarificationActive || typeof content !== 'string') return content;
+        if (!_isDisambig || typeof content !== 'string') return content;
         const lines = content.split('\n');
         const cut = lines.findIndex(l => /^\s*\d+[.)]\s/.test(l));
         return (cut > 0 ? lines.slice(0, cut) : lines).join('\n').trim();
-    }, [content, clarificationActive]);
+    }, [content, _isDisambig]);
 
     // Pull the "> Verdict:" blockquote out of the FULL response before the
     // typewriter starts: the API returns the complete answer up front (like
