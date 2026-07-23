@@ -6,23 +6,26 @@ import { getScannerSignal } from '../../lib/scannerSignal';
 const API_BASE = getApiBase();
 const SCANNER_ENDPOINT = `${API_BASE}/api/v1/scanner`;
 
+// Must match the backend's canonical pattern names verbatim (PATTERN_RELIABILITY
+// keys in scanners/engine.py / pattern_engine/detectors.py) — the API now filters
+// by exact string match, not a keyword. There are 12 detectors, not 15; the
+// engine detects one combined "Flag / Pennant" pattern, not 4 separate
+// bull/bear flag/pennant variants.
 const CHART_PATTERNS = [
-    { name: 'Head & Shoulders'       },
-    { name: 'Inverse H&S'            },
-    { name: 'Double Top'             },
-    { name: 'Double Bottom'          },
-    { name: 'Ascending Triangle'     },
-    { name: 'Descending Triangle'    },
-    { name: 'Symmetrical Triangle'   },
-    { name: 'Rising Wedge'           },
-    { name: 'Falling Wedge'          },
-    { name: 'Bull Flag'              },
-    { name: 'Bear Flag'              },
-    { name: 'Bull Pennant'           },
-    { name: 'Bear Pennant'           },
-    { name: 'Rounding Bottom'        },
-    { name: 'Channel Breakout'       },
+    { name: 'Head & Shoulders'          },
+    { name: 'Inverse Head & Shoulders'  },
+    { name: 'Double Top'                },
+    { name: 'Double Bottom'             },
+    { name: 'Ascending Triangle'        },
+    { name: 'Descending Triangle'       },
+    { name: 'Symmetrical Triangle'      },
+    { name: 'Rising Wedge'              },
+    { name: 'Falling Wedge'             },
+    { name: 'Flag / Pennant'            },
+    { name: 'Rounding Bottom'           },
+    { name: 'Channel Breakout'          },
 ];
+const CHART_PATTERN_NAMES = new Set(CHART_PATTERNS.map((p) => p.name));
 
 const CANDLESTICK_PATTERNS = [
     { name: 'Morning Star'           },
@@ -74,24 +77,20 @@ const CONFLICTS = {
     'Hammer':                 new Set(['Hanging Man', 'Shooting Star', 'Evening Star', 'Bearish Engulfing']),
     'Hanging Man':            new Set(['Hammer', 'Morning Star']),
     'Shooting Star':          new Set(['Hammer', 'Morning Star']),
-    // Chart pattern opposites
-    'Head & Shoulders':       new Set(['Inverse H&S', 'Double Bottom', 'Rounding Bottom', 'Bull Flag', 'Bull Pennant', 'Falling Wedge']),
-    'Inverse H&S':            new Set(['Head & Shoulders', 'Double Top', 'Bear Flag', 'Bear Pennant', 'Rising Wedge']),
-    'Double Top':             new Set(['Double Bottom', 'Inverse H&S', 'Bull Flag', 'Bull Pennant', 'Falling Wedge']),
-    'Double Bottom':          new Set(['Double Top', 'Head & Shoulders', 'Bear Flag', 'Bear Pennant', 'Rising Wedge']),
-    'Rising Wedge':           new Set(['Falling Wedge', 'Inverse H&S', 'Double Bottom', 'Bull Flag', 'Bull Pennant']),
-    'Falling Wedge':          new Set(['Rising Wedge', 'Head & Shoulders', 'Double Top', 'Bear Flag', 'Bear Pennant']),
-    'Bull Flag':              new Set(['Bear Flag', 'Head & Shoulders', 'Double Top', 'Rising Wedge']),
-    'Bear Flag':              new Set(['Bull Flag', 'Inverse H&S', 'Double Bottom', 'Falling Wedge']),
-    'Bull Pennant':           new Set(['Bear Pennant', 'Head & Shoulders', 'Double Top', 'Rising Wedge']),
-    'Bear Pennant':           new Set(['Bull Pennant', 'Inverse H&S', 'Double Bottom', 'Falling Wedge']),
+    // Chart pattern opposites (12 real detectors — see CHART_PATTERNS above)
+    'Head & Shoulders':          new Set(['Inverse Head & Shoulders', 'Double Bottom', 'Rounding Bottom', 'Falling Wedge']),
+    'Inverse Head & Shoulders':  new Set(['Head & Shoulders', 'Double Top', 'Rising Wedge']),
+    'Double Top':                new Set(['Double Bottom', 'Inverse Head & Shoulders', 'Falling Wedge']),
+    'Double Bottom':             new Set(['Double Top', 'Head & Shoulders', 'Rising Wedge']),
+    'Rising Wedge':              new Set(['Falling Wedge', 'Inverse Head & Shoulders', 'Double Bottom']),
+    'Falling Wedge':             new Set(['Rising Wedge', 'Head & Shoulders', 'Double Top']),
 };
 
 const SCANNER_EMOJI = {
     // Chart patterns
     'Chart Patterns':            '📐',
     'Head & Shoulders':          '🏔️',
-    'Inverse H&S':               '🌊',
+    'Inverse Head & Shoulders':  '🌊',
     'Double Top':                '🔝',
     'Double Bottom':             '🏁',
     'Ascending Triangle':        '📐',
@@ -99,10 +98,7 @@ const SCANNER_EMOJI = {
     'Symmetrical Triangle':      '🔺',
     'Rising Wedge':              '📈',
     'Falling Wedge':             '📉',
-    'Bull Flag':                 '🚩',
-    'Bear Flag':                 '🏴',
-    'Bull Pennant':              '⛳',
-    'Bear Pennant':              '🎌',
+    'Flag / Pennant':            '🚩',
     'Rounding Bottom':           '🌅',
     'Channel Breakout':          '💥',
     // Candlestick patterns
@@ -247,6 +243,13 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
         setError('');
 
         // Launch all jobs in parallel
+        // A specific chart-pattern chip (e.g. "Double Top") isn't its own scanner —
+        // it's a filter on the single "Chart Patterns" scanner. Translate it here
+        // so the API always gets a real scanner name.
+        const toRequestBody = (name) => CHART_PATTERN_NAMES.has(name)
+            ? { scanner: 'Chart Patterns', pattern: name, universe }
+            : { scanner: name, universe };
+
         let jobs;
         try {
             const launches = await Promise.all(
@@ -254,7 +257,7 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                     fetch(SCANNER_ENDPOINT, {
                         method:  'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body:    JSON.stringify({ scanner: name, universe }),
+                        body:    JSON.stringify(toRequestBody(name)),
                     }).then(r => r.json())
                 )
             );
@@ -521,6 +524,11 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                                     <ScannerBtn name="Chart Patterns"
                                         hoverClass="hover:border-[#FDD405]/50 hover:bg-[#FDD405]/8 hover:text-zinc-900 dark:hover:bg-[#FDD405]/8 dark:hover:border-[#FDD405]/50 dark:hover:text-white"
                                     />
+                                    {CHART_PATTERNS.map(s => (
+                                        <ScannerBtn key={s.name} name={s.name}
+                                            hoverClass="hover:border-[#FDD405]/50 hover:bg-[#FDD405]/8 hover:text-zinc-900 dark:hover:bg-[#FDD405]/8 dark:hover:border-[#FDD405]/50 dark:hover:text-white"
+                                        />
+                                    ))}
                                 </div>
                             </div>
                             {/* Candlestick Patterns sub-header */}
