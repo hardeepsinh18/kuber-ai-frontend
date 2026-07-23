@@ -776,7 +776,7 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                             <path d="M0 0 C0 10 8 14 10 16 L0 16 Z" fill="#FDD405"/>
                         </svg>
                     </div>
-                    <div className="mt-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-150">
+                    <div className="mt-1">
                         <CopyButton text={content} />
                     </div>
                 </div>
