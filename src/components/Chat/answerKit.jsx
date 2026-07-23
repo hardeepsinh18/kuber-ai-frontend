@@ -282,9 +282,6 @@ const HorizonRow = ({ tenor, v, cells }) => {
             <div className="px-4 py-3">
                 <p className="text-[9px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-500 mb-1">{tenor}</p>
                 <p className={clsx('text-[18px] font-black leading-none', _verdictTone(v?.verdict))}>{v?.verdict || '—'}</p>
-                {v?.confidence != null && (
-                    <p className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 mt-1.5">Confidence {v.confidence}%</p>
-                )}
             </div>
             {cells.map(({ label, value }) => (
                 <div key={label} className="px-4 py-3">

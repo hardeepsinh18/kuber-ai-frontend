@@ -5,7 +5,6 @@ import InputBar from './InputBar';
 import GroupClarificationPopup from './GroupClarificationPopup';
 import StartScreen from './StartScreen';
 import ThinkingPaths from './ThinkingPaths';
-import SourcesPanel from './SourcesPanel';
 import ScannerDrawer from './ScannerDrawer';
 import { useAuth } from '../../context/AuthContext';
 import { useChatHistory } from '../../context/ChatHistoryContext';
@@ -1533,10 +1532,6 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                                         processingTime={msg.processingTime || 0}
                                     />
                                 </div>
-                            )}
-
-                            {msg.role === 'ai' && (
-                                <SourcesPanel sourceDocuments={msg.sourceDocuments || []} />
                             )}
 
                             <MessageBubble
