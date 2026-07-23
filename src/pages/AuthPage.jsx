@@ -16,33 +16,86 @@ const GoogleIcon = () => (
 
 export default function AuthPage() {
     const navigate = useNavigate();
-    const { signInWithEmail, signInWithGoogle, isAuthenticated, supabaseConfigured } = useAuth();
+    const { signInWithEmail, signUpWithEmail, confirmSignUpCode, resendConfirmationCode, signInWithGoogle, isAuthenticated, supabaseConfigured } = useAuth();
     const { theme } = useTheme();
     const isDark = theme === 'dark';
 
+    // mode: 'signin' | 'signup' | 'confirm' (confirm = enter the emailed code after signup)
+    const [mode,      setMode]    = useState('signin');
     const [email,    setEmail]    = useState('');
     const [password, setPassword] = useState('');
+    const [fullName, setFullName] = useState('');
+    const [confirmCode, setConfirmCode] = useState('');
     const [updates,  setUpdates]  = useState(true);
     const [error,   setError]   = useState('');
+    const [info,    setInfo]    = useState('');
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         if (isAuthenticated) navigate('/', { replace: true });
     }, [isAuthenticated, navigate]);
 
+    const switchMode = (m) => { setMode(m); setError(''); setInfo(''); };
+
     const handleContinue = async (e) => {
         e.preventDefault();
         if (!email.trim()) { setError('Please enter your email address'); return; }
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError('Please enter a valid email'); return; }
         if (!password) { setError('Please enter your password'); return; }
-        setError(''); setLoading(true);
+        // Matches the Cognito user pool's password policy: 8+ chars, upper, lower, number, symbol.
+        if (mode === 'signup' && (
+            password.length < 8 ||
+            !/[A-Z]/.test(password) ||
+            !/[a-z]/.test(password) ||
+            !/[0-9]/.test(password) ||
+            !/[^A-Za-z0-9]/.test(password)
+        )) {
+            setError('Password must be 8+ characters with an uppercase letter, lowercase letter, number, and symbol.');
+            return;
+        }
+        setError(''); setInfo(''); setLoading(true);
         try {
-            // QA-C-001: real Cognito email+password sign-in — no phone-as-password,
-            // no hardcoded 'demo1234' fallback.
+            if (mode === 'signup') {
+                const res = await signUpWithEmail(email.trim(), password, { full_name: fullName.trim() });
+                if (res?.isSignUpComplete) {
+                    // Pool auto-confirms — no code step needed, go straight to session.
+                    await signInWithEmail(email.trim(), password);
+                    navigate('/', { replace: true });
+                } else {
+                    setMode('confirm');
+                    setInfo('We emailed you a confirmation code.');
+                }
+            } else {
+                // QA-C-001: real Cognito email+password sign-in — no phone-as-password,
+                // no hardcoded 'demo1234' fallback.
+                await signInWithEmail(email.trim(), password);
+                navigate('/', { replace: true });
+            }
+        } catch (err) {
+            setError(err.message || 'Something went wrong');
+        } finally { setLoading(false); }
+    };
+
+    const handleConfirm = async (e) => {
+        e.preventDefault();
+        if (!confirmCode.trim()) { setError('Please enter the confirmation code'); return; }
+        setError(''); setInfo(''); setLoading(true);
+        try {
+            await confirmSignUpCode(email.trim(), confirmCode.trim());
             await signInWithEmail(email.trim(), password);
             navigate('/', { replace: true });
         } catch (err) {
-            setError(err.message || 'Something went wrong');
+            setError(err.message || 'Invalid or expired code');
+        } finally { setLoading(false); }
+    };
+
+    const handleResend = async () => {
+        setError(''); setInfo(''); setLoading(true);
+        try {
+            await resendConfirmationCode(email.trim());
+            setInfo('Code resent — check your email.');
+        } catch (err) {
+            setError(err.message || 'Could not resend code');
         } finally { setLoading(false); }
     };
 
@@ -126,7 +179,113 @@ export default function AuthPage() {
 
                     <div style={{ height: 3, background: 'linear-gradient(90deg, transparent 0%, #FDD405 30%, #FDD405 70%, transparent 100%)', opacity: 0.9 }} />
 
+                    {mode !== 'confirm' && (
+                        <div style={{ display: 'flex', gap: 4, margin: '18px 24px 0', padding: 3, borderRadius: 10, background: inputBg }}>
+                            {['signin', 'signup'].map(m => (
+                                <button key={m} type="button" onClick={() => switchMode(m)}
+                                    style={{
+                                        flex: 1, padding: '8px 0', borderRadius: 8, border: 'none',
+                                        fontSize: 12.5, fontWeight: 700, cursor: 'pointer',
+                                        background: mode === m ? '#FDD405' : 'transparent',
+                                        color: mode === m ? '#111' : textSub,
+                                        transition: 'background 0.15s',
+                                    }}>
+                                    {m === 'signin' ? 'Sign in' : 'Create account'}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    {mode === 'confirm' ? (
+                        <form onSubmit={handleConfirm} className="p-6 flex flex-col gap-4">
+                            <p style={{ fontSize: 13, color: textSub }}>
+                                Enter the code we emailed to <span style={{ color: textMain, fontWeight: 600 }}>{email}</span>.
+                            </p>
+
+                            <div>
+                                <label className="block text-[11px] font-semibold uppercase tracking-widest mb-2" style={{ color: labelColor }}>
+                                    Confirmation code
+                                </label>
+                                <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={confirmCode}
+                                    onChange={e => { setConfirmCode(e.target.value); setError(''); }}
+                                    placeholder="123456"
+                                    autoComplete="one-time-code"
+                                    autoFocus
+                                    style={{
+                                        width: '100%', padding: '11px 14px', boxSizing: 'border-box',
+                                        background: inputBg,
+                                        border: '1px solid rgba(253,212,5,0.20)',
+                                        borderRadius: 10, color: inputColor, fontSize: 14, outline: 'none', letterSpacing: 2,
+                                    }}
+                                    onFocus={e => e.target.style.borderColor = 'rgba(253,212,5,0.60)'}
+                                    onBlur={e => e.target.style.borderColor = 'rgba(253,212,5,0.20)'}
+                                />
+                            </div>
+
+                            {error && (
+                                <p style={{ fontSize: 12, color: '#f87171', background: 'rgba(127,29,29,0.15)', border: '1px solid rgba(153,27,27,0.3)', borderRadius: 8, padding: '8px 12px' }}>
+                                    {error}
+                                </p>
+                            )}
+                            {info && !error && (
+                                <p style={{ fontSize: 12, color: '#4ade80', background: 'rgba(20,83,45,0.15)', border: '1px solid rgba(22,101,52,0.3)', borderRadius: 8, padding: '8px 12px' }}>
+                                    {info}
+                                </p>
+                            )}
+
+                            <button type="submit" disabled={loading}
+                                style={{
+                                    width: '100%', padding: '13px', background: '#FDD405',
+                                    border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700,
+                                    color: '#111', cursor: loading ? 'not-allowed' : 'pointer',
+                                    opacity: loading ? 0.6 : 1,
+                                    boxShadow: '0 4px 20px rgba(253,212,5,0.28)',
+                                }}>
+                                {loading
+                                    ? <span style={{ display: 'inline-block', width: 16, height: 16, border: '2px solid rgba(0,0,0,0.2)', borderTopColor: '#000', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                                    : 'Confirm →'}
+                            </button>
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                                <button type="button" onClick={() => switchMode('signup')} disabled={loading}
+                                    style={{ background: 'none', border: 'none', color: textSub, cursor: 'pointer', padding: 0 }}>
+                                    ← Back
+                                </button>
+                                <button type="button" onClick={handleResend} disabled={loading}
+                                    style={{ background: 'none', border: 'none', color: '#FDD405', fontWeight: 600, cursor: 'pointer', padding: 0 }}>
+                                    Resend code
+                                </button>
+                            </div>
+                        </form>
+                    ) : (
                     <form onSubmit={handleContinue} className="p-6 flex flex-col gap-4">
+
+                        {/* Full name — signup only */}
+                        {mode === 'signup' && (
+                            <div>
+                                <label className="block text-[11px] font-semibold uppercase tracking-widest mb-2" style={{ color: labelColor }}>
+                                    Full name
+                                </label>
+                                <input
+                                    type="text"
+                                    value={fullName}
+                                    onChange={e => { setFullName(e.target.value); setError(''); }}
+                                    placeholder="John Doe"
+                                    autoComplete="name"
+                                    style={{
+                                        width: '100%', padding: '11px 14px', boxSizing: 'border-box',
+                                        background: inputBg,
+                                        border: '1px solid rgba(253,212,5,0.20)',
+                                        borderRadius: 10, color: inputColor, fontSize: 14, outline: 'none',
+                                    }}
+                                    onFocus={e => e.target.style.borderColor = 'rgba(253,212,5,0.60)'}
+                                    onBlur={e => e.target.style.borderColor = 'rgba(253,212,5,0.20)'}
+                                />
+                            </div>
+                        )}
 
                         {/* Email */}
                         <div>
@@ -161,7 +320,8 @@ export default function AuthPage() {
                                 value={password}
                                 onChange={e => { setPassword(e.target.value); setError(''); }}
                                 placeholder="••••••••"
-                                autoComplete="current-password"
+                                autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                                minLength={mode === 'signup' ? 8 : undefined}
                                 style={{
                                     width: '100%', padding: '11px 14px', boxSizing: 'border-box',
                                     background: inputBg,
@@ -178,6 +338,11 @@ export default function AuthPage() {
                                 {error}
                             </p>
                         )}
+                        {info && !error && (
+                            <p style={{ fontSize: 12, color: '#4ade80', background: 'rgba(20,83,45,0.15)', border: '1px solid rgba(22,101,52,0.3)', borderRadius: 8, padding: '8px 12px' }}>
+                                {info}
+                            </p>
+                        )}
 
                         {/* Continue */}
                         <button type="submit" disabled={loading}
@@ -190,7 +355,7 @@ export default function AuthPage() {
                             }}>
                             {loading
                                 ? <span style={{ display: 'inline-block', width: 16, height: 16, border: '2px solid rgba(0,0,0,0.2)', borderTopColor: '#000', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-                                : 'Continue →'}
+                                : (mode === 'signup' ? 'Create account →' : 'Continue →')}
                         </button>
 
                         {/* Divider */}
@@ -211,7 +376,7 @@ export default function AuthPage() {
                                 opacity: loading ? 0.6 : 1,
                             }}>
                             <GoogleIcon />
-                            Sign up with Google
+                            Continue with Google
                         </button>
 
                         {/* Checkbox */}
@@ -229,6 +394,7 @@ export default function AuthPage() {
                             </span>
                         </label>
                     </form>
+                    )}
                 </div>
 
                 {/* Terms */}

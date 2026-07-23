@@ -1,9 +1,12 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 // Side-effect import runs Amplify.configure(); helpers below drive the session.
 import { authConfigured, getIdToken } from '../lib/supabase';
+import { getApiBase } from '../lib/apiBase';
 import {
   signIn as cognitoSignIn,
   signUp as cognitoSignUp,
+  confirmSignUp as cognitoConfirmSignUp,
+  resendSignUpCode as cognitoResendSignUpCode,
   signInWithRedirect,
   signOut as cognitoSignOut,
   fetchAuthSession,
@@ -53,6 +56,24 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // Best-effort: ensure the RDS `users` row exists (and carries full_name) right
+  // after a real sign-in, instead of waiting for the first chat action to create
+  // it lazily. Idempotent upsert server-side, so failures here are silent —
+  // _ensure_app_user still runs on the first /chats call either way.
+  const syncUserToBackend = async () => {
+    try {
+      const session = await fetchAuthSession();
+      const token = session?.tokens?.idToken?.toString();
+      if (!token) return;
+      const fullName = session?.tokens?.idToken?.payload?.name || null;
+      await fetch(`${getApiBase()}/api/v1/auth/sync`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ full_name: fullName }),
+      });
+    } catch (_) { /* best-effort */ }
+  };
+
   useEffect(() => {
     if (!authConfigured) {
       // Demo mode — restore from localStorage (unchanged behavior when unconfigured)
@@ -72,6 +93,9 @@ export function AuthProvider({ children }) {
       switch (payload.event) {
         case 'signedIn':
         case 'signInWithRedirect':
+          syncFromCognito();
+          syncUserToBackend();
+          break;
         case 'tokenRefresh':
           syncFromCognito();
           break;
@@ -104,7 +128,18 @@ export function AuthProvider({ children }) {
       return demoUser;
     }
     const res = await cognitoSignIn({ username: email, password });
+    if (!res?.isSignedIn) {
+      // Amplify v6 resolves (doesn't throw) when an extra step is required —
+      // e.g. an unconfirmed signup or a forced password reset. Surface that
+      // instead of silently leaving the caller with no session.
+      const step = res?.nextStep?.signInStep;
+      if (step === 'CONFIRM_SIGN_UP') {
+        throw new Error('Please confirm your email before signing in.');
+      }
+      throw new Error(step ? `Additional step required: ${step}` : 'Sign-in did not complete. Please try again.');
+    }
     await syncFromCognito();
+    await syncUserToBackend();
     return res;
   };
 
@@ -123,6 +158,18 @@ export function AuthProvider({ children }) {
       options: { userAttributes: { email, ...(metadata.full_name ? { name: metadata.full_name } : {}) } },
     });
     return res;
+  };
+
+  // Completes signup with the code Cognito emailed. Does NOT sign the user in —
+  // callers should follow a successful confirm with signInWithEmail.
+  const confirmSignUpCode = async (email, code) => {
+    if (!authConfigured) return { isSignUpComplete: true };
+    return cognitoConfirmSignUp({ username: email, confirmationCode: code });
+  };
+
+  const resendConfirmationCode = async (email) => {
+    if (!authConfigured) return;
+    await cognitoResendSignUpCode({ username: email });
   };
 
   const signInWithGoogle = async () => {
@@ -169,6 +216,8 @@ export function AuthProvider({ children }) {
     accessToken: idToken,
     signInWithEmail,
     signUpWithEmail,
+    confirmSignUpCode,
+    resendConfirmationCode,
     signInWithGoogle,
     signOut,
     refreshSession,
