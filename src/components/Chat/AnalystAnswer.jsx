@@ -1,7 +1,5 @@
 import React from 'react';
 import { clsx } from 'clsx';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { Gauge, PieChart, Newspaper, ChevronDown, ChevronUp, ExternalLink, BookText, Mic2, BarChart3, Megaphone, FileText } from 'lucide-react';
 import StockChart from './StockChart';
 import { useStreamingText } from '../../hooks/useStreamingText';
@@ -105,13 +103,9 @@ const verdictSummary = (verdictText, content, signal) =>
     || (Array.isArray(signal?.why) && signal.why.length ? signal.why.join(' ') : null);
 
 const WhyThisVerdict = ({ verdictText, content, signal, typedSummary = null, caret = false }) => {
-    const [open, setOpen] = React.useState(false);
     const summary = verdictSummary(verdictText, content, signal);
-    const hasFull = typeof content === 'string' && content.trim().length > (summary || '').length + 80;
-    if (!summary && !hasFull) return null;
+    if (!summary) return null;
 
-    // While typing, render the partial text and hide "Read full analysis" — offering to
-    // expand an analysis that is still appearing reads as broken.
     const shown = typedSummary != null ? typedSummary : summary;
     const typing = typedSummary != null && typedSummary !== summary;
 
@@ -125,23 +119,6 @@ const WhyThisVerdict = ({ verdictText, content, signal, typedSummary = null, car
                         <span className="inline-block w-[2px] h-[13px] ml-0.5 -mb-[1px] bg-amber-500 dark:bg-[#FDD405] animate-pulse" />
                     )}
                 </div>
-            )}
-            {hasFull && !typing && (
-                <>
-                    {open && (
-                        <div className="mt-3 pt-3 border-t border-zinc-100 dark:border-zinc-800">
-                            <ReactMarkdown remarkPlugins={[remarkGfm]} components={proseComponents}>
-                                {content}
-                            </ReactMarkdown>
-                        </div>
-                    )}
-                    <button
-                        onClick={() => setOpen(o => !o)}
-                        className="mt-2.5 inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-[0.15em]
-                                   text-zinc-400 dark:text-zinc-500 hover:text-amber-600 dark:hover:text-[#FDD405] transition-colors">
-                        {open ? <>Hide full analysis <ChevronUp size={11} /></> : <>Read full analysis <ChevronDown size={11} /></>}
-                    </button>
-                </>
             )}
         </Card>
     );
