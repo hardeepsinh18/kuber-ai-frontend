@@ -1619,7 +1619,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                         </svg>
                     </button>
                 )}
-                {/* ── Input bar — with the mode-switch popover floating just above it ── */}
+                {/* ── Input bar — with the mode-switch popover / disambiguation picker anchored just above it ── */}
                 <div className="relative">
                     {modeSwitchPrompt && (
                         <ModeSwitchPrompt
@@ -1629,6 +1629,27 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                             onClose={() => setModeSwitchPrompt(null)}
                         />
                     )}
+                    {/* Group disambiguation picker — anchored to the top of the composer so it
+                        reads as rising out of the input box (matches its max-w-3xl width). */}
+                    {(() => {
+                        if (!activeClarificationId) return null;
+                        const lastAI = messages.find(m => m.id === activeClarificationId);
+                        const d = lastAI?.metadata?.disambiguation;
+                        if (!d) return null;
+                        return (
+                            <div className="absolute bottom-full inset-x-0 z-40 px-4 mb-2 pointer-events-none">
+                                <div className="w-full max-w-3xl mx-auto pointer-events-auto">
+                                    <GroupClarificationPopup
+                                        groupName={d.group_name}
+                                        candidates={d.suggestions}
+                                        disabled={isLoading}
+                                        onSelect={(ticker) => { setDismissedDisambigId(lastAI.id); handleSend(ticker); }}
+                                        onDismiss={() => setDismissedDisambigId(lastAI.id)}
+                                    />
+                                </div>
+                            </div>
+                        );
+                    })()}
                 <InputBar
                     input={input}
                     setInput={setInput}
@@ -1655,24 +1676,6 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                     onHorizonChoice={(q) => handleSend(q)}
                 />
                 </div>
-
-                {/* Group disambiguation popup — when the latest AI reply asks which company
-                    (e.g. "Tata Motors" → TMPV / TMCV). Selecting a chip sends its ticker. */}
-                {(() => {
-                    if (!activeClarificationId) return null;
-                    const lastAI = messages.find(m => m.id === activeClarificationId);
-                    const d = lastAI?.metadata?.disambiguation;
-                    if (!d) return null;
-                    return (
-                        <GroupClarificationPopup
-                            groupName={d.group_name}
-                            candidates={d.suggestions}
-                            disabled={isLoading}
-                            onSelect={(ticker) => { setDismissedDisambigId(lastAI.id); handleSend(ticker); }}
-                            onDismiss={() => setDismissedDisambigId(lastAI.id)}
-                        />
-                    );
-                })()}
             </div>
         </div>
         </>
