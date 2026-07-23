@@ -574,8 +574,21 @@ const FollowUpChips = ({ chips, onClick }) => (
     </div>
 );
 
-const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, isScannerResult = false, chartData = null, metadata = {}, signal = null, patternSummary = null, technicalSummary = null, indicatorsTable = null, scoreCard = null, managementSentiment = null, annualReportIntelligence = null, companyFilings = null, recentDevelopments = null, aiTake = null, suggestedFollowUps = null, newsHeadlines = null, queryIntent = 'full', onFollowUpClick = null, onStreamingDone = null, messageId = null, onFeedback = null, responseMode = null }) => {
+const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, isScannerResult = false, chartData = null, metadata = {}, signal = null, patternSummary = null, technicalSummary = null, indicatorsTable = null, scoreCard = null, managementSentiment = null, annualReportIntelligence = null, companyFilings = null, recentDevelopments = null, aiTake = null, suggestedFollowUps = null, newsHeadlines = null, queryIntent = 'full', onFollowUpClick = null, onStreamingDone = null, messageId = null, onFeedback = null, responseMode = null, clarificationActive = false }) => {
     const isUser = role === 'user';
+
+    // When the interactive group-clarification picker is showing for this message,
+    // the bubble shouldn't also render the redundant numbered company list + "reply
+    // with the ticker" hint behind it. Keep just the intro question (everything up to
+    // the first "1." list item) so there's clean context above the picker. Once the
+    // popup is dismissed (clarificationActive → false) the full text renders as a
+    // fallback so the options are never lost.
+    content = React.useMemo(() => {
+        if (!clarificationActive || typeof content !== 'string') return content;
+        const lines = content.split('\n');
+        const cut = lines.findIndex(l => /^\s*\d+[.)]\s/.test(l));
+        return (cut > 0 ? lines.slice(0, cut) : lines).join('\n').trim();
+    }, [content, clarificationActive]);
 
     // Pull the "> Verdict:" blockquote out of the FULL response before the
     // typewriter starts: the API returns the complete answer up front (like

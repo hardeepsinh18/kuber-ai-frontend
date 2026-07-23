@@ -35,9 +35,9 @@ const GroupClarificationPopup = ({ groupName, candidates, onSelect, onDismiss, d
     const shown = candidates.slice(0, 6);
 
     return createPortal(
-        <div className="fixed inset-0 z-[99999] pointer-events-none flex items-end justify-center px-4 pb-[104px]">
+        <div className="fixed inset-0 z-[99999] pointer-events-none flex items-end justify-center px-4 sm:px-6 md:px-8 pb-[100px]">
             <div
-                className="pointer-events-auto w-full max-w-3xl overflow-hidden rounded-2xl
+                className="pointer-events-auto w-full max-w-4xl overflow-hidden rounded-2xl
                            bg-white dark:bg-[#1a1a1a]
                            border border-[#FDD405]/70 dark:border-[#FDD405]/35
                            shadow-[0_16px_48px_rgba(0,0,0,0.18)] dark:shadow-[0_16px_48px_rgba(0,0,0,0.6)]

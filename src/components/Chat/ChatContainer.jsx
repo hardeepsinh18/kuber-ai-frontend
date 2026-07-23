@@ -1464,6 +1464,18 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
         );
     }
 
+    // Which AI message currently owns an active (non-dismissed) group-clarification
+    // popup. When set, that message's bubble shows only the intro question — the
+    // interactive picker replaces the redundant numbered list rendered as text.
+    const activeClarificationId = (() => {
+        if (isLoading) return null;
+        const lastAI = [...messages].reverse().find(m => m.role === 'ai');
+        const d = lastAI?.metadata?.disambiguation;
+        if (!d || !d.ambiguous || !Array.isArray(d.suggestions) || d.suggestions.length === 0) return null;
+        if (dismissedDisambigId === lastAI.id) return null;
+        return lastAI.id;
+    })();
+
     return (
         <>
         {scannerDrawer && (
@@ -1540,6 +1552,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                                 messageId={msg.role === 'ai' ? msg.id : null}
                                 onFeedback={msg.role === 'ai' ? handleFeedback : null}
                                 responseMode={msg.role === 'ai' ? (msg.responseMode || null) : null}
+                                clarificationActive={msg.id === activeClarificationId}
                             />
 
                             {/* Retry — re-send the failed query so the user never loses it */}
@@ -1634,11 +1647,10 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 {/* Group disambiguation popup — when the latest AI reply asks which company
                     (e.g. "Tata Motors" → TMPV / TMCV). Selecting a chip sends its ticker. */}
                 {(() => {
-                    if (isLoading) return null;
-                    const lastAI = [...messages].reverse().find(m => m.role === 'ai');
+                    if (!activeClarificationId) return null;
+                    const lastAI = messages.find(m => m.id === activeClarificationId);
                     const d = lastAI?.metadata?.disambiguation;
-                    if (!d || !d.ambiguous || !Array.isArray(d.suggestions) || d.suggestions.length === 0) return null;
-                    if (dismissedDisambigId === lastAI.id) return null;
+                    if (!d) return null;
                     return (
                         <GroupClarificationPopup
                             groupName={d.group_name}
