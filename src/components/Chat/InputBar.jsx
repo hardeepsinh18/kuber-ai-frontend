@@ -87,16 +87,16 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
                         </div>
 
                         {/* Bottom row: [mode toggle + scanner] left, send right */}
-                        <div className="flex items-center justify-between px-2 pb-2">
-                            <div className="flex items-center gap-2">
+                        <div className="flex items-center justify-between gap-2 px-2 pb-2">
+                            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                                 {responseMode !== undefined && setResponseMode ? (
-                                    <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-zinc-200/80 dark:bg-zinc-900">
+                                    <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-zinc-200/80 dark:bg-zinc-900 flex-shrink-0">
                                         {MODES.map((mode) => {
                                             const isActive = responseMode === mode.key;
                                             return (
                                                 <button key={mode.key} type="button" onClick={() => setResponseMode(mode.key)}
                                                     className={clsx(
-                                                        'px-3 py-1 rounded-md text-[11px] font-semibold transition-all duration-200 select-none',
+                                                        'px-2.5 sm:px-3 py-1 rounded-md text-[11px] font-semibold transition-all duration-200 select-none',
                                                         isActive ? 'text-zinc-900 shadow-sm' : 'text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300'
                                                     )}
                                                     style={isActive ? { backgroundColor: '#FDD405' } : {}}>
@@ -111,7 +111,8 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
                                 <button
                                     type="button"
                                     onClick={() => setScannerOpen(true)}
-                                    className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-semibold
+                                    title="Scanners"
+                                    className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg text-[11px] font-semibold flex-shrink-0
                                                text-zinc-500 dark:text-zinc-400
                                                hover:text-zinc-900 dark:hover:text-zinc-100
                                                border border-zinc-300/60 dark:border-zinc-700/60
@@ -119,14 +120,15 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
                                                hover:bg-amber-50/40 dark:hover:bg-amber-950/15
                                                transition-all duration-150">
                                     <ScanLine size={12} />
-                                    Scanners
+                                    <span className="hidden sm:inline">Scanners</span>
                                 </button>
 
                                 {/* IPO button — opens the IPO Corner panel */}
                                 <button
                                     type="button"
                                     onClick={() => setIpoOpen(true)}
-                                    className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-semibold
+                                    title="IPOs"
+                                    className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg text-[11px] font-semibold flex-shrink-0
                                                text-zinc-500 dark:text-zinc-400
                                                hover:text-zinc-900 dark:hover:text-zinc-100
                                                border border-zinc-300/60 dark:border-zinc-700/60
@@ -134,7 +136,7 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
                                                hover:bg-amber-50/40 dark:hover:bg-amber-950/15
                                                transition-all duration-150">
                                     <Rocket size={12} />
-                                    IPOs
+                                    <span className="hidden sm:inline">IPOs</span>
                                 </button>
                             </div>
 

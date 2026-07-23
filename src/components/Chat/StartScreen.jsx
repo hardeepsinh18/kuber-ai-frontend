@@ -81,10 +81,10 @@ const StartScreen = ({ onStartChat, onScannerResult, responseMode, setResponseMo
                                 />
 
 
-                                <div className="flex items-center justify-between px-3 pb-3 pt-1">
+                                <div className="flex items-center justify-between gap-2 px-3 pb-3 pt-1">
                                     {/* Left group: mode toggle + scanner */}
-                                    <div className="flex items-center gap-2">
-                                        <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-zinc-200/80 dark:bg-zinc-900">
+                                    <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                                        <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-zinc-200/80 dark:bg-zinc-900 flex-shrink-0">
                                             {MODES.map((mode) => {
                                                 const isActive = responseMode === mode.key;
                                                 return (
@@ -93,7 +93,7 @@ const StartScreen = ({ onStartChat, onScannerResult, responseMode, setResponseMo
                                                         type="button"
                                                         onClick={() => setResponseMode(mode.key)}
                                                         className={clsx(
-                                                            'px-3 py-1 rounded-md text-[11px] font-semibold transition-all duration-200 select-none',
+                                                            'px-2.5 sm:px-3 py-1 rounded-md text-[11px] font-semibold transition-all duration-200 select-none',
                                                             isActive
                                                                 ? 'text-zinc-900 shadow-sm'
                                                                 : 'text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300'
@@ -108,7 +108,8 @@ const StartScreen = ({ onStartChat, onScannerResult, responseMode, setResponseMo
                                         <button
                                             type="button"
                                             onClick={() => setScannerOpen(true)}
-                                            className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-semibold
+                                            title="Scanners"
+                                            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg text-[11px] font-semibold flex-shrink-0
                                                        text-zinc-500 dark:text-zinc-400
                                                        hover:text-zinc-900 dark:hover:text-zinc-100
                                                        border border-zinc-300/60 dark:border-zinc-700/60
@@ -116,12 +117,13 @@ const StartScreen = ({ onStartChat, onScannerResult, responseMode, setResponseMo
                                                        hover:bg-amber-50/40 dark:hover:bg-amber-950/15
                                                        transition-all duration-150">
                                             <ScanLine size={12} />
-                                            Scanners
+                                            <span className="hidden sm:inline">Scanners</span>
                                         </button>
                                         <button
                                             type="button"
                                             onClick={() => setIpoOpen(true)}
-                                            className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-semibold
+                                            title="IPOs"
+                                            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg text-[11px] font-semibold flex-shrink-0
                                                        text-zinc-500 dark:text-zinc-400
                                                        hover:text-zinc-900 dark:hover:text-zinc-100
                                                        border border-zinc-300/60 dark:border-zinc-700/60
@@ -129,14 +131,14 @@ const StartScreen = ({ onStartChat, onScannerResult, responseMode, setResponseMo
                                                        hover:bg-amber-50/40 dark:hover:bg-amber-950/15
                                                        transition-all duration-150">
                                             <Rocket size={12} />
-                                            IPOs
+                                            <span className="hidden sm:inline">IPOs</span>
                                         </button>
                                     </div>
                                     <button
                                         onClick={send}
                                         disabled={!input.trim()}
                                         aria-label="Send"
-                                        className="w-9 h-9 rounded-full flex items-center justify-center
+                                        className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0
                                                    bg-white dark:bg-[#111111]
                                                    disabled:opacity-20 disabled:cursor-not-allowed
                                                    hover:scale-105 active:scale-95 disabled:hover:scale-100
