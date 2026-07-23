@@ -1129,6 +1129,10 @@ const ChartPatternCard = ({ cp }) => {
 // Product rule: ~30 trading days — includes recently-triggered (broken-out) patterns, not
 // just half-formed ones. Kept in sync with StockChart's MAX_PATTERN_AGE_DAYS.
 const MAX_PATTERN_AGE_DAYS = 30;
+// Candlestick patterns are a much shorter-lived signal than a chart pattern —
+// never surface one older than 5 trading days. Kept in sync with StockChart's
+// and AnalystAnswer's MAX_CANDLESTICK_AGE_DAYS.
+const MAX_CANDLESTICK_AGE_DAYS = 5;
 
 export const PatternDetectionSection = ({ patternSummary, chartData = null }) => {
     const [open, setOpen] = React.useState(false);
@@ -1154,8 +1158,11 @@ export const PatternDetectionSection = ({ patternSummary, chartData = null }) =>
 
     // Only surface patterns formed within the last MAX_PATTERN_AGE_DAYS bars (~days).
     // Older formations (e.g. a Head & Shoulders from 115 bars ago) are stale and hidden.
+    // Candlesticks use their own, much stricter cutoff (5 bars vs 30) — they're a
+    // short-lived signal and go stale far faster than a multi-week chart pattern.
     const isRecent = (barsAgo) => (barsAgo ?? 0) <= MAX_PATTERN_AGE_DAYS;
-    const recentCandlestickNames = candlestickNames.filter(name => isRecent(detailMap[name]?.bars_ago));
+    const isRecentCandle = (barsAgo) => (barsAgo ?? 0) <= MAX_CANDLESTICK_AGE_DAYS;
+    const recentCandlestickNames = candlestickNames.filter(name => isRecentCandle(detailMap[name]?.bars_ago));
     const recentChartPatterns = chartPatternDetails.filter(cp => isRecent(cp?.bars_ago));
 
     const hasPatterns = recentCandlestickNames.length > 0 || recentChartPatterns.length > 0;

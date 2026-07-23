@@ -185,6 +185,12 @@ const prefersReducedMotion = () => {
 };
 
 /* ─── PATTERN DETECTION ──────────────────────────────────────────────────── */
+// A candlestick pattern (Hammer, Harami, Engulfing, Star, ...) is a much
+// shorter-lived signal than a chart pattern — never show one older than 5
+// trading days. Kept in sync with StockChart's MAX_CANDLESTICK_AGE_DAYS, so
+// the caption cell and the circle on the chart always agree.
+const MAX_CANDLESTICK_AGE_DAYS = 5;
+
 const PatternSection = ({ patternSummary, chartData, symbolLabel, indicatorsTable }) => {
     if (!patternSummary) return null;
     const cp = (Array.isArray(patternSummary.chart_pattern_details) ? patternSummary.chart_pattern_details : [])
@@ -222,7 +228,7 @@ const PatternSection = ({ patternSummary, chartData, symbolLabel, indicatorsTabl
     // straight off the last candle in ohlc_bars (the backend already attaches
     // real dates there) — no bars_ago math needed like the chart-pattern case.
     const csp = (Array.isArray(patternSummary.candlestick_details) ? patternSummary.candlestick_details : [])
-        .find(p => p && Array.isArray(p.ohlc_bars) && p.ohlc_bars.length) || null;
+        .find(p => p && Array.isArray(p.ohlc_bars) && p.ohlc_bars.length && (p.bars_ago ?? 0) <= MAX_CANDLESTICK_AGE_DAYS) || null;
     const _cspDate = csp ? _fmtDate(csp.ohlc_bars[csp.ohlc_bars.length - 1]?.date) : null;
     const candleCellText = csp
         ? [
