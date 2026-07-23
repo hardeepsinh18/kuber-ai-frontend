@@ -2,7 +2,7 @@ import React from 'react';
 import { clsx } from 'clsx';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, Copy, Check } from 'lucide-react';
 import { useStreamingText } from '../../hooks/useStreamingText';
 import StockChart from './StockChart';
 import FundamentalScoreCard, { PatternDetectionSection } from './FundamentalCard';
@@ -502,6 +502,57 @@ const DisclaimerBox = () => (
     </div>
 );
 
+// ChatGPT-style copy-to-clipboard button: clipboard icon that flips to a check
+// for a moment after copying. Used under the user pill (hover-revealed) and in
+// the action row at the end of every finished assistant answer.
+const CopyButton = ({ text, className }) => {
+    const [copied, setCopied] = React.useState(false);
+    const timerRef = React.useRef(null);
+    React.useEffect(() => () => clearTimeout(timerRef.current), []);
+    const handleCopy = React.useCallback(async () => {
+        const value = String(text ?? '').trim();
+        if (!value) return;
+        try {
+            if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(value);
+            } else {
+                // Non-secure-context / older WebView fallback
+                const ta = document.createElement('textarea');
+                ta.value = value;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+            }
+            setCopied(true);
+            clearTimeout(timerRef.current);
+            timerRef.current = setTimeout(() => setCopied(false), 1600);
+        } catch { /* clipboard permission denied — keep the idle icon */ }
+    }, [text]);
+    return (
+        <button
+            type="button"
+            onClick={handleCopy}
+            title={copied ? 'Copied!' : 'Copy'}
+            aria-label={copied ? 'Copied' : 'Copy message'}
+            className={clsx(
+                'inline-flex items-center justify-center w-7 h-7 rounded-md',
+                'text-zinc-400 dark:text-zinc-500',
+                'hover:text-zinc-700 dark:hover:text-zinc-200',
+                'hover:bg-zinc-100 dark:hover:bg-zinc-800',
+                'active:scale-95 transition-all duration-150',
+                className
+            )}
+        >
+            {copied
+                ? <Check size={14} className="text-emerald-500" />
+                : <Copy size={14} />}
+        </button>
+    );
+};
+
 const FollowUpChips = ({ chips, onClick }) => (
     <div className="flex flex-wrap gap-2 pt-3">
         {chips.map((label) => (
@@ -709,8 +760,8 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
     return (
         <div className="w-full mb-6">
             {isUser ? (
-                // User query — right-aligned pill
-                <div className="w-full max-w-4xl mx-auto mb-8 flex justify-end px-4 sm:px-6">
+                // User query — right-aligned pill, copy button revealed on hover (ChatGPT-style)
+                <div className="w-full max-w-4xl mx-auto mb-8 flex flex-col items-end px-4 sm:px-6 group">
                     <div className="relative inline-flex items-center px-4 py-1.5
                                     bg-[#FDD405]
                                     text-[13px] font-medium
@@ -725,6 +776,9 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                             <path d="M0 0 C0 10 8 14 10 16 L0 16 Z" fill="#FDD405"/>
                         </svg>
                     </div>
+                    <div className="mt-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-150">
+                        <CopyButton text={content} />
+                    </div>
                 </div>
             ) : isComparisonAnswer ? (
                 // Head-to-head comparison — dedicated layout, both modes
@@ -735,6 +789,9 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                         chartData={chartData}
                     />
                     {showDisclaimer && <DisclaimerBox />}
+                    <div className="flex items-center mt-2">
+                        <CopyButton text={content} />
+                    </div>
                     {Array.isArray(suggestedFollowUps) && suggestedFollowUps.length > 0 && onFollowUpClick && (
                         <FollowUpChips chips={suggestedFollowUps} onClick={onFollowUpClick} />
                     )}
@@ -778,6 +835,11 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                         />
                     )}
                     {showDisclaimer && tailVisible && <DisclaimerBox />}
+                    {tailVisible && (
+                        <div className="flex items-center mt-2">
+                            <CopyButton text={content} />
+                        </div>
+                    )}
                     {tailVisible && Array.isArray(suggestedFollowUps) && suggestedFollowUps.length > 0 && onFollowUpClick && (
                         <FollowUpChips chips={suggestedFollowUps} onClick={onFollowUpClick} />
                     )}
@@ -1229,6 +1291,13 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
 
                     {/* ── Disclaimer — amber highlighted box, always last ── */}
                     {showDisclaimer && <DisclaimerBox />}
+
+                    {/* ── Copy answer (ChatGPT-style action row) ── */}
+                    {isEffectivelyDone && (
+                        <div className="flex items-center mt-2">
+                            <CopyButton text={content} />
+                        </div>
+                    )}
 
                     {/* ── Suggested follow-up chips — bottom of response.
                         Hidden on horizon questions ("short term or long term?"):
