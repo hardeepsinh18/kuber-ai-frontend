@@ -301,6 +301,57 @@ const PatternSection = ({ patternSummary, chartData, symbolLabel, indicatorsTabl
     );
 };
 
+/* ─── RESEARCH SIGNAL BREAKDOWN (6 signals × 20) ─────────────────────────── */
+/* Renders the research-team scorecard: each signal shows its BUY / EXIT /
+   NEUTRAL call, the 20-pt contribution, and a one-line reason — so the score
+   is fully explainable instead of a black box. */
+const SIGNAL_STYLE = {
+    BUY:     { label: 'Buy',     dot: '#22c55e', chip: 'text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10' },
+    EXIT:    { label: 'Exit',    dot: '#ef4444', chip: 'text-red-600 dark:text-red-400 border-red-500/30 bg-red-500/10' },
+    NEUTRAL: { label: 'Neutral', dot: '#a1a1aa', chip: 'text-zinc-500 dark:text-zinc-400 border-zinc-400/30 bg-zinc-400/10' },
+};
+
+const SignalBreakdown = ({ signals }) => {
+    const list = Array.isArray(signals) ? signals.filter(s => s?.status && s.status !== 'UNAVAILABLE') : [];
+    if (!list.length) return null;
+    const buys = list.filter(s => s.status === 'BUY').length;
+    return (
+        <>
+            <div className="mt-4 flex items-center justify-between">
+                <MiniLabel>Signal breakdown</MiniLabel>
+                <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 tabular-nums">
+                    {buys}/{list.length} buy signals
+                </span>
+            </div>
+            <div className="mt-2 space-y-1.5">
+                {list.map((s) => {
+                    const st = SIGNAL_STYLE[s.status] || SIGNAL_STYLE.NEUTRAL;
+                    return (
+                        <div key={s.key}
+                             className="flex items-start gap-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-black/30 px-3 py-2">
+                            <span className="mt-[4px] w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: st.dot }} />
+                            <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[11.5px] font-bold text-zinc-800 dark:text-zinc-100">{s.name}</span>
+                                    <span className={clsx('px-1.5 py-[1px] rounded text-[9px] font-extrabold uppercase tracking-wider border', st.chip)}>
+                                        {st.label}
+                                    </span>
+                                    <span className="ml-auto text-[10px] font-bold tabular-nums text-zinc-400 dark:text-zinc-500">
+                                        +{s.points}
+                                    </span>
+                                </div>
+                                {s.detail && (
+                                    <p className="mt-0.5 text-[11px] leading-snug text-zinc-500 dark:text-zinc-400">{s.detail}</p>
+                                )}
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        </>
+    );
+};
+
 /* ─── TECHNICAL SCORECARD ────────────────────────────────────────────────── */
 const TechnicalScorecard = ({ tech, technicalSummary, indicatorsTable, score }) => {
     const rows = Array.isArray(indicatorsTable) ? indicatorsTable.slice(0, 8) : [];
@@ -316,8 +367,9 @@ const TechnicalScorecard = ({ tech, technicalSummary, indicatorsTable, score }) 
     const cells = rows.length
         ? rows.map(r => ({ label: r.indicator, value: r.value || '—', note: r.signal }))
         : fallbackCells;
-    const commentary = Array.isArray(tech?.commentary) ? tech.commentary.slice(0, 3) : [];
-    if (score == null && cells.length === 0 && commentary.length === 0) return null;
+    const commentary = Array.isArray(tech?.commentary) ? tech.commentary.slice(0, 5) : [];
+    const signals = Array.isArray(tech?.signals) ? tech.signals : [];
+    if (score == null && cells.length === 0 && commentary.length === 0 && signals.length === 0) return null;
 
     return (
         <Card className="p-4">
@@ -331,6 +383,7 @@ const TechnicalScorecard = ({ tech, technicalSummary, indicatorsTable, score }) 
                     </div>
                 </>
             )}
+            <SignalBreakdown signals={signals} />
             {commentary.length > 0 && (
                 <ul className="mt-3 space-y-1.5">
                     {commentary.map((t, i) => (
