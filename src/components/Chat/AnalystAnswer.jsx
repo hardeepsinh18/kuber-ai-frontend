@@ -185,6 +185,12 @@ const prefersReducedMotion = () => {
 };
 
 /* ─── PATTERN DETECTION ──────────────────────────────────────────────────── */
+// A candlestick pattern (Hammer, Harami, Engulfing, Star, ...) is a much
+// shorter-lived signal than a chart pattern — never show one older than 5
+// trading days. Kept in sync with StockChart's MAX_CANDLESTICK_AGE_DAYS, so
+// the caption cell and the circle on the chart always agree.
+const MAX_CANDLESTICK_AGE_DAYS = 5;
+
 const PatternSection = ({ patternSummary, chartData, symbolLabel, indicatorsTable }) => {
     if (!patternSummary) return null;
     const cp = (Array.isArray(patternSummary.chart_pattern_details) ? patternSummary.chart_pattern_details : [])
@@ -212,13 +218,38 @@ const PatternSection = ({ patternSummary, chartData, symbolLabel, indicatorsTabl
     const _slice = Array.isArray(cp?.chart_slice) ? cp.chart_slice : [];
     const _brkDate = _barsAgo > 0 && _slice.length
         ? _fmtDate(_slice[_slice.length - 1 - _barsAgo]?.date) : null;
+
+    // Candlestick pattern (Hammer, Harami, Engulfing, Star, ...) — the one
+    // circled on the chart above. Looked up independently of the chart pattern
+    // (cp): both can be true at once (e.g. a Double Top chart pattern AND a
+    // candlestick forming right at the breakout), and the circle on the chart
+    // renders unconditionally, so its name/date must not disappear just
+    // because a chart pattern also happens to be present. Its date comes
+    // straight off the last candle in ohlc_bars (the backend already attaches
+    // real dates there) — no bars_ago math needed like the chart-pattern case.
+    const csp = (Array.isArray(patternSummary.candlestick_details) ? patternSummary.candlestick_details : [])
+        .find(p => p && Array.isArray(p.ohlc_bars) && p.ohlc_bars.length && (p.bars_ago ?? 0) <= MAX_CANDLESTICK_AGE_DAYS) || null;
+    const _cspDate = csp ? _fmtDate(csp.ohlc_bars[csp.ohlc_bars.length - 1]?.date) : null;
+    const candleCellText = csp
+        ? [
+            csp.name,
+            csp.direction || null,
+            (csp.bars_ago ?? 0) > 0
+                ? (_cspDate ? `formed ${_cspDate}` : `${csp.bars_ago} bars ago`)
+                : (_cspDate ? `forming — ${_cspDate}` : 'forming'),
+          ].filter(Boolean).join(' · ')
+        : null;
+
+    // "Pattern" cell: the chart pattern (Double Top, H&S, ...) takes priority
+    // when present; falls back to the candlestick's own text only when there's
+    // no chart pattern, so a lone candlestick still gets a "Pattern" cell too.
     const patternCellText = cp
         ? [
             cp.pattern || cp.name || 'Pattern',
             cp.direction || null,
             _barsAgo > 0 ? (_brkDate ? `broke out ${_brkDate}` : `${_barsAgo} bars ago`) : 'forming',
           ].filter(Boolean).join(' · ')
-        : summaryText;
+        : candleCellText || summaryText;
     const volumeCellText = volRow
         ? `${volRow.value || ''}${volRow.signal ? ` — ${volRow.signal}` : ''}`.trim()
         : null;
@@ -230,8 +261,12 @@ const PatternSection = ({ patternSummary, chartData, symbolLabel, indicatorsTabl
         if (resistance != null) return `Watch ${fmtINR(resistance)} resistance`;
         return null;
     })();
+    // Only add a separate "Candle Pattern" cell when there's ALSO a chart
+    // pattern — otherwise candleCellText is already the "Pattern" cell's text
+    // above (via the fallback), and showing it twice would just duplicate it.
     const cells = [
         patternCellText && { label: 'Pattern', text: patternCellText },
+        cp && candleCellText && { label: 'Candle Pattern', text: candleCellText },
         volumeCellText && { label: 'Volume', text: volumeCellText },
         biasCellText && { label: 'Bias', text: biasCellText },
     ].filter(Boolean);
@@ -252,7 +287,7 @@ const PatternSection = ({ patternSummary, chartData, symbolLabel, indicatorsTabl
                     />
                 )}
                 {cells.length > 0 && (
-                    <div className={clsx('grid gap-3 mt-1', cells.length === 3 ? 'sm:grid-cols-3' : cells.length === 2 ? 'sm:grid-cols-2' : 'grid-cols-1')}>
+                    <div className={clsx('grid gap-3 mt-1', cells.length >= 4 ? 'sm:grid-cols-2' : cells.length === 3 ? 'sm:grid-cols-3' : cells.length === 2 ? 'sm:grid-cols-2' : 'grid-cols-1')}>
                         {cells.map(({ label, text }) => (
                             <div key={label} className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-black/30 px-3 py-2.5">
                                 <MiniLabel className="mb-1">{label}</MiniLabel>

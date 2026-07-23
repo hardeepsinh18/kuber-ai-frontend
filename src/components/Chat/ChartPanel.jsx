@@ -6,6 +6,7 @@ import { formatPrice, formatVolume, formatTickMark, formatCrosshairDate } from '
 import { toHeikinAshi } from '../../lib/chartTransforms';
 import { RenkoSeries, renkoData, renkoTickFormatter, renkoVisibleRange } from '../../lib/chart/renkoSeries';
 import { PatternPrimitive } from '../../lib/chart/patternPrimitive';
+import { CandlestickCirclePrimitive } from '../../lib/chart/candlestickCirclePrimitive';
 
 const BULL = '#26a69a';
 const BEAR = '#ef5350';
@@ -16,10 +17,11 @@ const heikinBars = (bars) =>
     toHeikinAshi(bars.map((b) => ({ ...b, date: b.time })))
         .map(({ date, open, high, low, close }) => ({ time: date, open, high, low, close }));
 
-const ChartPanel = forwardRef(({ chartType, bars, renko, patternAnn, range, theme, className }, ref) => {
+const ChartPanel = forwardRef(({ chartType, bars, renko, patternAnn, candlestickAnn, range, theme, className }, ref) => {
     const containerRef = useRef(null);
     const seriesRef = useRef(null);
     const patternRef = useRef(null);
+    const candlestickPatternRef = useRef(null);
     const { chartRef } = useChart(containerRef, { theme });
     const [hover, setHover] = useState(null);
 
@@ -103,6 +105,15 @@ const ChartPanel = forwardRef(({ chartType, bars, renko, patternAnn, range, them
             patternRef.current = primitive;
         }
 
+        // Candlestick pattern circle — candle view only (an ellipse around a
+        // wick/body doesn't translate to the area/heikin/renko series shapes).
+        candlestickPatternRef.current = null;
+        if (candlestickAnn?.has && chartType === 'candle') {
+            const circlePrimitive = new CandlestickCirclePrimitive(candlestickAnn.dates, bars);
+            series.attachPrimitive(circlePrimitive);
+            candlestickPatternRef.current = circlePrimitive;
+        }
+
         // Detach this run's own series before the next run (or unmount) starts.
         // Without this, React's dev-only StrictMode remount (mount -> cleanup ->
         // mount) leaves seriesRef pointing at a series that belonged to the
@@ -113,7 +124,7 @@ const ChartPanel = forwardRef(({ chartType, bars, renko, patternAnn, range, them
             try { chart.removeSeries(series); } catch { /* chart already disposed */ }
             if (seriesRef.current === series) seriesRef.current = null;
         };
-    }, [chartType, bars, renko, patternAnn, chartRef]);
+    }, [chartType, bars, renko, patternAnn, candlestickAnn, chartRef]);
 
     // Crosshair -> legend. Falling back to the last bar keeps the readout
     // populated when the cursor leaves, rather than blanking.
