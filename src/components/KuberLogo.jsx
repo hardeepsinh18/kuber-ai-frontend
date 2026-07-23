@@ -1,36 +1,33 @@
-const KuberLogo = ({ size = 36, className = '' }) => (
-    <svg
-        width={size}
-        height={Math.round(size * 120 / 100)}
-        viewBox="0 0 100 120"
-        xmlns="http://www.w3.org/2000/svg"
+/**
+ * Venty brand logo (official mark from "Venty Logo 1 Final").
+ * Venty is a product by 72 Street.
+ *
+ * `size` = rendered height in px (width scales to the asset's aspect ratio).
+ * `variant`:
+ *   'mark'       → robot mark, white-face — reads best on dark UI (default)
+ *   'mark-light' → robot mark, dark-face — for light backgrounds
+ *   'full'       → full logo (mark + VENTY^AI + tagline) for dark backgrounds
+ *   'full-light' → full logo for light backgrounds
+ *   'wordmark'   → VENTY^AI wordmark + tagline, no robot
+ */
+const ASSETS = {
+    mark: '/brand/venty-mark.png',
+    'mark-light': '/brand/venty-mark-light.png',
+    full: '/brand/venty-full-dark.png',
+    'full-light': '/brand/venty-full-light.png',
+    wordmark: '/brand/venty-wordmark-dark.png',
+    'wordmark-light': '/brand/venty-wordmark-light.png',
+};
+
+const KuberLogo = ({ size = 36, variant = 'mark', className = '', alt = 'Venty' }) => (
+    <img
+        src={ASSETS[variant] || ASSETS.mark}
+        alt={alt}
+        height={size}
+        style={{ height: size, width: 'auto', display: 'block' }}
         className={className}
-    >
-        <defs>
-            <linearGradient id="kl_stem" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="currentColor" stopOpacity="1" />
-                <stop offset="100%" stopColor="currentColor" stopOpacity="0.05" />
-            </linearGradient>
-        </defs>
-
-        {/* Left stem + circle */}
-        <rect x="17" y="39" width="6" height="21" rx="3" fill="url(#kl_stem)" />
-        <circle cx="20" cy="32" r="7" fill="currentColor" />
-
-        {/* Center stem + circle */}
-        <rect x="47" y="26" width="6" height="34" rx="3" fill="url(#kl_stem)" />
-        <circle cx="50" cy="19" r="7" fill="currentColor" />
-
-        {/* Right stem + circle */}
-        <rect x="77" y="16" width="6" height="44" rx="3" fill="url(#kl_stem)" />
-        <circle cx="80" cy="9" r="7" fill="currentColor" />
-
-        {/* Pot rim */}
-        <path d="M7,62 L93,62 L88,72 L12,72 Z" fill="currentColor" />
-
-        {/* Pot body */}
-        <path d="M14,76 L86,76 L96,96 L86,119 L14,119 L4,96 Z" fill="currentColor" />
-    </svg>
+        draggable={false}
+    />
 );
 
 export default KuberLogo;

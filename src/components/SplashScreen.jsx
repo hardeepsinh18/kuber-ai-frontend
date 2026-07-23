@@ -20,20 +20,14 @@ const SplashScreen = ({ onDone }) => {
         <div
             className="fixed inset-0 z-[9999] flex flex-col items-center justify-center"
             style={{
-                background: isDark ? '#1A1A18' : '#F5F2E8',
+                background: isDark ? '#121315' : '#ffffff',
                 opacity: fading ? 0 : 1,
                 transition: 'opacity 0.6s ease',
                 pointerEvents: fading ? 'none' : 'auto',
             }}
         >
-            <div className="flex flex-col items-center gap-6">
-                <KuberLogo size={110} className="text-[#FDD405]" />
-                <span
-                    className="font-bold tracking-[0.22em] text-2xl"
-                    style={{ letterSpacing: '0.22em', color: isDark ? '#fff' : '#111' }}
-                >
-                    KUBER AI
-                </span>
+            <div className="flex flex-col items-center">
+                <KuberLogo size={200} variant={isDark ? 'full' : 'full-light'} alt="Venty — say Venty to the market" />
             </div>
         </div>
     );

@@ -114,9 +114,9 @@ const ManagementSentiment = ({ data }) => {
                                 strokeDasharray={`${filled} ${circ}`} strokeLinecap="round"
                                 transform={`rotate(-90 ${cx} ${cy})`} />
                             <text x={cx} y={cy - 3} textAnchor="middle" fill={color} fontSize={20} fontWeight="800"
-                                fontFamily="Inter,sans-serif">{score}</text>
+                                fontFamily="Montserrat,sans-serif">{score}</text>
                             <text x={cx} y={cy + 11} textAnchor="middle" fill="rgba(128,128,128,0.7)" fontSize={9}
-                                fontFamily="Inter,sans-serif">/100</text>
+                                fontFamily="Montserrat,sans-serif">/100</text>
                         </svg>
                     </div>
                     <div className="flex-1 min-w-0">

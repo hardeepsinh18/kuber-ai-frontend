@@ -76,7 +76,7 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
                                 value={input}
                                 onChange={(e) => { setInput(e.target.value); autoResize(e.target); }}
                                 onKeyDown={handleKeyDown}
-                                placeholder="Ask Kuber AI anything finance..."
+                                placeholder="Ask Venty anything finance..."
                                 disabled={isLoading}
                                 style={{ resize: 'none', overflow: 'hidden', minHeight: '24px' }}
                                 className="w-full bg-transparent border-none outline-none text-[13px] leading-relaxed py-0.5

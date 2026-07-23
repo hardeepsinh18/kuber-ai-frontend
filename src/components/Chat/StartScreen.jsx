@@ -72,7 +72,7 @@ const StartScreen = ({ onStartChat, onScannerResult, responseMode, setResponseMo
                                     value={input}
                                     onChange={e => { setInput(e.target.value); autoResize(e.target); }}
                                     onKeyDown={onKey}
-                                    placeholder="Ask Kuber AI anything finance..."
+                                    placeholder="Ask Venty anything finance..."
                                     style={{ resize: 'none', overflow: 'hidden', minHeight: '48px' }}
                                     className="w-full px-4 pt-3.5 pb-2 bg-transparent outline-none border-none
                                                text-[13.5px] text-zinc-900 dark:text-zinc-100

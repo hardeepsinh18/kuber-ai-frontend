@@ -212,7 +212,7 @@ class PatternPaneRenderer {
                 ctx.stroke();
                 if (m.label) {
                     const above = m.at === 'high';
-                    ctx.font = '600 9px Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
+                    ctx.font = '600 9px Montserrat, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
                     ctx.textAlign = 'center';
                     ctx.strokeStyle = '#0b0b0b';
                     ctx.lineWidth = 0.5;

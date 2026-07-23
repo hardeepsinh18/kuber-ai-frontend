@@ -145,10 +145,10 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, onPortfolioClick, showLog
                                     border-b border-zinc-200/70 dark:border-zinc-800/40
                                     flex-shrink-0">
                         <NavLink to="/" className="flex items-center gap-2.5">
-                            <KuberLogo size={34} className="text-[#FDD405] flex-shrink-0" />
+                            <KuberLogo size={30} variant={theme === 'dark' ? 'mark' : 'mark-light'} className="flex-shrink-0" />
                             <div className="flex flex-col leading-none gap-1">
-                                <span className="text-[14px] font-bold tracking-[0.08em] text-zinc-900 dark:text-white">
-                                    KUBER AI
+                                <span className="brand-display text-[17px] font-bold tracking-[0.10em] text-zinc-900 dark:text-white">
+                                    VENTY
                                 </span>
                                 <span className="text-[8.5px] tracking-[0.20em] text-zinc-400 dark:text-zinc-500 font-medium uppercase">
                                     BY 72 STREET
@@ -368,7 +368,7 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, onPortfolioClick, showLog
                 )}>
                     {/* Top section */}
                     <NavLink to="/" className="mb-3">
-                        <KuberLogo size={28} className="text-[#FDD405]" />
+                        <KuberLogo size={26} variant={theme === 'dark' ? 'mark' : 'mark-light'} />
                     </NavLink>
 
                     <button

@@ -180,10 +180,10 @@ const SmallGauge = ({ value, sublabel, size = 88 }) => {
                     strokeDasharray={`${filled} ${circ}`} strokeLinecap="round"
                     transform={`rotate(-90 ${cx} ${cy})`} />
                 <text x={cx} y={cy - 2} textAnchor="middle" fill="#fff"
-                    fontSize={17} fontWeight="700" fontFamily="Inter,sans-serif">{Math.round(pct)}%</text>
+                    fontSize={17} fontWeight="700" fontFamily="Montserrat,sans-serif">{Math.round(pct)}%</text>
                 {sublabel && (
                     <text x={cx} y={cy + 13} textAnchor="middle" fill="#9ca3af"
-                        fontSize={7} fontFamily="Inter,sans-serif" letterSpacing="0.5">{sublabel.toUpperCase()}</text>
+                        fontSize={7} fontFamily="Montserrat,sans-serif" letterSpacing="0.5">{sublabel.toUpperCase()}</text>
                 )}
             </svg>
         </div>
@@ -209,11 +209,11 @@ const DebtGauge = ({ value }) => {
                 strokeDasharray={`${filled} ${circ}`} />
             <line x1={cx} y1={cy} x2={nx} y2={ny} stroke="#fff" strokeWidth={2} strokeLinecap="round" />
             <circle cx={cx} cy={cy} r={3} fill="#fff" />
-            <text x={cx - r - 2} y={cy + 13} textAnchor="end"   fill="#52525b" fontSize={8} fontFamily="Inter,sans-serif">0</text>
-            <text x={cx}         y={cy - r - 4} textAnchor="middle" fill="#52525b" fontSize={8} fontFamily="Inter,sans-serif">1.0</text>
-            <text x={cx + r + 2} y={cy + 13} textAnchor="start" fill="#52525b" fontSize={8} fontFamily="Inter,sans-serif">2.0+</text>
-            <text x={cx - 14} y={cy - 14} textAnchor="middle" fill="#22c55e" fontSize={7} fontWeight="bold" fontFamily="Inter,sans-serif">SAFE</text>
-            <text x={cx - 14} y={cy - 5}  textAnchor="middle" fill="#22c55e" fontSize={7} fontWeight="bold" fontFamily="Inter,sans-serif">ZONE</text>
+            <text x={cx - r - 2} y={cy + 13} textAnchor="end"   fill="#52525b" fontSize={8} fontFamily="Montserrat,sans-serif">0</text>
+            <text x={cx}         y={cy - r - 4} textAnchor="middle" fill="#52525b" fontSize={8} fontFamily="Montserrat,sans-serif">1.0</text>
+            <text x={cx + r + 2} y={cy + 13} textAnchor="start" fill="#52525b" fontSize={8} fontFamily="Montserrat,sans-serif">2.0+</text>
+            <text x={cx - 14} y={cy - 14} textAnchor="middle" fill="#22c55e" fontSize={7} fontWeight="bold" fontFamily="Montserrat,sans-serif">SAFE</text>
+            <text x={cx - 14} y={cy - 5}  textAnchor="middle" fill="#22c55e" fontSize={7} fontWeight="bold" fontFamily="Montserrat,sans-serif">ZONE</text>
         </svg>
     );
 };
@@ -324,9 +324,9 @@ const OverallHealthScore = ({ score, label, summary, ratingsSum, components }) =
                         strokeDasharray={`${filled} ${circ}`} strokeLinecap="round"
                         transform={`rotate(-90 ${cx} ${cy})`} />
                     <text x={cx} y={cy - 4} textAnchor="middle" fill={numColor}
-                        fontSize={21} fontWeight="800" fontFamily="Inter,sans-serif">{s}</text>
+                        fontSize={21} fontWeight="800" fontFamily="Montserrat,sans-serif">{s}</text>
                     <text x={cx} y={cy + 12} textAnchor="middle" fill={subColor}
-                        fontSize={9} fontFamily="Inter,sans-serif">/100</text>
+                        fontSize={9} fontFamily="Montserrat,sans-serif">/100</text>
                 </svg>
             </div>
             <div className="flex-1 min-w-0">
@@ -1292,7 +1292,7 @@ const computeRatings = (ratios) => {
     return { strong, watch, risk };
 };
 
-/* ─── Kuber AI Score Banner ──────────────────────────────────────────────── */
+/* ─── Venty Score Banner ──────────────────────────────────────────────── */
 const KuberScoreBanner = ({ horizon, tech, fund, ratingsSum, symbol }) => {
     const [showBreakdown, setShowBreakdown] = useState(false);
     if (!horizon) return null;
@@ -1327,7 +1327,7 @@ const KuberScoreBanner = ({ horizon, tech, fund, ratingsSum, symbol }) => {
                 {/* Label row */}
                 <div className="flex items-center gap-2 mb-3">
                     <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 dark:text-zinc-500">
-                        Kuber AI Score
+                        Venty Score
                     </span>
                     <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold"
                           style={{ background: `${scoreColor}18`, color: scoreColor }}>
@@ -1348,10 +1348,10 @@ const KuberScoreBanner = ({ horizon, tech, fund, ratingsSum, symbol }) => {
                                 transform={`rotate(-90 ${cx} ${cy})`} />
                             <text x={cx} y={cy - 3} textAnchor="middle"
                                 fill={scoreColor} fontSize={20} fontWeight="800"
-                                fontFamily="Inter,sans-serif">{score}</text>
+                                fontFamily="Montserrat,sans-serif">{score}</text>
                             <text x={cx} y={cy + 11} textAnchor="middle"
                                 fill="rgba(128,128,128,0.7)" fontSize={9}
-                                fontFamily="Inter,sans-serif">/100</text>
+                                fontFamily="Montserrat,sans-serif">/100</text>
                         </svg>
                     </div>
 

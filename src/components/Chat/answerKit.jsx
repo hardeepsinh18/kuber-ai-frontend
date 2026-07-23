@@ -70,7 +70,7 @@ export const MiniLabel = ({ children, className }) => (
     </p>
 );
 
-/* Full-width yellow section banner — "KUBER AI SCORE", "PATTERN DETECTION" */
+/* Full-width yellow section banner — "VENTY SCORE", "PATTERN DETECTION" */
 export const SectionBanner = ({ children }) => (
     <div className="rounded-xl px-4 py-2.5" style={{ backgroundColor: BRAND }}>
         <span className="text-[13px] font-black uppercase tracking-[0.15em] text-black">
@@ -94,9 +94,9 @@ export const ScoreRing = ({ score, size = 88, stroke = 9, color }) => {
                     strokeDasharray={`${filled} ${circ}`} strokeLinecap="round"
                     transform={`rotate(-90 ${c} ${c})`} />
             <text x={c} y={c - 2} textAnchor="middle" fontSize={size * 0.26} fontWeight="800"
-                  fontFamily="Inter,sans-serif" className="fill-zinc-900 dark:fill-white">{s}</text>
+                  fontFamily="Montserrat,sans-serif" className="fill-zinc-900 dark:fill-white">{s}</text>
             <text x={c} y={c + size * 0.16} textAnchor="middle" fontSize={size * 0.1}
-                  fontFamily="Inter,sans-serif" className="fill-zinc-400 dark:fill-white/40">/100</text>
+                  fontFamily="Montserrat,sans-serif" className="fill-zinc-400 dark:fill-white/40">/100</text>
         </svg>
     );
 };
@@ -305,7 +305,7 @@ const DeterministicVerdictBand = ({ verdict }) => {
         <div className="rounded-2xl overflow-hidden border bg-white border-zinc-200 dark:bg-[#141312] dark:border-zinc-800">
             <div className="flex items-center gap-1.5 px-4 pt-3 pb-1.5">
                 <span className="w-4 h-[3px] rounded-full" style={{ backgroundColor: BRAND }} />
-                <p className="text-[9px] font-extrabold uppercase tracking-[0.25em] text-amber-600 dark:text-[#FDD405]">Kuber Verdict</p>
+                <p className="text-[9px] font-extrabold uppercase tracking-[0.25em] text-amber-600 dark:text-[#FDD405]">Venty Verdict</p>
             </div>
             {sh && <HorizonRow tenor="Short-Term · ≤1yr" v={sh} cells={_shortLevelCells(sh.levels)} />}
             {sh && lg && <div className="h-px bg-zinc-200 dark:bg-zinc-800" />}
@@ -315,7 +315,7 @@ const DeterministicVerdictBand = ({ verdict }) => {
 };
 
 export const VerdictBand = ({ verdict, signal, verdictText, content, aiTake, price, patternSummary = null }) => {
-    // Preferred: the deterministic Kuber Verdict engine (score_card.verdict).
+    // Preferred: the deterministic Venty Verdict engine (score_card.verdict).
     if (verdict && (verdict.SHORT || verdict.LONG)) {
         return <DeterministicVerdictBand verdict={verdict} />;
     }
@@ -371,7 +371,7 @@ export const VerdictBand = ({ verdict, signal, verdictText, content, aiTake, pri
                 levels.length === 3 ? 'grid-cols-2 sm:grid-cols-4' : levels.length === 2 ? 'grid-cols-3' : levels.length === 1 ? 'grid-cols-2' : 'grid-cols-1')}>
                 <div className="px-4 py-3">
                     <p className="text-[9px] font-extrabold uppercase tracking-[0.2em] text-black/60 mb-1">
-                        Kuber Verdict
+                        Venty Verdict
                     </p>
                     <p className="text-[26px] font-black text-black leading-none">{rec}</p>
                 </div>
@@ -415,7 +415,7 @@ export const MarketStatsCard = ({ stats }) => {
     );
 };
 
-/* ─── KUBER AI SCORE — overall donut + technical/fundamental/sentimental ─── */
+/* ─── VENTY SCORE — overall donut + technical/fundamental/sentimental ─── */
 export const getScores = (scoreCard, managementSentiment) => {
     const comp = scoreCard?.overall?.components || {};
     const normalize = (v) => (v != null && v <= 10 ? v * 10 : v);
@@ -440,7 +440,7 @@ export const ScoreGrid = ({ scoreCard, managementSentiment }) => {
     // have no rows yet for a given symbol) — say so instead of implying full
     // three-lens coverage when only one or two lenses actually contributed.
     const overallDesc = subScores.length >= 3
-        ? "The stock's combined Kuber AI Score across all three lenses."
+        ? "The stock's combined Venty Score across all three lenses."
         : subScores.length === 0
             ? "Score based on limited data — technical and sentiment analysis aren't available for this stock yet."
             : `Based on ${subScores.map(s => s.key.charAt(0) + s.key.slice(1).toLowerCase()).join(' + ')} only — the other lens${subScores.length === 1 ? 'es aren\'t' : ' isn\'t'} available for this stock yet.`;

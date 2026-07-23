@@ -41,10 +41,10 @@ const RecentDevelopments = ({ data }) => {
 
     return (
         <div className="mt-3 rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800">
-            <div className="h-[3px]" style={{ background: 'linear-gradient(90deg, #6366f1, #6366f140)' }} />
+            <div className="h-[3px]" style={{ background: 'linear-gradient(90deg, #0e9e37, #0e9e3740)' }} />
             <div className="px-4 py-3.5 bg-zinc-50 dark:bg-zinc-900/60">
                 <button onClick={() => setOpen(o => !o)} className="w-full flex items-center gap-2 text-left">
-                    <Activity size={13} className="text-indigo-500" strokeWidth={2.4} />
+                    <Activity size={13} className="text-[#0e9e37]" strokeWidth={2.4} />
                     <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 dark:text-zinc-500">
                         Recent Developments
                     </span>
@@ -62,7 +62,7 @@ const RecentDevelopments = ({ data }) => {
                             {data.items.map((it, i) => {
                                 const Icon = CAT_ICON[it.category] || FileText;
                                 const material = it.importance === 'high';
-                                const dot = material ? '#6366f1' : 'rgba(113,113,122,0.6)';
+                                const dot = material ? '#0e9e37' : 'rgba(113,113,122,0.6)';
                                 const Row = it.url ? 'a' : 'div';
                                 const rowProps = it.url
                                     ? { href: it.url, target: '_blank', rel: 'noopener noreferrer' }
@@ -75,10 +75,10 @@ const RecentDevelopments = ({ data }) => {
                                             style={{ background: material ? dot : 'transparent', borderColor: dot }} />
                                         <div className="flex items-start gap-2">
                                             <Icon size={13} strokeWidth={2}
-                                                className={material ? 'text-indigo-500 mt-0.5' : 'text-zinc-400 mt-0.5'} />
+                                                className={material ? 'text-[#0e9e37] mt-0.5' : 'text-zinc-400 mt-0.5'} />
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2 flex-wrap">
-                                                    <span className={`text-[11px] font-semibold ${material ? 'text-indigo-600 dark:text-indigo-400' : 'text-zinc-500 dark:text-zinc-400'}`}>
+                                                    <span className={`text-[11px] font-semibold ${material ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-500 dark:text-zinc-400'}`}>
                                                         {it.category}
                                                     </span>
                                                     {it.date && (
@@ -86,7 +86,7 @@ const RecentDevelopments = ({ data }) => {
                                                     )}
                                                     {it.url && (
                                                         <ArrowUpRight size={11}
-                                                            className="text-zinc-300 dark:text-zinc-600 group-hover:text-indigo-500 transition-colors" />
+                                                            className="text-zinc-300 dark:text-zinc-600 group-hover:text-emerald-500 transition-colors" />
                                                     )}
                                                 </div>
                                                 <div className="text-[12px] text-zinc-700 dark:text-zinc-200 leading-snug">

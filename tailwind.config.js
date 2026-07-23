@@ -17,19 +17,34 @@ export default {
             colors: {
                 background: 'var(--background)',
                 foreground: 'var(--foreground)',
-                // KuberAI brand palette
+                // ── 72 Street brand palette (product: Venty) ──
+                street: {
+                    yellow: '#fdd405',        // primary brand accent
+                    'yellow-bright': '#ffe23f',
+                    'yellow-dark': '#e0bd00',
+                    black: '#121315',         // brand ink / near-black bg
+                    green: '#0e9e37',         // underline / positive accent
+                    'green-dark': '#0b7f2c',
+                    white: '#ffffff',
+                    gunmetal: '#22383c',      // secondary (limited)
+                    grey: '#efefef',          // secondary (limited)
+                },
+                // Legacy KuberAI tokens remapped to the 72 Street palette so every
+                // existing `kuber-*` utility class rebrands automatically.
                 kuber: {
-                    gold: '#D4A017',
-                    'gold-light': '#F0C030',
-                    'gold-bright': '#F5B800',
-                    'gold-dark': '#A87810',
-                    bg: '#090A07',
-                    surface: '#111210',
-                    border: '#1C1D1A',
+                    gold: '#fdd405',
+                    'gold-light': '#ffe23f',
+                    'gold-bright': '#ffe23f',
+                    'gold-dark': '#e0bd00',
+                    bg: '#121315',
+                    surface: '#1a1b1d',
+                    border: '#2a2c2f',
                 },
             },
             fontFamily: {
-                sans: ['Inter', 'system-ui', 'sans-serif'],
+                // Body / UI = Montserrat (brand secondary). Display / headings = Gobold (brand primary).
+                sans: ['Montserrat', 'system-ui', '-apple-system', 'sans-serif'],
+                display: ['Gobold', 'Montserrat', 'system-ui', 'sans-serif'],
             },
         },
     },
