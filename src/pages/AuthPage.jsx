@@ -273,7 +273,7 @@ export default function AuthPage() {
                                     type="text"
                                     value={fullName}
                                     onChange={e => { setFullName(e.target.value); setError(''); }}
-                                    placeholder="John Doe"
+                                    placeholder="Name"
                                     autoComplete="name"
                                     style={{
                                         width: '100%', padding: '11px 14px', boxSizing: 'border-box',
