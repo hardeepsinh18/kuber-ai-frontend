@@ -306,7 +306,7 @@ function LoadingState({ fileName }) {
   const steps = [
     'Parsing holdings from Excel...',
     'Resolving NSE symbols...',
-    'Enriching from KuberAI database...',
+    'Enriching from Venty database...',
     'Computing fundamental scores...',
     'Generating AI commentary...',
   ]
@@ -456,7 +456,7 @@ function HoldingsTable({ holdings }) {
                       )}
                     </td>
                     <td className="py-2.5 px-3">
-                      <div className="font-semibold text-[12px] text-indigo-600 dark:text-indigo-300">
+                      <div className="font-semibold text-[12px] text-amber-600 dark:text-[#fdd405]">
                         {h.symbol}
                       </div>
                       <div className="text-[10px] text-zinc-400 dark:text-zinc-600">{h.sector}</div>
@@ -844,7 +844,7 @@ function DeepDiveTab({ holdings }) {
                 ? 'border-[#FDD405] bg-[#FDD405]/10 shadow-sm'
                 : 'border-zinc-200/70 dark:border-zinc-800/40 bg-white/60 dark:bg-zinc-900/60 hover:border-zinc-300 dark:hover:border-zinc-600'
               }`}>
-            <p className="text-[11px] font-bold text-indigo-600 dark:text-indigo-300 truncate">{h.symbol}</p>
+            <p className="text-[11px] font-bold text-amber-600 dark:text-[#fdd405] truncate">{h.symbol}</p>
             <p className="text-[9px] text-zinc-400 truncate mt-0.5">{h.sector}</p>
             <ScoreChip score={h.fundamental_score} />
           </button>

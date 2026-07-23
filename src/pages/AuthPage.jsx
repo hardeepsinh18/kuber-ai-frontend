@@ -153,16 +153,16 @@ export default function AuthPage() {
 
                 {/* Logo */}
                 <div className="flex items-center gap-3 mb-6">
-                    <KuberLogo size={36} className="text-[#FDD405]" />
+                    <KuberLogo size={42} variant={isDark ? 'mark' : 'mark-light'} />
                     <div>
-                        <p className="text-[18px] font-black leading-none tracking-tight" style={{ color: textMain }}>KUBER AI</p>
+                        <p className="brand-display text-[22px] font-bold leading-none tracking-[0.08em]" style={{ color: textMain }}>VENTY</p>
                         <p className="text-[10px] tracking-widest uppercase mt-0.5" style={{ color: labelColor }}>by 72 Street</p>
                     </div>
                 </div>
 
                 {/* Heading */}
                 <h1 className="text-[24px] font-bold text-center leading-snug mb-1" style={{ color: textMain }}>
-                    Hi! I'm <span style={{ color: '#FDD405' }}>Kuber AI</span>
+                    Hi! I'm <span style={{ color: '#FDD405' }}>Venty</span>
                 </h1>
                 <p className="text-[13px] text-center mb-7" style={{ color: textSub }}>I bring clarity to market decisions.</p>
 
@@ -408,10 +408,9 @@ export default function AuthPage() {
                 </p>
 
                 {/* Footer */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 24, opacity: 0.5 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 24, opacity: 0.55 }}>
                     <span style={{ fontSize: 11, color: textSub }}>Powered by</span>
-                    <KuberLogo size={13} className="text-[#FDD405]" />
-                    <span style={{ fontSize: 11, fontWeight: 900, color: '#FDD405', letterSpacing: '0.15em' }}>72 STREET</span>
+                    <span className="brand-display" style={{ fontSize: 12, fontWeight: 700, color: '#FDD405', letterSpacing: '0.14em' }}>72 STREET</span>
                 </div>
             </motion.div>
 

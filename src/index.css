@@ -2,18 +2,45 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── 72 Street brand primary typeface: Gobold (display / headings, ALL CAPS) ── */
+@font-face {
+  font-family: 'Gobold';
+  src: url('/fonts/gobold-regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Gobold';
+  src: url('/fonts/gobold-bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
-  /* Inter loaded via Google Fonts in index.html — fallback chain for offline/slow networks */
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  /* Montserrat = brand body typeface (loaded via Google Fonts in index.html) */
+  font-family: 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
   color-scheme: light dark;
 
-  /* KuberAI brand tokens */
-  --kuber-gold: #D4A017;
-  --kuber-gold-glow: rgba(212, 160, 23, 0.3);
-  --kuber-gold-subtle: rgba(212, 160, 23, 0.12);
+  /* ── 72 Street brand tokens ── */
+  --street-yellow: #fdd405;
+  --street-black: #121315;
+  --street-green: #0e9e37;
+  /* Legacy alias kept so existing var(--kuber-gold) refs stay on-brand */
+  --kuber-gold: #fdd405;
+  --kuber-gold-glow: rgba(253, 212, 5, 0.3);
+  --kuber-gold-subtle: rgba(253, 212, 5, 0.12);
+}
+
+/* Brand display utility — Gobold, condensed, uppercase */
+.font-display,
+.brand-display {
+  font-family: 'Gobold', 'Montserrat', system-ui, sans-serif;
+  letter-spacing: 0.01em;
 }
 
 /* Prevent text size adjustments on mobile */
@@ -64,7 +91,7 @@ body {
   100% { background-position: 0% center; }
 }
 .gold-shimmer {
-  background-image: linear-gradient(90deg, #D97706 0%, #FCD34D 30%, #F59E0B 50%, #FCD34D 70%, #D97706 100%);
+  background-image: linear-gradient(90deg, #e0bd00 0%, #ffe23f 30%, #fdd405 50%, #ffe23f 70%, #e0bd00 100%);
   background-size: 250% auto;
   -webkit-background-clip: text;
   background-clip: text;
@@ -86,8 +113,8 @@ body {
 
 /* ── Pulse glow — gold ambient ring ── */
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(212, 160, 23, 0); }
-  50%       { box-shadow: 0 0 20px 6px rgba(212, 160, 23, 0.18); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(253, 212, 5, 0); }
+  50%       { box-shadow: 0 0 20px 6px rgba(253, 212, 5, 0.18); }
 }
 .pulse-glow {
   animation: pulse-glow 3s ease-in-out infinite;
@@ -112,8 +139,8 @@ body {
 /* ── Gold glow text ── */
 .gold-glow-text {
   text-shadow:
-    0 0 16px rgba(212, 160, 23, 0.55),
-    0 0 36px rgba(212, 160, 23, 0.22);
+    0 0 16px rgba(253, 212, 5, 0.55),
+    0 0 36px rgba(253, 212, 5, 0.22);
 }
 
 /* ── Scan line sweep (background decoration) ── */

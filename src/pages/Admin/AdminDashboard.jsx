@@ -32,7 +32,7 @@ const fmtDate = (s) => s ? new Date(s).toLocaleString('en-IN', { day: '2-digit',
 // ── Stat Card ────────────────────────────────────────────────────────────────
 const StatCard = ({ icon: Icon, label, value, sub, color = 'indigo' }) => {
     const colors = {
-        indigo: 'bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400',
+        indigo: 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400',
         emerald: 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400',
         amber: 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-[#FDD405]',
         rose: 'bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400',
@@ -95,7 +95,7 @@ const OverviewTab = () => {
                                         <span className="text-zinc-500">{fmt(item.count)}</span>
                                     </div>
                                     <div className="h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-                                        <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${pct}%` }} />
+                                        <div className="h-full bg-amber-500 rounded-full" style={{ width: `${pct}%` }} />
                                     </div>
                                 </div>
                             );
@@ -106,7 +106,7 @@ const OverviewTab = () => {
 
                 <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5">
                     <h3 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-4 flex items-center gap-2">
-                        <Database size={14} className="text-purple-500" /> LLM Usage Today
+                        <Database size={14} className="text-emerald-500" /> LLM Usage Today
                     </h3>
                     <div className="space-y-3">
                         {data.llm_breakdown.map((item) => {
@@ -115,7 +115,7 @@ const OverviewTab = () => {
                             const color = item.model?.includes('gpt') ? 'bg-emerald-500'
                                 : item.model?.includes('gemini') ? 'bg-blue-500'
                                     : item.model?.includes('template') ? 'bg-zinc-400'
-                                        : 'bg-purple-500';
+                                        : 'bg-emerald-500';
                             return (
                                 <div key={item.model}>
                                     <div className="flex justify-between text-xs mb-1">
@@ -163,10 +163,10 @@ const UsersTab = ({ onViewChat }) => {
                     <input
                         value={search} onChange={e => setSearch(e.target.value)}
                         placeholder="Search by email or name..."
-                        className="w-full pl-8 pr-4 py-2 text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full pl-8 pr-4 py-2 text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-amber-500"
                     />
                 </div>
-                <button type="submit" className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">Search</button>
+                <button type="submit" className="px-4 py-2 text-sm bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors">Search</button>
                 {search && <button type="button" onClick={() => { setSearch(''); setOffset(0); }} className="px-3 py-2 text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"><X size={14} /></button>}
             </form>
 
@@ -188,7 +188,7 @@ const UsersTab = ({ onViewChat }) => {
                                         <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{u.full_name || '—'}</td>
                                         <td className="px-4 py-3">
                                             <span className={clsx('px-2 py-0.5 rounded-full text-xs font-medium',
-                                                u.subscription_plan === 'pro' ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
+                                                u.subscription_plan === 'pro' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
                                                     : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400')}>
                                                 {u.subscription_plan || 'free'}
                                             </span>
@@ -204,7 +204,7 @@ const UsersTab = ({ onViewChat }) => {
                                             </span>
                                         </td>
                                         <td className="px-4 py-3">
-                                            <button onClick={() => onViewChat(u)} className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline whitespace-nowrap">
+                                            <button onClick={() => onViewChat(u)} className="text-xs text-amber-600 dark:text-amber-400 hover:underline whitespace-nowrap">
                                                 View Chats
                                             </button>
                                         </td>
@@ -244,10 +244,10 @@ const QueryLogsTab = () => {
     const intentColor = (i) => {
         if (!i) return 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500';
         if (i.includes('STOCK')) return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300';
-        if (i.includes('SCREEN')) return 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300';
+        if (i.includes('SCREEN')) return 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300';
         if (i.includes('STRATEGIC')) return 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300';
         if (i.includes('GREETING')) return 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500';
-        return 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300';
+        return 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300';
     };
 
     return (
@@ -257,10 +257,10 @@ const QueryLogsTab = () => {
                     <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
                     <input value={search} onChange={e => { setSearch(e.target.value); setOffset(0); }}
                         placeholder="Search queries..."
-                        className="pl-8 pr-4 py-2 text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-56" />
+                        className="pl-8 pr-4 py-2 text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-amber-500 w-56" />
                 </div>
                 <select value={intent} onChange={e => { setIntent(e.target.value); setOffset(0); }}
-                    className="px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    className="px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-amber-500">
                     <option value="">All Intents</option>
                     {['STOCK_QUERY', 'SCREENING', 'STRATEGIC', 'DIAGNOSTIC', 'MARKET_OVERVIEW', 'PREDICTIVE', 'PORTFOLIO', 'GREETING', 'BASIC_CONCEPT', 'GENERAL_INFO'].map(i => (
                         <option key={i} value={i}>{i}</option>
@@ -343,9 +343,9 @@ const ChatHistoryTab = ({ selectedUser, onClearUser }) => {
     return (
         <div className="space-y-4">
             {selectedUser && (
-                <div className="flex items-center gap-2 p-3 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800 rounded-lg">
-                    <span className="text-sm text-indigo-700 dark:text-indigo-300 font-medium">{selectedUser.email}</span>
-                    <button onClick={() => { onClearUser(); setData(null); setUserId(''); }} className="ml-auto text-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-300"><X size={14} /></button>
+                <div className="flex items-center gap-2 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+                    <span className="text-sm text-amber-700 dark:text-amber-300 font-medium">{selectedUser.email}</span>
+                    <button onClick={() => { onClearUser(); setData(null); setUserId(''); }} className="ml-auto text-amber-400 hover:text-amber-600 dark:hover:text-amber-300"><X size={14} /></button>
                 </div>
             )}
 
@@ -353,9 +353,9 @@ const ChatHistoryTab = ({ selectedUser, onClearUser }) => {
                 <div className="flex gap-2">
                     <input value={userId} onChange={e => setUserId(e.target.value)}
                         placeholder="Enter user UUID..."
-                        className="flex-1 max-w-sm px-4 py-2 text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                        className="flex-1 max-w-sm px-4 py-2 text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-amber-500" />
                     <button onClick={() => { setData(null); setErr(null); }}
-                        className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                        className="px-4 py-2 text-sm bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors">
                         Load
                     </button>
                 </div>
@@ -391,7 +391,7 @@ const ChatHistoryTab = ({ selectedUser, onClearUser }) => {
                                         <div key={i} className={clsx('flex gap-3', msg.role === 'user' ? 'justify-end' : 'justify-start')}>
                                             <div className={clsx('max-w-[75%] px-3 py-2 rounded-lg text-xs leading-relaxed',
                                                 msg.role === 'user'
-                                                    ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-900 dark:text-indigo-100'
+                                                    ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-100'
                                                     : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200')}>
                                                 <p className="font-medium opacity-50 mb-0.5 text-[10px] uppercase">{msg.role}</p>
                                                 <p className="whitespace-pre-wrap line-clamp-6">{msg.content}</p>
@@ -430,7 +430,7 @@ const ApiStatsTab = () => {
                 {[7, 14, 30].map(d => (
                     <button key={d} onClick={() => setDays(d)}
                         className={clsx('px-3 py-1.5 text-sm rounded-lg border transition-colors',
-                            days === d ? 'bg-indigo-600 text-white border-indigo-600' : 'border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800')}>
+                            days === d ? 'bg-amber-600 text-white border-amber-600' : 'border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800')}>
                         {d}d
                     </button>
                 ))}
@@ -441,7 +441,7 @@ const ApiStatsTab = () => {
                     {/* Daily volume bar chart */}
                     <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5">
                         <h3 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-4 flex items-center gap-2">
-                            <TrendingUp size={14} className="text-indigo-500" /> Daily Query Volume
+                            <TrendingUp size={14} className="text-amber-500" /> Daily Query Volume
                         </h3>
                         <div className="flex items-end gap-1 h-32">
                             {data.daily_volume.map(d => {
@@ -455,7 +455,7 @@ const ApiStatsTab = () => {
                                         </div>
                                         <div className="w-full flex flex-col justify-end" style={{ height: '100px' }}>
                                             <div className="w-full bg-rose-400 rounded-sm" style={{ height: `${errPct * pct / 100}%` }} />
-                                            <div className="w-full bg-indigo-500 rounded-sm" style={{ height: `${pct * (1 - errPct / 100)}%` }} />
+                                            <div className="w-full bg-amber-500 rounded-sm" style={{ height: `${pct * (1 - errPct / 100)}%` }} />
                                         </div>
                                         <span className="text-[9px] text-zinc-400 rotate-45 origin-left whitespace-nowrap">
                                             {new Date(d.day).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
@@ -466,7 +466,7 @@ const ApiStatsTab = () => {
                             {!data.daily_volume.length && <p className="text-xs text-zinc-400 m-auto">No data</p>}
                         </div>
                         <div className="flex gap-4 mt-3 text-xs text-zinc-400">
-                            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-indigo-500 inline-block" /> Queries</span>
+                            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-amber-500 inline-block" /> Queries</span>
                             <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-rose-400 inline-block" /> Errors</span>
                         </div>
                     </div>
@@ -475,7 +475,7 @@ const ApiStatsTab = () => {
                     <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden">
                         <div className="px-5 py-3 border-b border-zinc-100 dark:border-zinc-800">
                             <h3 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 flex items-center gap-2">
-                                <BarChart3 size={14} className="text-purple-500" /> LLM Model Breakdown ({days}d)
+                                <BarChart3 size={14} className="text-emerald-500" /> LLM Model Breakdown ({days}d)
                             </h3>
                         </div>
                         <table className="w-full text-sm">
@@ -508,7 +508,7 @@ const ApiStatsTab = () => {
 // ── Shared helpers ───────────────────────────────────────────────────────────
 const Spinner = () => (
     <div className="flex justify-center py-12">
-        <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
     </div>
 );
 
@@ -566,7 +566,7 @@ export default function AdminDashboard() {
             <div className="bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 px-6 py-4">
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
                     <div>
-                        <h1 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">KuberAI Admin</h1>
+                        <h1 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">Venty Admin</h1>
                         <p className="text-xs text-zinc-400 mt-0.5">Internal dashboard · 72Street.ai</p>
                     </div>
                     <span className="px-2.5 py-1 text-xs font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-full">Live</span>
@@ -580,7 +580,7 @@ export default function AdminDashboard() {
                         <button key={id} onClick={() => setTab(id)}
                             className={clsx('flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all',
                                 tab === id
-                                    ? 'bg-indigo-600 text-white shadow-sm'
+                                    ? 'bg-amber-600 text-white shadow-sm'
                                     : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800')}>
                             <Icon size={14} />
                             {label}

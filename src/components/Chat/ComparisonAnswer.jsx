@@ -60,7 +60,7 @@ const ComparisonAnswer = ({ content, metadata = {}, chartData = null }) => {
             {/* ── Winner verdict band ────────────────────────────── */}
             {winner && (
                 <Card className="px-4 py-3.5 border-l-4 border-l-amber-500 dark:border-l-[#FDD405]">
-                    <MiniLabel>Kuber verdict</MiniLabel>
+                    <MiniLabel>Venty verdict</MiniLabel>
                     <div className="mt-1.5 flex items-start gap-2">
                         <Trophy size={16} strokeWidth={2.5} className="mt-[2px] flex-shrink-0 text-amber-600 dark:text-[#FDD405]" />
                         <p className="text-[13.5px] leading-relaxed text-zinc-800 dark:text-zinc-100">
@@ -97,10 +97,10 @@ const ComparisonAnswer = ({ content, metadata = {}, chartData = null }) => {
             {/* ── Footer strip ───────────────────────────────────── */}
             <div className="flex items-center justify-between border-t border-zinc-200 dark:border-zinc-800 pt-2.5">
                 <span className="text-[8px] font-bold uppercase tracking-[0.25em] text-zinc-400 dark:text-zinc-600">
-                    Say Kuber to the market
+                    Say Venty to the market
                 </span>
                 <span className="text-[8px] font-bold uppercase tracking-[0.25em] text-zinc-400 dark:text-zinc-600">
-                    Kuber AI
+                    Venty
                 </span>
             </div>
         </div>

@@ -12,7 +12,7 @@ import {
  *   1. Company card (name · NSE:SYM · price · day change)
  *   2. Yellow KUBER VERDICT band (BUY/SELL/HOLD + Entry / Stop Loss / Target)
  *   3. Chart card (Area default) + Today's Market Stats side card
- *   4. KUBER AI SCORE banner + Overall Health donut + Technical/Fundamental/Sentimental
+ *   4. VENTY SCORE banner + Overall Health donut + Technical/Fundamental/Sentimental
  *   5. Key Takeaway bullets
  *   6. Recent News
  * Every section renders only when its data exists.
@@ -95,10 +95,10 @@ const QuickAnswer = ({
                 </div>
             )}
 
-            {/* ── KUBER AI SCORE ─────────────────────────────────── */}
+            {/* ── VENTY SCORE ─────────────────────────────────── */}
             {hasScores && (
                 <>
-                    <SectionBanner>Kuber AI Score</SectionBanner>
+                    <SectionBanner>Venty Score</SectionBanner>
                     <ScoreGrid scoreCard={scoreCard} managementSentiment={managementSentiment} />
                 </>
             )}
@@ -152,10 +152,10 @@ const QuickAnswer = ({
             {/* ── Footer strip ───────────────────────────────────── */}
             <div className="flex items-center justify-between border-t border-zinc-200 dark:border-zinc-800 pt-2.5">
                 <span className="text-[8px] font-bold uppercase tracking-[0.25em] text-zinc-400 dark:text-zinc-600">
-                    Say Kuber to the market
+                    Say Venty to the market
                 </span>
                 <span className="text-[8px] font-bold uppercase tracking-[0.25em] text-zinc-400 dark:text-zinc-600">
-                    Kuber AI
+                    Venty
                 </span>
             </div>
         </div>

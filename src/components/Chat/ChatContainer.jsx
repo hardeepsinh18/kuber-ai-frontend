@@ -5,7 +5,6 @@ import InputBar from './InputBar';
 import GroupClarificationPopup from './GroupClarificationPopup';
 import StartScreen from './StartScreen';
 import ThinkingPaths from './ThinkingPaths';
-import SourcesPanel from './SourcesPanel';
 import ScannerDrawer from './ScannerDrawer';
 import { useAuth } from '../../context/AuthContext';
 import { useChatHistory } from '../../context/ChatHistoryContext';
@@ -1171,7 +1170,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
 
             // Dev only — this payload carries the user's full chat history.
             if (import.meta.env.DEV) {
-                console.log('[KuberAI] Request payload:', JSON.stringify(payload, null, 2));
+                console.log('[Venty] Request payload:', JSON.stringify(payload, null, 2));
             }
 
             const headers = { 'Content-Type': 'application/json' };
@@ -1261,8 +1260,8 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             }
 
             if (import.meta.env.DEV) {
-                console.log('[KuberAI] Response content:', responseData?.content || responseData?.answer);
-                console.log('[KuberAI] Intent / confidence:', responseData?.intent, '/', responseData?.confidence);
+                console.log('[Venty] Response content:', responseData?.content || responseData?.answer);
+                console.log('[Venty] Intent / confidence:', responseData?.intent, '/', responseData?.confidence);
             }
 
             // Calculate processing time
@@ -1533,10 +1532,6 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                                         processingTime={msg.processingTime || 0}
                                     />
                                 </div>
-                            )}
-
-                            {msg.role === 'ai' && (
-                                <SourcesPanel sourceDocuments={msg.sourceDocuments || []} />
                             )}
 
                             <MessageBubble

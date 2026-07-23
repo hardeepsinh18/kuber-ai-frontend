@@ -21,7 +21,7 @@ import {
  *   2. WHY THIS VERDICT card (+ expandable full analysis)
  *   3. Chart + Today's Market Stats
  *   4. PATTERN DETECTION — candle chart with overlays + pattern/volume/bias cells
- *   5. KUBER AI SCORE — same donut row as Quick
+ *   5. VENTY SCORE — same donut row as Quick
  *   6. Technical Scorecard — key indicators grid + commentary
  *   7. Fundamental Scorecard — health report grid + pros and cons
  *   8. Sentimental Scorecard — annual report intel, announcements, filings
@@ -95,7 +95,7 @@ const firstParagraph = (md) => {
 };
 
 /* ─── WHY THIS VERDICT ───────────────────────────────────────────────────── */
-// The prose Kuber types out. Kept as its own helper because AnalystAnswer needs the
+// The prose Venty types out. Kept as its own helper because AnalystAnswer needs the
 // same string to drive the typewriter that WhyThisVerdict renders.
 const verdictSummary = (verdictText, content, signal) =>
     verdictText
@@ -594,9 +594,9 @@ const MgmtToneContent = ({ data }) => {
                             strokeDasharray={`${filled} ${circ}`} strokeLinecap="round"
                             transform={`rotate(-90 ${cx} ${cy})`} />
                         <text x={cx} y={cy - 3} textAnchor="middle" fill={color} fontSize={20} fontWeight="800"
-                            fontFamily="Inter,sans-serif">{score}</text>
+                            fontFamily="Montserrat,sans-serif">{score}</text>
                         <text x={cx} y={cy + 11} textAnchor="middle" fill="rgba(128,128,128,0.7)" fontSize={9}
-                            fontFamily="Inter,sans-serif">/100</text>
+                            fontFamily="Montserrat,sans-serif">/100</text>
                     </svg>
                 </div>
                 <div className="flex-1 min-w-0">
@@ -944,7 +944,7 @@ const AnalystAnswer = ({
             {hasScores && (
                 <Stage show={shown(3)}>
                     <div className="space-y-3">
-                        <SectionBanner>Kuber AI Score</SectionBanner>
+                        <SectionBanner>Venty Score</SectionBanner>
                         <ScoreGrid scoreCard={scoreCard} managementSentiment={managementSentiment} />
                     </div>
                 </Stage>
@@ -973,10 +973,10 @@ const AnalystAnswer = ({
             {/* ── Footer strip ───────────────────────────────────── */}
             <div className="flex items-center justify-between border-t border-zinc-200 dark:border-zinc-800 pt-2.5">
                 <span className="text-[8px] font-bold uppercase tracking-[0.25em] text-zinc-400 dark:text-zinc-600">
-                    Say Kuber to the market
+                    Say Venty to the market
                 </span>
                 <span className="text-[8px] font-bold uppercase tracking-[0.25em] text-zinc-400 dark:text-zinc-600">
-                    Kuber AI
+                    Venty
                 </span>
             </div>
         </div>

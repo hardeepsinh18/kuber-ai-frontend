@@ -173,12 +173,12 @@ const LoginModal = ({ isOpen, onClose }) => {
                                     <div className="relative w-9 h-9 rounded-xl flex items-center justify-center
                                                     bg-gradient-to-br from-[#FDD405] to-amber-600
                                                     shadow-[0_2px_14px_rgba(253,212,5,0.45)]">
-                                        <span className="text-black font-black text-base leading-none">K</span>
+                                        <span className="brand-display text-black font-bold text-lg leading-none">V</span>
                                     </div>
                                 </div>
                                 <div>
-                                    <p className="text-[14px] font-bold text-zinc-900 dark:text-white leading-none">KuberAI</p>
-                                    <p className="text-[10px] text-zinc-400 dark:text-zinc-600 mt-0.5 tracking-wide">by 72Street</p>
+                                    <p className="brand-display text-[16px] font-bold tracking-[0.06em] text-zinc-900 dark:text-white leading-none">VENTY</p>
+                                    <p className="text-[10px] text-zinc-400 dark:text-zinc-600 mt-0.5 tracking-wide">by 72 Street</p>
                                 </div>
                             </div>
                             <button onClick={onClose}

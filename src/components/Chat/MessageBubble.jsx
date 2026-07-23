@@ -393,7 +393,7 @@ const TechnicalSection = ({ technicalSummary, patternSummary }) => {
             {candlestick.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mb-3">
                     {candlestick.map((p) => (
-                        <span key={p} className="text-xs px-2 py-0.5 rounded-md bg-violet-50 dark:bg-violet-950/30 text-violet-700 dark:text-violet-300 border border-violet-200/40 dark:border-violet-800/30">
+                        <span key={p} className="text-xs px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800/60 text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/40">
                             {p}
                         </span>
                     ))}

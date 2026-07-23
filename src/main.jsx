@@ -9,25 +9,25 @@ class RootErrorBoundary extends React.Component {
     return { error }
   }
   componentDidCatch(error, info) {
-    if (import.meta.env.DEV) console.error('KuberAI root error:', error, info)
+    if (import.meta.env.DEV) console.error('Venty root error:', error, info)
   }
   render() {
     if (this.state.error) {
       return (
         <div style={{
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          minHeight: '100vh', padding: 24, fontFamily: 'system-ui', background: '#0f172a', color: '#f1f5f9',
+          minHeight: '100vh', padding: 24, fontFamily: 'system-ui', background: '#121315', color: '#f1f5f9',
         }}>
           <div style={{ maxWidth: 480, width: '100%', textAlign: 'center' }}>
             <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
             <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8 }}>Something went wrong</h1>
             <p style={{ color: '#94a3b8', marginBottom: 24, fontSize: 14 }}>
-              KuberAI hit an unexpected error. Your chat history is safe in local storage.
+              Venty hit an unexpected error. Your chat history is safe in local storage.
             </p>
             <button
               onClick={() => window.location.reload()}
               style={{
-                background: '#6366f1', color: '#fff', border: 'none', borderRadius: 8,
+                background: '#fdd405', color: '#121315', border: 'none', borderRadius: 8, fontWeight: 700,
                 padding: '10px 24px', fontSize: 15, cursor: 'pointer', marginBottom: 16,
               }}
             >
