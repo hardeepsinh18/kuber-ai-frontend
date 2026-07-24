@@ -859,13 +859,10 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
         if (showThinking) scrollToBottomNow(false);
     }, [showThinking, scrollToBottomNow]);
 
-    // After streaming ends, scroll to bottom so the user sees the full response
-    // including chips and the input bar.
-    useEffect(() => {
-        if (!streamingMessageId && !showThinking && messages.length > 0 && !isLoading) {
-            scrollToBottomNow(true);
-        }
-    }, [streamingMessageId, showThinking, isLoading, scrollToBottomNow]);
+    // NOTE: intentionally no auto-scroll-to-bottom when streaming ends. The answer
+    // stays anchored at its top (set when streaming started) so the user reads it
+    // top-to-bottom instead of being yanked to the last line. If they want to jump
+    // to the bottom (chips / input bar) the scroll-to-bottom button is available.
 
     const updateScrollButtonVisibility = useCallback(() => {
         const container = chatContainerRef.current;
