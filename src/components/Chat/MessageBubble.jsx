@@ -616,8 +616,14 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
     // renders ANALYST ANSWER — but only when the response actually carries stock
     // data. Clarification questions ("short term or long term?") and disambiguation
     // prompts keep the classic layout so their interactive chips still work.
+    // Focused single-aspect intents (pe_ratio/news/technicals/chart) ALSO keep the
+    // classic layout: the structured dashboards render every scorecard, which buries
+    // the one metric the user asked for ("pe ratio of X" must answer just that).
+    // The classic layout's intent gating + filterByIntent below handle these.
+    const isFocusedIntent = ['pe_ratio', 'news', 'technicals', 'chart'].includes(queryIntent);
     const structuredEligible = !isUser
         && !isScannerResult
+        && !isFocusedIntent
         && !metadata?.disambiguation?.ambiguous
         && !hasHorizonQuestion(content || '')
         && (metadata?.at_a_glance?.price != null
