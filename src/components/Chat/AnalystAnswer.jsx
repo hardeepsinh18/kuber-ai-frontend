@@ -380,7 +380,7 @@ const TechnicalScorecard = ({ tech, technicalSummary, indicatorsTable, score }) 
 const RATIO_DEFS = {
     pe_ratio:       { label: 'P/E Ratio',           fmt: (v) => `${Number(v).toFixed(1)}x`,  noteFromThr: (t) => t != null ? `Sector ${Number(t).toFixed(1)}` : null, name: 'P/E' },
     roe:            { label: 'Return on Equity',    fmt: (v) => `${Number(v).toFixed(1)}%`, note: 'ROE',  name: 'ROE' },
-    roce:           { label: 'Return on Capital',   fmt: (v) => `${Number(v).toFixed(1)}%`, note: 'ROCE', name: 'ROCE' },
+    roce:           { label: 'Return on Capital Employed', fmt: (v) => `${Number(v).toFixed(1)}%`, note: 'ROCE', name: 'ROCE' },
     net_margin:     { label: 'Net Profit Margin',   fmt: (v) => `${Number(v).toFixed(1)}%`, name: 'Net margin' },
     debt_equity:    { label: 'Debt-to-Equity',      fmt: (v) => Number(v).toFixed(2),       name: 'Debt-to-equity' },
     revenue_growth: { label: 'Revenue Growth',      fmt: (v) => `${Number(v).toFixed(1)}%`, note: 'YoY',  name: 'Revenue growth' },

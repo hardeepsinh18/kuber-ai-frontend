@@ -484,7 +484,7 @@ const FinancialScoreCard = ({ fund, symbol, flat = false }) => {
                         </MetricCard>
                     )}
                     {roce != null && (
-                        <MetricCard title="Capital muscle" subtitle="RETURN ON CAPITAL" badge={roceLabel}
+                        <MetricCard title="Capital muscle" subtitle="RETURN ON CAPITAL EMPLOYED" badge={roceLabel}
                             bottomLabel="Benchmark 20%"
                             bottomValue={`${roce}%`}>
                             <SmallGauge value={roce} size={88} sublabel="ROCE" />
