@@ -44,6 +44,14 @@ const SplashScreen = ({ onDone }) => {
             }}
         >
             <KuberLogo size={200} variant={isDark ? 'full' : 'full-light'} alt="Venty — say Venty to the market" />
+            {/* Temporary build tag — lets us confirm the latest bundle actually loaded
+                (remove once the splash-centring is confirmed on device). */}
+            <span
+                className="fixed left-1/2 -translate-x-1/2 text-[10px] tracking-widest"
+                style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 14px)', color: isDark ? 'rgba(253,212,5,0.6)' : 'rgba(120,120,120,0.7)' }}
+            >
+                build v9 · centered
+            </span>
         </div>
     );
 };
