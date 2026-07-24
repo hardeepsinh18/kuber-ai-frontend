@@ -48,8 +48,8 @@ const MetricCard = ({ title, subtitle, badge, children, bottomLabel, bottomValue
     )}>
         <div className="flex items-start justify-between mb-2 gap-2">
             <div className="min-w-0">
-                <p className="text-sm font-semibold text-zinc-900 dark:text-white leading-none">{title}</p>
-                {subtitle && <p className="text-[10px] text-zinc-500 uppercase tracking-wide mt-0.5">{subtitle}</p>}
+                {subtitle && <p className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wide leading-none">{subtitle}</p>}
+                <p className="text-[11px] font-normal text-zinc-500 dark:text-zinc-400 mt-0.5 leading-tight">{title}</p>
             </div>
             {badge && <RatingBadge label={badge} />}
         </div>
