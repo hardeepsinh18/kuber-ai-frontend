@@ -11,7 +11,7 @@ const Layout = ({ children, onNewThread, sidebarOpen, setSidebarOpen, showLogin,
     const { theme } = useTheme();
     const isDark = theme === 'dark';
     return (
-        <div className="relative min-h-screen w-full overflow-hidden font-sans flex transition-colors duration-300 bg-[#F5F2E8] text-zinc-900 dark:bg-[#0A0A0A] dark:text-zinc-100">
+        <div className="relative h-screen h-[100dvh] w-full overflow-hidden font-sans flex transition-colors duration-300 bg-[#F5F2E8] text-zinc-900 dark:bg-[#0A0A0A] dark:text-zinc-100">
             <BackgroundEffect />
 
             <Sidebar
@@ -49,7 +49,7 @@ const Layout = ({ children, onNewThread, sidebarOpen, setSidebarOpen, showLogin,
             </button>
 
             {/* ── Main content column ── */}
-            <div className="relative z-10 flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300 min-w-0">
+            <div className="relative z-10 flex-1 flex flex-col h-full overflow-hidden transition-all duration-300 min-w-0">
 
                 {/* Mobile top bar — hamburger + brand + new chat. Hidden on md+ (desktop uses the side D-toggle). */}
                 <header className="md:hidden flex items-center gap-1.5 px-2.5 h-14 flex-shrink-0

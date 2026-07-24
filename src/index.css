@@ -58,7 +58,8 @@ body {
   display: flex;
   place-items: center;
   min-width: 320px;
-  min-height: 100vh;
+  min-height: 100vh;      /* fallback for browsers without dvh */
+  min-height: 100dvh;     /* dynamic viewport — avoids the iOS 100vh overflow that unpins fixed bars */
   width: 100%;
   transition: background-color 0.3s, color 0.3s;
   /* Prevent overscroll bounce on iOS */

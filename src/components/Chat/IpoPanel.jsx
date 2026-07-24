@@ -119,45 +119,57 @@ const IpoPanel = ({ onClose }) => {
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm px-2 sm:px-4 pb-4 sm:pb-0">
             <div
                 ref={panelRef}
-                className="relative w-full max-w-2xl max-h-[80vh] sm:max-h-[78vh] flex flex-col rounded-2xl border shadow-2xl overflow-hidden
+                className="relative w-full max-w-2xl max-h-[85dvh] sm:max-h-[78vh] flex flex-col rounded-2xl border shadow-2xl overflow-hidden
                            bg-white border-zinc-200
                            dark:bg-[#161616] dark:border-white/10"
             >
-                {/* Header */}
-                <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-100 dark:border-white/8 flex-shrink-0">
-                    <div className="flex items-center gap-2.5">
-                        <Rocket size={17} style={{ color: '#FDD405' }} />
-                        <div>
-                            <h2 className="text-[15px] font-semibold text-zinc-900 dark:text-white">IPO Corner</h2>
-                            <p className="text-[12px] text-zinc-400 dark:text-zinc-500 mt-0.5">
-                                NSE main-board & SME issues · live from the exchange
-                            </p>
+                {/* Header — stacks on mobile (title row, then tab row); inline on sm+ */}
+                <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-5 py-3 sm:py-4 border-b border-zinc-100 dark:border-white/8 flex-shrink-0">
+                    <div className="flex items-center justify-between gap-2 min-w-0">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                            <Rocket size={17} style={{ color: '#FDD405' }} className="flex-shrink-0" />
+                            <div className="min-w-0">
+                                <h2 className="text-[15px] font-semibold text-zinc-900 dark:text-white">IPO Corner</h2>
+                                <p className="text-[12px] text-zinc-400 dark:text-zinc-500 mt-0.5">
+                                    NSE main-board & SME issues · live from the exchange
+                                </p>
+                            </div>
                         </div>
+                        <button
+                            onClick={onClose}
+                            aria-label="Close"
+                            className="sm:hidden w-8 h-8 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:text-zinc-200 dark:hover:bg-zinc-800 transition-colors flex-shrink-0"
+                        >
+                            <X size={16} />
+                        </button>
                     </div>
 
-                    <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-zinc-100 dark:bg-zinc-900 mr-2">
-                        {TABS.map(({ key, label }) => (
-                            <button
-                                key={key}
-                                onClick={() => setTab(key)}
-                                className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all duration-200 select-none
-                                    ${tab === key
-                                        ? 'text-zinc-900 shadow-sm'
-                                        : 'text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300'}`}
-                                style={tab === key ? { backgroundColor: '#FDD405' } : {}}
-                            >
-                                {label}
-                                {data?.[key]?.length ? ` (${data[key].length})` : ''}
-                            </button>
-                        ))}
-                    </div>
+                    <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                        <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-zinc-100 dark:bg-zinc-900 flex-1 sm:flex-none">
+                            {TABS.map(({ key, label }) => (
+                                <button
+                                    key={key}
+                                    onClick={() => setTab(key)}
+                                    className={`flex-1 sm:flex-none px-2.5 sm:px-3 py-1.5 sm:py-1 rounded-md text-[11px] font-semibold whitespace-nowrap transition-all duration-200 select-none
+                                        ${tab === key
+                                            ? 'text-zinc-900 shadow-sm'
+                                            : 'text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300'}`}
+                                    style={tab === key ? { backgroundColor: '#FDD405' } : {}}
+                                >
+                                    {label}
+                                    {data?.[key]?.length ? ` (${data[key].length})` : ''}
+                                </button>
+                            ))}
+                        </div>
 
-                    <button
-                        onClick={onClose}
-                        className="w-7 h-7 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:text-zinc-200 dark:hover:bg-zinc-800 transition-colors"
-                    >
-                        <X size={15} />
-                    </button>
+                        <button
+                            onClick={onClose}
+                            aria-label="Close"
+                            className="hidden sm:flex w-7 h-7 items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:text-zinc-200 dark:hover:bg-zinc-800 transition-colors"
+                        >
+                            <X size={15} />
+                        </button>
+                    </div>
                 </div>
 
                 {/* Body */}
