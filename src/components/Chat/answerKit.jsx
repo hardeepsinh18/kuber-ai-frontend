@@ -248,6 +248,10 @@ const _shortLevelCells = (lv) => {
         lv.entry  != null && { label: 'Entry',     value: fmtINR(lv.entry, 2) },
         lv.stop   != null && { label: 'Stop Loss', value: fmtINR(lv.stop, 2) },
         lv.target != null && { label: 'Target',    value: fmtINR(lv.target, 2) },
+        // Real R:R the engine required for this trade (scales with conviction: 1:1 at a
+        // 60-70 blend up to 1:2.5 at 90+) — not a fixed number, so show it alongside the
+        // real ATR/swing levels rather than only implying it.
+        lv.rr != null && { label: 'Risk : Reward', value: `1 : ${fmtNum(lv.rr)}` },
     ].filter(Boolean);
 };
 const _longLevelCells = (lv) => {
