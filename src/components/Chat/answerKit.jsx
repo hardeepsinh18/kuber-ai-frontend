@@ -318,11 +318,17 @@ const DeterministicVerdictBand = ({ verdict }) => {
     );
 };
 
-export const VerdictBand = ({ verdict, signal, verdictText, content, aiTake, price, patternSummary = null }) => {
+export const VerdictBand = ({ verdict, verdictIntent, signal, verdictText, content, aiTake, price, patternSummary = null }) => {
     // Preferred: the deterministic Venty Verdict engine (score_card.verdict).
     if (verdict && (verdict.SHORT || verdict.LONG)) {
         return <DeterministicVerdictBand verdict={verdict} />;
     }
+    // The backend explicitly says this wasn't an investment question (verdict_intent
+    // === false) — don't fall through to text-parsing below, which would otherwise
+    // spawn a BUY/SELL card from incidental words in the prose (e.g. "analysts remain
+    // bullish on IT" in a purely informational answer). Old messages predating this
+    // field have verdictIntent === undefined and keep the previous fallback behavior.
+    if (verdictIntent === false) return null;
     // Fallback (messages with no computed verdict): parse the text. Levels shown
     // only when they come from the pattern engine or the text — the old ±5%/+10%
     // fabrication has been removed (levels are computed or absent, never invented).
