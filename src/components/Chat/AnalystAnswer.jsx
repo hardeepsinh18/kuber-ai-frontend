@@ -279,25 +279,25 @@ const PatternSection = ({ patternSummary, chartData, symbolLabel, indicatorsTabl
 };
 
 /* ─── RESEARCH SIGNAL BREAKDOWN (6 signals × 20) ─────────────────────────── */
-/* Renders the research-team scorecard: each signal shows its BUY / EXIT /
+/* Renders the research-team scorecard: each signal shows its BULLISH / BEARISH /
    NEUTRAL call, the 20-pt contribution, and a one-line reason — so the score
    is fully explainable instead of a black box. */
 const SIGNAL_STYLE = {
-    BUY:     { label: 'Buy',     dot: '#22c55e', chip: 'text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10' },
-    EXIT:    { label: 'Exit',    dot: '#ef4444', chip: 'text-red-600 dark:text-red-400 border-red-500/30 bg-red-500/10' },
+    BUY:     { label: 'Bullish', dot: '#22c55e', chip: 'text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10' },
+    EXIT:    { label: 'Bearish', dot: '#ef4444', chip: 'text-red-600 dark:text-red-400 border-red-500/30 bg-red-500/10' },
     NEUTRAL: { label: 'Neutral', dot: '#a1a1aa', chip: 'text-zinc-500 dark:text-zinc-400 border-zinc-400/30 bg-zinc-400/10' },
 };
 
 const SignalBreakdown = ({ signals }) => {
     const list = Array.isArray(signals) ? signals.filter(s => s?.status && s.status !== 'UNAVAILABLE') : [];
     if (!list.length) return null;
-    const buys = list.filter(s => s.status === 'BUY').length;
+    const bullish = list.filter(s => s.status === 'BUY').length;
     return (
         <>
             <div className="mt-4 flex items-center justify-between">
                 <MiniLabel>Signal breakdown</MiniLabel>
                 <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 tabular-nums">
-                    {buys}/{list.length} buy signals
+                    {bullish}/{list.length} bullish signals
                 </span>
             </div>
             <div className="mt-2 space-y-1.5">
