@@ -9,7 +9,6 @@ import {
     ScoreGrid, getScores, ScorecardHeader, MetricCell,
 } from './answerKit';
 import {
-    TechnicalScoreCard as TechnicalDetailCard,
     FinancialScoreCard as FinancialDetailCard,
 } from './FundamentalCard';
 
@@ -371,8 +370,6 @@ const TechnicalScorecard = ({ tech, technicalSummary, indicatorsTable, score }) 
                 </ul>
             )}
 
-            {/* Original interactive detail — full score breakdown */}
-            {tech && <TechnicalDetailCard tech={tech} />}
         </Card>
     );
 };
