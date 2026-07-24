@@ -967,14 +967,18 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
         // Follow-up chip clicks pass manualInput so we don't wipe whatever the user is typing.
         if (manualInput === null) setInput('');
 
+        // The chat this send belongs to. Everything below is async, and the
+        // user can switch chats mid-flight — `setMessages` writes to whichever
+        // chat is open when it runs, not the one we started in. Without this
+        // anchor, asking in chat A then clicking chat B appended A's answer to
+        // B, persisted it there, and replayed it as B's context forever.
+        // Declared OUTSIDE the try: the catch block calls isSameChat() too, and
+        // a const inside the try is out of scope there — every request error
+        // became a ReferenceError that skipped the wrong-chat guard entirely.
+        const sendChatId = await ensureCurrentChat();
+        const isSameChat = () => currentChatIdRef.current === sendChatId;
+
         try {
-            // The chat this send belongs to. Everything below is async, and the
-            // user can switch chats mid-flight — `setMessages` writes to whichever
-            // chat is open when it runs, not the one we started in. Without this
-            // anchor, asking in chat A then clicking chat B appended A's answer to
-            // B, persisted it there, and replayed it as B's context forever.
-            const sendChatId = await ensureCurrentChat();
-            const isSameChat = () => currentChatIdRef.current === sendChatId;
             const userMsgId = genId();
             setMessages(prev => [...prev, { id: userMsgId, role: 'user', content: normalized }]);
             setIsLoading(true);
@@ -1044,11 +1048,6 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             // and WINS over screener/market detection (e.g. "what about its stock price").
             const refersToPrev = hasPronounRef || hasSameRef;
 
-            // True follow-up: explicitly references the previous stock, OR is a very short
-            // (≤3 word) bare question that isn't a screener/market ask ("buy or sell", "is it good").
-            const isFollowUp = confidentSymbols.length === 0 && !!activeStock
-                && (refersToPrev || (wordCount <= 3 && !isScreenerQuery && !isMarketOrIndexQuery));
-
             // K-056: a clear topic change (screener / market / index with no pronoun tie)
             // must DROP the stale active stock, so it can't leak into this or later queries.
             //
@@ -1072,20 +1071,19 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 || ((isScreenerQuery || isMarketOrIndexQuery) && !refersToPrev);
             const sendContextStock = !!activeStock && !isNewTopic;
 
-            // Only send the previous stock as a hint for genuine follow-ups.
-            // For new-topic queries (screeners, explicit company names, sector switches)
-            // send nothing — let the backend resolve the symbol from the query text.
-            const symbolsToSend = confidentSymbols.length > 0
-                ? confidentSymbols
-                : (isFollowUp ? [activeStock] : []);
+            // Only explicitly-typed symbols are sent as hints. Follow-up resolution
+            // (pronouns, "tell me more", topic facets) is owned by the BACKEND's
+            // conversation-context ledger, which sees chat_history + context_stock
+            // and validates every carry against the symbol master. The client-side
+            // rewriter that used to substitute pronouns here ("should i buy it" →
+            // "should i buy TATAELXSI") ran on weaker data and its mistakes were
+            // unrecoverable server-side — an explicitly-named (wrong) stock in the
+            // query overrides every backend safeguard. See KuberAI-backend
+            // app/core/conversation_context.py.
+            const symbolsToSend = confidentSymbols;
 
             // effectiveQuery is the string actually sent to the backend.
             // For direct queries: use rewrittenQuery (alias text → ticker, e.g. "tell about SAIL")
-            // For follow-ups: replace pronouns with the active stock ticker
-            //   "should i buy it"   → "should i buy TATAELXSI"
-            //   "what is the target" → "what is the target for TATAELXSI"
-            //   "tell me more"      → "tell me more for TATAELXSI"  (≤4 words, appended)
-            //   "in the same sector…" → sent as-is (symbolsToSend provides context)
             let effectiveQuery = rewrittenQuery;
             // Bare one-token stock query ("dtl" → "DTL"): send "analyze DTL" instead.
             // The backend demotes a keyword-less STOCK_QUERY to UNKNOWN when it can't
@@ -1097,22 +1095,6 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             if (confidentSymbols.length === 1 && bareToken.toUpperCase() === confidentSymbols[0]) {
                 effectiveQuery = `analyze ${confidentSymbols[0]}`;
             }
-            if (isFollowUp) {
-                const withPronouns = normalized.replace(
-                    /\b(it|this|that|them|those|the stock|that stock|the company|this stock)\b/gi,
-                    activeStock
-                );
-                if (withPronouns !== normalized) {
-                    // Pronouns were substituted — use the rewritten string
-                    effectiveQuery = withPronouns;
-                } else if (wordCount <= 4) {
-                    // Very short contextual question — append active stock so backend has context
-                    effectiveQuery = `${normalized} for ${activeStock}`;
-                }
-                // Longer relative-ref queries ("in the same sector…") go as-is;
-                // the symbolsToSend already gives the backend the context it needs.
-            }
-
             const dynamicSteps = generateThinkingSteps(normalized, symbolsToSend);
 
             // Last 8 turns for conversation continuity, with each message CAPPED in length.
