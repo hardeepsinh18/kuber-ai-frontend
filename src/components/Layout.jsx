@@ -51,24 +51,22 @@ const Layout = ({ children, onNewThread, sidebarOpen, setSidebarOpen, showLogin,
             {/* ── Main content column ── */}
             <div className="relative z-10 flex-1 flex flex-col h-full overflow-hidden transition-all duration-300 min-w-0">
 
-                {/* Mobile top bar — hamburger + brand + new chat. Hidden on md+ (desktop uses the side D-toggle). */}
-                <header className="md:hidden flex items-center gap-1.5 px-2.5 h-14 flex-shrink-0
+                {/* Mobile top bar — hamburger (left) · centered brand · new chat (right). Hidden on md+ (desktop uses the side D-toggle). */}
+                <header className="md:hidden flex items-center px-2.5 h-14 flex-shrink-0
                                    border-b border-zinc-200/70 dark:border-zinc-800/60
                                    bg-[#F5F2E8]/85 dark:bg-[#0A0A0A]/85 backdrop-blur-md">
                     <button
                         onClick={() => setSidebarOpen(true)}
                         aria-label="Open menu"
-                        className="p-2 rounded-lg text-zinc-600 dark:text-zinc-300
+                        className="w-9 h-9 flex items-center justify-center rounded-lg flex-shrink-0 text-zinc-600 dark:text-zinc-300
                                    hover:bg-zinc-200/70 dark:hover:bg-white/5 active:scale-95 transition">
-                        <Menu size={20} />
+                        <Menu size={22} />
                     </button>
 
-                    <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex-1 flex items-center justify-center gap-2 min-w-0 px-2">
                         <KuberLogo size={24} variant={isDark ? 'mark' : 'mark-light'} className="flex-shrink-0" />
                         <KuberLogo size={13} variant={isDark ? 'wordmark' : 'wordmark-light'} alt="Venty" className="flex-shrink-0" />
                     </div>
-
-                    <div className="flex-1" />
 
                     <button
                         onClick={onNewThread}

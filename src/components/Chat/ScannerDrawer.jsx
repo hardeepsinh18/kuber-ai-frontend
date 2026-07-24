@@ -57,12 +57,15 @@ const ScannerDrawer = ({ data, onAnalyze, onClose, collapsed = false, onToggleCo
                     : <ChevronsRight size={11} className="text-zinc-500 dark:text-zinc-500" />}
             </button>
 
-            {/* Drawer — single container whose WIDTH animates (300 ↔ 48), same as sidebar */}
+            {/* Drawer — full-width on mobile; on desktop its WIDTH animates (300 ↔ 48), same as sidebar */}
             <div
                 ref={drawerRef}
-                className="fixed right-0 top-0 h-full z-50 flex flex-col overflow-hidden transition-all duration-300 ease-in-out"
+                className={clsx(
+                    'fixed right-0 top-0 h-full z-50 flex flex-col overflow-hidden transition-all duration-300 ease-in-out',
+                    'w-full',                                       // mobile: full-screen sheet
+                    collapsed ? 'md:w-[48px]' : 'md:w-[300px]'      // desktop: rail ↔ open
+                )}
                 style={{
-                    width: collapsed ? RAIL_W : OPEN_W,
                     animation: 'slideInRight 0.28s cubic-bezier(0.22,1,0.36,1)',
                     ...shellStyle,
                 }}
@@ -184,7 +187,7 @@ const ScannerDrawer = ({ data, onAnalyze, onClose, collapsed = false, onToggleCo
                                                     <td className="px-3 py-2.5 text-center">
                                                         <button
                                                             onClick={() => onAnalyze(sym)}
-                                                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-bold text-zinc-900 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+                                                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-bold text-zinc-900 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-150"
                                                             style={{ backgroundColor: '#FDD405' }}
                                                         >
                                                             Analyze <TrendingUp size={10} />
