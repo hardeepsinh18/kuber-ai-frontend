@@ -149,16 +149,6 @@ const QuickAnswer = ({
                     </div>
                 </Card>
             )}
-
-            {/* ── Footer strip ───────────────────────────────────── */}
-            <div className="flex items-center justify-between border-t border-zinc-200 dark:border-zinc-800 pt-2.5">
-                <span className="text-[8px] font-bold uppercase tracking-[0.25em] text-zinc-400 dark:text-zinc-600">
-                    Say Venty to the market
-                </span>
-                <span className="text-[8px] font-bold uppercase tracking-[0.25em] text-zinc-400 dark:text-zinc-600">
-                    Venty
-                </span>
-            </div>
         </div>
     );
 };
