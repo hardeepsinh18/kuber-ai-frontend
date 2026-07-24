@@ -18,7 +18,7 @@ const SplashScreen = ({ onDone }) => {
 
     return (
         <div
-            className="fixed inset-0 z-[9999] flex flex-col items-center justify-center"
+            className="fixed inset-x-0 top-0 h-[100dvh] z-[9999] flex flex-col items-center justify-center"
             style={{
                 background: isDark ? '#121315' : '#ffffff',
                 opacity: fading ? 0 : 1,
