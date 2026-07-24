@@ -429,6 +429,9 @@ const FundamentalScorecard = ({ fund, score, symbolLabel }) => {
             {fund.summary && (
                 <p className="mt-2 text-[11.5px] text-zinc-500 dark:text-zinc-400 leading-relaxed">{fund.summary}</p>
             )}
+            {/* Metric cards, hoisted flat out of the (removed) Financial Score Card wrapper */}
+            <FinancialDetailCard fund={fund} symbol={symbolLabel} flat />
+
             {(pros.length > 0 || cons.length > 0) && (
                 <>
                     <MiniLabel className="mt-4">Pros and cons</MiniLabel>
@@ -462,9 +465,6 @@ const FundamentalScorecard = ({ fund, score, symbolLabel }) => {
                     </div>
                 </>
             )}
-
-            {/* Metric cards, hoisted flat out of the (removed) Financial Score Card wrapper */}
-            <FinancialDetailCard fund={fund} symbol={symbolLabel} flat />
         </Card>
     );
 };
