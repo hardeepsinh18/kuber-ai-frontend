@@ -153,10 +153,10 @@ export default function AuthPage() {
 
                 {/* Logo */}
                 <div className="flex items-center gap-3 mb-6">
-                    <KuberLogo size={42} variant={isDark ? 'mark' : 'mark-light'} />
-                    <div>
-                        <p className="brand-display text-[22px] font-bold leading-none tracking-[0.08em]" style={{ color: textMain }}>VENTY</p>
-                        <p className="text-[10px] tracking-widest uppercase mt-0.5" style={{ color: labelColor }}>by 72 Street</p>
+                    <KuberLogo size={44} variant={isDark ? 'mark' : 'mark-light'} />
+                    <div className="flex flex-col gap-1.5">
+                        <KuberLogo size={19} variant={isDark ? 'wordmark' : 'wordmark-light'} alt="Venty" />
+                        <p className="text-[10px] tracking-widest uppercase" style={{ color: labelColor }}>by 72 Street</p>
                     </div>
                 </div>
 

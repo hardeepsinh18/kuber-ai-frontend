@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, Mail, Lock, User, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
+import KuberLogo from '../KuberLogo';
 
 const GoogleIcon = () => (
     <svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -64,6 +66,8 @@ const Field = ({ label, icon: Icon, type: initialType, value, onChange, placehol
 
 const LoginModal = ({ isOpen, onClose }) => {
     const { signInWithEmail, signUpWithEmail, signInWithGoogle, supabaseConfigured } = useAuth();
+    const { theme } = useTheme();
+    const isDark = theme === 'dark';
     const [mode, setMode]         = useState('signin');
     const [email, setEmail]       = useState('');
     const [password, setPassword] = useState('');
@@ -176,9 +180,9 @@ const LoginModal = ({ isOpen, onClose }) => {
                                         <span className="brand-display text-black font-bold text-lg leading-none">V</span>
                                     </div>
                                 </div>
-                                <div>
-                                    <p className="brand-display text-[16px] font-bold tracking-[0.06em] text-zinc-900 dark:text-white leading-none">VENTY</p>
-                                    <p className="text-[10px] text-zinc-400 dark:text-zinc-600 mt-0.5 tracking-wide">by 72 Street</p>
+                                <div className="flex flex-col gap-1">
+                                    <KuberLogo size={15} variant={isDark ? 'wordmark' : 'wordmark-light'} alt="Venty" />
+                                    <p className="text-[10px] text-zinc-400 dark:text-zinc-600 tracking-wide">by 72 Street</p>
                                 </div>
                             </div>
                             <button onClick={onClose}

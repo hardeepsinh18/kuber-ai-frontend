@@ -75,7 +75,7 @@ export default function LegalPage({ doc = 'terms' }) {
             <div style={{ maxWidth: 720, margin: '0 auto' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
                     <KuberLogo size={30} variant={isDark ? 'mark' : 'mark-light'} />
-                    <span className="brand-display" style={{ fontSize: 18, fontWeight: 700, color: heading, letterSpacing: 1.5 }}>VENTY</span>
+                    <KuberLogo size={17} variant={isDark ? 'wordmark' : 'wordmark-light'} alt="Venty" />
                 </div>
 
                 <h1 style={{ fontSize: 26, fontWeight: 800, color: heading, marginBottom: 4 }}>{title}</h1>

@@ -146,10 +146,8 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, onPortfolioClick, showLog
                                     flex-shrink-0">
                         <NavLink to="/" className="flex items-center gap-2.5">
                             <KuberLogo size={30} variant={theme === 'dark' ? 'mark' : 'mark-light'} className="flex-shrink-0" />
-                            <div className="flex flex-col leading-none gap-1">
-                                <span className="brand-display text-[17px] font-bold tracking-[0.10em] text-zinc-900 dark:text-white">
-                                    VENTY
-                                </span>
+                            <div className="flex flex-col leading-none gap-1.5">
+                                <KuberLogo size={14} variant={theme === 'dark' ? 'wordmark' : 'wordmark-light'} alt="Venty" />
                                 <span className="text-[8.5px] tracking-[0.20em] text-zinc-400 dark:text-zinc-500 font-medium uppercase">
                                     BY 72 STREET
                                 </span>
