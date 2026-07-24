@@ -16,6 +16,11 @@ const SplashScreen = ({ onDone }) => {
     useEffect(() => {
         const measure = () => setVh(window.visualViewport?.height || window.innerHeight);
         measure();
+        // iOS reports a stale height on the very first paint (before the address bar
+        // settles) — re-measure a few times so the container matches the real visible area.
+        const r1 = setTimeout(measure, 60);
+        const r2 = setTimeout(measure, 250);
+        const r3 = setTimeout(measure, 600);
         window.addEventListener('resize', measure);
         window.addEventListener('orientationchange', measure);
         window.visualViewport?.addEventListener('resize', measure);
@@ -24,6 +29,7 @@ const SplashScreen = ({ onDone }) => {
         return () => {
             clearTimeout(fadeTimer);
             clearTimeout(doneTimer);
+            clearTimeout(r1); clearTimeout(r2); clearTimeout(r3);
             window.removeEventListener('resize', measure);
             window.removeEventListener('orientationchange', measure);
             window.visualViewport?.removeEventListener('resize', measure);
