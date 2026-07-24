@@ -953,9 +953,6 @@ const AnalystAnswer = ({
 
             <Stage show={shown(4)}>
                 <div className="space-y-3">
-                    <TechnicalScorecard tech={scoreCard?.technical} technicalSummary={technicalSummary}
-                                        indicatorsTable={indicatorsTable} score={scores.technical} />
-
                     <FundamentalScorecard fund={scoreCard?.fundamental} score={scores.fundamental}
                                           symbolLabel={symbolLabel} />
                 </div>
