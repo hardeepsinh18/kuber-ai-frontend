@@ -11,7 +11,6 @@ import {
 import {
     TechnicalScoreCard as TechnicalDetailCard,
     FinancialScoreCard as FinancialDetailCard,
-    FiveYearScoreCard,
 } from './FundamentalCard';
 
 /**
@@ -433,14 +432,6 @@ const FundamentalScorecard = ({ fund, score, symbolLabel }) => {
             {fund.summary && (
                 <p className="mt-2 text-[11.5px] text-zinc-500 dark:text-zinc-400 leading-relaxed">{fund.summary}</p>
             )}
-            {cells.length > 0 && (
-                <>
-                    <MiniLabel className="mt-4">Health report</MiniLabel>
-                    <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                        {cells.map((c, i) => <MetricCell key={`${c.label}-${i}`} {...c} />)}
-                    </div>
-                </>
-            )}
             {(pros.length > 0 || cons.length > 0) && (
                 <>
                     <MiniLabel className="mt-4">Pros and cons</MiniLabel>
@@ -475,9 +466,8 @@ const FundamentalScorecard = ({ fund, score, symbolLabel }) => {
                 </>
             )}
 
-            {/* Original interactive detail — full ratio tables, 5-year history, peer rank */}
-            <FinancialDetailCard fund={fund} symbol={symbolLabel} />
-            {fund?.historical && <FiveYearScoreCard fund={fund} />}
+            {/* Metric cards, hoisted flat out of the (removed) Financial Score Card wrapper */}
+            <FinancialDetailCard fund={fund} symbol={symbolLabel} flat />
         </Card>
     );
 };

@@ -43,7 +43,7 @@ const RatingBadge = ({ label, className }) => {
 /* ─── Metric card shell ──────────────────────────────────────────────────── */
 const MetricCard = ({ title, subtitle, badge, children, bottomLabel, bottomValue, className }) => (
     <div className={clsx(
-        'bg-white dark:bg-zinc-900 rounded-xl border border-[#FDD405] p-3 flex flex-col',
+        'bg-zinc-50 dark:bg-black/30 rounded-xl border border-zinc-200 dark:border-zinc-800 p-3 flex flex-col',
         className
     )}>
         <div className="flex items-start justify-between mb-2 gap-2">
@@ -370,7 +370,7 @@ const OverallHealthScore = ({ score, label, summary, ratingsSum, components }) =
 /* ─── FINANCIAL SCORE CARD (collapsible 2-col grid) ─────────────────────── */
 const FIN_SCORE_INFO = 'Composite of the fundamental metrics below (P/E vs sector, ROE, ROCE, net margin, debt/equity, revenue & profit growth). Each metric is rated and normalized to 100. ≥70 = Strong · 50-69 = Average · 35-49 = Weak · <35 = Poor.';
 
-const FinancialScoreCard = ({ fund, symbol }) => {
+const FinancialScoreCard = ({ fund, symbol, flat = false }) => {
     const [open, setOpen] = React.useState(false);
     const ratios = fund?.ratios ?? {};
     const hist   = fund?.historical ?? null;
@@ -418,19 +418,21 @@ const FinancialScoreCard = ({ fund, symbol }) => {
     if (!hasCards) return null;
 
     return (
-        <div className="mt-4 border border-zinc-200 dark:border-zinc-700/50 rounded-xl overflow-hidden bg-white dark:bg-[#1C1B15]">
-            <button
-                onClick={() => setOpen(o => !o)}
-                className="w-full flex items-center justify-between px-4 py-3 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-left"
-            >
-                <span className="text-sm font-semibold text-zinc-900 dark:text-white">Financial Score Card</span>
-                {open ? <ChevronUp size={15} className="text-zinc-500 dark:text-zinc-400 flex-shrink-0" />
-                      : <ChevronDown size={15} className="text-zinc-500 dark:text-zinc-400 flex-shrink-0" />}
-            </button>
-            {open && (
-                <div className="p-3 space-y-3 bg-zinc-50 dark:bg-[#1C1B15]">
+        <div className={flat ? 'mt-4' : 'mt-4 border border-zinc-200 dark:border-zinc-700/50 rounded-xl overflow-hidden bg-white dark:bg-[#1C1B15]'}>
+            {!flat && (
+                <button
+                    onClick={() => setOpen(o => !o)}
+                    className="w-full flex items-center justify-between px-4 py-3 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-left"
+                >
+                    <span className="text-sm font-semibold text-zinc-900 dark:text-white">Financial Score Card</span>
+                    {open ? <ChevronUp size={15} className="text-zinc-500 dark:text-zinc-400 flex-shrink-0" />
+                          : <ChevronDown size={15} className="text-zinc-500 dark:text-zinc-400 flex-shrink-0" />}
+                </button>
+            )}
+            {(flat || open) && (
+                <div className={flat ? '' : 'p-3 space-y-3 bg-zinc-50 dark:bg-[#1C1B15]'}>
                     {/* Score banner — same design language as the Technical Score Card */}
-                    {finScore != null && (
+                    {!flat && finScore != null && (
                         <div className="flex items-center justify-between p-3 rounded-xl"
                              style={{ background: `${finColor}12`, border: `1.5px solid ${finColor}30` }}>
                             <div>
