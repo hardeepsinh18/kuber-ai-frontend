@@ -17,7 +17,16 @@ const SplashScreen = ({ onDone }) => {
     useEffect(() => {
         let raf;
         const sync = () => {
-            const h = window.visualViewport?.height || window.innerHeight;
+            // Use the LARGEST available viewport measure. visualViewport.height alone
+            // can report a value smaller than the actual rendered viewport (seen in
+            // devtools + iOS with the address bar), which made the container too short
+            // and pushed the logo above centre. documentElement.clientHeight is the
+            // full, stable viewport height.
+            const h = Math.max(
+                document.documentElement.clientHeight || 0,
+                window.innerHeight || 0,
+                window.visualViewport?.height || 0,
+            );
             document.documentElement.style.setProperty('--splash-vh', `${h}px`);
             raf = requestAnimationFrame(sync);
         };
@@ -50,7 +59,7 @@ const SplashScreen = ({ onDone }) => {
                 className="fixed left-1/2 -translate-x-1/2 text-[10px] tracking-widest"
                 style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 14px)', color: isDark ? 'rgba(253,212,5,0.6)' : 'rgba(120,120,120,0.7)' }}
             >
-                build v9 · centered
+                build v10 · centered
             </span>
         </div>
     );
