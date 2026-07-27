@@ -23,6 +23,13 @@ describe('metricAnswer', () => {
         expect(metricAnswer('what is the d/e of reliance', fund, 'RELIANCE'))
             .toBe("RELIANCE's debt-to-equity is 0.34 — strong.");
     });
+    it('matches debt/equity regardless of separator (slash, spaces, "to", hyphen)', () => {
+        const expected = "RELIANCE's debt-to-equity is 0.34 — strong.";
+        for (const q of ['debt / equity of reliance', 'debt to equity of reliance',
+                         'debt-equity of reliance', 'debt/equity reliance', 'd / e of reliance']) {
+            expect(metricAnswer(q, fund, 'RELIANCE')).toBe(expected);
+        }
+    });
     it('accepts object-shaped ratio entries too', () => {
         const objFund = { ratios: { pe_ratio: { value: 23.2, threshold: 25, label: 'FAIR' } } };
         expect(metricAnswer('pe ratio', objFund, 'TCS')).toBe("TCS's P/E is 23.2x versus the sector's 25.0x — fair.");

@@ -38,14 +38,14 @@ const _round = (v, d) => Number(v).toFixed(d);
    phrase its value. Keyed to scoreCard.fundamental.ratios (see RATIO_DEFS in
    AnalystAnswer). Order matters — first regex hit wins. */
 const METRIC_MATCHERS = [
-    { re: /\bp\s*\/?\s*e\b|\bpe\b|price[\s-]*to[\s-]*earn|price.{0,6}earn/i,
+    { re: /\bp\s*[/-]?\s*e\b|\bpe\b|price[\s-]*to[\s-]*earn|price.{0,6}earn/i,
       key: 'pe_ratio', name: 'P/E', fmt: (v) => `${_round(v, 1)}x`,
       ctx: (t) => (t != null ? ` versus the sector's ${_round(t, 1)}x` : '') },
     { re: /\broe\b|return on equity/i,        key: 'roe',            name: 'ROE',             fmt: (v) => `${_round(v, 1)}%` },
     { re: /\broce\b|return on capital/i,      key: 'roce',           name: 'ROCE',            fmt: (v) => `${_round(v, 1)}%` },
     { re: /net[\s-]*margin|profit[\s-]*margin|\bmargins?\b|profitability/i,
       key: 'net_margin',     name: 'net margin',      fmt: (v) => `${_round(v, 1)}%` },
-    { re: /debt[\s-]*(to[\s-]*)?equity|\bd\s*\/?\s*e\b|leverage/i,
+    { re: /debt[\s/.-]*(?:to[\s/.-]+)?equity|\bd\s*\/\s*e\b|leverage/i,
       key: 'debt_equity',    name: 'debt-to-equity',  fmt: (v) => _round(v, 2) },
     { re: /revenue[\s-]*(growth|cagr)|sales[\s-]*growth/i,
       key: 'revenue_growth', name: 'revenue growth',  fmt: (v) => `${_round(v, 1)}%` },

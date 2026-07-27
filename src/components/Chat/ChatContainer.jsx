@@ -94,8 +94,9 @@ const extractQueryIntent = (query) => {
     }
 
     // Single fundamental metric queries — only show price header + text answer
-    if (/\bp[/\s-]?e\b|pe ratio|p\/e ratio|price.{0,6}earn|price to earn/i.test(q)) return 'pe_ratio';
-    if (/\b(roe|return on equity|roce|return on capital|eps|earnings per share|debt.equity|d\/e ratio|leverage|margins?|net margin|profit margin|operating margin|profitability|revenue growth|profit growth|dividend yield|dividend|book value|pb ratio|price.book|peg ratio|ebitda|fcf|free cash flow|cash flow|market cap|mcap)\b/i.test(q)) return 'pe_ratio';
+    if (/\bp\s*[/-]\s*e\b|\bpe\b|pe ratio|price.{0,6}earn|price to earn/i.test(q)) return 'pe_ratio';
+    // Separators vary: "debt / equity", "debt to equity", "debt-equity", "d/e", "d / e".
+    if (/\b(roe|return on equity|roce|return on capital|eps|earnings per share|debt[\s/.-]*(?:to[\s/.-]+)?equity|\bd\s*\/\s*e\b|leverage|margins?|net margin|profit margin|operating margin|profitability|revenue growth|profit growth|dividend yield|dividend|book value|pb ratio|price.book|peg ratio|ebitda|fcf|free cash flow|cash flow|market cap|mcap)\b/i.test(q)) return 'pe_ratio';
 
     // News-only query
     if (hasNews) return 'news';
