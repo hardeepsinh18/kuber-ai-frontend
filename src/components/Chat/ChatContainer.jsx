@@ -65,6 +65,15 @@ const extractChartPeriod = (query) => {
 const extractQueryIntent = (query) => {
     const q = query.toLowerCase();
 
+    // Horizon-qualified queries (the Short/Long Term chip text, or any "long term"/
+    // "short term" framed question) are always meant for the full analysis — never
+    // the narrow single-aspect view, even when they happen to mention "fundamentals"
+    // (e.g. the Long Term chip's own "...— fundamentals, growth outlook" text, which
+    // was otherwise classified as the single-aspect 'fundamentals' intent and hid the
+    // chart/technical/sentiment/verdict sections). Mirrors the backend's
+    // _detect_horizon check in response_pipeline.py so client and server agree.
+    if (/\b(long[\s-]term|short[\s-]term)\b/i.test(q)) return 'full';
+
     // Per-aspect signals (plural-safe: "technicals"/"fundamentals" included).
     const hasFundamental = /\bfundamentals?\b|\bfundamental analysis\b/i.test(q);
     const hasTechnical   = /\btechnicals?\b|\btechnical analysis\b|\brsi\b|\bmacd\b|\bbollinger\b|\bmomentum\b|\bindicators?\b/i.test(q);
