@@ -5,9 +5,12 @@ import { useTheme } from '../context/ThemeContext';
 /**
  * Splash overlay. `position: fixed; inset: 0` pins all four edges to the viewport
  * so the box is exactly the viewport rectangle (no measured height to get wrong),
- * and flexbox centres the logo. The logo is nudged down a touch because the full
- * mark is top-heavy (robot + VENTY carry the weight, the tagline is light) — this
- * puts the robot+wordmark at the optical centre so it reads as centred.
+ * and flexbox centres the logo.
+ *
+ * No manual translate: the logo asset has zero vertical padding (artwork fills the
+ * frame edge to edge, verified on both the dark and light PNGs), so the flexbox
+ * centre IS the visual centre. A hardcoded nudge here shifts the logo off-centre
+ * on every viewport — px offsets don't scale with screen height.
  */
 const SplashScreen = ({ onDone }) => {
     const [fading, setFading] = useState(false);
@@ -33,9 +36,7 @@ const SplashScreen = ({ onDone }) => {
                 pointerEvents: fading ? 'none' : 'auto',
             }}
         >
-            <div style={{ transform: 'translateY(30px)' }}>
-                <KuberLogo size={200} variant={isDark ? 'full' : 'full-light'} alt="Venty — say Venty to the market" />
-            </div>
+            <KuberLogo size={200} variant={isDark ? 'full' : 'full-light'} alt="Venty — say Venty to the market" />
         </div>
     );
 };
