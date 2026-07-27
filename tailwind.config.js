@@ -22,6 +22,10 @@ export default {
                     yellow: '#fdd405',        // primary brand accent
                     'yellow-bright': '#ffe23f',
                     'yellow-dark': '#e0bd00',
+                    // Brand yellow darkened for TEXT on light backgrounds — same 50deg
+                    // hue, 4.52:1 on white (AA). Replaces Tailwind amber-*, which is a
+                    // non-brand orange hue (amber-600 = 32deg).
+                    'yellow-ink': '#8b7503',
                     black: '#121315',         // brand ink / near-black bg
                     green: '#0e9e37',         // underline / positive accent
                     'green-dark': '#0b7f2c',

@@ -38,7 +38,7 @@ export const InlineMd = ({ children }) => (
             em: ({ children: c }) => <em className="italic">{c}</em>,
             a: ({ href, children: c }) => (
                 <a href={href} target="_blank" rel="noopener noreferrer"
-                   className="underline underline-offset-2 text-amber-700 dark:text-[#FDD405]">{c}</a>
+                   className="underline underline-offset-2 text-street-yellow-ink dark:text-[#FDD405]">{c}</a>
             ),
         }}
     >
@@ -63,7 +63,7 @@ export const CardHeader = ({ children }) => (
 /* Tiny uppercase label — "WHY THIS VERDICT", "KEY INDICATORS", … */
 export const MiniLabel = ({ children, className }) => (
     <p className={clsx(
-        'text-[9px] font-extrabold uppercase tracking-[0.2em] text-amber-600 dark:text-[#FDD405]',
+        'text-[9px] font-extrabold uppercase tracking-[0.2em] text-street-yellow-ink dark:text-[#FDD405]',
         className
     )}>
         {children}
@@ -268,7 +268,7 @@ const _longLevelCells = (lv) => {
 // Verdict → text colour (green = buy, amber = cautious, grey = wait, red = avoid).
 const _verdictTone = (v) => ({
     'STRONG BUY':        'text-emerald-500 dark:text-emerald-400',
-    'CAUTIOUS BUY':      'text-amber-500 dark:text-[#FDD405]',
+    'CAUTIOUS BUY':      'text-street-yellow-ink dark:text-[#FDD405]',
     'WAIT / ACCUMULATE': 'text-zinc-600 dark:text-zinc-300',
     'AVOID':             'text-red-500 dark:text-red-400',
 }[v] || 'text-zinc-600 dark:text-zinc-300');
@@ -309,7 +309,7 @@ const DeterministicVerdictBand = ({ verdict }) => {
         <div className="rounded-2xl overflow-hidden border bg-white border-zinc-200 dark:bg-[#141312] dark:border-zinc-800">
             <div className="flex items-center gap-1.5 px-4 pt-3 pb-1.5">
                 <span className="w-4 h-[3px] rounded-full" style={{ backgroundColor: BRAND }} />
-                <p className="text-[9px] font-extrabold uppercase tracking-[0.25em] text-amber-600 dark:text-[#FDD405]">Venty Verdict</p>
+                <p className="text-[9px] font-extrabold uppercase tracking-[0.25em] text-street-yellow-ink dark:text-[#FDD405]">Venty Verdict</p>
             </div>
             {sh && <HorizonRow tenor="Short-Term · ≤1yr" v={sh} cells={_shortLevelCells(sh.levels)} />}
             {sh && lg && <div className="h-px bg-zinc-200 dark:bg-zinc-800" />}
@@ -567,7 +567,7 @@ const PanelBullets = ({ items }) => (
 );
 
 const PanelTitle = ({ children }) => (
-    <p className="text-[13px] font-bold text-amber-600 dark:text-[#FDD405]">{children}</p>
+    <p className="text-[13px] font-bold text-street-yellow-ink dark:text-[#FDD405]">{children}</p>
 );
 
 export const VentyScorePanel = ({ scoreCard, managementSentiment, companyName = '', overviewBullets = [] }) => {
@@ -658,7 +658,7 @@ export const ScorecardHeader = ({ icon: Icon, title, score, label }) => (
         <div className="min-w-0">
             <p className="text-[15px] font-bold text-zinc-900 dark:text-white leading-tight">{title}</p>
             {score != null && (
-                <p className="text-[11px] font-extrabold tracking-wider text-amber-600 dark:text-[#FDD405] mt-0.5 uppercase">
+                <p className="text-[11px] font-extrabold tracking-wider text-street-yellow-ink dark:text-[#FDD405] mt-0.5 uppercase">
                     {Math.round(score)}/100{label ? ` · ${label}` : ''}
                 </p>
             )}

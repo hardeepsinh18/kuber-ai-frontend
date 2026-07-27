@@ -203,7 +203,7 @@ const VerdictCard = ({ text }) => {
                         em: ({ children }) => <em className="italic text-zinc-500 dark:text-zinc-400 font-normal">{children}</em>,
                         a: ({ href, children }) => (
                             <a href={href} target="_blank" rel="noopener noreferrer"
-                               className="text-amber-700 dark:text-[#FDD405] underline underline-offset-2">{children}</a>
+                               className="text-street-yellow-ink dark:text-[#FDD405] underline underline-offset-2">{children}</a>
                         ),
                     }}
                 >
@@ -566,7 +566,7 @@ const FollowUpChips = ({ chips, onClick }) => (
                            border border-zinc-200/80 dark:border-zinc-700/60
                            hover:text-zinc-900 dark:hover:text-white
                            hover:border-[#FDD405]/70 dark:hover:border-[#FDD405]/60
-                           hover:bg-amber-50/80 dark:hover:bg-[#FDD405]/10
+                           hover:bg-street-yellow/10 dark:hover:bg-[#FDD405]/10
                            shadow-sm transition-all duration-150 truncate max-w-[260px]">
                 {label}
             </button>
@@ -1018,7 +1018,7 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                                             <span className={clsx('mt-[7px] w-2 h-2 rounded-full flex-shrink-0', dotColor)} />
                                             <div className="flex-1 min-w-0">
                                                 {h?.url ? (
-                                                    <a href={h.url} target="_blank" rel="noopener noreferrer" className="text-sm text-zinc-800 dark:text-zinc-200 hover:text-amber-700 dark:hover:text-[#FDD405] leading-snug line-clamp-2 transition-colors hover:underline">
+                                                    <a href={h.url} target="_blank" rel="noopener noreferrer" className="text-sm text-zinc-800 dark:text-zinc-200 hover:text-street-yellow-ink dark:hover:text-[#FDD405] leading-snug line-clamp-2 transition-colors hover:underline">
                                                         {h.title || 'Untitled'}
                                                     </a>
                                                 ) : (
@@ -1161,7 +1161,7 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                                         href={href}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="text-amber-700 dark:text-[#FDD405] underline decoration-amber-400/50 dark:decoration-amber-500/50 underline-offset-2 hover:decoration-amber-700 dark:hover:decoration-amber-400 transition-colors"
+                                        className="text-street-yellow-ink dark:text-[#FDD405] underline decoration-street-yellow-ink/40 dark:decoration-amber-500/50 underline-offset-2 hover:decoration-street-yellow-ink dark:hover:decoration-amber-400 transition-colors"
                                     >
                                         {children}
                                     </a>

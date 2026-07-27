@@ -142,7 +142,7 @@ const QuickAnswer = ({
                                 <div key={`${i}-${(h?.title || '').slice(0, 40)}`} className="flex items-center justify-between gap-3 py-2.5">
                                     {h?.url ? (
                                         <a href={h.url} target="_blank" rel="noopener noreferrer"
-                                           className="text-[12.5px] text-zinc-700 dark:text-zinc-300 leading-snug line-clamp-2 hover:text-amber-700 dark:hover:text-[#FDD405] hover:underline transition-colors flex-1 min-w-0">
+                                           className="text-[12.5px] text-zinc-700 dark:text-zinc-300 leading-snug line-clamp-2 hover:text-street-yellow-ink dark:hover:text-[#FDD405] hover:underline transition-colors flex-1 min-w-0">
                                             {h.title || 'Untitled'}
                                         </a>
                                     ) : (
@@ -151,7 +151,7 @@ const QuickAnswer = ({
                                         </p>
                                     )}
                                     {meta && (
-                                        <span className="text-[9px] font-extrabold uppercase tracking-wider flex-shrink-0 text-right text-amber-700 dark:text-[#FDD405]">
+                                        <span className="text-[9px] font-extrabold uppercase tracking-wider flex-shrink-0 text-right text-street-yellow-ink dark:text-[#FDD405]">
                                             {meta}
                                         </span>
                                     )}

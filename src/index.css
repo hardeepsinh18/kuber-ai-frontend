@@ -30,6 +30,11 @@
   --street-yellow: #fdd405;
   --street-black: #121315;
   --street-green: #0e9e37;
+  /* Brand yellow darkened for text on light backgrounds. Same hue (50deg) as
+     --street-yellow, just darker: raw #fdd405 on white is 1.44:1 (unreadable).
+     This is 4.52:1 = WCAG AA. Use this instead of Tailwind amber-*, which is a
+     different, non-brand hue (amber-600 is 32deg — orange, not brand yellow). */
+  --street-yellow-ink: #8b7503;
   /* Legacy alias kept so existing var(--kuber-gold) refs stay on-brand */
   --kuber-gold: #fdd405;
   --kuber-gold-glow: rgba(253, 212, 5, 0.3);

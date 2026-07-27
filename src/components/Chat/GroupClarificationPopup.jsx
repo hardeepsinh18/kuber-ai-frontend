@@ -97,7 +97,7 @@ const GroupClarificationPopup = ({ groupName, candidates, onSelect, onDismiss, d
                             <span className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0
                                              text-[13px] font-extrabold
                                              bg-[#FDD405]/15 border border-[#FDD405]/30
-                                             text-amber-600 dark:text-[#FDD405]
+                                             text-street-yellow-ink dark:text-[#FDD405]
                                              group-hover:bg-[#FDD405] group-hover:text-black
                                              group-hover:border-[#FDD405] transition-colors">
                                 {initial}

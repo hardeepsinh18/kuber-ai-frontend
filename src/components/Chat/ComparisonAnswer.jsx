@@ -59,10 +59,10 @@ const ComparisonAnswer = ({ content, metadata = {}, chartData = null }) => {
 
             {/* ── Winner verdict band ────────────────────────────── */}
             {winner && (
-                <Card className="px-4 py-3.5 border-l-4 border-l-amber-500 dark:border-l-[#FDD405]">
+                <Card className="px-4 py-3.5 border-l-4 border-l-street-yellow-ink dark:border-l-[#FDD405]">
                     <MiniLabel>Venty verdict</MiniLabel>
                     <div className="mt-1.5 flex items-start gap-2">
-                        <Trophy size={16} strokeWidth={2.5} className="mt-[2px] flex-shrink-0 text-amber-600 dark:text-[#FDD405]" />
+                        <Trophy size={16} strokeWidth={2.5} className="mt-[2px] flex-shrink-0 text-street-yellow-ink dark:text-[#FDD405]" />
                         <p className="text-[13.5px] leading-relaxed text-zinc-800 dark:text-zinc-100">
                             <strong className="font-extrabold">Winner: {winner.name}</strong>
                             {winner.reason && <span className="text-zinc-600 dark:text-zinc-300"> — {winner.reason}</span>}
