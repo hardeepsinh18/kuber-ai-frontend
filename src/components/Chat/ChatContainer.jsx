@@ -152,6 +152,10 @@ const SYMBOL_HINT_STOPWORDS = new Set([
     // Financial metric abbreviations
     'PE', 'PB', 'EPS', 'ROE', 'ROA', 'ROCE', 'EBITDA', 'PAT', 'PEG',
     'CAGR', 'YOY', 'QOQ', 'MOM', 'TTM', 'DIV', 'DY',
+    // Financial metric WORDS — "DEBT / EQUITY of TCS" must not send DEBT+EQUITY as
+    // symbol hints ("3 stocks: DEBT, EQUITY, TCS"). None of these are NSE tickers.
+    'DEBT', 'EQUITY', 'REVENUE', 'SALES', 'PROFIT', 'EARNINGS', 'NET', 'GROSS',
+    'OPERATING', 'PROFITABILITY', 'CASH', 'FLOW', 'FREE', 'VALUE', 'CAP', 'MCAP',
     // Macro / regulatory / exchange bodies — not tickers
     'RBI', 'SEBI', 'NSE', 'BSE', 'MCX', 'GDP', 'CPI', 'WPI', 'IIP',
     // Query descriptor words that look like tickers
