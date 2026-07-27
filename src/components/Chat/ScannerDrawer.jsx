@@ -30,6 +30,15 @@ const ScannerDrawer = ({ data, onAnalyze, onClose, collapsed = false, onToggleCo
         return () => document.removeEventListener('keydown', handler);
     }, [onClose]);
 
+    // On mobile the drawer is a bottom sheet — lock the page behind it so scrolling
+    // the results list doesn't scroll the chat underneath.
+    useEffect(() => {
+        if (typeof window === 'undefined' || window.innerWidth >= 768) return;
+        const prev = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        return () => { document.body.style.overflow = prev; };
+    }, []);
+
     const shellStyle = {
         background: isDark ? '#111113' : '#ffffff',
         borderLeft: isDark ? '1px solid rgba(255,255,255,0.07)' : '1px solid rgba(0,0,0,0.08)',
@@ -147,8 +156,8 @@ const ScannerDrawer = ({ data, onAnalyze, onClose, collapsed = false, onToggleCo
                             </div>
                         </div>
 
-                        {/* Table */}
-                        <div className="flex-1 overflow-y-auto">
+                        {/* Table — scroll stays inside the sheet (no chaining to the page) */}
+                        <div className="flex-1 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
                             {raw.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center h-full gap-3 px-6 text-center">
                                     <span className="text-4xl">🔍</span>
