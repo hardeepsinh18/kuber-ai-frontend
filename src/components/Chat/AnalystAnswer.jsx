@@ -11,6 +11,7 @@ import {
 import {
     FinancialScoreCard as FinancialDetailCard,
 } from './FundamentalCard';
+import { answerSections, firstParagraph } from './answerSections';
 
 /**
  * AnalystAnswer — "one tap deeper" layout for Analyst mode.
@@ -80,18 +81,6 @@ export const proseComponents = {
     code: ({ children }) => <code className="px-1 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-[11px]">{children}</code>,
 };
 
-/* First real paragraph of the answer — the "why" summary when no verdict text */
-const firstParagraph = (md) => {
-    const blocks = String(md || '').split(/\n{2,}/);
-    for (const b of blocks) {
-        const t = b.trim();
-        if (!t) continue;
-        if (/^#{1,6}\s/.test(t) || /^[-*•]\s/.test(t) || /^\|/.test(t) || /^>/.test(t)) continue;
-        return t;
-    }
-    return null;
-};
-
 /* ─── WHY THIS VERDICT ───────────────────────────────────────────────────── */
 // The prose Venty types out. Kept as its own helper because AnalystAnswer needs the
 // same string to drive the typewriter that WhyThisVerdict renders.
@@ -100,8 +89,10 @@ const verdictSummary = (verdictText, content, signal) =>
     || firstParagraph(content)
     || (Array.isArray(signal?.why) && signal.why.length ? signal.why.join(' ') : null);
 
-const WhyThisVerdict = ({ verdictText, content, signal, typedSummary = null, caret = false }) => {
-    const summary = verdictSummary(verdictText, content, signal);
+const WhyThisVerdict = ({ verdictText, content, signal, summary: summaryProp = null, label = 'Why this verdict', typedSummary = null, caret = false }) => {
+    // Focused intents pass the resolved direct answer in `summary`; holistic
+    // intents let the card derive the verdict summary itself.
+    const summary = summaryProp != null ? summaryProp : verdictSummary(verdictText, content, signal);
     if (!summary) return null;
 
     const shown = typedSummary != null ? typedSummary : summary;
@@ -109,7 +100,7 @@ const WhyThisVerdict = ({ verdictText, content, signal, typedSummary = null, car
 
     return (
         <Card className="px-4 py-3.5">
-            <MiniLabel>Why this verdict</MiniLabel>
+            <MiniLabel>{label}</MiniLabel>
             {summary && (
                 <div className="mt-1.5 text-[13px] leading-relaxed text-zinc-700 dark:text-zinc-300">
                     <InlineMd>{(shown || '').replace(/^\**\s*verdict\s*:?\**\s*/i, '')}</InlineMd>
@@ -855,7 +846,11 @@ const AnalystAnswer = ({
     symbolLabel = '',
     streaming = false,
     onDone = null,
+    queryIntent = 'full',
 }) => {
+    // Which sections this intent shows. "pe ratio of X" (→ 'fundamentals') gets a
+    // focused view — direct answer + fundamental scorecard — not the whole wall.
+    const sections = answerSections(queryIntent);
     const aag = metadata?.at_a_glance || {};
     const price = aag.price != null ? Number(aag.price) : null;
     const stats = buildMarketStats(aag);
@@ -873,10 +868,15 @@ const AnalystAnswer = ({
     // cards in at once.
     const [animate] = React.useState(() => !!streaming && !prefersReducedMotion());
 
-    // Type the "why this verdict" prose. ~45ms/2 words puts a typical 50-word summary
-    // at roughly 2.5s — long enough to read as thinking, short enough not to stall.
-    const summary = verdictSummary(verdictText, content, signal);
-    const { displayedText, isComplete } = useStreamingText(summary || '', animate, 'line', 2, 45);
+    // Type the answer prose. ~45ms/2 words puts a typical 50-word summary at roughly
+    // 2.5s — long enough to read as thinking, short enough not to stall. Focused
+    // intents lead with the direct answer to what was asked (the opening line of the
+    // reply, e.g. "The P/E is 22.4…") instead of the hoisted generic verdict.
+    const answerText = sections.directAnswer
+        ? (firstParagraph(content) || verdictText
+            || (Array.isArray(signal?.why) && signal.why.length ? signal.why.join(' ') : null))
+        : verdictSummary(verdictText, content, signal);
+    const { displayedText, isComplete } = useStreamingText(answerText || '', animate, 'line', 2, 45);
 
     // Cards cascade only once the prose has finished typing.
     const REVEAL_STAGES = 5;
@@ -899,17 +899,20 @@ const AnalystAnswer = ({
 
             <CompanyCard metadata={metadata} symbolLabel={symbolLabel} />
 
-            <VerdictBand verdict={scoreCard?.verdict} verdictIntent={scoreCard?.verdict_intent} signal={signal}
-                         verdictText={verdictText} content={content}
-                         aiTake={aiTake} price={price} patternSummary={patternSummary} />
+            {sections.verdictBand && (
+                <VerdictBand verdict={scoreCard?.verdict} verdictIntent={scoreCard?.verdict_intent} signal={signal}
+                             verdictText={verdictText} content={content}
+                             aiTake={aiTake} price={price} patternSummary={patternSummary} />
+            )}
 
-            <WhyThisVerdict verdictText={verdictText} content={content} signal={signal}
+            <WhyThisVerdict summary={answerText}
+                            label={sections.directAnswer ? 'Answer' : 'Why this verdict'}
                             typedSummary={animate ? displayedText : null} caret={animate} />
 
-            {(chart || stats.length > 0) && (
+            {((sections.chart && chart) || (sections.marketStats && stats.length > 0)) && (
                 <Stage show={shown(1)}>
-                    <div className={clsx('grid gap-3', chart && stats.length > 0 ? 'lg:grid-cols-[1fr_230px]' : 'grid-cols-1')}>
-                        {chart && (
+                    <div className={clsx('grid gap-3', (sections.chart && chart) && (sections.marketStats && stats.length > 0) ? 'lg:grid-cols-[1fr_230px]' : 'grid-cols-1')}>
+                        {sections.chart && chart && (
                             <Card className="p-3 min-w-0">
                                 <StockChart
                                     chartData={chart}
@@ -919,17 +922,19 @@ const AnalystAnswer = ({
                                 />
                             </Card>
                         )}
-                        <MarketStatsCard stats={stats} />
+                        {sections.marketStats && stats.length > 0 && <MarketStatsCard stats={stats} />}
                     </div>
                 </Stage>
             )}
 
-            <Stage show={shown(2)}>
-                <PatternSection patternSummary={patternSummary} chartData={chartData}
-                                symbolLabel={symbolLabel} indicatorsTable={indicatorsTable} />
-            </Stage>
+            {sections.patterns && (
+                <Stage show={shown(2)}>
+                    <PatternSection patternSummary={patternSummary} chartData={chartData}
+                                    symbolLabel={symbolLabel} indicatorsTable={indicatorsTable} />
+                </Stage>
+            )}
 
-            {hasScores && (
+            {sections.scoreGrid && hasScores && (
                 <Stage show={shown(3)}>
                     <div className="space-y-3">
                         <SectionBanner>Venty Score</SectionBanner>
@@ -938,25 +943,32 @@ const AnalystAnswer = ({
                 </Stage>
             )}
 
-            <Stage show={shown(4)}>
-                <div className="space-y-3">
-                    <TechnicalScorecard tech={scoreCard?.technical} technicalSummary={technicalSummary}
-                                        indicatorsTable={indicatorsTable} score={scores.technical} />
+            {(sections.technicalCard || sections.fundamentalCard) && (
+                <Stage show={shown(4)}>
+                    <div className="space-y-3">
+                        {sections.technicalCard && (
+                            <TechnicalScorecard tech={scoreCard?.technical} technicalSummary={technicalSummary}
+                                                indicatorsTable={indicatorsTable} score={scores.technical} />
+                        )}
+                        {sections.fundamentalCard && (
+                            <FundamentalScorecard fund={scoreCard?.fundamental} score={scores.fundamental}
+                                                  symbolLabel={symbolLabel} />
+                        )}
+                    </div>
+                </Stage>
+            )}
 
-                    <FundamentalScorecard fund={scoreCard?.fundamental} score={scores.fundamental}
-                                          symbolLabel={symbolLabel} />
-                </div>
-            </Stage>
-
-            <Stage show={shown(5)}>
-                <SentimentalScorecard
-                    managementSentiment={managementSentiment}
-                    annualReportIntelligence={annualReportIntelligence}
-                    recentDevelopments={recentDevelopments}
-                    companyFilings={companyFilings}
-                    score={scores.sentimental}
-                />
-            </Stage>
+            {sections.sentiment && (
+                <Stage show={shown(5)}>
+                    <SentimentalScorecard
+                        managementSentiment={managementSentiment}
+                        annualReportIntelligence={annualReportIntelligence}
+                        recentDevelopments={recentDevelopments}
+                        companyFilings={companyFilings}
+                        score={scores.sentimental}
+                    />
+                </Stage>
+            )}
         </div>
     );
 };

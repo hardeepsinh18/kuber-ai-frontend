@@ -834,6 +834,7 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                             news={relevantNews.length > 0 ? relevantNews : (Array.isArray(newsHeadlines) ? newsHeadlines : [])}
                             symbolLabel={primarySymbolLabel}
                             patternSummary={patternSummary}
+                            queryIntent={queryIntent}
                         />
                     ) : (
                         <AnalystAnswer
@@ -854,6 +855,7 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                             symbolLabel={primarySymbolLabel}
                             streaming={isStreaming}
                             onDone={handleAnalystDone}
+                            queryIntent={queryIntent}
                         />
                     )}
                     {showDisclaimer && tailVisible && <DisclaimerBox />}

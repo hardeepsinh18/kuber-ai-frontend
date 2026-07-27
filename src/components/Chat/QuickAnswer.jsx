@@ -2,9 +2,10 @@ import React from 'react';
 import { clsx } from 'clsx';
 import StockChart from './StockChart';
 import {
-    Card, CardHeader,
+    Card, CardHeader, InlineMd,
     CompanyCard, VerdictBand, MarketStatsCard, buildMarketStats, VentyScorePanel, getScores,
 } from './answerKit';
+import { answerSections, firstParagraph } from './answerSections';
 
 /**
  * QuickAnswer — the "instant read" layout for Quick (snap) mode.
@@ -52,7 +53,15 @@ const QuickAnswer = ({
     news = [],
     symbolLabel = '',
     patternSummary = null,
+    queryIntent = 'full',
 }) => {
+    // Which sections this intent shows — focused questions ("pe ratio of X") get a
+    // direct answer, not the full verdict + chart + score wall.
+    const sections = answerSections(queryIntent);
+    const directAnswer = sections.directAnswer
+        ? (firstParagraph(content) || verdictText
+            || (Array.isArray(signal?.why) && signal.why.length ? signal.why.join(' ') : null))
+        : null;
     const aag = metadata?.at_a_glance || {};
     const price = aag.price != null ? Number(aag.price) : null;
 
@@ -74,14 +83,26 @@ const QuickAnswer = ({
 
             <CompanyCard metadata={metadata} symbolLabel={symbolLabel} />
 
-            <VerdictBand verdict={scoreCard?.verdict} verdictIntent={scoreCard?.verdict_intent} signal={signal}
-                         verdictText={verdictText} content={content}
-                         aiTake={aiTake} price={price} patternSummary={patternSummary} />
+            {sections.verdictBand && (
+                <VerdictBand verdict={scoreCard?.verdict} verdictIntent={scoreCard?.verdict_intent} signal={signal}
+                             verdictText={verdictText} content={content}
+                             aiTake={aiTake} price={price} patternSummary={patternSummary} />
+            )}
+
+            {/* ── Direct answer — focused intents lead with what was asked ─ */}
+            {directAnswer && (
+                <Card className="px-4 py-3.5">
+                    <CardHeader>Answer</CardHeader>
+                    <div className="mt-2 text-[13px] leading-relaxed text-zinc-700 dark:text-zinc-300">
+                        <InlineMd>{directAnswer.replace(/^\**\s*verdict\s*:?\**\s*/i, '')}</InlineMd>
+                    </div>
+                </Card>
+            )}
 
             {/* ── Chart + Today's Market Stats ───────────────────── */}
-            {(chart || stats.length > 0) && (
-                <div className={clsx('grid gap-3', chart && stats.length > 0 ? 'lg:grid-cols-[1fr_230px]' : 'grid-cols-1')}>
-                    {chart && (
+            {((sections.chart && chart) || (sections.marketStats && stats.length > 0)) && (
+                <div className={clsx('grid gap-3', (sections.chart && chart) && (sections.marketStats && stats.length > 0) ? 'lg:grid-cols-[1fr_230px]' : 'grid-cols-1')}>
+                    {sections.chart && chart && (
                         <Card className="p-3 min-w-0">
                             <StockChart
                                 chartData={chart}
@@ -92,13 +113,13 @@ const QuickAnswer = ({
                             />
                         </Card>
                     )}
-                    <MarketStatsCard stats={stats} />
+                    {sections.marketStats && stats.length > 0 && <MarketStatsCard stats={stats} />}
                 </div>
             )}
 
-            {/* ── VENTY AI SCORE — reference panel layout ────────── */}
+            {/* ── VENTY AI SCORE — reference panel layout (holistic intents only) ── */}
             {/* Key Takeaway bullets now live inside the panel as "Overview" */}
-            {(hasScores || takeaways.length > 0) && (
+            {sections.scoreGrid && (hasScores || takeaways.length > 0) && (
                 <VentyScorePanel
                     scoreCard={scoreCard}
                     managementSentiment={managementSentiment}
@@ -108,7 +129,7 @@ const QuickAnswer = ({
             )}
 
             {/* ── Recent News ────────────────────────────────────── */}
-            {newsItems.length > 0 && (
+            {sections.news && newsItems.length > 0 && (
                 <Card className="px-4 py-3.5">
                     <CardHeader>Recent News</CardHeader>
                     <div className="mt-1 divide-y divide-zinc-100 dark:divide-zinc-800">
