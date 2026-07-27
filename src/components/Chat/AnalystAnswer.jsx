@@ -596,12 +596,6 @@ const MgmtToneContent = ({ data }) => {
                         <div className="text-[11px] text-zinc-500 dark:text-zinc-500 leading-relaxed">{data.summary}</div>
                     )}
                 </div>
-                {history.length >= 2 && (
-                    <div className="flex-shrink-0 hidden sm:block">
-                        <div className="text-[8.5px] uppercase tracking-wide text-zinc-400 dark:text-zinc-600 text-right mb-0.5">Tone trend</div>
-                        <ToneSparkline history={history} color={color} />
-                    </div>
-                )}
             </div>
 
             {/* Aspect chips */}
