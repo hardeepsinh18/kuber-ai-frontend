@@ -79,10 +79,11 @@ const ScannerDrawer = ({ data, onAnalyze, onClose, collapsed = false, onToggleCo
                 ref={drawerRef}
                 className={clsx(
                     'fixed z-50 flex flex-col overflow-hidden',
-                    // mobile bottom sheet
-                    'inset-x-0 bottom-0 top-auto w-full max-h-[88dvh] rounded-t-2xl',
+                    // mobile bottom sheet — DEFINITE height (h-, not max-h) so the inner
+                    // list gets a real scroll boundary on iOS Safari.
+                    'inset-x-0 bottom-0 top-auto w-full h-[85dvh] rounded-t-2xl',
                     // desktop side drawer
-                    'md:inset-x-auto md:right-0 md:top-0 md:bottom-auto md:h-full md:max-h-none md:rounded-t-none md:transition-all md:duration-300 md:ease-in-out',
+                    'md:inset-x-auto md:right-0 md:top-0 md:bottom-auto md:h-full md:rounded-t-none md:transition-all md:duration-300 md:ease-in-out',
                     collapsed ? 'md:w-[48px]' : 'md:w-[300px]'
                 )}
                 style={{
@@ -123,7 +124,7 @@ const ScannerDrawer = ({ data, onAnalyze, onClose, collapsed = false, onToggleCo
                     </div>
                 ) : (
                     /* ── Expanded content ── (min-w so it clips, not reflows, while animating) */
-                    <div className="flex flex-col h-full min-h-0 max-h-[88dvh] md:max-h-none" style={{ minWidth: OPEN_W }}>
+                    <div className="flex flex-col flex-1 min-h-0 w-full" style={{ minWidth: OPEN_W }}>
                         {/* Header */}
                         <div className="flex items-center justify-between px-4 pt-4 pb-3 flex-shrink-0"
                              style={{ borderBottom: isDark ? '1px solid rgba(255,255,255,0.07)' : '1px solid rgba(0,0,0,0.08)' }}>
