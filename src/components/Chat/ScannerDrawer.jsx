@@ -123,7 +123,7 @@ const ScannerDrawer = ({ data, onAnalyze, onClose, collapsed = false, onToggleCo
                     </div>
                 ) : (
                     /* ── Expanded content ── (min-w so it clips, not reflows, while animating) */
-                    <div className="flex flex-col h-full" style={{ minWidth: OPEN_W }}>
+                    <div className="flex flex-col h-full min-h-0 max-h-[88dvh] md:max-h-none" style={{ minWidth: OPEN_W }}>
                         {/* Header */}
                         <div className="flex items-center justify-between px-4 pt-4 pb-3 flex-shrink-0"
                              style={{ borderBottom: isDark ? '1px solid rgba(255,255,255,0.07)' : '1px solid rgba(0,0,0,0.08)' }}>
@@ -157,7 +157,7 @@ const ScannerDrawer = ({ data, onAnalyze, onClose, collapsed = false, onToggleCo
                         </div>
 
                         {/* Table — scroll stays inside the sheet (no chaining to the page) */}
-                        <div className="flex-1 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
+                        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
                             {raw.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center h-full gap-3 px-6 text-center">
                                     <span className="text-4xl">🔍</span>
