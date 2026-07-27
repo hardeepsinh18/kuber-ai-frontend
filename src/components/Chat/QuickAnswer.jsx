@@ -2,8 +2,8 @@ import React from 'react';
 import { clsx } from 'clsx';
 import StockChart from './StockChart';
 import {
-    BRAND, InlineMd, Card, CardHeader, SectionBanner,
-    CompanyCard, VerdictBand, MarketStatsCard, buildMarketStats, ScoreGrid, getScores,
+    Card, CardHeader,
+    CompanyCard, VerdictBand, MarketStatsCard, buildMarketStats, VentyScorePanel, getScores,
 } from './answerKit';
 
 /**
@@ -12,9 +12,9 @@ import {
  *   1. Company card (name · NSE:SYM · price · day change)
  *   2. Yellow KUBER VERDICT band (BUY/SELL/HOLD + Entry / Stop Loss / Target)
  *   3. Chart card (Area default) + Today's Market Stats side card
- *   4. VENTY SCORE banner + Overall Health donut + Technical/Fundamental/Sentimental
- *   5. Key Takeaway bullets
- *   6. Recent News
+ *   4. VENTY AI SCORE panel — header bar, Overall Health gauge + Overview
+ *      bullets, then Technical/Fundamental/Sentimental cards with commentary
+ *   5. Recent News
  * Every section renders only when its data exists.
  */
 
@@ -96,27 +96,15 @@ const QuickAnswer = ({
                 </div>
             )}
 
-            {/* ── VENTY SCORE ─────────────────────────────────── */}
-            {hasScores && (
-                <>
-                    <SectionBanner>Venty Score</SectionBanner>
-                    <ScoreGrid scoreCard={scoreCard} managementSentiment={managementSentiment} />
-                </>
-            )}
-
-            {/* ── Key Takeaway ───────────────────────────────────── */}
-            {takeaways.length > 0 && (
-                <Card className="px-4 py-3.5">
-                    <CardHeader>Key Takeaway</CardHeader>
-                    <ul className="mt-2 space-y-2">
-                        {takeaways.map((t, i) => (
-                            <li key={i} className="flex items-start gap-2.5 text-[13px] text-zinc-700 dark:text-zinc-300 leading-relaxed">
-                                <span className="mt-[7px] w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: BRAND }} />
-                                <span className="flex-1 min-w-0"><InlineMd>{t}</InlineMd></span>
-                            </li>
-                        ))}
-                    </ul>
-                </Card>
+            {/* ── VENTY AI SCORE — reference panel layout ────────── */}
+            {/* Key Takeaway bullets now live inside the panel as "Overview" */}
+            {(hasScores || takeaways.length > 0) && (
+                <VentyScorePanel
+                    scoreCard={scoreCard}
+                    managementSentiment={managementSentiment}
+                    companyName={aag.company_name || aag.display_name || symbolLabel}
+                    overviewBullets={takeaways}
+                />
             )}
 
             {/* ── Recent News ────────────────────────────────────── */}

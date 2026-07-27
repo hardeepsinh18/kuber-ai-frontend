@@ -487,6 +487,167 @@ export const ScoreGrid = ({ scoreCard, managementSentiment }) => {
     );
 };
 
+/* ─── VENTY AI SCORE PANEL — Quick-mode score section ────────────────────────
+ * Reference layout: header bar ("Venty AI Score and Recommendation for X"),
+ * top row = Overall Health arc gauge + Overview bullets, bottom row = one card
+ * per lens (Technical / Fundamental / Sentimental) with its gauge and the real
+ * commentary behind that lens. Quick mode only — Analyst keeps ScoreGrid. */
+
+/* 270° arc gauge — score % in the middle, gap at the bottom */
+export const ArcGauge = ({ score, size = 116, stroke = 11, color, showPct = true }) => {
+    const s = Math.min(100, Math.max(0, Math.round(score)));
+    const r = (size - stroke) / 2 - 2;
+    const c = size / 2;
+    const circ = 2 * Math.PI * r;
+    const track = 0.75 * circ;                    // 270° visible arc
+    const filled = (s / 100) * track;
+    return (
+        <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} role="img"
+             aria-label={`Score ${s} out of 100`}>
+            {/* rotate so the 90° gap sits centred at the bottom */}
+            <g transform={`rotate(135 ${c} ${c})`}>
+                <circle cx={c} cy={c} r={r} fill="none" strokeWidth={stroke} strokeLinecap="round"
+                        strokeDasharray={`${track} ${circ}`}
+                        className="stroke-zinc-200 dark:stroke-white/10" />
+                <circle cx={c} cy={c} r={r} fill="none" stroke={color} strokeWidth={stroke}
+                        strokeDasharray={`${filled} ${circ}`} strokeLinecap="round" />
+            </g>
+            <text x={c} y={c + size * 0.06} textAnchor="middle" fontSize={size * 0.24} fontWeight="800"
+                  fontFamily="Montserrat,sans-serif" className="fill-zinc-900 dark:fill-white">
+                {s}{showPct ? '%' : ''}
+            </text>
+        </svg>
+    );
+};
+
+const overallLabel = (s) => (s >= 70 ? 'Strong' : s >= 50 ? 'Neutral' : 'Weak');
+
+/* value/threshold/label triple → [value, threshold, label] */
+const _ratioTriple = (v) => {
+    if (v == null) return [null, null, null];
+    if (Array.isArray(v)) return [v[0] ?? null, v[1] ?? null, v[2] ?? null];
+    if (typeof v === 'object') return [v.value ?? null, v.threshold ?? null, v.label ?? null];
+    return [v, null, null];
+};
+
+const buildFundBullets = (fund) => {
+    const r = fund?.ratios || {};
+    const out = [];
+    const add = (name, key, fmt) => {
+        const [val, , lab] = _ratioTriple(r[key]);
+        if (val != null) out.push(`${name} ${fmt(val)}${lab ? ` — ${String(lab).toLowerCase()}` : ''}`);
+    };
+    add('P/E', 'pe_ratio', (v) => `${Number(v).toFixed(1)}x`);
+    add('ROE', 'roe', (v) => `${Number(v).toFixed(1)}%`);
+    add('ROCE', 'roce', (v) => `${Number(v).toFixed(1)}%`);
+    add('Revenue growth', 'revenue_growth', (v) => `${Number(v).toFixed(1)}%`);
+    if (!out.length && fund?.summary) out.push(fund.summary);
+    return out.slice(0, 4);
+};
+
+const buildSentBullets = (ms) => {
+    const out = [];
+    if (ms?.tone_score != null) {
+        const lab = ms.tone_label ? `${String(ms.tone_label).toLowerCase()} ` : '';
+        out.push(`Management tone ${lab}(${Math.round(ms.tone_score)}/100)${ms.period ? ` · ${ms.period}` : ''}`);
+    }
+    if (ms?.summary) out.push(ms.summary);
+    return out.slice(0, 3);
+};
+
+const PanelBullets = ({ items }) => (
+    <ul className="mt-2 space-y-1.5">
+        {items.map((t, i) => (
+            <li key={i} className="flex items-start gap-2 text-[11.5px] text-zinc-600 dark:text-zinc-300 leading-snug">
+                <span className="mt-[6px] w-1 h-1 rounded-full flex-shrink-0 bg-zinc-400 dark:bg-zinc-500" />
+                <span className="flex-1 min-w-0"><InlineMd>{t}</InlineMd></span>
+            </li>
+        ))}
+    </ul>
+);
+
+const PanelTitle = ({ children }) => (
+    <p className="text-[13px] font-bold text-amber-600 dark:text-[#FDD405]">{children}</p>
+);
+
+export const VentyScorePanel = ({ scoreCard, managementSentiment, companyName = '', overviewBullets = [] }) => {
+    const [open, setOpen] = React.useState(true);
+    const { overall, technical, fundamental, sentimental } = getScores(scoreCard, managementSentiment);
+
+    const lenses = [
+        { key: 'Technical', score: technical, bullets: (Array.isArray(scoreCard?.technical?.commentary) ? scoreCard.technical.commentary : []).slice(0, 4) },
+        { key: 'Fundamental', score: fundamental, bullets: buildFundBullets(scoreCard?.fundamental) },
+        { key: 'Sentimental', score: sentimental, bullets: buildSentBullets(managementSentiment) },
+    ].filter(l => l.score != null);
+
+    const overview = (Array.isArray(overviewBullets) ? overviewBullets : []).slice(0, 4);
+    if (overall == null && lenses.length === 0 && overview.length === 0) return null;
+
+    return (
+        <div>
+            {/* Header bar */}
+            <button onClick={() => setOpen(o => !o)} aria-expanded={open}
+                    className="w-full flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl
+                               bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800
+                               text-left hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors">
+                <span className="text-[13px] font-bold text-zinc-700 dark:text-zinc-200 truncate">
+                    Venty AI Score and Recommendation{companyName ? ` for ${companyName}` : ''}
+                </span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"
+                     className={clsx('flex-shrink-0 text-zinc-400 transition-transform', open && 'rotate-180')}>
+                    <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+            </button>
+
+            {open && (
+                <div className="mt-3 space-y-3">
+                    {/* Top row — Overall Health + Overview */}
+                    {(overall != null || overview.length > 0) && (
+                        <div className={clsx('grid gap-3', overall != null && overview.length > 0 ? 'lg:grid-cols-2' : 'grid-cols-1')}>
+                            {overall != null && (
+                                <Card className="p-4 flex items-center gap-4">
+                                    <div className="flex-shrink-0 flex flex-col items-center">
+                                        <ArcGauge score={overall} size={112} color={scoreColor(overall)} />
+                                        <span className="-mt-4 px-2.5 py-0.5 rounded-md text-[10px] font-extrabold text-black"
+                                              style={{ backgroundColor: scoreColor(overall) }}>
+                                            {overallLabel(overall)}
+                                        </span>
+                                    </div>
+                                    <div className="min-w-0">
+                                        <PanelTitle>Overall Health</PanelTitle>
+                                        <p className="mt-1 text-[11.5px] text-zinc-500 dark:text-zinc-400 leading-snug">
+                                            The stock's combined Venty AI Score across all three lenses.
+                                        </p>
+                                    </div>
+                                </Card>
+                            )}
+                            {overview.length > 0 && (
+                                <Card className="p-4">
+                                    <PanelTitle>Overview</PanelTitle>
+                                    <PanelBullets items={overview} />
+                                </Card>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Bottom row — one card per lens */}
+                    {lenses.length > 0 && (
+                        <div className={clsx('grid gap-3', lenses.length === 3 ? 'sm:grid-cols-3' : lenses.length === 2 ? 'sm:grid-cols-2' : 'grid-cols-1')}>
+                            {lenses.map(({ key, score, bullets }) => (
+                                <Card key={key} className="p-4">
+                                    <ArcGauge score={score} size={64} stroke={7} color={scoreColor(score)} showPct={false} />
+                                    <div className="mt-2"><PanelTitle>{key}</PanelTitle></div>
+                                    {bullets.length > 0 && <PanelBullets items={bullets} />}
+                                </Card>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+};
+
 /* ─── Scorecard section header — icon circle + title + score/label ───────── */
 export const ScorecardHeader = ({ icon: Icon, title, score, label }) => (
     <div className="flex items-center gap-3">
