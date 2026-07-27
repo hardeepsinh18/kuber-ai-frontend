@@ -10,11 +10,17 @@
  *   'full-light' → full logo for light backgrounds
  *   'wordmark'   → VENTY^AI wordmark + tagline, no robot
  */
+// NOTE: the -v2 suffix on the full logos is a cache-bust, not a redesign.
+// These files are served with `Cache-Control: immutable, max-age=1yr` but their
+// names are NOT content-hashed, so a browser that cached the old (mis-padded)
+// venty-full-dark.png would keep it for a year and never see the fix. Renaming
+// the URL is the only way to reach those clients. If either full logo is ever
+// re-exported, bump to -v3 rather than overwriting in place.
 const ASSETS = {
     mark: '/brand/venty-mark.png',
     'mark-light': '/brand/venty-mark-light.png',
-    full: '/brand/venty-full-dark.png',
-    'full-light': '/brand/venty-full-light.png',
+    full: '/brand/venty-full-dark-v2.png',
+    'full-light': '/brand/venty-full-light-v2.png',
     wordmark: '/brand/venty-wordmark-dark.png',
     'wordmark-light': '/brand/venty-wordmark-light.png',
 };
