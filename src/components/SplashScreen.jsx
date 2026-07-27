@@ -12,17 +12,31 @@ import { useTheme } from '../context/ThemeContext';
  * centre IS the visual centre. A hardcoded nudge here shifts the logo off-centre
  * on every viewport — px offsets don't scale with screen height.
  */
+// Full logo aspect ≈ 1.64 (wide), so size by height keeps the WIDTH ~50% of the
+// screen on phones and caps at 200px on tablet/desktop.
+const logoSize = () =>
+    typeof window === 'undefined'
+        ? 168
+        : Math.max(104, Math.min(200, Math.round(window.innerWidth * 0.30)));
+
 const SplashScreen = ({ onDone }) => {
     const [fading, setFading] = useState(false);
+    const [size, setSize] = useState(logoSize);
     const { theme } = useTheme();
     const isDark = theme === 'dark';
 
     useEffect(() => {
+        const onResize = () => setSize(logoSize());
+        onResize();
+        window.addEventListener('resize', onResize);
+        window.addEventListener('orientationchange', onResize);
         const fadeTimer = setTimeout(() => setFading(true), 1600);
         const doneTimer = setTimeout(() => onDone(), 2200);
         return () => {
             clearTimeout(fadeTimer);
             clearTimeout(doneTimer);
+            window.removeEventListener('resize', onResize);
+            window.removeEventListener('orientationchange', onResize);
         };
     }, [onDone]);
 
@@ -36,7 +50,7 @@ const SplashScreen = ({ onDone }) => {
                 pointerEvents: fading ? 'none' : 'auto',
             }}
         >
-            <KuberLogo size={200} variant={isDark ? 'full' : 'full-light'} alt="Venty — say Venty to the market" />
+            <KuberLogo size={size} variant={isDark ? 'full' : 'full-light'} alt="Venty — say Venty to the market" />
         </div>
     );
 };
