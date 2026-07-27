@@ -41,10 +41,15 @@ const SplashScreen = ({ onDone }) => {
                 pointerEvents: fading ? 'none' : 'auto',
             }}
         >
-            <KuberLogo size={200} variant={isDark ? 'full' : 'full-light'} alt="Venty — say Venty to the market" />
+            {/* The full logo is top-heavy (robot + VENTY carry the visual weight, the
+                tagline is light), so geometric centring reads as "high". Nudge it down
+                ~15% of the logo height so the robot+wordmark sit at the optical centre. */}
+            <div style={{ transform: 'translateY(30px)' }}>
+                <KuberLogo size={200} variant={isDark ? 'full' : 'full-light'} alt="Venty — say Venty to the market" />
+            </div>
             <span className="fixed left-1/2 -translate-x-1/2 bottom-3 text-[9px] tracking-wide"
                   style={{ color: isDark ? 'rgba(253,212,5,0.5)' : 'rgba(120,120,120,0.6)' }}>
-                {dbg}
+                v13 · {dbg}
             </span>
         </div>
     );
