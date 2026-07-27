@@ -37,7 +37,7 @@ const RANGES = [
 const TYPE_DEFS = {
     candle: { label: 'Candles', aria: 'Candlestick chart', Icon: ChartCandlestick },
     area: { label: 'Area', aria: 'Area chart', Icon: Activity },
-    heikin: { label: 'Heikin-Ashi', aria: 'Heikin-Ashi chart', Icon: Waves },
+    heikin: { label: 'Heikin-Ashi', short: 'Heikin', aria: 'Heikin-Ashi chart', Icon: Waves },
     renko: { label: 'Renko', aria: 'Renko chart', Icon: BrickWall },
 };
 // Candles first in every variant — it is the default, and leading the list with
@@ -183,11 +183,13 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
 
             <div className="flex flex-wrap items-center gap-2 mb-4">
                 <div className={clsx(
-                    'flex flex-wrap items-center gap-1',
+                    // Single row on every screen: no wrapping; full-width + horizontal
+                    // scroll on mobile as a safety so all four types stay on one line.
+                    'flex items-center gap-0 sm:gap-1 overflow-x-auto w-full sm:w-auto',
                     isQuick && 'p-1 rounded-xl border border-zinc-200 dark:border-zinc-700/60 bg-zinc-50 dark:bg-black/30'
                 )}>
                     {TYPE_ORDER.map((key) => {
-                        const { label, aria, Icon } = TYPE_DEFS[key];
+                        const { label, short, aria, Icon } = TYPE_DEFS[key];
                         const active = chartType === key;
                         return (
                             <button
@@ -196,15 +198,21 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                                 aria-label={aria}
                                 aria-pressed={active}
                                 className={clsx(
-                                    'flex items-center gap-1.5 rounded-lg font-medium transition-all',
-                                    isQuick ? 'px-3 py-1 text-[12px]' : 'px-3 py-1.5 text-sm gap-2',
+                                    'flex items-center gap-1 sm:gap-1.5 rounded-lg font-medium transition-all flex-shrink-0 whitespace-nowrap',
+                                    isQuick ? 'px-1 sm:px-3 py-1 text-[11px] sm:text-[12px]' : 'px-2 sm:px-3 py-1.5 text-[13px] sm:text-sm sm:gap-2',
                                     active
                                         ? 'bg-[#FDD405] text-black font-semibold'
                                         : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/60'
                                 )}
                             >
-                                <Icon className={isQuick ? 'w-3.5 h-3.5' : 'w-4 h-4'} />
-                                {label}
+                                <Icon className={clsx('flex-shrink-0', isQuick ? 'w-3.5 h-3.5' : 'w-4 h-4')} />
+                                {/* Shorter label on mobile so all four fit one line; full label on sm+ */}
+                                {short ? (
+                                    <>
+                                        <span className="sm:hidden">{short}</span>
+                                        <span className="hidden sm:inline">{label}</span>
+                                    </>
+                                ) : label}
                             </button>
                         );
                     })}
