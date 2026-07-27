@@ -1444,7 +1444,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                         data={scannerDrawer}
                         collapsed={scannerCollapsed}
                         onToggleCollapsed={toggleScannerCollapsed}
-                        onAnalyze={(sym) => handleSend(`Analyze ${sym}`)}
+                        onAnalyze={(sym) => { setScannerDrawer(null); handleSend(`Analyze ${sym}`); }}
                         onClose={() => setScannerDrawer(null)}
                     />
                 )}
@@ -1474,7 +1474,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 data={scannerDrawer}
                 collapsed={scannerCollapsed}
                 onToggleCollapsed={toggleScannerCollapsed}
-                onAnalyze={(sym) => handleSend(`Analyze ${sym}`)}
+                onAnalyze={(sym) => { setScannerDrawer(null); handleSend(`Analyze ${sym}`); }}
                 onClose={() => setScannerDrawer(null)}
             />
         )}

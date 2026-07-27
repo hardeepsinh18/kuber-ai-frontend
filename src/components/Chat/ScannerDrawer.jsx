@@ -38,6 +38,13 @@ const ScannerDrawer = ({ data, onAnalyze, onClose, collapsed = false, onToggleCo
 
     return (
         <>
+            {/* Mobile backdrop — dims the chat behind the bottom sheet; tap to close. */}
+            <div
+                className="md:hidden fixed inset-0 z-40 bg-black/55 backdrop-blur-sm"
+                onClick={onClose}
+                aria-hidden="true"
+            />
+
             {/* D-shape semicircle toggle on the drawer's left edge — mirror of the
                 chat-sidebar toggle. Slides with the drawer (same 300ms ease). */}
             <button
@@ -57,16 +64,20 @@ const ScannerDrawer = ({ data, onAnalyze, onClose, collapsed = false, onToggleCo
                     : <ChevronsRight size={11} className="text-zinc-500 dark:text-zinc-500" />}
             </button>
 
-            {/* Drawer — full-width on mobile; on desktop its WIDTH animates (300 ↔ 48), same as sidebar */}
+            {/* Mobile: bottom sheet (rounded top, ~88% height, chat peeks behind).
+                Desktop: right-side drawer whose WIDTH animates (300 ↔ 48). */}
             <div
                 ref={drawerRef}
                 className={clsx(
-                    'fixed right-0 top-0 h-full z-50 flex flex-col overflow-hidden transition-all duration-300 ease-in-out',
-                    'w-full',                                       // mobile: full-screen sheet
-                    collapsed ? 'md:w-[48px]' : 'md:w-[300px]'      // desktop: rail ↔ open
+                    'fixed z-50 flex flex-col overflow-hidden',
+                    // mobile bottom sheet
+                    'inset-x-0 bottom-0 top-auto w-full max-h-[88dvh] rounded-t-2xl',
+                    // desktop side drawer
+                    'md:inset-x-auto md:right-0 md:top-0 md:bottom-auto md:h-full md:max-h-none md:rounded-t-none md:transition-all md:duration-300 md:ease-in-out',
+                    collapsed ? 'md:w-[48px]' : 'md:w-[300px]'
                 )}
                 style={{
-                    animation: 'slideInRight 0.28s cubic-bezier(0.22,1,0.36,1)',
+                    animation: 'slideUpFade 0.32s cubic-bezier(0.22,1,0.36,1)',
                     ...shellStyle,
                 }}
             >
