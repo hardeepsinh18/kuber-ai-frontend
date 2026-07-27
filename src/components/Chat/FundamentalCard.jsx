@@ -117,7 +117,7 @@ const PEGradientBar = ({ pe, sectorPe, symbol }) => {
                 {/* Symbol yellow circle */}
                 <div className="absolute z-10 flex flex-col items-center"
                      style={{ left: `${pePos}%`, top: 14, transform: 'translateX(-50%)' }}>
-                    <div className="w-7 h-7 rounded-full bg-[#FDD405] border-2 border-zinc-900 flex items-center justify-center text-[7px] font-black text-black shadow">
+                    <div className="w-7 h-7 rounded-full bg-[#FDD405] border-2 border-zinc-400 dark:border-zinc-900 flex items-center justify-center text-[7px] font-black text-black shadow">
                         {sym}
                     </div>
                     <div className="w-px h-1 bg-[#FDD405]" />
@@ -125,7 +125,7 @@ const PEGradientBar = ({ pe, sectorPe, symbol }) => {
                 {/* Gradient bar */}
                 <div className="relative h-3 rounded-full"
                      style={{ background: 'linear-gradient(to right,#22c55e 0%,#84cc16 25%,#eab308 50%,#f97316 75%,#ef4444 100%)' }}>
-                    <div className="absolute top-0 bottom-0 w-px bg-white/50"
+                    <div className="absolute top-0 bottom-0 w-px bg-zinc-900/40 dark:bg-white/50"
                          style={{ left: `${sectorPos}%` }} />
                 </div>
             </div>
@@ -146,20 +146,20 @@ const ROEViz = ({ roe }) => {
             </p>
             <div className="flex items-center justify-center gap-2 flex-wrap">
                 <div className="text-center">
-                    <p className="text-xl font-bold text-white leading-none">₹100</p>
+                    <p className="text-xl font-bold text-zinc-900 dark:text-white leading-none">₹100</p>
                     <p className="text-[9px] text-zinc-500 mt-0.5">YOU INVEST</p>
                 </div>
                 <div className="flex flex-col items-center gap-0.5">
-                    <span className="text-[10px] font-bold text-emerald-400">+{profit}%</span>
+                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">+{profit}%</span>
                     <svg width="36" height="10" viewBox="0 0 36 10">
                         <line x1="0" y1="5" x2="28" y2="5" stroke="#22c55e" strokeWidth="2" />
                         <polygon points="26,1 36,5 26,9" fill="#22c55e" />
                     </svg>
                     <span className="text-[9px] text-zinc-500">PER YEAR</span>
                 </div>
-                <div className="w-14 h-14 rounded-full bg-emerald-950/50 border-2 border-emerald-500 flex flex-col items-center justify-center">
-                    <span className="text-sm font-bold text-emerald-400 leading-none">₹{profit}</span>
-                    <span className="text-[7px] text-emerald-500 text-center leading-tight mt-0.5">PROFIT{'\n'}BACK</span>
+                <div className="w-14 h-14 rounded-full bg-emerald-50 dark:bg-emerald-950/50 border-2 border-emerald-500 flex flex-col items-center justify-center">
+                    <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400 leading-none">₹{profit}</span>
+                    <span className="text-[7px] text-emerald-600 dark:text-emerald-500 text-center leading-tight mt-0.5">PROFIT{'\n'}BACK</span>
                 </div>
             </div>
         </div>
@@ -175,14 +175,17 @@ const SmallGauge = ({ value, sublabel, size = 88 }) => {
     return (
         <div className="flex flex-col items-center gap-1">
             <svg viewBox="0 0 80 88" width={size} height={size}>
-                <circle cx={cx} cy={cy} r={r} fill="none" stroke="#27282d" strokeWidth={8} />
+                <circle cx={cx} cy={cy} r={r} fill="none" strokeWidth={8}
+                    className="stroke-zinc-200 dark:stroke-[#27282d]" />
                 <circle cx={cx} cy={cy} r={r} fill="none" stroke={color} strokeWidth={8}
                     strokeDasharray={`${filled} ${circ}`} strokeLinecap="round"
                     transform={`rotate(-90 ${cx} ${cy})`} />
-                <text x={cx} y={cy - 2} textAnchor="middle" fill="#fff"
+                <text x={cx} y={cy - 2} textAnchor="middle"
+                    className="fill-zinc-900 dark:fill-white"
                     fontSize={17} fontWeight="700" fontFamily="Montserrat,sans-serif">{Math.round(pct)}%</text>
                 {sublabel && (
-                    <text x={cx} y={cy + 13} textAnchor="middle" fill="#9ca3af"
+                    <text x={cx} y={cy + 13} textAnchor="middle"
+                        className="fill-zinc-500 dark:fill-[#9ca3af]"
                         fontSize={7} fontFamily="Montserrat,sans-serif" letterSpacing="0.5">{sublabel.toUpperCase()}</text>
                 )}
             </svg>
@@ -203,17 +206,19 @@ const DebtGauge = ({ value }) => {
     return (
         <svg viewBox="0 0 116 72" style={{ width: '100%', maxWidth: 160, height: 72, display: 'block', margin: '0 auto' }}>
             <path d={`M ${cx - r},${cy} A ${r},${r} 0 0 1 ${cx + r},${cy}`}
-                fill="none" stroke="#27282d" strokeWidth={7} strokeLinecap="round" />
+                fill="none" strokeWidth={7} strokeLinecap="round"
+                className="stroke-zinc-200 dark:stroke-[#27282d]" />
             <path d={`M ${cx - r},${cy} A ${r},${r} 0 0 1 ${cx + r},${cy}`}
                 fill="none" stroke={color} strokeWidth={7} strokeLinecap="round"
                 strokeDasharray={`${filled} ${circ}`} />
-            <line x1={cx} y1={cy} x2={nx} y2={ny} stroke="#fff" strokeWidth={2} strokeLinecap="round" />
-            <circle cx={cx} cy={cy} r={3} fill="#fff" />
-            <text x={cx - r - 2} y={cy + 13} textAnchor="end"   fill="#52525b" fontSize={8} fontFamily="Montserrat,sans-serif">0</text>
-            <text x={cx}         y={cy - r - 4} textAnchor="middle" fill="#52525b" fontSize={8} fontFamily="Montserrat,sans-serif">1.0</text>
-            <text x={cx + r + 2} y={cy + 13} textAnchor="start" fill="#52525b" fontSize={8} fontFamily="Montserrat,sans-serif">2.0+</text>
-            <text x={cx - 14} y={cy - 14} textAnchor="middle" fill="#22c55e" fontSize={7} fontWeight="bold" fontFamily="Montserrat,sans-serif">SAFE</text>
-            <text x={cx - 14} y={cy - 5}  textAnchor="middle" fill="#22c55e" fontSize={7} fontWeight="bold" fontFamily="Montserrat,sans-serif">ZONE</text>
+            <line x1={cx} y1={cy} x2={nx} y2={ny} strokeWidth={2} strokeLinecap="round"
+                className="stroke-zinc-900 dark:stroke-white" />
+            <circle cx={cx} cy={cy} r={3} className="fill-zinc-900 dark:fill-white" />
+            <text x={cx - r - 2} y={cy + 13} textAnchor="end"   className="fill-zinc-500 dark:fill-[#52525b]" fontSize={8} fontFamily="Montserrat,sans-serif">0</text>
+            <text x={cx}         y={cy - r - 4} textAnchor="middle" className="fill-zinc-500 dark:fill-[#52525b]" fontSize={8} fontFamily="Montserrat,sans-serif">1.0</text>
+            <text x={cx + r + 2} y={cy + 13} textAnchor="start" className="fill-zinc-500 dark:fill-[#52525b]" fontSize={8} fontFamily="Montserrat,sans-serif">2.0+</text>
+            <text x={cx - 14} y={cy - 14} textAnchor="middle" className="fill-emerald-600 dark:fill-[#22c55e]" fontSize={7} fontWeight="bold" fontFamily="Montserrat,sans-serif">SAFE</text>
+            <text x={cx - 14} y={cy - 5}  textAnchor="middle" className="fill-emerald-600 dark:fill-[#22c55e]" fontSize={7} fontWeight="bold" fontFamily="Montserrat,sans-serif">ZONE</text>
         </svg>
     );
 };
@@ -235,14 +240,14 @@ const ProfitSliceBar = ({ netMargin }) => {
                     </div>
                 )}
                 {cost > 0 && (
-                    <div className="flex items-center justify-center text-[11px] font-semibold text-zinc-400 bg-zinc-800"
+                    <div className="flex items-center justify-center text-[11px] font-semibold text-zinc-600 dark:text-zinc-400 bg-zinc-200 dark:bg-zinc-800"
                          style={{ width: `${cost}%` }}>
                         ₹{cost}
                     </div>
                 )}
             </div>
             <div className="flex justify-between text-[9px] mt-1">
-                <span className="text-emerald-400 font-semibold">PROFIT</span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-semibold">PROFIT</span>
                 <span className="text-zinc-500">COSTS & TAX</span>
             </div>
         </div>
