@@ -36,12 +36,25 @@ describe('AnalystAnswer intent narrowing', () => {
         // Direct answer card (label "Answer") replaces "Why this verdict"
         expect(text).toContain('Answer');
         expect(text).not.toContain('Why this verdict');
-        // The asked metric leads the answer prose
+        // With no query/ratios, falls back to the reply's opening paragraph
         expect(text).toContain('The P/E of Reliance is');
         // The full-wall sections are gone
         expect(container.querySelector('canvas')).toBeNull();      // no StockChart
         expect(text).not.toContain('Venty Score');              // no overall score grid
         expect(text).not.toContain('Kuber Verdict');               // no BUY/SELL verdict band
+    });
+
+    it("pe_ratio: answers the asked metric from scorecard data, not the opening line", () => {
+        const { container } = renderAnswer({
+            ...baseProps,
+            queryIntent: 'pe_ratio',
+            query: 'pe ratio of reliance',
+            scoreCard: { ...baseProps.scoreCard, fundamental: { score: 60, ratios: { pe_ratio: [23.2, 25, 'FAIR'] } } },
+        });
+        const text = container.textContent;
+        // The metric answer (built from data) leads — even though content opens on P/E 22.4
+        expect(text).toContain("RELIANCE's P/E is 23.2x versus the sector's 25.0x — fair.");
+        expect(text).not.toContain('The P/E of Reliance is'); // the opening paragraph is NOT used
     });
 
     it("full: keeps the verdict summary and the score wall", () => {

@@ -574,7 +574,7 @@ const FollowUpChips = ({ chips, onClick }) => (
     </div>
 );
 
-const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, isScannerResult = false, chartData = null, metadata = {}, signal = null, patternSummary = null, technicalSummary = null, indicatorsTable = null, scoreCard = null, managementSentiment = null, annualReportIntelligence = null, companyFilings = null, recentDevelopments = null, aiTake = null, suggestedFollowUps = null, newsHeadlines = null, queryIntent = 'full', onFollowUpClick = null, onStreamingDone = null, messageId = null, onFeedback = null, responseMode = null }) => {
+const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, isScannerResult = false, chartData = null, metadata = {}, signal = null, patternSummary = null, technicalSummary = null, indicatorsTable = null, scoreCard = null, managementSentiment = null, annualReportIntelligence = null, companyFilings = null, recentDevelopments = null, aiTake = null, suggestedFollowUps = null, newsHeadlines = null, queryIntent = 'full', query = null, onFollowUpClick = null, onStreamingDone = null, messageId = null, onFeedback = null, responseMode = null }) => {
     const isUser = role === 'user';
 
     // Group-disambiguation replies ("HDFC" → HDFC Bank / AMC / Life) carry the full
@@ -835,6 +835,7 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                             symbolLabel={primarySymbolLabel}
                             patternSummary={patternSummary}
                             queryIntent={queryIntent}
+                            query={query}
                         />
                     ) : (
                         <AnalystAnswer
@@ -856,6 +857,7 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                             streaming={isStreaming}
                             onDone={handleAnalystDone}
                             queryIntent={queryIntent}
+                            query={query}
                         />
                     )}
                     {showDisclaimer && tailVisible && <DisclaimerBox />}

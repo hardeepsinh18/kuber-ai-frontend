@@ -32,6 +32,61 @@ export const firstParagraph = (md) => {
     return null;
 };
 
+const _round = (v, d) => Number(v).toFixed(d);
+
+/* Which fundamental metric a single-metric question is asking about, and how to
+   phrase its value. Keyed to scoreCard.fundamental.ratios (see RATIO_DEFS in
+   AnalystAnswer). Order matters — first regex hit wins. */
+const METRIC_MATCHERS = [
+    { re: /\bp\s*\/?\s*e\b|\bpe\b|price[\s-]*to[\s-]*earn|price.{0,6}earn/i,
+      key: 'pe_ratio', name: 'P/E', fmt: (v) => `${_round(v, 1)}x`,
+      ctx: (t) => (t != null ? ` versus the sector's ${_round(t, 1)}x` : '') },
+    { re: /\broe\b|return on equity/i,        key: 'roe',            name: 'ROE',             fmt: (v) => `${_round(v, 1)}%` },
+    { re: /\broce\b|return on capital/i,      key: 'roce',           name: 'ROCE',            fmt: (v) => `${_round(v, 1)}%` },
+    { re: /net[\s-]*margin|profit[\s-]*margin|\bmargins?\b|profitability/i,
+      key: 'net_margin',     name: 'net margin',      fmt: (v) => `${_round(v, 1)}%` },
+    { re: /debt[\s-]*(to[\s-]*)?equity|\bd\s*\/?\s*e\b|leverage/i,
+      key: 'debt_equity',    name: 'debt-to-equity',  fmt: (v) => _round(v, 2) },
+    { re: /revenue[\s-]*(growth|cagr)|sales[\s-]*growth/i,
+      key: 'revenue_growth', name: 'revenue growth',  fmt: (v) => `${_round(v, 1)}%` },
+    { re: /profit[\s-]*growth|earnings[\s-]*growth/i,
+      key: 'profit_growth',  name: 'profit growth',   fmt: (v) => `${_round(v, 1)}%` },
+    { re: /dividend/i,                        key: 'dividend_yield', name: 'dividend yield',  fmt: (v) => `${_round(v, 2)}%` },
+];
+
+/* Normalise a ratios entry to [value, threshold, label] — mirrors getRatio(). */
+const _ratioTriple = (v) => {
+    if (v == null) return [null, null, null];
+    if (Array.isArray(v)) return [v[0] ?? null, v[1] ?? null, v[2] ?? null];
+    if (typeof v === 'object') return [v.value ?? null, v.threshold ?? null, v.label ?? null];
+    return [v, null, null];
+};
+
+/**
+ * A direct, on-topic answer for a single-metric question, built from the same
+ * structured data that powers the fundamental scorecard — so "pe ratio of X"
+ * always leads with the P/E, even when the LLM prose opens on something else.
+ * Returns null when the query names no known metric or the data is missing, so
+ * callers fall back to the reply's opening paragraph.
+ *
+ * @param {string} query        the user's question
+ * @param {{ratios?: object}} fund   scoreCard.fundamental
+ * @param {string} symbolLabel  ticker for the possessive ("RELIANCE's P/E …")
+ * @returns {string|null}
+ */
+export const metricAnswer = (query, fund, symbolLabel = '') => {
+    const ratios = fund?.ratios;
+    if (!query || !ratios) return null;
+    const m = METRIC_MATCHERS.find((x) => x.re.test(query));
+    if (!m) return null;
+    const [value, threshold, label] = _ratioTriple(ratios[m.key]);
+    if (value == null || !Number.isFinite(Number(value))) return null;
+    const who = symbolLabel ? String(symbolLabel).toUpperCase() : 'This stock';
+    const ctx = m.ctx ? m.ctx(threshold) : '';
+    const verdict = label ? ` — ${String(label).toLowerCase()}` : '';
+    return `${who}'s ${m.name} is ${m.fmt(value)}${ctx}${verdict}.`;
+};
+
 export const answerSections = (queryIntent) => {
     // 'pe_ratio' is the older classifier's label for a single fundamental-metric
     // query ("pe ratio of X", "ROE of Y"); the newer one calls it 'fundamentals'.

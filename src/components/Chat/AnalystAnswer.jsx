@@ -11,7 +11,7 @@ import {
 import {
     FinancialScoreCard as FinancialDetailCard,
 } from './FundamentalCard';
-import { answerSections, firstParagraph } from './answerSections';
+import { answerSections, firstParagraph, metricAnswer } from './answerSections';
 
 /**
  * AnalystAnswer — "one tap deeper" layout for Analyst mode.
@@ -847,6 +847,7 @@ const AnalystAnswer = ({
     streaming = false,
     onDone = null,
     queryIntent = 'full',
+    query = null,
 }) => {
     // Which sections this intent shows. "pe ratio of X" (→ 'fundamentals') gets a
     // focused view — direct answer + fundamental scorecard — not the whole wall.
@@ -870,10 +871,12 @@ const AnalystAnswer = ({
 
     // Type the answer prose. ~45ms/2 words puts a typical 50-word summary at roughly
     // 2.5s — long enough to read as thinking, short enough not to stall. Focused
-    // intents lead with the direct answer to what was asked (the opening line of the
-    // reply, e.g. "The P/E is 22.4…") instead of the hoisted generic verdict.
+    // intents lead with the answer to what was actually asked: for a single-metric
+    // question, the metric built from the scorecard data ("RELIANCE's P/E is 23.2x
+    // …") — reliable even when the LLM prose opens on something else — then the
+    // reply's opening paragraph, then the hoisted verdict.
     const answerText = sections.directAnswer
-        ? (firstParagraph(content) || verdictText
+        ? (metricAnswer(query, scoreCard?.fundamental, symbolLabel) || firstParagraph(content) || verdictText
             || (Array.isArray(signal?.why) && signal.why.length ? signal.why.join(' ') : null))
         : verdictSummary(verdictText, content, signal);
     const { displayedText, isComplete } = useStreamingText(answerText || '', animate, 'line', 2, 45);

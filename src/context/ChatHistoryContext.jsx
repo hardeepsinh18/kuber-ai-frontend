@@ -157,6 +157,7 @@ export function ChatHistoryProvider({ children }) {
                             ...(m.recentDevelopments != null ? { _recentDevelopments: m.recentDevelopments } : {}),
                             ...(m.aiTake != null ? { _aiTake: m.aiTake } : {}),
                             ...(m.queryIntent != null ? { _queryIntent: m.queryIntent } : {}),
+                            ...(m.query != null ? { _query: m.query } : {}),
                             ...(m.responseMode != null ? { _responseMode: m.responseMode } : {}),
                             // Rendered but previously never persisted, so a chat
                             // rehydrated from the server (other device / cleared
@@ -319,6 +320,7 @@ export function ChatHistoryProvider({ children }) {
                         recentDevelopments: m.metadata?._recentDevelopments ?? undefined,
                         aiTake: m.metadata?._aiTake ?? undefined,
                         queryIntent: m.metadata?._queryIntent ?? undefined,
+                        query: m.metadata?._query ?? undefined,
                         responseMode: m.metadata?._responseMode ?? undefined,
                         // Mirror of the persist whitelist — keep these in sync, or a
                         // rehydrated chat renders differently from a live one.

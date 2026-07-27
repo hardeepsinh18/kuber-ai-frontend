@@ -1,5 +1,42 @@
 import { describe, it, expect } from 'vitest';
-import { answerSections, firstParagraph } from './answerSections';
+import { answerSections, firstParagraph, metricAnswer } from './answerSections';
+
+describe('metricAnswer', () => {
+    // fund.ratios entries are [value, threshold, label] (see getRatio in AnalystAnswer).
+    const fund = {
+        ratios: {
+            pe_ratio: [23.2, 25, 'FAIR'],
+            roe: [8.91, 15, 'Weak'],
+            debt_equity: [0.34, 1, 'Strong'],
+            net_margin: [8.9, null, 'Average'],
+        },
+    };
+
+    it('answers a P/E question with the P/E, sector context and verdict', () => {
+        expect(metricAnswer('pe ratio of reliance', fund, 'RELIANCE'))
+            .toBe("RELIANCE's P/E is 23.2x versus the sector's 25.0x — fair.");
+    });
+    it('answers an ROE question with ROE (no sector context)', () => {
+        expect(metricAnswer('reliance ROE', fund, 'RELIANCE')).toBe("RELIANCE's ROE is 8.9% — weak.");
+    });
+    it('answers a debt/equity question', () => {
+        expect(metricAnswer('what is the d/e of reliance', fund, 'RELIANCE'))
+            .toBe("RELIANCE's debt-to-equity is 0.34 — strong.");
+    });
+    it('accepts object-shaped ratio entries too', () => {
+        const objFund = { ratios: { pe_ratio: { value: 23.2, threshold: 25, label: 'FAIR' } } };
+        expect(metricAnswer('pe ratio', objFund, 'TCS')).toBe("TCS's P/E is 23.2x versus the sector's 25.0x — fair.");
+    });
+    it('returns null when the query names no known metric', () => {
+        expect(metricAnswer('show me the chart', fund, 'RELIANCE')).toBeNull();
+        expect(metricAnswer('fundamentals of reliance', fund, 'RELIANCE')).toBeNull();
+    });
+    it('returns null when the data is missing', () => {
+        expect(metricAnswer('pe ratio', { ratios: {} }, 'X')).toBeNull();
+        expect(metricAnswer('pe ratio', null, 'X')).toBeNull();
+        expect(metricAnswer('', fund, 'X')).toBeNull();
+    });
+});
 
 describe('firstParagraph', () => {
     it('returns the opening prose line — the direct answer for a metric query', () => {

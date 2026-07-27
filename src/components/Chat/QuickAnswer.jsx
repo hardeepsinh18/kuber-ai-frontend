@@ -5,7 +5,7 @@ import {
     Card, CardHeader, InlineMd,
     CompanyCard, VerdictBand, MarketStatsCard, buildMarketStats, VentyScorePanel, getScores,
 } from './answerKit';
-import { answerSections, firstParagraph } from './answerSections';
+import { answerSections, firstParagraph, metricAnswer } from './answerSections';
 
 /**
  * QuickAnswer — the "instant read" layout for Quick (snap) mode.
@@ -54,12 +54,15 @@ const QuickAnswer = ({
     symbolLabel = '',
     patternSummary = null,
     queryIntent = 'full',
+    query = null,
 }) => {
     // Which sections this intent shows — focused questions ("pe ratio of X") get a
-    // direct answer, not the full verdict + chart + score wall.
+    // direct answer, not the full verdict + chart + score wall. For a single-metric
+    // question the answer is built from the scorecard data ("RELIANCE's P/E is
+    // 23.2x …"), so it targets the asked metric instead of the reply's opening line.
     const sections = answerSections(queryIntent);
     const directAnswer = sections.directAnswer
-        ? (firstParagraph(content) || verdictText
+        ? (metricAnswer(query, scoreCard?.fundamental, symbolLabel) || firstParagraph(content) || verdictText
             || (Array.isArray(signal?.why) && signal.why.length ? signal.why.join(' ') : null))
         : null;
     const aag = metadata?.at_a_glance || {};

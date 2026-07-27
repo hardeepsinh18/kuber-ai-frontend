@@ -1328,6 +1328,9 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 suggestedFollowUps,
                 newsHeadlines,
                 queryIntent,
+                // The user's question, so a single-metric answer ("pe ratio of X")
+                // can target the asked metric instead of the reply's opening line.
+                query: normalized,
                 thinkingSteps: (responseData.retrieval_steps && responseData.retrieval_steps.length > 0) ? responseData.retrieval_steps : dynamicSteps,
                 sourceDocuments: responseData.source_documents || [],
                 processingTime: timeTaken,
@@ -1532,6 +1535,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                                 suggestedFollowUps={msg.suggestedFollowUps}
                                 newsHeadlines={msg.newsHeadlines}
                                 queryIntent={msg.queryIntent || 'full'}
+                                query={msg.query || null}
                                 onFollowUpClick={(text) => handleSend(text)}
                                 onStreamingDone={msg.id === streamingMessageId ? handleStreamingDone : undefined}
                                 messageId={msg.role === 'ai' ? msg.id : null}
