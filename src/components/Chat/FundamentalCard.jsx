@@ -442,7 +442,7 @@ const FinancialScoreCard = ({ fund, symbol, flat = false }) => {
             )}
             {(flat || open) && (
                 <div className={flat ? '' : 'p-3 space-y-3 bg-zinc-50 dark:bg-[#0d0c0b]'}>
-                    {/* Score banner — same design language as the Technical Score Card */}
+                    {/* Score banner, same design language as the Technical Score Card */}
                     {!flat && finScore != null && (
                         <div className="flex items-center justify-between p-3 rounded-xl"
                              style={{ background: `${finColor}12`, border: `1.5px solid ${finColor}30` }}>
@@ -987,7 +987,7 @@ const PatternModal = ({ pattern, ohlcBars, chartData, chartSlice, support, resis
                 {ohlcBars && ohlcBars.length > 0 && (
                     <div className="px-5 py-4">
                         <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wide mb-2">
-                            Pattern Candle{ohlcBars.length > 1 ? 's' : ''} — OHLC
+                            Pattern Candle{ohlcBars.length > 1 ? 's' : ''}, OHLC
                         </p>
                         <div className="overflow-x-auto rounded-lg border border-zinc-700">
                             <table className="w-full text-xs">
@@ -1076,7 +1076,7 @@ const ChartPatternCard = ({ cp }) => {
                     </span>
                 </div>
 
-                {/* Mini chart from chart_slice — use same slice for both data and candles */}
+                {/* Mini chart from chart_slice, use same slice for both data and candles */}
                 {(() => {
                     const miniSlice = sliceData.slice(-30);
                     const allMiniHL = miniSlice.flatMap(d => [d.high, d.low].filter(Boolean));
@@ -1201,7 +1201,7 @@ export const PatternDetectionSection = ({ patternSummary, chartData = null }) =>
 
                         {!hasPatterns && (
                             <div className="flex items-center gap-2 py-2 px-1 text-[12px] text-zinc-500 dark:text-zinc-500 italic">
-                                <span>Nothing forming right now — no chart or candle patterns detected in recent price action.</span>
+                                <span>Nothing forming right now, no chart or candle patterns detected in recent price action.</span>
                             </div>
                         )}
 
@@ -1267,7 +1267,7 @@ export const PatternDetectionSection = ({ patternSummary, chartData = null }) =>
                                 ) : (
                                     <div className="h-full min-h-[80px] flex items-center justify-center rounded-xl border border-dashed border-zinc-700/50 px-4 py-6 text-center">
                                         <span className="text-[11px] text-zinc-500 italic leading-relaxed">
-                                            No classical chart patterns detected — no triangle, channel, or H&amp;S forming currently.
+                                            No classical chart patterns detected, no triangle, channel, or H&amp;S forming currently.
                                         </span>
                                     </div>
                                 )}
@@ -1419,7 +1419,7 @@ const KuberScoreBanner = ({ horizon, tech, fund, ratingsSum, symbol }) => {
                 </button>
             </div>
 
-            {/* Breakdown — Technical Engine + Fundamental Engine */}
+            {/* Breakdown, Technical Engine + Fundamental Engine */}
             {showBreakdown && (
                 <div className="px-4 pb-4 bg-white dark:bg-[#111]">
                     {/* ── Fundamental Engine ── */}
@@ -1472,104 +1472,104 @@ const SIGNAL_NAMES = {
 const METRIC_INFO = {
     ema_stack: {
         def: 'Alignment of 8, 21, 50 & 200-day EMAs. When short-term EMAs stack above long-term ones, the trend is healthy.',
-        Poor:        'All EMAs inverted — price is in a confirmed downtrend.',
-        Weak:        'EMAs partially misaligned — mixed signals, no clear trend.',
-        Average:     'EMAs roughly flat — directionless or in transition.',
-        Strong:      'EMAs mostly bullishly aligned — uptrend is progressing.',
-        Exceptional: 'All EMAs perfectly stacked — strong, sustained uptrend.',
+        Poor:        'All EMAs inverted, price is in a confirmed downtrend.',
+        Weak:        'EMAs partially misaligned, mixed signals, no clear trend.',
+        Average:     'EMAs roughly flat, directionless or in transition.',
+        Strong:      'EMAs mostly bullishly aligned, uptrend is progressing.',
+        Exceptional: 'All EMAs perfectly stacked, strong, sustained uptrend.',
     },
     price_structure: {
         def: 'Sequence of highs and lows. Higher highs + higher lows = bullish structure; lower highs + lower lows = bearish.',
-        Poor:        'Lower highs and lower lows — structural downtrend confirmed.',
-        Weak:        'Recent highs not being sustained — structure breaking down.',
-        Average:     'Sideways / choppy — no clear directional pattern.',
-        Strong:      'Higher highs and higher lows — healthy uptrend structure.',
-        Exceptional: 'Clean breakout impulse above prior structure — very bullish.',
+        Poor:        'Lower highs and lower lows, structural downtrend confirmed.',
+        Weak:        'Recent highs not being sustained, structure breaking down.',
+        Average:     'Sideways / choppy, no clear directional pattern.',
+        Strong:      'Higher highs and higher lows, healthy uptrend structure.',
+        Exceptional: 'Clean breakout impulse above prior structure, very bullish.',
     },
     breakout: {
         def: 'Detects whether price has broken above key resistance levels, ideally confirmed by volume.',
-        Poor:        'Price is well below all resistance — no breakout in sight.',
+        Poor:        'Price is well below all resistance, no breakout in sight.',
         Weak:        'Approaching resistance but no clean break yet.',
-        Average:     'Minor move at resistance — awaiting volume confirmation.',
+        Average:     'Minor move at resistance, awaiting volume confirmation.',
         Strong:      'Clean breakout above resistance with volume.',
-        Exceptional: 'Explosive volume breakout — high conviction move.',
+        Exceptional: 'Explosive volume breakout, high conviction move.',
     },
     volume_context: {
         def: 'Compares recent volume to the 20-day average. High volume on up-moves confirms buying interest.',
-        Poor:        'Volume low and declining — no buying interest.',
-        Weak:        'Volume below average — lack of conviction.',
-        Average:     'Volume near average — neutral, no edge.',
-        Strong:      'Volume above average — solid market participation.',
-        Exceptional: '2-3× average volume — likely institutional activity.',
+        Poor:        'Volume low and declining, no buying interest.',
+        Weak:        'Volume below average, lack of conviction.',
+        Average:     'Volume near average, neutral, no edge.',
+        Strong:      'Volume above average, solid market participation.',
+        Exceptional: '2-3× average volume, likely institutional activity.',
     },
     rsi: {
         def: 'RSI (14-day) measures momentum on a 0-100 scale. >70 = overbought, <30 = oversold.',
-        Poor:        'RSI below 35 — strong bearish momentum, oversold territory.',
-        Weak:        'RSI 35-45 — bearish momentum, downtrend in place.',
-        Average:     'RSI 45-55 — neutral, no clear directional edge.',
-        Strong:      'RSI 55-70 — bullish momentum with room to run.',
-        Exceptional: 'RSI in 60-70 zone with upward slope — strong trend momentum.',
+        Poor:        'RSI below 35, strong bearish momentum, oversold territory.',
+        Weak:        'RSI 35-45, bearish momentum, downtrend in place.',
+        Average:     'RSI 45-55, neutral, no clear directional edge.',
+        Strong:      'RSI 55-70, bullish momentum with room to run.',
+        Exceptional: 'RSI in 60-70 zone with upward slope, strong trend momentum.',
     },
     macd: {
         def: 'MACD tracks the difference between two EMAs. Bullish when the signal line crosses above zero.',
-        Poor:        'MACD deeply negative and histogram widening — accelerating downtrend.',
-        Weak:        'MACD bearish crossover — momentum turning down.',
-        Average:     'MACD near zero line — momentum in transition.',
-        Strong:      'MACD bullish crossover — momentum turning up.',
-        Exceptional: 'MACD strongly positive with rising histogram — strong upward momentum.',
+        Poor:        'MACD deeply negative and histogram widening, accelerating downtrend.',
+        Weak:        'MACD bearish crossover, momentum turning down.',
+        Average:     'MACD near zero line, momentum in transition.',
+        Strong:      'MACD bullish crossover, momentum turning up.',
+        Exceptional: 'MACD strongly positive with rising histogram, strong upward momentum.',
     },
     volatility: {
         def: 'ATR-based measure of recent price swings. High volatility means larger moves in either direction.',
-        Poor:        'Very high volatility with a downward bias — unstable and risky.',
-        Weak:        'Above-average volatility — unpredictable, wider stops needed.',
-        Average:     'Normal volatility — typical market behavior.',
-        Strong:      'Controlled, low volatility in an uptrend — healthy grind higher.',
-        Exceptional: 'Volatility compression near a base — potential big breakout pending.',
+        Poor:        'Very high volatility with a downward bias, unstable and risky.',
+        Weak:        'Above-average volatility, unpredictable, wider stops needed.',
+        Average:     'Normal volatility, typical market behavior.',
+        Strong:      'Controlled, low volatility in an uptrend, healthy grind higher.',
+        Exceptional: 'Volatility compression near a base, potential big breakout pending.',
     },
     weekly_trend: {
         def: 'Macro trend direction based on the weekly candle chart. Overrides short-term noise.',
-        Poor:        'Weekly chart in clear downtrend — avoid longs entirely.',
-        Weak:        'Weekly trend rolling over — caution, headwinds ahead.',
-        Average:     'Weekly trend sideways — no macro tailwind or headwind.',
-        Strong:      'Weekly uptrend intact — macro direction is supportive.',
-        Exceptional: 'Strong weekly uptrend accelerating — maximum macro tailwind.',
+        Poor:        'Weekly chart in clear downtrend, avoid longs entirely.',
+        Weak:        'Weekly trend rolling over, caution, headwinds ahead.',
+        Average:     'Weekly trend sideways, no macro tailwind or headwind.',
+        Strong:      'Weekly uptrend intact, macro direction is supportive.',
+        Exceptional: 'Strong weekly uptrend accelerating, maximum macro tailwind.',
     },
     sentiment: {
         def: 'Derived from price action, volume patterns, and momentum divergences to gauge buyer vs. seller control.',
-        Poor:        'Strong bearish sentiment — sellers firmly in control.',
-        Weak:        'Mild bearish lean — market cautious and defensive.',
-        Average:     'Balanced sentiment — no strong conviction either way.',
-        Strong:      'Mild bullish sentiment — buyers beginning to step in.',
-        Exceptional: 'Very bullish sentiment — high-conviction buying pressure.',
+        Poor:        'Strong bearish sentiment, sellers firmly in control.',
+        Weak:        'Mild bearish lean, market cautious and defensive.',
+        Average:     'Balanced sentiment, no strong conviction either way.',
+        Strong:      'Mild bullish sentiment, buyers beginning to step in.',
+        Exceptional: 'Very bullish sentiment, high-conviction buying pressure.',
     },
     risk_flags: {
         def: 'Checks for risky conditions: gap-downs, volume spikes on declines, extreme extensions, or proximity to major resistance.',
-        Poor:        'Multiple risk flags active — high-risk setup, proceed with caution.',
-        Weak:        'Some risk factors present — elevated risk.',
-        Average:     '1-2 risk flags — manageable risk, stay alert.',
-        Strong:      'Very few risk factors — relatively clean setup.',
-        Exceptional: 'Zero risk flags — cleanest possible technical setup.',
+        Poor:        'Multiple risk flags active, high-risk setup, proceed with caution.',
+        Weak:        'Some risk factors present, elevated risk.',
+        Average:     '1-2 risk flags, manageable risk, stay alert.',
+        Strong:      'Very few risk factors, relatively clean setup.',
+        Exceptional: 'Zero risk flags, cleanest possible technical setup.',
     },
     sma_regime: {
         def: 'Position of price relative to the 50-day and 200-day SMAs. The "golden cross" (SMA50 > SMA200) is a bullish regime.',
-        Poor:        'Price below both SMA50 & SMA200 — deeply bearish regime.',
-        Weak:        'Price below SMA200 — long-term downtrend regime.',
-        Average:     'Price between SMA50 and SMA200 — transitional phase.',
-        Strong:      'Price above SMA50 — medium-term uptrend.',
-        Exceptional: 'Price above both SMAs with golden cross — fully bullish regime.',
+        Poor:        'Price below both SMA50 & SMA200, deeply bearish regime.',
+        Weak:        'Price below SMA200, long-term downtrend regime.',
+        Average:     'Price between SMA50 and SMA200, transitional phase.',
+        Strong:      'Price above SMA50, medium-term uptrend.',
+        Exceptional: 'Price above both SMAs with golden cross, fully bullish regime.',
     },
 };
 
 const SCORE_INFO = 'Weighted composite of 11 sub-metrics (EMA Stack, Price Structure, Breakout, Volume, RSI, MACD, Volatility, Weekly Trend, Sentiment, Risk Flags, SMA Regime). Each scored 1-5 and normalized to 100. ≥70 = Strong Pick · 50-69 = Watchlist · 35-49 = Caution · <35 = Avoid.';
 
 const RISK_FLAG_LABELS = {
-    EXTENDED_OVERBOUGHT:  'RSI above 75 — stock is overbought, pullback risk is elevated.',
-    EXTENDED_OVERSOLD:    'RSI below 25 — deeply oversold, but may keep falling in downtrends.',
-    VERTICAL_CANDLE_AVOID:'Extreme single-bar spike detected — high volatility, avoid chasing.',
-    CHOPPY_CONDITIONS:    'Price action is choppy with no clear trend — low-probability setups.',
-    LOW_CONFIDENCE_MOVE:  'Recent move happened on weak volume — participation is low, move may not sustain.',
-    FAILED_BREAKOUT:      'Breakout attempt failed or reversed — indicates supply overhead.',
-    POOR_RISK_REWARD:     'Weak trend with only moderate breakout quality — risk/reward is unfavourable.',
+    EXTENDED_OVERBOUGHT:  'RSI above 75, stock is overbought, pullback risk is elevated.',
+    EXTENDED_OVERSOLD:    'RSI below 25, deeply oversold, but may keep falling in downtrends.',
+    VERTICAL_CANDLE_AVOID:'Extreme single-bar spike detected, high volatility, avoid chasing.',
+    CHOPPY_CONDITIONS:    'Price action is choppy with no clear trend, low-probability setups.',
+    LOW_CONFIDENCE_MOVE:  'Recent move happened on weak volume, participation is low, move may not sustain.',
+    FAILED_BREAKOUT:      'Breakout attempt failed or reversed, indicates supply overhead.',
+    POOR_RISK_REWARD:     'Weak trend with only moderate breakout quality, risk/reward is unfavourable.',
 };
 
 /* Hover tooltip — uses a portal so overflow:hidden on ancestors can't clip it */

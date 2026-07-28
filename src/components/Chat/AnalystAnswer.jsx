@@ -307,7 +307,7 @@ const SignalBreakdown = ({ signals }) => {
                                     </span>
                                 </div>
                                 {s.detail && (
-                                    <p className="mt-0.5 text-[11px] leading-snug text-zinc-500 dark:text-zinc-400">{s.detail}</p>
+                                    <p className="mt-0.5 text-[11px] leading-snug text-zinc-500 dark:text-zinc-400">{stripAiDashes(s.detail)}</p>
                                 )}
                             </div>
                         </div>
@@ -639,7 +639,7 @@ const MgmtToneContent = ({ data }) => {
                         <div key={i}
                              className="text-[11.5px] italic text-zinc-600 dark:text-zinc-300 leading-relaxed pl-3 border-l-2"
                              style={{ borderColor: `${color}66` }}>
-                            “{q.text}”
+                            “{stripAiDashes(q.text)}”
                             {q.source && (
                                 <a href={q.source} target="_blank" rel="noopener noreferrer"
                                    className="not-italic ml-1 text-[10px] font-semibold" style={{ color }}>↗ source</a>
@@ -717,14 +717,14 @@ const SentimentalScorecard = ({ managementSentiment, annualReportIntelligence, r
             {ari?.company_story && (
                 <SentimentBlock label="Annual report intelligence"
                                 badge={ari.fiscal_year || (ari.confidence != null ? `${Math.round(ari.confidence * 100)}% confidence` : null)}>
-                    {ari.company_story}
-                    {ari.future_outlook ? ` ${ari.future_outlook}` : ''}
+                    {stripAiDashes(ari.company_story)}
+                    {ari.future_outlook ? ` ${stripAiDashes(ari.future_outlook)}` : ''}
                     {drivers.length > 0 && (
                         <ul className="mt-2 space-y-1">
                             {drivers.map((d, i) => (
                                 <li key={i} className="flex items-start gap-1.5">
                                     <span className="mt-[6px] w-1 h-1 rounded-full flex-shrink-0" style={{ backgroundColor: BRAND }} />
-                                    {d}
+                                    {stripAiDashes(d)}
                                 </li>
                             ))}
                         </ul>
@@ -757,7 +757,7 @@ const SentimentalScorecard = ({ managementSentiment, annualReportIntelligence, r
                             <li key={i}>
                                 <div className="flex items-start justify-between gap-3">
                                     <div className="flex-1 min-w-0">
-                                        <DocLink url={it.url}>{it.title}</DocLink>
+                                        <DocLink url={it.url}>{stripAiDashes(it.title)}</DocLink>
                                     </div>
                                     {fmtDevDate(it.date) && (
                                         <span className="text-[9px] font-extrabold uppercase tracking-wider text-zinc-600 dark:text-[#FDD405] flex-shrink-0 mt-0.5">
@@ -767,7 +767,7 @@ const SentimentalScorecard = ({ managementSentiment, annualReportIntelligence, r
                                 </div>
                                 {(it.category || it.summary) && (
                                     <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5 line-clamp-1">
-                                        {[it.category, it.summary].filter(Boolean).join(' · ')}
+                                        {stripAiDashes([it.category, it.summary].filter(Boolean).join(' · '))}
                                     </p>
                                 )}
                             </li>
