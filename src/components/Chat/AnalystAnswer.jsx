@@ -4,7 +4,7 @@ import { ChevronDown, ChevronUp, ExternalLink, BookText, Mic2, BarChart3, Megaph
 import StockChart from './StockChart';
 import { useStreamingText } from '../../hooks/useStreamingText';
 import {
-    BRAND, fmtINR, InlineMd, Card, MiniLabel, CollapsibleSection,
+    BRAND, fmtINR, InlineMd, Card, MiniLabel, CollapsibleSection, INNER_CARD,
     CompanyCard, VerdictBand, MarketStatsCard, buildMarketStats,
     ScoreGrid, getScores, CollapsibleScorecard, MetricCell,
 } from './answerKit';
@@ -89,7 +89,7 @@ const verdictSummary = (verdictText, content, signal) =>
     || firstParagraph(content)
     || (Array.isArray(signal?.why) && signal.why.length ? signal.why.join(' ') : null);
 
-const WhyThisVerdict = ({ verdictText, content, signal, summary: summaryProp = null, label = 'Why this verdict', typedSummary = null, caret = false, flush = false }) => {
+const WhyThisVerdict = ({ verdictText, content, signal, summary: summaryProp = null, label = 'Why this verdict', typedSummary = null, caret = false, flush = false, raised = false }) => {
     // Focused intents pass the resolved direct answer in `summary`; holistic
     // intents let the card derive the verdict summary itself.
     const summary = summaryProp != null ? summaryProp : verdictSummary(verdictText, content, signal);
@@ -98,9 +98,9 @@ const WhyThisVerdict = ({ verdictText, content, signal, summary: summaryProp = n
     const shown = typedSummary != null ? typedSummary : summary;
     const typing = typedSummary != null && typedSummary !== summary;
 
-    const Wrapper = flush ? 'div' : Card;
+    const Wrapper = (flush || raised) ? 'div' : Card;
     return (
-        <Wrapper className="px-4 py-3.5">
+        <Wrapper className={clsx('px-4 py-3.5', raised && INNER_CARD)}>
             <MiniLabel>{label}</MiniLabel>
             {summary && (
                 <div className="mt-1.5 text-[13px] leading-relaxed text-zinc-700 dark:text-zinc-300">
@@ -888,31 +888,26 @@ const AnalystAnswer = ({
     return (
         <div className="space-y-3" style={{ animation: 'slideUpFade 0.4s cubic-bezier(0.22,1,0.36,1) both' }}>
 
-            {/* ── Unified summary hero — company header, verdict, why, chart+stats
-                 all in ONE card, split by hairline dividers instead of gaps ── */}
-            <Card className="overflow-hidden">
-                <CompanyCard metadata={metadata} symbolLabel={symbolLabel} flush />
+            {/* ── Summary hero — a padded MAIN card holding distinct inner sub-cards
+                 (company header, verdict, why, chart + market stats) ── */}
+            <div className="rounded-2xl border border-zinc-200 bg-zinc-50/60 dark:border-zinc-800 dark:bg-[#0f0e0d] p-2.5 sm:p-3 space-y-2.5 sm:space-y-3">
+                <CompanyCard metadata={metadata} symbolLabel={symbolLabel} raised />
 
                 {sections.verdictBand && (
-                    <div className="border-t border-zinc-100 dark:border-zinc-800/70">
-                        <VerdictBand verdict={scoreCard?.verdict} verdictIntent={scoreCard?.verdict_intent} signal={signal}
-                                     verdictText={verdictText} content={content}
-                                     aiTake={aiTake} price={price} patternSummary={patternSummary} flush />
-                    </div>
+                    <VerdictBand verdict={scoreCard?.verdict} verdictIntent={scoreCard?.verdict_intent} signal={signal}
+                                 verdictText={verdictText} content={content}
+                                 aiTake={aiTake} price={price} patternSummary={patternSummary} raised />
                 )}
 
-                <div className="border-t border-zinc-100 dark:border-zinc-800/70">
-                    <WhyThisVerdict summary={answerText}
-                                    label={sections.directAnswer ? 'Answer' : 'Why this verdict'}
-                                    typedSummary={animate ? displayedText : null} caret={animate} flush />
-                </div>
+                <WhyThisVerdict summary={answerText}
+                                label={sections.directAnswer ? 'Answer' : 'Why this verdict'}
+                                typedSummary={animate ? displayedText : null} caret={animate} raised />
 
                 {((sections.chart && chart) || (sections.marketStats && stats.length > 0)) && (
                     <Stage show={shown(1)}>
-                        <div className={clsx('border-t border-zinc-100 dark:border-zinc-800/70 grid',
-                            (sections.chart && chart) && (sections.marketStats && stats.length > 0) ? 'lg:grid-cols-[1fr_230px] lg:divide-x divide-zinc-100 dark:divide-zinc-800/70' : 'grid-cols-1')}>
+                        <div className={clsx('grid gap-2.5 sm:gap-3', (sections.chart && chart) && (sections.marketStats && stats.length > 0) ? 'lg:grid-cols-[1fr_230px]' : 'grid-cols-1')}>
                             {sections.chart && chart && (
-                                <div className="p-3 min-w-0">
+                                <div className={clsx('p-3 min-w-0', INNER_CARD)}>
                                     <StockChart
                                         chartData={chart}
                                         symbol={symbolLabel}
@@ -921,11 +916,11 @@ const AnalystAnswer = ({
                                     />
                                 </div>
                             )}
-                            {sections.marketStats && stats.length > 0 && <MarketStatsCard stats={stats} flush />}
+                            {sections.marketStats && stats.length > 0 && <MarketStatsCard stats={stats} raised />}
                         </div>
                     </Stage>
                 )}
-            </Card>
+            </div>
 
             {sections.patterns && (
                 <Stage show={shown(2)}>

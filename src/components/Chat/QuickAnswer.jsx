@@ -2,7 +2,7 @@ import React from 'react';
 import { clsx } from 'clsx';
 import StockChart from './StockChart';
 import {
-    Card, CardHeader, InlineMd,
+    Card, CardHeader, InlineMd, INNER_CARD,
     CompanyCard, VerdictBand, MarketStatsCard, buildMarketStats, VentyScorePanel, getScores,
 } from './answerKit';
 import { answerSections, firstParagraph, metricAnswer } from './answerSections';
@@ -84,22 +84,20 @@ const QuickAnswer = ({
     return (
         <div className="space-y-3" style={{ animation: 'slideUpFade 0.4s cubic-bezier(0.22,1,0.36,1) both' }}>
 
-            {/* ── Unified summary hero — company header, verdict, answer, chart+stats
-                 all in ONE card, split by hairline dividers instead of gaps ── */}
-            <Card className="overflow-hidden">
-                <CompanyCard metadata={metadata} symbolLabel={symbolLabel} flush />
+            {/* ── Summary hero — a padded MAIN card holding distinct inner sub-cards
+                 (company header, verdict, answer, chart + market stats) ── */}
+            <div className="rounded-2xl border border-zinc-200 bg-zinc-50/60 dark:border-zinc-800 dark:bg-[#0f0e0d] p-2.5 sm:p-3 space-y-2.5 sm:space-y-3">
+                <CompanyCard metadata={metadata} symbolLabel={symbolLabel} raised />
 
                 {sections.verdictBand && (
-                    <div className="border-t border-zinc-100 dark:border-zinc-800/70">
-                        <VerdictBand verdict={scoreCard?.verdict} verdictIntent={scoreCard?.verdict_intent} signal={signal}
-                                     verdictText={verdictText} content={content}
-                                     aiTake={aiTake} price={price} patternSummary={patternSummary} flush />
-                    </div>
+                    <VerdictBand verdict={scoreCard?.verdict} verdictIntent={scoreCard?.verdict_intent} signal={signal}
+                                 verdictText={verdictText} content={content}
+                                 aiTake={aiTake} price={price} patternSummary={patternSummary} raised />
                 )}
 
                 {/* ── Direct answer — focused intents lead with what was asked ─ */}
                 {directAnswer && (
-                    <div className="px-4 py-3.5 border-t border-zinc-100 dark:border-zinc-800/70">
+                    <div className={clsx('px-4 py-3.5', INNER_CARD)}>
                         <CardHeader>Answer</CardHeader>
                         <div className="mt-2 text-[13px] leading-relaxed text-zinc-700 dark:text-zinc-300">
                             <InlineMd>{directAnswer.replace(/^\**\s*verdict\s*:?\**\s*/i, '')}</InlineMd>
@@ -109,10 +107,10 @@ const QuickAnswer = ({
 
                 {/* ── Chart + Today's Market Stats ───────────────────── */}
                 {((sections.chart && chart) || (sections.marketStats && stats.length > 0)) && (
-                    <div className={clsx('border-t border-zinc-100 dark:border-zinc-800/70 grid',
-                        (sections.chart && chart) && (sections.marketStats && stats.length > 0) ? 'lg:grid-cols-[1fr_230px] lg:divide-x divide-zinc-100 dark:divide-zinc-800/70' : 'grid-cols-1')}>
+                    <div className={clsx('grid gap-2.5 sm:gap-3',
+                        (sections.chart && chart) && (sections.marketStats && stats.length > 0) ? 'lg:grid-cols-[1fr_230px]' : 'grid-cols-1')}>
                         {sections.chart && chart && (
-                            <div className="p-3 min-w-0">
+                            <div className={clsx('p-3 min-w-0', INNER_CARD)}>
                                 <StockChart
                                     chartData={chart}
                                     symbol={symbolLabel}
@@ -122,10 +120,10 @@ const QuickAnswer = ({
                                 />
                             </div>
                         )}
-                        {sections.marketStats && stats.length > 0 && <MarketStatsCard stats={stats} flush />}
+                        {sections.marketStats && stats.length > 0 && <MarketStatsCard stats={stats} raised />}
                     </div>
                 )}
-            </Card>
+            </div>
 
             {/* ── VENTY AI SCORE — reference panel layout (holistic intents only) ── */}
             {/* Key Takeaway bullets now live inside the panel as "Overview" */}

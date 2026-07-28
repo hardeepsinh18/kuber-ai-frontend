@@ -216,8 +216,25 @@ export const extractNearbyLevels = (text, price) => {
     return { below, above };
 };
 
-/* ─── Company card — name · NSE:SYM chips · price · day change ───────────── */
-export const CompanyCard = ({ metadata = {}, symbolLabel = '', flush = false }) => {
+/* Inner sub-card shell — a raised, bordered card meant to sit INSIDE the padded
+ * summary hero (cards-inside-a-card). Slightly lighter than the hero background
+ * so each section reads as its own tile. */
+export const INNER_CARD = 'rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#1b1a18]';
+
+/* Two-letter monogram tile from the symbol/name — a lightweight brand mark that
+ * needs no external image (CSP-safe). */
+const Monogram = ({ text }) => {
+    const initials = String(text || '?').replace(/[^A-Za-z0-9]/g, '').slice(0, 3).toUpperCase() || '?';
+    return (
+        <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0
+                        bg-zinc-100 dark:bg-white/[0.06] border border-zinc-200 dark:border-white/10">
+            <span className="text-[13px] font-black tracking-tight text-zinc-700 dark:text-zinc-100">{initials}</span>
+        </div>
+    );
+};
+
+/* ─── Company card — logo · name · NSE:SYM · price · day change ──────────── */
+export const CompanyCard = ({ metadata = {}, symbolLabel = '', flush = false, raised = false }) => {
     const aag = metadata?.at_a_glance || {};
     const companyName = aag.company_name || aag.display_name || symbolLabel;
     const price = aag.price != null ? Number(aag.price) : null;
@@ -226,41 +243,35 @@ export const CompanyCard = ({ metadata = {}, symbolLabel = '', flush = false }) 
     const isUp = pct != null ? pct >= 0 : true;
 
     if (!companyName && price == null) return null;
-    // `flush` = drop the own card chrome so this can sit as the header row inside
-    // the unified summary card (SummaryHero). Otherwise render as a standalone Card.
-    const Wrapper = flush ? 'div' : Card;
+    // `flush` = plain div (legacy). `raised` = bordered inner sub-card that sits
+    // inside the padded hero. Otherwise a standalone Card.
+    const cls = raised ? INNER_CARD : '';
+    const Wrapper = (flush && !raised) ? 'div' : (raised ? 'div' : Card);
     return (
-        <Wrapper className={clsx('flex items-center gap-3', flush ? 'px-4 py-3.5' : 'px-4 py-3.5')}>
+        <Wrapper className={clsx('flex items-center gap-3 px-4 py-3', cls)}>
+            <Monogram text={symbolLabel || companyName} />
             <div className="flex-1 min-w-0">
                 {companyName && (
-                    <p className="text-[16px] font-bold text-zinc-900 dark:text-white leading-tight truncate">
+                    <p className="text-[15px] font-bold text-zinc-900 dark:text-white leading-tight truncate">
                         {companyName}
                     </p>
                 )}
                 {symbolLabel && (
-                    <div className="flex items-center gap-1.5 mt-1.5">
-                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider text-zinc-500 dark:text-zinc-400 border border-zinc-300 dark:border-zinc-700">
-                            NSE
-                        </span>
-                        <span className="text-zinc-300 dark:text-zinc-700 text-[10px]">:</span>
-                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider text-zinc-700 dark:text-zinc-200 border border-zinc-300 dark:border-zinc-700">
-                            {symbolLabel}
-                        </span>
-                    </div>
+                    <p className="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 mt-0.5 tracking-wide">
+                        NSE: {symbolLabel}
+                    </p>
                 )}
             </div>
             <div className="flex flex-col items-end flex-shrink-0">
                 {price != null && (
-                    <span className="text-[24px] font-extrabold text-zinc-900 dark:text-white leading-none">
+                    <span className="text-[22px] font-extrabold text-zinc-900 dark:text-white leading-none">
                         {fmtINR(price, 2)}
                     </span>
                 )}
                 {pct != null && (
                     <span className={clsx(
-                        'inline-flex items-center gap-1 mt-1.5 px-1.5 py-0.5 rounded text-[11px] font-semibold',
-                        isUp
-                            ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'
-                            : 'text-rose-600 dark:text-rose-400 bg-rose-500/10'
+                        'inline-flex items-center gap-1 mt-1.5 text-[11px] font-semibold',
+                        isUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
                     )}>
                         {isUp ? '▲' : '▼'}
                         {absChange != null ? ` ${Math.abs(absChange).toLocaleString('en-IN', { maximumFractionDigits: 2 })}` : ''}
@@ -336,13 +347,27 @@ const HorizonRow = ({ tenor, v, cells }) => {
         </div>
     );
 };
-const DeterministicVerdictBand = ({ verdict, flush = false }) => {
+// Soft glow colour behind the verdict panel, tinted by the call (green buy /
+// amber cautious / red avoid / neutral grey) — the reference's radial spotlight.
+const _verdictGlow = (v) => ({
+    'STRONG BUY':        'rgba(34,197,94,0.20)',
+    'BUY':               'rgba(34,197,94,0.20)',
+    'CAUTIOUS BUY':      'rgba(253,212,5,0.18)',
+    'WAIT / ACCUMULATE': 'rgba(161,161,170,0.14)',
+    'AVOID':             'rgba(239,68,68,0.18)',
+}[v] || 'rgba(253,212,5,0.14)');
+
+const DeterministicVerdictBand = ({ verdict, flush = false, raised = false }) => {
     const sh = verdict?.SHORT;
     const lg = verdict?.LONG;
     if (!sh && !lg) return null;
+    const glow = _verdictGlow(sh?.verdict || lg?.verdict);
+    const chrome = raised
+        ? INNER_CARD
+        : (flush ? '' : 'rounded-2xl border bg-white border-zinc-200 dark:bg-[#141312] dark:border-zinc-800');
     return (
-        <div className={clsx('overflow-hidden',
-            flush ? '' : 'rounded-2xl border bg-white border-zinc-200 dark:bg-[#141312] dark:border-zinc-800')}>
+        <div className={clsx('relative overflow-hidden', chrome)}
+             style={raised ? { backgroundImage: `radial-gradient(120% 140% at 12% 0%, ${glow} 0%, transparent 55%)` } : undefined}>
             <div className="flex items-center gap-1.5 px-4 pt-3 pb-1.5">
                 <span className="w-4 h-[3px] rounded-full" style={{ backgroundColor: BRAND }} />
                 <p className="text-[9px] font-extrabold uppercase tracking-[0.25em] text-street-yellow-ink dark:text-[#FDD405]">Venty Verdict</p>
@@ -354,10 +379,10 @@ const DeterministicVerdictBand = ({ verdict, flush = false }) => {
     );
 };
 
-export const VerdictBand = ({ verdict, verdictIntent, signal, verdictText, content, aiTake, price, patternSummary = null, flush = false }) => {
+export const VerdictBand = ({ verdict, verdictIntent, signal, verdictText, content, aiTake, price, patternSummary = null, flush = false, raised = false }) => {
     // Preferred: the deterministic Venty Verdict engine (score_card.verdict).
     if (verdict && (verdict.SHORT || verdict.LONG)) {
-        return <DeterministicVerdictBand verdict={verdict} flush={flush} />;
+        return <DeterministicVerdictBand verdict={verdict} flush={flush} raised={raised} />;
     }
     // The backend explicitly says this wasn't an investment question (verdict_intent
     // === false) — don't fall through to text-parsing below, which would otherwise
@@ -412,7 +437,7 @@ export const VerdictBand = ({ verdict, verdictIntent, signal, verdictText, conte
     ].filter(l => l.value);
 
     return (
-        <div className={clsx('overflow-hidden', flush ? '' : 'rounded-2xl')} style={{ backgroundColor: BRAND }}>
+        <div className={clsx('overflow-hidden', (flush && !raised) ? '' : 'rounded-xl')} style={{ backgroundColor: BRAND }}>
             <div className={clsx('grid divide-x divide-black/15',
                 levels.length === 3 ? 'grid-cols-2 sm:grid-cols-4' : levels.length === 2 ? 'grid-cols-3' : levels.length === 1 ? 'grid-cols-2' : 'grid-cols-1')}>
                 <div className="px-4 py-3">
@@ -444,11 +469,11 @@ export const buildMarketStats = (aag = {}) => [
     aag['52w_low'] != null && aag['52w_high'] != null && { label: '52w', value: `${fmtNum(aag['52w_low'])}–${fmtNum(aag['52w_high'])}` },
 ].filter(Boolean);
 
-export const MarketStatsCard = ({ stats, flush = false }) => {
+export const MarketStatsCard = ({ stats, flush = false, raised = false }) => {
     if (!stats?.length) return null;
-    const Wrapper = flush ? 'div' : Card;
+    const Wrapper = (flush || raised) ? 'div' : Card;
     return (
-        <Wrapper className={clsx('px-4 py-3.5', !flush && 'self-start')}>
+        <Wrapper className={clsx('px-4 py-3.5', raised && INNER_CARD + ' self-start', !flush && !raised && 'self-start')}>
             <CardHeader>Today's Market Stats</CardHeader>
             <div className="mt-2 divide-y divide-zinc-100 dark:divide-zinc-800">
                 {stats.map(({ label, value }) => (
