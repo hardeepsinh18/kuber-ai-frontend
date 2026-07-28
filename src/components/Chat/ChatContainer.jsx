@@ -1203,6 +1203,13 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                         id: streamPreviewId, role: 'ai', content: '',
                         queryIntent, responseMode, isStreamingPreview: true,
                     }]);
+                    // Stream ONLY the answer prose (top-down, verdict/summary first —
+                    // that's what the model writes first). We deliberately do NOT feed
+                    // the structured cards (price/chart/scorecards) mid-stream: doing so
+                    // makes the rich Analyst layout render peripheral cards first while
+                    // the verdict text is still typing (backwards, jarring UX). The
+                    // preview stays a plain text bubble; the full structured layout snaps
+                    // in together at `done` (the finalization below sets all fields).
                     responseData = await streamChatRequest({
                         endpoint: STREAM_ENDPOINT,
                         payload,
@@ -1210,15 +1217,6 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                         timeoutMs: REQUEST_TIMEOUT_MS,
                         registerAbort: (c) => { abortControllerRef.current = c; },
                         onFirstEvent: () => { setShowThinking(false); },
-                        onData: (d) => {
-                            if (requestId !== activeRequestIdRef.current || !isSameChat()) return;
-                            setMessages(prev => prev.map(m => m.id === streamPreviewId ? {
-                                ...m,
-                                ...(d.chart_data && { chartData: d.chart_data }),
-                                ...(d.score_card && { scoreCard: d.score_card }),
-                                ...(d.metadata && { metadata: d.metadata }),
-                            } : m));
-                        },
                         onToken: (delta) => {
                             if (requestId !== activeRequestIdRef.current || !isSameChat()) return;
                             setMessages(prev => prev.map(m => m.id === streamPreviewId
