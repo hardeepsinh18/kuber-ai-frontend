@@ -6,7 +6,7 @@ import { useStreamingText } from '../../hooks/useStreamingText';
 import {
     BRAND, fmtINR, InlineMd, Card, MiniLabel, CollapsibleSection, INNER_CARD,
     CompanyCard, VerdictBand, MarketStatsCard, buildMarketStats,
-    ScoreGrid, getScores, CollapsibleScorecard, MetricCell,
+    VentyScorePanel, getScores, CollapsibleScorecard, MetricCell,
 } from './answerKit';
 import {
     FinancialScoreCard as FinancialDetailCard,
@@ -871,6 +871,26 @@ const AnalystAnswer = ({
         ? (metricAnswer(query, scoreCard?.fundamental, symbolLabel) || firstParagraph(content) || verdictText
             || (Array.isArray(signal?.why) && signal.why.length ? signal.why.join(' ') : null))
         : verdictSummary(verdictText, content, signal);
+
+    // Overview bullets for the Venty Score panel (same "Key Takeaway" idea as Quick):
+    // signal reasons → aiTake bullets → content bullets, de-duped, max 4.
+    const overviewBullets = (() => {
+        const out = [];
+        const push = (t) => {
+            const clean = String(t || '').replace(/^\s*[>*•\-–]\s*/, '')
+                .replace(/^\**\s*verdict\s*:?\**\s*/i, '').trim();
+            if (clean && !out.some(o => o.toLowerCase() === clean.toLowerCase())) out.push(clean);
+        };
+        (Array.isArray(signal?.why) ? signal.why : []).forEach(push);
+        (Array.isArray(aiTake?.bullets) ? aiTake.bullets : []).forEach(b => push(b?.text));
+        if (out.length < 2 && typeof content === 'string') {
+            content.split('\n')
+                .filter(l => /^\s*[-*•]\s+\S/.test(l))
+                .filter(l => !/disclaimer|consult a sebi|education only/i.test(l))
+                .forEach(push);
+        }
+        return out.slice(0, 4);
+    })();
     const { displayedText, isComplete } = useStreamingText(answerText || '', animate, 'line', 2, 45);
 
     // Cards cascade only once the prose has finished typing.
@@ -935,11 +955,12 @@ const AnalystAnswer = ({
 
             {sections.scoreGrid && hasScores && (
                 <Stage show={shown(3)}>
-                    <CollapsibleSection title="Venty Score">
-                        <div className="pt-3">
-                            <ScoreGrid scoreCard={scoreCard} managementSentiment={managementSentiment} />
-                        </div>
-                    </CollapsibleSection>
+                    <VentyScorePanel
+                        scoreCard={scoreCard}
+                        managementSentiment={managementSentiment}
+                        companyName={aag.company_name || aag.display_name || symbolLabel}
+                        overviewBullets={overviewBullets}
+                    />
                 </Stage>
             )}
 
