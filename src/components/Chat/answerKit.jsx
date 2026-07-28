@@ -698,6 +698,36 @@ export const ScorecardHeader = ({ icon: Icon, title, score, label }) => (
     </div>
 );
 
+/* Collapsible scorecard — the Technical / Fundamental / Sentimental cards use
+ * this so each is a single dropdown card: the ScorecardHeader (icon + title +
+ * score) doubles as the toggle, with a chevron on the right, and the body
+ * collapses. Same theme-coloured Card shell as CollapsibleSection. */
+export const CollapsibleScorecard = ({ icon, title, score, label, defaultOpen = true, children }) => {
+    const [open, setOpen] = React.useState(defaultOpen);
+    return (
+        <Card className="overflow-hidden">
+            <button
+                type="button"
+                onClick={() => setOpen(o => !o)}
+                aria-expanded={open}
+                className="w-full flex items-center justify-between gap-2 p-4 text-left
+                           hover:bg-zinc-50 dark:hover:bg-white/[0.03] transition-colors"
+            >
+                <ScorecardHeader icon={icon} title={title} score={score} label={label} />
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"
+                     className={clsx('flex-shrink-0 text-zinc-400 dark:text-zinc-500 transition-transform duration-200', open && 'rotate-180')}>
+                    <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+            </button>
+            {open && (
+                <div className="px-4 pb-4 pt-0">
+                    {children}
+                </div>
+            )}
+        </Card>
+    );
+};
+
 /* ─── Expandable Technical Indicators table (DB-backed, interactive) ─────── */
 export const IndicatorsTable = ({ rows, asOfDate }) => {
     const [open, setOpen] = React.useState(false);

@@ -6,7 +6,7 @@ import { useStreamingText } from '../../hooks/useStreamingText';
 import {
     BRAND, fmtINR, InlineMd, Card, MiniLabel, CollapsibleSection,
     CompanyCard, VerdictBand, MarketStatsCard, buildMarketStats,
-    ScoreGrid, getScores, ScorecardHeader, MetricCell,
+    ScoreGrid, getScores, CollapsibleScorecard, MetricCell,
 } from './answerKit';
 import {
     FinancialScoreCard as FinancialDetailCard,
@@ -335,9 +335,8 @@ const TechnicalScorecard = ({ tech, technicalSummary, indicatorsTable, score }) 
     if (score == null && cells.length === 0 && commentary.length === 0 && signals.length === 0) return null;
 
     return (
-        <Card className="p-4">
-            <ScorecardHeader icon={Gauge} title="Technical Scorecard"
-                             score={score} label={labelFor(tech?.label, tech?.score, score)} />
+        <CollapsibleScorecard icon={Gauge} title="Technical Scorecard"
+                              score={score} label={labelFor(tech?.label, tech?.score, score)}>
             {cells.length > 0 && (
                 <>
                     <MiniLabel className="mt-4">Key indicators</MiniLabel>
@@ -357,8 +356,7 @@ const TechnicalScorecard = ({ tech, technicalSummary, indicatorsTable, score }) 
                     ))}
                 </ul>
             )}
-
-        </Card>
+        </CollapsibleScorecard>
     );
 };
 
@@ -411,9 +409,8 @@ const FundamentalScorecard = ({ fund, score, symbolLabel }) => {
     if (score == null && cells.length === 0) return null;
 
     return (
-        <Card className="p-4">
-            <ScorecardHeader icon={PieChart} title="Fundamental Scorecard"
-                             score={score} label={labelFor(fund.label, fund.score, score)} />
+        <CollapsibleScorecard icon={PieChart} title="Fundamental Scorecard"
+                              score={score} label={labelFor(fund.label, fund.score, score)}>
             {fund.summary && (
                 <p className="mt-2 text-[11.5px] text-zinc-500 dark:text-zinc-400 leading-relaxed">{fund.summary}</p>
             )}
@@ -453,7 +450,7 @@ const FundamentalScorecard = ({ fund, score, symbolLabel }) => {
                     </div>
                 </>
             )}
-        </Card>
+        </CollapsibleScorecard>
     );
 };
 
@@ -701,10 +698,9 @@ const SentimentalScorecard = ({ managementSentiment, annualReportIntelligence, r
     const risks = Array.isArray(ari?.risk_radar) ? ari.risk_radar.slice(0, 4) : [];
 
     return (
-        <Card className="p-4">
-            <ScorecardHeader icon={Newspaper} title="Sentimental Scorecard"
-                             score={score}
-                             label={labelFor(managementSentiment?.tone_label, managementSentiment?.tone_score, score, 'sent')} />
+        <CollapsibleScorecard icon={Newspaper} title="Sentimental Scorecard"
+                              score={score}
+                              label={labelFor(managementSentiment?.tone_label, managementSentiment?.tone_score, score, 'sent')}>
             {/* Management tone — gauge, aspects, breakdown, quotes (themed block) */}
             {managementSentiment?.tone_score != null && (
                 <SentimentBlock label="Management sentiment"
@@ -814,7 +810,7 @@ const SentimentalScorecard = ({ managementSentiment, annualReportIntelligence, r
                     </div>
                 </SentimentBlock>
             )}
-        </Card>
+        </CollapsibleScorecard>
     );
 };
 
