@@ -14,7 +14,7 @@ import AITake from './AITake';
 import QuickAnswer from './QuickAnswer';
 import AnalystAnswer from './AnalystAnswer';
 import ComparisonAnswer from './ComparisonAnswer';
-import { IndicatorsTable } from './answerKit';
+import { IndicatorsTable, stripAiDashes } from './answerKit';
 
 const normalizeSymbol = (s) => {
     const raw = String(s || "").trim();
@@ -207,7 +207,7 @@ const VerdictCard = ({ text }) => {
                         ),
                     }}
                 >
-                    {text}
+                    {stripAiDashes(text)}
                 </ReactMarkdown>
             </div>
         </div>
@@ -1193,7 +1193,7 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                                 ),
                             }}
                         >
-                            {textToDisplay}
+                            {isUser ? textToDisplay : stripAiDashes(textToDisplay)}
                         </ReactMarkdown>
                         {!isUser && isStreaming && !isComplete && (
                             <span className="inline-block w-[2px] h-4 bg-zinc-400 dark:bg-zinc-500 ml-0.5 animate-pulse"></span>

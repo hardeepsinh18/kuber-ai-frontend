@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Trophy } from 'lucide-react';
 import StockChart from './StockChart';
-import { Card, MiniLabel } from './answerKit';
+import { Card, MiniLabel, stripAiDashes } from './answerKit';
 import { proseComponents } from './AnalystAnswer';
 
 /**
@@ -74,7 +74,7 @@ const ComparisonAnswer = ({ content, metadata = {}, chartData = null }) => {
             {/* ── Full head-to-head, always expanded ─────────────── */}
             <Card className="px-4 py-4">
                 <ReactMarkdown remarkPlugins={[remarkGfm]} components={proseComponents}>
-                    {body}
+                    {stripAiDashes(body)}
                 </ReactMarkdown>
             </Card>
 

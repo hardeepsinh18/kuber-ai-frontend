@@ -157,7 +157,7 @@ const MOCK_NEWS_QUICK = [
 
 const MOCK_FOLLOW_UPS = [
     'Should I buy TCS now?',
-    'Technical analysis for TCS — support & resistance',
+    'Technical analysis for TCS support and resistance',
     'TCS 5-year performance and returns',
 ];
 

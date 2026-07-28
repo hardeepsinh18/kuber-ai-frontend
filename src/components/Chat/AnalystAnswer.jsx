@@ -5,7 +5,7 @@ import StockChart from './StockChart';
 import { useStreamingText } from '../../hooks/useStreamingText';
 import {
     BRAND, fmtINR, InlineMd, Card, MiniLabel, CollapsibleSection, INNER_CARD,
-    CompanyCard, VerdictBand, MarketStatsCard, buildMarketStats, hasVerdict,
+    CompanyCard, VerdictBand, MarketStatsCard, buildMarketStats, hasVerdict, stripAiDashes,
     VentyScorePanel, getScores, CollapsibleScorecard, MetricCell,
 } from './answerKit';
 import {
@@ -203,7 +203,7 @@ const PatternSection = ({ patternSummary, chartData, symbolLabel, indicatorsTabl
             csp.direction || null,
             (csp.bars_ago ?? 0) > 0
                 ? (_cspDate ? `formed ${_cspDate}` : `${csp.bars_ago} bars ago`)
-                : (_cspDate ? `forming — ${_cspDate}` : 'forming'),
+                : (_cspDate ? `forming · ${_cspDate}` : 'forming'),
           ].filter(Boolean).join(' · ')
         : null;
 
@@ -218,7 +218,7 @@ const PatternSection = ({ patternSummary, chartData, symbolLabel, indicatorsTabl
           ].filter(Boolean).join(' · ')
         : candleCellText || summaryText;
     const volumeCellText = volRow
-        ? `${volRow.value || ''}${volRow.signal ? ` — ${volRow.signal}` : ''}`.trim()
+        ? `${volRow.value || ''}${volRow.signal ? ` · ${volRow.signal}` : ''}`.trim()
         : null;
     const biasCellText = (() => {
         const dir = cp?.direction;
@@ -354,7 +354,7 @@ const TechnicalScorecard = ({ tech, technicalSummary, indicatorsTable, score }) 
                     {commentary.map((t, i) => (
                         <li key={i} className="flex items-start gap-2 text-[11.5px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
                             <span className="mt-[6px] w-1 h-1 rounded-full flex-shrink-0" style={{ backgroundColor: BRAND }} />
-                            {t}
+                            {stripAiDashes(t)}
                         </li>
                     ))}
                 </ul>
@@ -402,7 +402,7 @@ const FundamentalScorecard = ({ fund, score, symbolLabel }) => {
             });
         }
         if (label) {
-            const line = `${def.name} ${def.fmt(value)} — ${String(label).toLowerCase()}`;
+            const line = `${def.name} ${def.fmt(value)} · ${String(label).toLowerCase()}`;
             if (isGoodLabel(label)) pros.push(line);
             else if (!isNeutralLabel(label)) cons.push(line);
             else cons.push(line); // neutral reads as a caution in the pros/cons split
@@ -415,7 +415,7 @@ const FundamentalScorecard = ({ fund, score, symbolLabel }) => {
         <CollapsibleScorecard title="Fundamental Scorecard"
                               score={score} label={labelFor(fund.label, fund.score, score)}>
             {fund.summary && (
-                <p className="mt-2 text-[11.5px] text-zinc-500 dark:text-zinc-400 leading-relaxed">{fund.summary}</p>
+                <p className="mt-2 text-[11.5px] text-zinc-500 dark:text-zinc-400 leading-relaxed">{stripAiDashes(fund.summary)}</p>
             )}
             {/* Metric cards, hoisted flat out of the (removed) Financial Score Card wrapper */}
             <FinancialDetailCard fund={fund} symbol={symbolLabel} flat />
@@ -431,7 +431,7 @@ const FundamentalScorecard = ({ fund, score, symbolLabel }) => {
                                     {pros.slice(0, 4).map((t, i) => (
                                         <li key={i} className="flex items-start gap-1.5 text-[11px] text-zinc-600 dark:text-zinc-300 leading-snug">
                                             <span className="mt-[5px] w-1 h-1 rounded-full flex-shrink-0 bg-emerald-500" />
-                                            {t}
+                                            {stripAiDashes(t)}
                                         </li>
                                     ))}
                                 </ul>
@@ -444,7 +444,7 @@ const FundamentalScorecard = ({ fund, score, symbolLabel }) => {
                                     {cons.slice(0, 4).map((t, i) => (
                                         <li key={i} className="flex items-start gap-1.5 text-[11px] text-zinc-600 dark:text-zinc-300 leading-snug">
                                             <span className="mt-[5px] w-1 h-1 rounded-full flex-shrink-0 bg-rose-500" />
-                                            {t}
+                                            {stripAiDashes(t)}
                                         </li>
                                     ))}
                                 </ul>
@@ -590,7 +590,7 @@ const MgmtToneContent = ({ data }) => {
                         Management tone {trendMeta ? `· ${trendMeta.t}` : ''}
                     </div>
                     {data.summary && (
-                        <div className="text-[11px] text-zinc-500 dark:text-zinc-500 leading-relaxed">{data.summary}</div>
+                        <div className="text-[11px] text-zinc-500 dark:text-zinc-500 leading-relaxed">{stripAiDashes(data.summary)}</div>
                     )}
                 </div>
             </div>

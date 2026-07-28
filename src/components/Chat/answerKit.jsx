@@ -28,6 +28,30 @@ export const fmtVol = (v) => {
     return String(v);
 };
 
+/* Strip the "AI-written" dash tells from model prose: em dashes (—) and
+ * word-to-word en dashes become a comma, so the copy reads like a person wrote
+ * it. Deliberately conservative — it never touches:
+ *   • numeric ranges / prices: en dash BETWEEN digits (₹1,025–1,079, 50–200) is kept;
+ *   • ordinary hyphenated words: high-yield, short-term, stop-loss stay intact
+ *     (only a hyphen with spaces on BOTH sides — used as a dash — is converted).
+ * Applied at render time in InlineMd, so it only affects the LLM answer text and
+ * not the price levels / labels our own code builds. */
+export const stripAiDashes = (s) => {
+    if (typeof s !== 'string' || !s) return s;
+    return s
+        // em dash as punctuation (any surrounding spaces) → comma + single space
+        .replace(/\s*—\s*/g, ', ')
+        // en dash between digits is a range → keep; between anything else → comma
+        .replace(/(\D)\s*–\s*(\D)/g, '$1, $2')
+        .replace(/\s*–\s*(\D)/g, ', $1')
+        .replace(/(\D)\s*–\s*/g, '$1, ')
+        // a hyphen with a space on BOTH sides is a dash, not a compound word
+        .replace(/(\S) - (?=\S)/g, '$1, ')
+        // tidy any doubled commas / stray comma-space runs we may have created
+        .replace(/,\s*,/g, ',')
+        .replace(/\s+,/g, ',');
+};
+
 /* ─── inline markdown (bold/italic/links only, no block wrappers) ────────── */
 export const InlineMd = ({ children }) => (
     <ReactMarkdown
@@ -42,7 +66,7 @@ export const InlineMd = ({ children }) => (
             ),
         }}
     >
-        {children}
+        {typeof children === 'string' ? stripAiDashes(children) : children}
     </ReactMarkdown>
 );
 
@@ -606,7 +630,7 @@ const buildFundBullets = (fund) => {
     const out = [];
     const add = (name, key, fmt) => {
         const [val, , lab] = _ratioTriple(r[key]);
-        if (val != null) out.push(`${name} ${fmt(val)}${lab ? ` — ${String(lab).toLowerCase()}` : ''}`);
+        if (val != null) out.push(`${name} ${fmt(val)}${lab ? ` · ${String(lab).toLowerCase()}` : ''}`);
     };
     add('P/E', 'pe_ratio', (v) => `${Number(v).toFixed(1)}x`);
     add('ROE', 'roe', (v) => `${Number(v).toFixed(1)}%`);
