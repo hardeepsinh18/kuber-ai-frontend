@@ -38,7 +38,7 @@ export const InlineMd = ({ children }) => (
             em: ({ children: c }) => <em className="italic">{c}</em>,
             a: ({ href, children: c }) => (
                 <a href={href} target="_blank" rel="noopener noreferrer"
-                   className="underline underline-offset-2 font-semibold text-zinc-900 dark:text-white">{c}</a>
+                   className="underline underline-offset-2 font-semibold text-zinc-900 dark:text-[#FDD405]">{c}</a>
             ),
         }}
     >
@@ -69,10 +69,11 @@ export const CardHeader = ({ children }) => (
 );
 
 /* Tiny uppercase label — "WHY THIS VERDICT", "KEY INDICATORS", … */
-/* Brand rule: labels use brand black (light) / white (dark) — no yellow accent. */
+/* Brand rule: black on light (the yellow-ink read off-brand on white); the yellow
+ * accent stays on dark, where it's on-brand. */
 export const MiniLabel = ({ children, className }) => (
     <p className={clsx(
-        'text-[9px] font-extrabold uppercase tracking-[0.2em] text-zinc-900 dark:text-white',
+        'text-[9px] font-extrabold uppercase tracking-[0.2em] text-zinc-900 dark:text-[#FDD405]',
         className
     )}>
         {children}
@@ -379,7 +380,7 @@ const DeterministicVerdictBand = ({ verdict, flush = false, raised = false }) =>
              style={raised ? { backgroundImage: `radial-gradient(120% 140% at 12% 0%, ${glow} 0%, transparent 55%)` } : undefined}>
             <div className="flex items-center gap-1.5 px-4 pt-3 pb-1.5">
                 <span className="w-4 h-[3px] rounded-full" style={{ backgroundColor: BRAND }} />
-                <p className="text-[9px] font-extrabold uppercase tracking-[0.25em] text-zinc-900 dark:text-white">Venty Verdict</p>
+                <p className="text-[9px] font-extrabold uppercase tracking-[0.25em] text-zinc-900 dark:text-[#FDD405]">Venty Verdict</p>
             </div>
             {sh && <HorizonRow tenor="Short-Term · ≤1yr" v={sh} cells={_shortLevelCells(sh.levels)} />}
             {sh && lg && <div className="h-px bg-zinc-200 dark:bg-zinc-800" />}
@@ -638,7 +639,7 @@ const PanelBullets = ({ items }) => (
 );
 
 const PanelTitle = ({ children }) => (
-    <p className="text-[13px] font-bold text-zinc-900 dark:text-white">{children}</p>
+    <p className="text-[13px] font-bold text-zinc-900 dark:text-[#FDD405]">{children}</p>
 );
 
 export const VentyScorePanel = ({ scoreCard, managementSentiment, companyName = '', overviewBullets = [] }) => {
@@ -730,7 +731,7 @@ export const ScorecardHeader = ({ icon: Icon, title, score, label }) => (
         <div className="min-w-0">
             <p className="text-[15px] font-bold text-zinc-900 dark:text-white leading-tight">{title}</p>
             {score != null && (
-                <p className="text-[11px] font-extrabold tracking-wider text-zinc-500 dark:text-zinc-400 mt-0.5 uppercase">
+                <p className="text-[11px] font-extrabold tracking-wider text-zinc-600 dark:text-[#FDD405] mt-0.5 uppercase">
                     {Math.round(score)}/100{label ? ` · ${label}` : ''}
                 </p>
             )}
