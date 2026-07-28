@@ -368,27 +368,15 @@ const HorizonRow = ({ tenor, v, cells }) => {
         </div>
     );
 };
-// Soft glow colour behind the verdict panel, tinted by the call (green buy /
-// amber cautious / red avoid / neutral grey) — the reference's radial spotlight.
-const _verdictGlow = (v) => ({
-    'STRONG BUY':        'rgba(34,197,94,0.20)',
-    'BUY':               'rgba(34,197,94,0.20)',
-    'CAUTIOUS BUY':      'rgba(253,212,5,0.18)',
-    'WAIT / ACCUMULATE': 'rgba(161,161,170,0.14)',
-    'AVOID':             'rgba(239,68,68,0.18)',
-}[v] || 'rgba(253,212,5,0.14)');
-
 const DeterministicVerdictBand = ({ verdict, flush = false, raised = false }) => {
     const sh = verdict?.SHORT;
     const lg = verdict?.LONG;
     if (!sh && !lg) return null;
-    const glow = _verdictGlow(sh?.verdict || lg?.verdict);
     const chrome = raised
         ? INNER_CARD
         : (flush ? '' : 'rounded-2xl border bg-white border-zinc-200 dark:bg-[#181613] dark:border-zinc-800');
     return (
-        <div className={clsx('relative overflow-hidden', chrome)}
-             style={raised ? { backgroundImage: `radial-gradient(120% 140% at 12% 0%, ${glow} 0%, transparent 55%)` } : undefined}>
+        <div className={clsx('relative overflow-hidden', chrome)}>
             <div className="flex items-center gap-1.5 px-4 pt-3 pb-1.5">
                 <span className="w-4 h-[3px] rounded-full" style={{ backgroundColor: BRAND }} />
                 <p className="text-[9px] font-extrabold uppercase tracking-[0.25em] text-zinc-900 dark:text-[#FDD405]">Venty Verdict</p>
