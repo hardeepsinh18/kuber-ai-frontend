@@ -66,7 +66,7 @@ export const proseComponents = {
     ),
     a: ({ href, children }) => (
         <a href={href} target="_blank" rel="noopener noreferrer"
-           className="underline underline-offset-2 text-street-yellow-ink dark:text-[#FDD405]">{children}</a>
+           className="underline underline-offset-2 font-semibold text-zinc-900 dark:text-white">{children}</a>
     ),
     table: ({ children }) => (
         <div className="my-3 overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
@@ -438,12 +438,12 @@ const FundamentalScorecard = ({ fund, score, symbolLabel }) => {
                             </div>
                         )}
                         {cons.length > 0 && (
-                            <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 px-3 py-2.5">
-                                <p className="text-[10px] font-extrabold uppercase tracking-wider text-amber-600 dark:text-amber-400 mb-1.5">Cons</p>
+                            <div className="rounded-xl border border-rose-500/25 bg-rose-500/5 px-3 py-2.5">
+                                <p className="text-[10px] font-extrabold uppercase tracking-wider text-rose-600 dark:text-rose-400 mb-1.5">Cons</p>
                                 <ul className="space-y-1">
                                     {cons.slice(0, 4).map((t, i) => (
                                         <li key={i} className="flex items-start gap-1.5 text-[11px] text-zinc-600 dark:text-zinc-300 leading-snug">
-                                            <span className="mt-[5px] w-1 h-1 rounded-full flex-shrink-0 bg-amber-500" />
+                                            <span className="mt-[5px] w-1 h-1 rounded-full flex-shrink-0 bg-rose-500" />
                                             {t}
                                         </li>
                                     ))}
@@ -469,7 +469,7 @@ const SentimentBlock = ({ label, badge = null, defaultOpen = true, children }) =
                 <span className="flex items-center gap-2 min-w-0">
                     <MiniLabel>{label}</MiniLabel>
                     {badge && (
-                        <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold bg-[#FDD405]/10 text-street-yellow-ink dark:text-[#FDD405]/90 flex-shrink-0">
+                        <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold bg-zinc-200/70 text-zinc-600 dark:bg-white/10 dark:text-zinc-300 flex-shrink-0">
                             {badge}
                         </span>
                     )}
@@ -500,7 +500,7 @@ const toneColor = (s) =>
 
 const SENT_META = {
     bullish: { color: '#22c55e', label: 'Positive' },
-    neutral: { color: '#FDD405', label: 'Neutral' },
+    neutral: { color: '#a1a1aa', label: 'Neutral' },
     bearish: { color: '#ef4444', label: 'Cautious' },
 };
 
@@ -679,12 +679,14 @@ const filingChipLabel = (type, item) => {
     return item.period || fmtFilingDate(item.date) || (item.title || '').slice(0, 22);
 };
 
-const SEV_COLOR = { high: '#ef4444', medium: '#fb923c', low: '#22c55e' };
+// Risk-chip severity. High/low keep the intuitive red/green; medium uses a
+// neutral grey instead of orange to stay on-brand (no off-palette accents).
+const SEV_COLOR = { high: '#ef4444', medium: '#a1a1aa', low: '#22c55e' };
 
 /* Clickable doc/announcement title — opens the source in a new tab */
 const DocLink = ({ url, children }) => url ? (
     <a href={url} target="_blank" rel="noopener noreferrer"
-       className="inline-flex items-start gap-1 text-zinc-700 dark:text-zinc-300 hover:text-street-yellow-ink dark:hover:text-[#FDD405] hover:underline transition-colors">
+       className="inline-flex items-start gap-1 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:underline transition-colors">
         <span className="flex-1 min-w-0">{children}</span>
         <ExternalLink size={10} className="mt-[3px] flex-shrink-0 opacity-60" />
     </a>
@@ -741,7 +743,7 @@ const SentimentalScorecard = ({ managementSentiment, annualReportIntelligence, r
                     {ari.pdf_url && (
                         <a href={ari.pdf_url} target="_blank" rel="noopener noreferrer"
                            className="mt-2.5 inline-flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.12em]
-                                      text-street-yellow-ink dark:text-[#FDD405] hover:underline">
+                                      text-zinc-900 dark:text-white hover:underline">
                             Read the full annual report{ari.fiscal_year ? ` ${ari.fiscal_year}` : ''} <ExternalLink size={10} />
                         </a>
                     )}
@@ -758,7 +760,7 @@ const SentimentalScorecard = ({ managementSentiment, annualReportIntelligence, r
                                         <DocLink url={it.url}>{it.title}</DocLink>
                                     </div>
                                     {fmtDevDate(it.date) && (
-                                        <span className="text-[9px] font-extrabold uppercase tracking-wider text-street-yellow-ink dark:text-[#FDD405] flex-shrink-0 mt-0.5">
+                                        <span className="text-[9px] font-extrabold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 flex-shrink-0 mt-0.5">
                                             {fmtDevDate(it.date)}
                                         </span>
                                     )}
@@ -784,7 +786,7 @@ const SentimentalScorecard = ({ managementSentiment, annualReportIntelligence, r
                             return (
                                 <div key={g.type || g.label}>
                                     <div className="text-[11px] font-semibold text-zinc-600 dark:text-zinc-300 mb-1.5 inline-flex items-center gap-1.5">
-                                        <Icon size={13} strokeWidth={2} className="text-street-yellow-ink dark:text-[#FDD405]" />
+                                        <Icon size={13} strokeWidth={2} className="text-zinc-500 dark:text-zinc-400" />
                                         {g.label} <span className="text-zinc-400 dark:text-zinc-600 font-normal">({g.count})</span>
                                     </div>
                                     <div className="flex flex-wrap gap-1.5">
@@ -793,7 +795,7 @@ const SentimentalScorecard = ({ managementSentiment, annualReportIntelligence, r
                                             return it.url ? (
                                                 <a key={i} href={it.url} target="_blank" rel="noopener noreferrer"
                                                    title={it.title}
-                                                   className="text-[11px] px-2.5 py-1 rounded-lg font-medium border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:border-street-yellow-ink/60 dark:hover:border-[#FDD405]/60 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
+                                                   className="text-[11px] px-2.5 py-1 rounded-lg font-medium border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:border-zinc-400 dark:hover:border-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
                                                     {label}<span className="ml-1 opacity-60">↗</span>
                                                 </a>
                                             ) : (

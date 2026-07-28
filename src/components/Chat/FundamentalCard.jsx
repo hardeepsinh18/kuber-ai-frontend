@@ -514,7 +514,7 @@ const FinancialScoreCard = ({ fund, symbol, flat = false }) => {
                             bottomValue={`${revGr}%`}>
                             {hist?.revenue_cr?.length
                                 ? <MiniBar data={hist.revenue_cr} color="#FDD405" years={years} />
-                                : <p className="text-3xl font-black text-[#FDD405]">{revGr}%</p>
+                                : <p className="text-3xl font-black text-zinc-900 dark:text-white">{revGr}%</p>
                             }
                         </MetricCard>
                     )}
@@ -524,7 +524,7 @@ const FinancialScoreCard = ({ fund, symbol, flat = false }) => {
                             bottomValue={`${profGr}%`}>
                             {hist?.net_profit_cr?.length
                                 ? <MiniLine data={hist.net_profit_cr} color="#FDD405" years={years} />
-                                : <p className="text-3xl font-black text-[#FDD405]">{profGr}%</p>
+                                : <p className="text-3xl font-black text-zinc-900 dark:text-white">{profGr}%</p>
                             }
                         </MetricCard>
                     )}
