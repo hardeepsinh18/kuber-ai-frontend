@@ -11,10 +11,15 @@ import { useChatHistory } from '../../context/ChatHistoryContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useChatMode } from '../../context/ChatModeContext';
 import { getApiBase } from '../../lib/apiBase';
+import { streamChatRequest } from '../../lib/streamChat';
 
 // API base — '' = same-origin relative /api/* (behind CloudFront/ALB). Set VITE_API_BASE for dev.
 const API_BASE = getApiBase();
 const API_ENDPOINT = `${API_BASE}/api/v1/chat`;
+const STREAM_ENDPOINT = `${API_BASE}/api/v1/chat/stream`;
+// Real SSE token streaming (default on). Set VITE_CHAT_STREAMING=0 to disable and
+// always use the plain /chat request. Any streaming failure auto-falls-back too.
+const CHAT_STREAMING_ENABLED = import.meta.env.VITE_CHAT_STREAMING !== '0';
 const FEEDBACK_ENDPOINT = `${API_BASE}/api/v1/feedback`;
 // Default 120s: multi-symbol comparisons + fundamentals + LLM can exceed 60s on EC2.
 const REQUEST_TIMEOUT_MS = Number(import.meta.env.VITE_CHAT_TIMEOUT_MS || 120000);
@@ -1186,60 +1191,111 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 }
             };
 
-            // Resilient fetch: backend deploy restarts (~30s) and gateway blips
-            // surface as dropped connections or 502/503/504. Retry ONCE after a
-            // short pause instead of instantly failing the user's query. A
-            // user-initiated Stop bumps activeRequestIdRef, so it never retries.
-            let response;
-            try {
-                response = await doFetch();
-            } catch (e) {
-                if (requestId !== activeRequestIdRef.current) return;
-                if (e.name === 'AbortError') {
-                    throw new Error('The request timed out — the server may be busy. Please retry.');
+            // ── Real SSE token streaming (preferred). A live preview bubble grows
+            // with actual tokens; on any failure we drop it and fall back to the
+            // plain /chat request below, so streaming can never break the chat. ──
+            let responseData = null;
+            let didStream = false;
+            const streamPreviewId = genId();
+            if (CHAT_STREAMING_ENABLED) {
+                try {
+                    setMessages(prev => [...prev, {
+                        id: streamPreviewId, role: 'ai', content: '',
+                        queryIntent, responseMode, isStreamingPreview: true,
+                    }]);
+                    responseData = await streamChatRequest({
+                        endpoint: STREAM_ENDPOINT,
+                        payload,
+                        headers,
+                        timeoutMs: REQUEST_TIMEOUT_MS,
+                        registerAbort: (c) => { abortControllerRef.current = c; },
+                        onFirstEvent: () => { setShowThinking(false); },
+                        onData: (d) => {
+                            if (requestId !== activeRequestIdRef.current || !isSameChat()) return;
+                            setMessages(prev => prev.map(m => m.id === streamPreviewId ? {
+                                ...m,
+                                ...(d.chart_data && { chartData: d.chart_data }),
+                                ...(d.score_card && { scoreCard: d.score_card }),
+                                ...(d.metadata && { metadata: d.metadata }),
+                            } : m));
+                        },
+                        onToken: (delta) => {
+                            if (requestId !== activeRequestIdRef.current || !isSameChat()) return;
+                            setMessages(prev => prev.map(m => m.id === streamPreviewId
+                                ? { ...m, content: (m.content || '') + delta } : m));
+                        },
+                    });
+                    if (requestId !== activeRequestIdRef.current) return;
+                    didStream = true;
+                } catch (streamErr) {
+                    // Streaming failed — drop the preview and fall back to /chat.
+                    setMessages(prev => prev.filter(m => m.id !== streamPreviewId));
+                    if (streamErr.name === 'AbortError') {
+                        if (requestId !== activeRequestIdRef.current) return;
+                        throw new Error('The request timed out — the server may be busy. Please retry.');
+                    }
+                    if (import.meta.env.DEV) console.warn('[Venty] stream failed → /chat fallback:', streamErr?.message);
+                    responseData = null;
+                    didStream = false;
                 }
-                await new Promise(r => setTimeout(r, 2500));
-                if (requestId !== activeRequestIdRef.current) return;
-                response = await doFetch();
-            }
-            if ([502, 503, 504].includes(response.status)) {
-                await new Promise(r => setTimeout(r, 2500));
-                if (requestId !== activeRequestIdRef.current) return;
-                response = await doFetch();
             }
 
-            // On 401, the access token has likely expired. Force a single refresh
-            // and retry once before surfacing "session expired" to the user.
-            if (response.status === 401 && accessToken && typeof refreshSession === 'function') {
-                const freshToken = await refreshSession();
-                if (requestId !== activeRequestIdRef.current) return;
-                if (freshToken) {
-                    headers.Authorization = `Bearer ${freshToken}`;
+            if (!didStream) {
+                // Resilient fetch: backend deploy restarts (~30s) and gateway blips
+                // surface as dropped connections or 502/503/504. Retry ONCE after a
+                // short pause instead of instantly failing the user's query. A
+                // user-initiated Stop bumps activeRequestIdRef, so it never retries.
+                let response;
+                try {
+                    response = await doFetch();
+                } catch (e) {
+                    if (requestId !== activeRequestIdRef.current) return;
+                    if (e.name === 'AbortError') {
+                        throw new Error('The request timed out — the server may be busy. Please retry.');
+                    }
+                    await new Promise(r => setTimeout(r, 2500));
+                    if (requestId !== activeRequestIdRef.current) return;
                     response = await doFetch();
                 }
-            }
-
-            if (requestId !== activeRequestIdRef.current) return;
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                const detail = errorData.detail || errorData.message || errorData.error;
-                let msg;
-                if (response.status === 401 || response.status === 403) {
-                    msg = 'Session expired. Please sign in again.';
-                } else if (response.status === 429) {
-                    msg = 'Too many requests. Please wait a moment and try again.';
-                } else if (response.status === 404) {
-                    msg = detail || 'The requested resource was not found. Please try again.';
-                } else if (response.status >= 500) {
-                    msg = detail || 'The server encountered an error. Please retry in a moment.';
-                } else {
-                    msg = detail || `Request failed (${response.status})`;
+                if ([502, 503, 504].includes(response.status)) {
+                    await new Promise(r => setTimeout(r, 2500));
+                    if (requestId !== activeRequestIdRef.current) return;
+                    response = await doFetch();
                 }
-                throw new Error(msg);
-            }
 
-            const responseData = await response.json();
+                // On 401, the access token has likely expired. Force a single refresh
+                // and retry once before surfacing "session expired" to the user.
+                if (response.status === 401 && accessToken && typeof refreshSession === 'function') {
+                    const freshToken = await refreshSession();
+                    if (requestId !== activeRequestIdRef.current) return;
+                    if (freshToken) {
+                        headers.Authorization = `Bearer ${freshToken}`;
+                        response = await doFetch();
+                    }
+                }
+
+                if (requestId !== activeRequestIdRef.current) return;
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    const detail = errorData.detail || errorData.message || errorData.error;
+                    let msg;
+                    if (response.status === 401 || response.status === 403) {
+                        msg = 'Session expired. Please sign in again.';
+                    } else if (response.status === 429) {
+                        msg = 'Too many requests. Please wait a moment and try again.';
+                    } else if (response.status === 404) {
+                        msg = detail || 'The requested resource was not found. Please try again.';
+                    } else if (response.status >= 500) {
+                        msg = detail || 'The server encountered an error. Please retry in a moment.';
+                    } else {
+                        msg = detail || `Request failed (${response.status})`;
+                    }
+                    throw new Error(msg);
+                }
+
+                responseData = await response.json();
+            }
 
             // The user switched chats while this was in flight. Committing now
             // would append this answer to a different conversation.
@@ -1316,11 +1372,14 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             const suggestedFollowUps = Array.isArray(responseData.suggested_follow_ups) ? responseData.suggested_follow_ups : null;
             const newsHeadlines = responseData.news_headlines || null;
 
-            // Create AI message with streaming
-            const aiMessageId = genId();
-            setStreamingMessageId(aiMessageId); // Mark this message as streaming
-            
-            setMessages(prev => [...prev, {
+            // Create AI message. When streamed, reuse the live preview's id so the
+            // authoritative `done` payload REPLACES the preview in place (below).
+            const aiMessageId = didStream ? streamPreviewId : genId();
+            // Streamed messages already rendered real tokens live — don't run the
+            // fake typewriter again; it would re-animate text the user already read.
+            if (!didStream) setStreamingMessageId(aiMessageId); // Mark this message as streaming
+
+            const aiMessage = {
                 id: aiMessageId,
                 role: 'ai',
                 content: aiResponseText,
@@ -1349,7 +1408,16 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 sourceDocuments: responseData.source_documents || [],
                 processingTime: timeTaken,
                 responseMode,
-            }]);
+            };
+            // Upsert: replace the streamed preview bubble (same id) in place so there
+            // is no flicker; for the non-streaming path this is a plain append.
+            setMessages(prev => {
+                const idx = prev.findIndex(m => m.id === aiMessageId);
+                if (idx === -1) return [...prev, aiMessage];
+                const copy = prev.slice();
+                copy[idx] = aiMessage;
+                return copy;
+            });
 
             // Auto-show the group-clarification picker only for THIS freshly-received
             // disambiguation. On a page reload the last message may still be a
