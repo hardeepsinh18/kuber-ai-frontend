@@ -168,10 +168,12 @@ const ROEViz = ({ roe }) => {
 
 /* ─── Small circular gauge (ROCE) ───────────────────────────────────────── */
 const SmallGauge = ({ value, sublabel, size = 88 }) => {
-    const pct = Math.min(100, Math.max(0, value || 0));
+    const pct = Math.min(100, Math.max(0, value || 0));   // arc fill (clamped)
     const r = 32, cx = 40, cy = 42, circ = 2 * Math.PI * r;
     const filled = (pct / 100) * circ;
     const color = '#FDD405';
+    // Centre reads the true value to 2 decimals so it matches the bottom value exactly.
+    const shown = value != null ? Number(value).toFixed(2) : '—';
     return (
         <div className="flex flex-col items-center gap-1">
             <svg viewBox="0 0 80 88" width={size} height={size}>
@@ -182,7 +184,7 @@ const SmallGauge = ({ value, sublabel, size = 88 }) => {
                     transform={`rotate(-90 ${cx} ${cy})`} />
                 <text x={cx} y={cy - 2} textAnchor="middle"
                     className="fill-zinc-900 dark:fill-white"
-                    fontSize={17} fontWeight="700" fontFamily="Montserrat,sans-serif">{Math.round(pct)}%</text>
+                    fontSize={13} fontWeight="700" fontFamily="Montserrat,sans-serif">{shown}%</text>
                 {sublabel && (
                     <text x={cx} y={cy + 13} textAnchor="middle"
                         className="fill-zinc-500 dark:fill-[#9ca3af]"
@@ -415,6 +417,10 @@ const FinancialScoreCard = ({ fund, symbol, flat = false }) => {
     const [revGr, , revGrLabel]    = getR('revenue_growth');
     const [profGr, , profGrLabel]  = getR('profit_growth');
 
+    // Percentages show two decimals, consistently across the gauge and the bottom
+    // value so the two never disagree ("16%" vs "16.1%").
+    const pct2 = (v) => (v != null ? `${Number(v).toFixed(2)}%` : null);
+
     const peers    = fund?.peers ?? null;
     const peerGroup = fund?.peer_group ?? 'SECTOR';
     const peerRank = fund?.peer_rank ?? null;
@@ -484,20 +490,20 @@ const FinancialScoreCard = ({ fund, symbol, flat = false }) => {
                     {roe != null && (
                         <MetricCard title="Money engine" subtitle="RETURN ON EQUITY" badge={roeLabel}
                             bottomLabel="Benchmark 15% · Elite 30%+"
-                            bottomValue={`${roe}%`}>
+                            bottomValue={pct2(roe)}>
                             <ROEViz roe={roe} />
                         </MetricCard>
                     )}
                     {roce != null && (
                         <MetricCard title="Capital muscle" subtitle="RETURN ON CAPITAL EMPLOYED" badge={roceLabel}
                             bottomLabel="Benchmark 20%"
-                            bottomValue={`${roce}%`}>
+                            bottomValue={pct2(roce)}>
                             <SmallGauge value={roce} size={88} sublabel="ROCE" />
                         </MetricCard>
                     )}
                     {margin != null && (
                         <MetricCard title="Profit slice" subtitle="NET MARGIN" badge={marginLabel}
-                            bottomValue={`${margin}%`}>
+                            bottomValue={pct2(margin)}>
                             <ProfitSliceBar netMargin={margin} />
                         </MetricCard>
                     )}
@@ -511,20 +517,20 @@ const FinancialScoreCard = ({ fund, symbol, flat = false }) => {
                     {revGr != null && (
                         <MetricCard title="Sales growth" subtitle="REVENUE · 5 YR CAGR" badge={revGrLabel}
                             bottomLabel="Goal > 10% per year"
-                            bottomValue={`${revGr}%`}>
+                            bottomValue={pct2(revGr)}>
                             {hist?.revenue_cr?.length
                                 ? <MiniBar data={hist.revenue_cr} color="#FDD405" years={years} />
-                                : <p className="text-3xl font-black text-zinc-900 dark:text-[#FDD405]">{revGr}%</p>
+                                : <p className="text-3xl font-black text-zinc-900 dark:text-[#FDD405]">{pct2(revGr)}</p>
                             }
                         </MetricCard>
                     )}
                     {profGr != null && (
                         <MetricCard title="Profit pace" subtitle="NET PROFIT · 5 YR CAGR" badge={profGrLabel}
                             bottomLabel="Goal > 10% per year"
-                            bottomValue={`${profGr}%`}>
+                            bottomValue={pct2(profGr)}>
                             {hist?.net_profit_cr?.length
                                 ? <MiniLine data={hist.net_profit_cr} color="#FDD405" years={years} />
-                                : <p className="text-3xl font-black text-zinc-900 dark:text-[#FDD405]">{profGr}%</p>
+                                : <p className="text-3xl font-black text-zinc-900 dark:text-[#FDD405]">{pct2(profGr)}</p>
                             }
                         </MetricCard>
                     )}
