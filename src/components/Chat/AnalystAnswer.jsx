@@ -5,7 +5,7 @@ import StockChart from './StockChart';
 import { useStreamingText } from '../../hooks/useStreamingText';
 import {
     BRAND, fmtINR, InlineMd, Card, MiniLabel, CollapsibleSection, INNER_CARD,
-    CompanyCard, VerdictBand, MarketStatsCard, buildMarketStats,
+    CompanyCard, VerdictBand, MarketStatsCard, buildMarketStats, hasVerdict,
     VentyScorePanel, getScores, CollapsibleScorecard, MetricCell,
 } from './answerKit';
 import {
@@ -856,6 +856,13 @@ const AnalystAnswer = ({
     const hasScores = scores.overall != null || scores.technical != null
         || scores.fundamental != null || scores.sentimental != null;
 
+    // A real BUY/SELL/HOLD verdict present? Drives the summary heading:
+    // "Why this verdict" when yes, "Venty says" for informational answers.
+    const verdictExists = hasVerdict({
+        verdict: scoreCard?.verdict, verdictIntent: scoreCard?.verdict_intent,
+        signal, verdictText, content,
+    });
+
     // Freeze the decision to animate at mount. The parent clears its streaming id the
     // moment we report done, and a mid-flight flip would otherwise snap the remaining
     // cards in at once.
@@ -924,7 +931,7 @@ const AnalystAnswer = ({
                 )}
 
                 <WhyThisVerdict summary={answerText}
-                                label={sections.directAnswer ? 'Answer' : 'Why this verdict'}
+                                label={sections.directAnswer ? 'Answer' : (verdictExists ? 'Why this verdict' : 'Venty says')}
                                 typedSummary={animate ? displayedText : null} caret={animate} raised />
 
                 {((sections.chart && chart) || (sections.marketStats && stats.length > 0)) && (

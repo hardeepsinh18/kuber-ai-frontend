@@ -158,6 +158,17 @@ export const deriveVerdict = (text) => {
     return null;
 };
 
+/* Does this answer actually carry a verdict (a BUY/SELL/HOLD call)? Mirrors the
+ * render conditions of VerdictBand so the "Why this verdict" heading only shows
+ * when a verdict really rendered — otherwise the answer is informational and the
+ * heading reads "Venty says" instead. */
+export const hasVerdict = ({ verdict, verdictIntent, signal, verdictText, content } = {}) => {
+    if (verdict && (verdict.SHORT || verdict.LONG)) return true;   // deterministic engine verdict
+    if (verdictIntent === false) return false;                     // backend: not an investment question
+    if (signal?.recommendation) return true;                       // structured signal call
+    return deriveVerdict(verdictText || content) != null;          // parsed from the prose
+};
+
 /* Parse ₹ levels (entry / stop loss / target) out of the answer text when the
    structured signal doesn't carry them. Handles "Entry ₹818", "🛑 Stop ₹802",
    "**Target** ₹850", "target of Rs 1,850" and ranges like "₹810–818". */
