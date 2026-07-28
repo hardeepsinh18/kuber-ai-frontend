@@ -217,7 +217,7 @@ export const extractNearbyLevels = (text, price) => {
 };
 
 /* ─── Company card — name · NSE:SYM chips · price · day change ───────────── */
-export const CompanyCard = ({ metadata = {}, symbolLabel = '' }) => {
+export const CompanyCard = ({ metadata = {}, symbolLabel = '', flush = false }) => {
     const aag = metadata?.at_a_glance || {};
     const companyName = aag.company_name || aag.display_name || symbolLabel;
     const price = aag.price != null ? Number(aag.price) : null;
@@ -226,8 +226,11 @@ export const CompanyCard = ({ metadata = {}, symbolLabel = '' }) => {
     const isUp = pct != null ? pct >= 0 : true;
 
     if (!companyName && price == null) return null;
+    // `flush` = drop the own card chrome so this can sit as the header row inside
+    // the unified summary card (SummaryHero). Otherwise render as a standalone Card.
+    const Wrapper = flush ? 'div' : Card;
     return (
-        <Card className="px-4 py-3.5 flex items-center gap-3">
+        <Wrapper className={clsx('flex items-center gap-3', flush ? 'px-4 py-3.5' : 'px-4 py-3.5')}>
             <div className="flex-1 min-w-0">
                 {companyName && (
                     <p className="text-[16px] font-bold text-zinc-900 dark:text-white leading-tight truncate">
@@ -265,7 +268,7 @@ export const CompanyCard = ({ metadata = {}, symbolLabel = '' }) => {
                     </span>
                 )}
             </div>
-        </Card>
+        </Wrapper>
     );
 };
 
@@ -333,12 +336,13 @@ const HorizonRow = ({ tenor, v, cells }) => {
         </div>
     );
 };
-const DeterministicVerdictBand = ({ verdict }) => {
+const DeterministicVerdictBand = ({ verdict, flush = false }) => {
     const sh = verdict?.SHORT;
     const lg = verdict?.LONG;
     if (!sh && !lg) return null;
     return (
-        <div className="rounded-2xl overflow-hidden border bg-white border-zinc-200 dark:bg-[#141312] dark:border-zinc-800">
+        <div className={clsx('overflow-hidden',
+            flush ? '' : 'rounded-2xl border bg-white border-zinc-200 dark:bg-[#141312] dark:border-zinc-800')}>
             <div className="flex items-center gap-1.5 px-4 pt-3 pb-1.5">
                 <span className="w-4 h-[3px] rounded-full" style={{ backgroundColor: BRAND }} />
                 <p className="text-[9px] font-extrabold uppercase tracking-[0.25em] text-street-yellow-ink dark:text-[#FDD405]">Venty Verdict</p>
@@ -350,10 +354,10 @@ const DeterministicVerdictBand = ({ verdict }) => {
     );
 };
 
-export const VerdictBand = ({ verdict, verdictIntent, signal, verdictText, content, aiTake, price, patternSummary = null }) => {
+export const VerdictBand = ({ verdict, verdictIntent, signal, verdictText, content, aiTake, price, patternSummary = null, flush = false }) => {
     // Preferred: the deterministic Venty Verdict engine (score_card.verdict).
     if (verdict && (verdict.SHORT || verdict.LONG)) {
-        return <DeterministicVerdictBand verdict={verdict} />;
+        return <DeterministicVerdictBand verdict={verdict} flush={flush} />;
     }
     // The backend explicitly says this wasn't an investment question (verdict_intent
     // === false) — don't fall through to text-parsing below, which would otherwise
@@ -408,7 +412,7 @@ export const VerdictBand = ({ verdict, verdictIntent, signal, verdictText, conte
     ].filter(l => l.value);
 
     return (
-        <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: BRAND }}>
+        <div className={clsx('overflow-hidden', flush ? '' : 'rounded-2xl')} style={{ backgroundColor: BRAND }}>
             <div className={clsx('grid divide-x divide-black/15',
                 levels.length === 3 ? 'grid-cols-2 sm:grid-cols-4' : levels.length === 2 ? 'grid-cols-3' : levels.length === 1 ? 'grid-cols-2' : 'grid-cols-1')}>
                 <div className="px-4 py-3">
@@ -440,10 +444,11 @@ export const buildMarketStats = (aag = {}) => [
     aag['52w_low'] != null && aag['52w_high'] != null && { label: '52w', value: `${fmtNum(aag['52w_low'])}–${fmtNum(aag['52w_high'])}` },
 ].filter(Boolean);
 
-export const MarketStatsCard = ({ stats }) => {
+export const MarketStatsCard = ({ stats, flush = false }) => {
     if (!stats?.length) return null;
+    const Wrapper = flush ? 'div' : Card;
     return (
-        <Card className="px-4 py-3.5 self-start">
+        <Wrapper className={clsx('px-4 py-3.5', !flush && 'self-start')}>
             <CardHeader>Today's Market Stats</CardHeader>
             <div className="mt-2 divide-y divide-zinc-100 dark:divide-zinc-800">
                 {stats.map(({ label, value }) => (
@@ -453,7 +458,7 @@ export const MarketStatsCard = ({ stats }) => {
                     </div>
                 ))}
             </div>
-        </Card>
+        </Wrapper>
     );
 };
 

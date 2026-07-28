@@ -84,41 +84,48 @@ const QuickAnswer = ({
     return (
         <div className="space-y-3" style={{ animation: 'slideUpFade 0.4s cubic-bezier(0.22,1,0.36,1) both' }}>
 
-            <CompanyCard metadata={metadata} symbolLabel={symbolLabel} />
+            {/* ── Unified summary hero — company header, verdict, answer, chart+stats
+                 all in ONE card, split by hairline dividers instead of gaps ── */}
+            <Card className="overflow-hidden">
+                <CompanyCard metadata={metadata} symbolLabel={symbolLabel} flush />
 
-            {sections.verdictBand && (
-                <VerdictBand verdict={scoreCard?.verdict} verdictIntent={scoreCard?.verdict_intent} signal={signal}
-                             verdictText={verdictText} content={content}
-                             aiTake={aiTake} price={price} patternSummary={patternSummary} />
-            )}
-
-            {/* ── Direct answer — focused intents lead with what was asked ─ */}
-            {directAnswer && (
-                <Card className="px-4 py-3.5">
-                    <CardHeader>Answer</CardHeader>
-                    <div className="mt-2 text-[13px] leading-relaxed text-zinc-700 dark:text-zinc-300">
-                        <InlineMd>{directAnswer.replace(/^\**\s*verdict\s*:?\**\s*/i, '')}</InlineMd>
+                {sections.verdictBand && (
+                    <div className="border-t border-zinc-100 dark:border-zinc-800/70">
+                        <VerdictBand verdict={scoreCard?.verdict} verdictIntent={scoreCard?.verdict_intent} signal={signal}
+                                     verdictText={verdictText} content={content}
+                                     aiTake={aiTake} price={price} patternSummary={patternSummary} flush />
                     </div>
-                </Card>
-            )}
+                )}
 
-            {/* ── Chart + Today's Market Stats ───────────────────── */}
-            {((sections.chart && chart) || (sections.marketStats && stats.length > 0)) && (
-                <div className={clsx('grid gap-3', (sections.chart && chart) && (sections.marketStats && stats.length > 0) ? 'lg:grid-cols-[1fr_230px]' : 'grid-cols-1')}>
-                    {sections.chart && chart && (
-                        <Card className="p-3 min-w-0">
-                            <StockChart
-                                chartData={chart}
-                                symbol={symbolLabel}
-                                patternOverlays={patternSummary}
-                                variant="quick"
-                                defaultType="candle"
-                            />
-                        </Card>
-                    )}
-                    {sections.marketStats && stats.length > 0 && <MarketStatsCard stats={stats} />}
-                </div>
-            )}
+                {/* ── Direct answer — focused intents lead with what was asked ─ */}
+                {directAnswer && (
+                    <div className="px-4 py-3.5 border-t border-zinc-100 dark:border-zinc-800/70">
+                        <CardHeader>Answer</CardHeader>
+                        <div className="mt-2 text-[13px] leading-relaxed text-zinc-700 dark:text-zinc-300">
+                            <InlineMd>{directAnswer.replace(/^\**\s*verdict\s*:?\**\s*/i, '')}</InlineMd>
+                        </div>
+                    </div>
+                )}
+
+                {/* ── Chart + Today's Market Stats ───────────────────── */}
+                {((sections.chart && chart) || (sections.marketStats && stats.length > 0)) && (
+                    <div className={clsx('border-t border-zinc-100 dark:border-zinc-800/70 grid',
+                        (sections.chart && chart) && (sections.marketStats && stats.length > 0) ? 'lg:grid-cols-[1fr_230px] lg:divide-x divide-zinc-100 dark:divide-zinc-800/70' : 'grid-cols-1')}>
+                        {sections.chart && chart && (
+                            <div className="p-3 min-w-0">
+                                <StockChart
+                                    chartData={chart}
+                                    symbol={symbolLabel}
+                                    patternOverlays={patternSummary}
+                                    variant="quick"
+                                    defaultType="candle"
+                                />
+                            </div>
+                        )}
+                        {sections.marketStats && stats.length > 0 && <MarketStatsCard stats={stats} flush />}
+                    </div>
+                )}
+            </Card>
 
             {/* ── VENTY AI SCORE — reference panel layout (holistic intents only) ── */}
             {/* Key Takeaway bullets now live inside the panel as "Overview" */}
