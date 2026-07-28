@@ -683,10 +683,12 @@ export const VentyScorePanel = ({ scoreCard, managementSentiment, companyName = 
 /* ─── Scorecard section header — icon circle + title + score/label ───────── */
 export const ScorecardHeader = ({ icon: Icon, title, score, label }) => (
     <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-             style={{ backgroundColor: BRAND }}>
-            <Icon size={16} className="text-black" strokeWidth={2.4} />
-        </div>
+        {Icon && (
+            <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+                 style={{ backgroundColor: BRAND }}>
+                <Icon size={16} className="text-black" strokeWidth={2.4} />
+            </div>
+        )}
         <div className="min-w-0">
             <p className="text-[15px] font-bold text-zinc-900 dark:text-white leading-tight">{title}</p>
             {score != null && (

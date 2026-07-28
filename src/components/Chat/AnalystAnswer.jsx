@@ -1,6 +1,6 @@
 import React from 'react';
 import { clsx } from 'clsx';
-import { Gauge, PieChart, Newspaper, ChevronDown, ChevronUp, ExternalLink, BookText, Mic2, BarChart3, Megaphone, FileText } from 'lucide-react';
+import { ChevronDown, ChevronUp, ExternalLink, BookText, Mic2, BarChart3, Megaphone, FileText } from 'lucide-react';
 import StockChart from './StockChart';
 import { useStreamingText } from '../../hooks/useStreamingText';
 import {
@@ -335,7 +335,7 @@ const TechnicalScorecard = ({ tech, technicalSummary, indicatorsTable, score }) 
     if (score == null && cells.length === 0 && commentary.length === 0 && signals.length === 0) return null;
 
     return (
-        <CollapsibleScorecard icon={Gauge} title="Technical Scorecard"
+        <CollapsibleScorecard title="Technical Scorecard"
                               score={score} label={labelFor(tech?.label, tech?.score, score)}>
             {cells.length > 0 && (
                 <>
@@ -409,7 +409,7 @@ const FundamentalScorecard = ({ fund, score, symbolLabel }) => {
     if (score == null && cells.length === 0) return null;
 
     return (
-        <CollapsibleScorecard icon={PieChart} title="Fundamental Scorecard"
+        <CollapsibleScorecard title="Fundamental Scorecard"
                               score={score} label={labelFor(fund.label, fund.score, score)}>
             {fund.summary && (
                 <p className="mt-2 text-[11.5px] text-zinc-500 dark:text-zinc-400 leading-relaxed">{fund.summary}</p>
@@ -698,7 +698,7 @@ const SentimentalScorecard = ({ managementSentiment, annualReportIntelligence, r
     const risks = Array.isArray(ari?.risk_radar) ? ari.risk_radar.slice(0, 4) : [];
 
     return (
-        <CollapsibleScorecard icon={Newspaper} title="Sentimental Scorecard"
+        <CollapsibleScorecard title="Sentimental Scorecard"
                               score={score}
                               label={labelFor(managementSentiment?.tone_label, managementSentiment?.tone_score, score, 'sent')}>
             {/* Management tone — gauge, aspects, breakdown, quotes (themed block) */}
