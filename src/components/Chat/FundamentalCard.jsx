@@ -43,7 +43,7 @@ const RatingBadge = ({ label, className }) => {
 /* ─── Metric card shell ──────────────────────────────────────────────────── */
 const MetricCard = ({ title, subtitle, badge, children, bottomLabel, bottomValue, className }) => (
     <div className={clsx(
-        'bg-zinc-50 dark:bg-black/30 rounded-xl border border-zinc-200 dark:border-zinc-800 p-3 flex flex-col',
+        'bg-zinc-50 dark:bg-[#0d0c0b] rounded-xl border border-zinc-200 dark:border-zinc-800/80 p-3 flex flex-col',
         className
     )}>
         <div className="flex items-start justify-between mb-2 gap-2">
@@ -57,7 +57,7 @@ const MetricCard = ({ title, subtitle, badge, children, bottomLabel, bottomValue
             {children}
         </div>
         {(bottomLabel || bottomValue) && (
-            <div className="flex items-end justify-between pt-2 border-t border-zinc-200 dark:border-zinc-700/50 mt-2 gap-2">
+            <div className="flex items-end justify-between pt-2 border-t border-zinc-200 dark:border-zinc-800/80 mt-2 gap-2">
                 {bottomLabel && <span className="text-[10px] text-zinc-500 leading-tight">{bottomLabel}</span>}
                 {bottomValue && <span className="text-sm font-bold text-zinc-900 dark:text-white flex-shrink-0">{bottomValue}</span>}
             </div>
@@ -321,7 +321,7 @@ const OverallHealthScore = ({ score, label, summary, ratingsSum, components }) =
     return (
         <div className="mb-4 rounded-xl p-4 flex items-center gap-4 border
                         bg-zinc-100 border-zinc-200
-                        dark:bg-zinc-900 dark:border-zinc-700/50">
+                        dark:bg-zinc-900 dark:border-zinc-800/80">
             <div className="flex-shrink-0">
                 <svg viewBox="0 0 84 84" width={80} height={80}>
                     <circle cx={cx} cy={cy} r={r} fill="none" stroke={trackColor} strokeWidth={8} />
@@ -423,7 +423,7 @@ const FinancialScoreCard = ({ fund, symbol, flat = false }) => {
     if (!hasCards) return null;
 
     return (
-        <div className={flat ? 'mt-4' : 'mt-4 border border-zinc-200 dark:border-zinc-700/50 rounded-xl overflow-hidden bg-white dark:bg-[#1C1B15]'}>
+        <div className={flat ? 'mt-4' : 'mt-4 border border-zinc-200 dark:border-zinc-800/80 rounded-xl overflow-hidden bg-white dark:bg-[#0d0c0b]'}>
             {!flat && (
                 <button
                     onClick={() => setOpen(o => !o)}
@@ -435,7 +435,7 @@ const FinancialScoreCard = ({ fund, symbol, flat = false }) => {
                 </button>
             )}
             {(flat || open) && (
-                <div className={flat ? '' : 'p-3 space-y-3 bg-zinc-50 dark:bg-[#1C1B15]'}>
+                <div className={flat ? '' : 'p-3 space-y-3 bg-zinc-50 dark:bg-[#0d0c0b]'}>
                     {/* Score banner — same design language as the Technical Score Card */}
                     {!flat && finScore != null && (
                         <div className="flex items-center justify-between p-3 rounded-xl"
@@ -565,7 +565,7 @@ const FiveYearScoreCard = ({ fund }) => {
     if (!hasAny) return null;
 
     return (
-        <div className="mt-4 border border-zinc-200 dark:border-zinc-700/50 rounded-xl overflow-hidden bg-white dark:bg-[#1C1B15]">
+        <div className="mt-4 border border-zinc-200 dark:border-zinc-800/80 rounded-xl overflow-hidden bg-white dark:bg-[#0d0c0b]">
             <button
                 onClick={() => setOpen(o => !o)}
                 className="w-full flex items-center justify-between px-4 py-3 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-left"
@@ -575,7 +575,7 @@ const FiveYearScoreCard = ({ fund }) => {
                       : <ChevronDown size={15} className="text-zinc-500 dark:text-zinc-400 flex-shrink-0" />}
             </button>
             {open && (
-                <div className="p-3 grid grid-cols-1 xs:grid-cols-2 gap-3 bg-zinc-50 dark:bg-[#1C1B15]">
+                <div className="p-3 grid grid-cols-1 xs:grid-cols-2 gap-3 bg-zinc-50 dark:bg-[#0d0c0b]">
                     {hist.revenue_cr?.length > 0 && (
                         <MetricCard title="Revenue" subtitle="TOP LINE · ₹ CR"
                             badge={hist.revenue_cagr ? `+${hist.revenue_cagr}% CAGR` : null}
@@ -1177,7 +1177,7 @@ export const PatternDetectionSection = ({ patternSummary, chartData = null }) =>
 
     return (
         <>
-            <div className="mt-4 border border-zinc-200 dark:border-zinc-700/50 rounded-xl overflow-hidden bg-white dark:bg-[#1C1B15]">
+            <div className="mt-4 border border-zinc-200 dark:border-zinc-800/80 rounded-xl overflow-hidden bg-white dark:bg-[#0d0c0b]">
                 <button
                     onClick={() => setOpen(o => !o)}
                     className="w-full flex items-center justify-between px-4 py-3 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-left"
@@ -1188,7 +1188,7 @@ export const PatternDetectionSection = ({ patternSummary, chartData = null }) =>
                 </button>
 
                 {open && (
-                    <div className="p-4 bg-zinc-50 dark:bg-[#1C1B15]">
+                    <div className="p-4 bg-zinc-50 dark:bg-[#0d0c0b]">
                         {summary && (
                             <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed mb-4">{summary}</p>
                         )}
@@ -1660,7 +1660,7 @@ const TechnicalScoreCard = ({ tech }) => {
             </button>
 
             {open && (
-                <div className="p-4 bg-white dark:bg-[#141414] space-y-3">
+                <div className="p-4 bg-zinc-50 dark:bg-[#0d0c0b] space-y-3">
 
                     {/* Score banner */}
                     <div className="flex items-center justify-between p-3 rounded-xl"

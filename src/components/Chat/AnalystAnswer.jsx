@@ -254,7 +254,7 @@ const PatternSection = ({ patternSummary, chartData, symbolLabel, indicatorsTabl
             {cells.length > 0 && (
                 <div className={clsx('grid gap-3 mt-1', cells.length >= 4 ? 'sm:grid-cols-2' : cells.length === 3 ? 'sm:grid-cols-3' : cells.length === 2 ? 'sm:grid-cols-2' : 'grid-cols-1')}>
                     {cells.map(({ label, text }) => (
-                        <div key={label} className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-black/30 px-3 py-2.5">
+                        <div key={label} className="rounded-xl border border-zinc-200 dark:border-zinc-800/80 bg-zinc-50 dark:bg-[#0d0c0b] px-3 py-2.5">
                             <MiniLabel className="mb-1">{label}</MiniLabel>
                             <p className="text-[11.5px] leading-snug text-zinc-700 dark:text-zinc-200">{text}</p>
                         </div>
@@ -292,7 +292,7 @@ const SignalBreakdown = ({ signals }) => {
                     const st = SIGNAL_STYLE[s.status] || SIGNAL_STYLE.NEUTRAL;
                     return (
                         <div key={s.key}
-                             className="flex items-start gap-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-black/30 px-3 py-2">
+                             className="flex items-start gap-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800/80 bg-zinc-50 dark:bg-[#0d0c0b] px-3 py-2">
                             <span className="mt-[4px] w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: st.dot }} />
                             <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-2">
@@ -460,7 +460,7 @@ const FundamentalScorecard = ({ fund, score, symbolLabel }) => {
 const SentimentBlock = ({ label, badge = null, defaultOpen = true, children }) => {
     const [open, setOpen] = React.useState(defaultOpen);
     return (
-        <div className="mt-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-black/30 px-3.5 py-3">
+        <div className="mt-3 rounded-xl border border-zinc-200 dark:border-zinc-800/80 bg-zinc-50 dark:bg-[#0d0c0b] px-3.5 py-3">
             <button onClick={() => setOpen(o => !o)}
                     className="w-full flex items-center justify-between gap-2 text-left"
                     aria-expanded={open}>
@@ -890,7 +890,7 @@ const AnalystAnswer = ({
 
             {/* ── Summary hero — a padded MAIN card holding distinct inner sub-cards
                  (company header, verdict, why, chart + market stats) ── */}
-            <div className="rounded-2xl border border-zinc-200 bg-zinc-50/60 dark:border-zinc-800 dark:bg-[#0f0e0d] p-2.5 sm:p-3 space-y-2.5 sm:space-y-3">
+            <div className="rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181613] p-2.5 sm:p-3 space-y-2.5 sm:space-y-3">
                 <CompanyCard metadata={metadata} symbolLabel={symbolLabel} raised />
 
                 {sections.verdictBand && (

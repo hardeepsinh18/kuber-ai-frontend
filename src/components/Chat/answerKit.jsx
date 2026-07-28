@@ -46,10 +46,18 @@ export const InlineMd = ({ children }) => (
     </ReactMarkdown>
 );
 
-/* ─── primitives ─────────────────────────────────────────────────────────── */
+/* ─── primitives ─────────────────────────────────────────────────────────────
+ * Uniform two-shade system for the whole answer UI:
+ *   MAIN card  = the warm brand dark  (#181613)  — every top-level section card.
+ *   INNER tile = the deeper near-black (#0d0c0b)  — every sub-card nested inside.
+ * Light mode mirrors it: MAIN = white, INNER = zinc-50 on a white-ish shell.
+ * Defined once here and reused so no section drifts to a one-off shade. */
+export const MAIN_CARD_DARK = '#181613';
+export const INNER_CARD_DARK = '#0d0c0b';
+
 export const Card = ({ className, children }) => (
     <div className={clsx(
-        'rounded-2xl border bg-white border-zinc-200 dark:bg-[#141312] dark:border-zinc-800',
+        'rounded-2xl border bg-white border-zinc-200 dark:bg-[#181613] dark:border-zinc-800',
         className
     )}>
         {children}
@@ -219,7 +227,7 @@ export const extractNearbyLevels = (text, price) => {
 /* Inner sub-card shell — a raised, bordered card meant to sit INSIDE the padded
  * summary hero (cards-inside-a-card). Slightly lighter than the hero background
  * so each section reads as its own tile. */
-export const INNER_CARD = 'rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#1b1a18]';
+export const INNER_CARD = 'rounded-xl border border-zinc-200 bg-zinc-50 dark:border-zinc-800/80 dark:bg-[#0d0c0b]';
 
 /* Two-letter monogram tile from the symbol/name — a lightweight brand mark that
  * needs no external image (CSP-safe). */
@@ -364,7 +372,7 @@ const DeterministicVerdictBand = ({ verdict, flush = false, raised = false }) =>
     const glow = _verdictGlow(sh?.verdict || lg?.verdict);
     const chrome = raised
         ? INNER_CARD
-        : (flush ? '' : 'rounded-2xl border bg-white border-zinc-200 dark:bg-[#141312] dark:border-zinc-800');
+        : (flush ? '' : 'rounded-2xl border bg-white border-zinc-200 dark:bg-[#181613] dark:border-zinc-800');
     return (
         <div className={clsx('relative overflow-hidden', chrome)}
              style={raised ? { backgroundImage: `radial-gradient(120% 140% at 12% 0%, ${glow} 0%, transparent 55%)` } : undefined}>
@@ -646,7 +654,7 @@ export const VentyScorePanel = ({ scoreCard, managementSentiment, companyName = 
     if (overall == null && lenses.length === 0 && overview.length === 0) return null;
 
     return (
-        <Card className="overflow-hidden !bg-zinc-50/60 dark:!bg-[#0f0e0d]">
+        <Card className="overflow-hidden">
             {/* Header row (toggle) — inside the main card */}
             <button onClick={() => setOpen(o => !o)} aria-expanded={open}
                     className="w-full flex items-center justify-between gap-2 px-4 py-3 text-left
@@ -769,7 +777,7 @@ export const IndicatorsTable = ({ rows, asOfDate }) => {
         : null;
 
     return (
-        <div className="mt-4 border border-zinc-200 dark:border-zinc-700/50 rounded-xl overflow-hidden bg-white dark:bg-[#1C1B15]">
+        <div className="mt-4 border border-zinc-200 dark:border-zinc-800/80 rounded-xl overflow-hidden bg-zinc-50 dark:bg-[#0d0c0b]">
             {/* Toggle header */}
             <button
                 onClick={() => setOpen(o => !o)}
@@ -833,7 +841,7 @@ export const IndicatorsTable = ({ rows, asOfDate }) => {
 
 /* ─── metric cell — tiny label / big value / footnote ────────────────────── */
 export const MetricCell = ({ label, value, note }) => (
-    <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-black/30 px-3 py-2.5 min-w-0">
+    <div className="rounded-xl border border-zinc-200 dark:border-zinc-800/80 bg-zinc-50 dark:bg-[#0d0c0b] px-3 py-2.5 min-w-0">
         <p className="text-[8.5px] font-extrabold uppercase tracking-[0.15em] text-zinc-400 dark:text-zinc-500 mb-1 truncate">{label}</p>
         <p className="text-[17px] font-extrabold text-zinc-900 dark:text-white leading-none truncate">{value}</p>
         {note && <p className="text-[9px] text-zinc-500 dark:text-zinc-500 mt-1.5 uppercase tracking-wide truncate">{note}</p>}

@@ -86,7 +86,7 @@ const QuickAnswer = ({
 
             {/* ── Summary hero — a padded MAIN card holding distinct inner sub-cards
                  (company header, verdict, answer, chart + market stats) ── */}
-            <div className="rounded-2xl border border-zinc-200 bg-zinc-50/60 dark:border-zinc-800 dark:bg-[#0f0e0d] p-2.5 sm:p-3 space-y-2.5 sm:space-y-3">
+            <div className="rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#181613] p-2.5 sm:p-3 space-y-2.5 sm:space-y-3">
                 <CompanyCard metadata={metadata} symbolLabel={symbolLabel} raised />
 
                 {sections.verdictBand && (
