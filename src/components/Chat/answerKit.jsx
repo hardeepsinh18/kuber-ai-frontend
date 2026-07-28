@@ -646,28 +646,27 @@ export const VentyScorePanel = ({ scoreCard, managementSentiment, companyName = 
     if (overall == null && lenses.length === 0 && overview.length === 0) return null;
 
     return (
-        <div>
-            {/* Header bar */}
+        <Card className="overflow-hidden !bg-zinc-50/60 dark:!bg-[#0f0e0d]">
+            {/* Header row (toggle) — inside the main card */}
             <button onClick={() => setOpen(o => !o)} aria-expanded={open}
-                    className="w-full flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl
-                               bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800
-                               text-left hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors">
-                <span className="text-[13px] font-bold text-zinc-700 dark:text-zinc-200 truncate">
+                    className="w-full flex items-center justify-between gap-2 px-4 py-3 text-left
+                               hover:bg-black/[0.02] dark:hover:bg-white/[0.03] transition-colors">
+                <span className="text-[15px] font-bold text-zinc-900 dark:text-white truncate">
                     Venty AI Score and Recommendation{companyName ? ` for ${companyName}` : ''}
                 </span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"
-                     className={clsx('flex-shrink-0 text-zinc-400 transition-transform', open && 'rotate-180')}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"
+                     className={clsx('flex-shrink-0 text-zinc-400 dark:text-zinc-500 transition-transform duration-200', open && 'rotate-180')}>
                     <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
             </button>
 
             {open && (
-                <div className="mt-3 space-y-3">
-                    {/* Top row — Overall Health + Overview */}
+                <div className="px-2.5 pb-2.5 sm:px-3 sm:pb-3 pt-0 space-y-2.5 sm:space-y-3">
+                    {/* Top row — Overall Health + Overview (raised inner sub-cards) */}
                     {(overall != null || overview.length > 0) && (
-                        <div className={clsx('grid gap-3', overall != null && overview.length > 0 ? 'lg:grid-cols-2' : 'grid-cols-1')}>
+                        <div className={clsx('grid gap-2.5 sm:gap-3', overall != null && overview.length > 0 ? 'lg:grid-cols-2' : 'grid-cols-1')}>
                             {overall != null && (
-                                <Card className="p-4 flex items-center gap-4">
+                                <div className={clsx('p-4 flex items-center gap-4', INNER_CARD)}>
                                     <div className="flex-shrink-0 flex flex-col items-center">
                                         <ArcGauge score={overall} size={112} color={scoreColor(overall)} />
                                         <span className="-mt-4 px-2.5 py-0.5 rounded-md text-[10px] font-extrabold text-black"
@@ -681,32 +680,32 @@ export const VentyScorePanel = ({ scoreCard, managementSentiment, companyName = 
                                             The stock's combined Venty AI Score across all three lenses.
                                         </p>
                                     </div>
-                                </Card>
+                                </div>
                             )}
                             {overview.length > 0 && (
-                                <Card className="p-4">
+                                <div className={clsx('p-4', INNER_CARD)}>
                                     <PanelTitle>Overview</PanelTitle>
                                     <PanelBullets items={overview} />
-                                </Card>
+                                </div>
                             )}
                         </div>
                     )}
 
-                    {/* Bottom row — one card per lens */}
+                    {/* Bottom row — one raised inner sub-card per lens */}
                     {lenses.length > 0 && (
-                        <div className={clsx('grid gap-3', lenses.length === 3 ? 'sm:grid-cols-3' : lenses.length === 2 ? 'sm:grid-cols-2' : 'grid-cols-1')}>
+                        <div className={clsx('grid gap-2.5 sm:gap-3', lenses.length === 3 ? 'sm:grid-cols-3' : lenses.length === 2 ? 'sm:grid-cols-2' : 'grid-cols-1')}>
                             {lenses.map(({ key, score, bullets }) => (
-                                <Card key={key} className="p-4">
+                                <div key={key} className={clsx('p-4', INNER_CARD)}>
                                     <ArcGauge score={score} size={64} stroke={7} color={scoreColor(score)} showPct={false} />
                                     <div className="mt-2"><PanelTitle>{key}</PanelTitle></div>
                                     {bullets.length > 0 && <PanelBullets items={bullets} />}
-                                </Card>
+                                </div>
                             ))}
                         </div>
                     )}
                 </div>
             )}
-        </div>
+        </Card>
     );
 };
 
