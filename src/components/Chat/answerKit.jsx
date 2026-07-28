@@ -79,6 +79,38 @@ export const SectionBanner = ({ children }) => (
     </div>
 );
 
+/* Collapsible section card — one unified, theme-coloured card whose title lives
+ * inside it with a dropdown chevron (no yellow banner, no second card). Used for
+ * "Pattern Detection" and "Venty Score" so both read as a single dropdown card
+ * that follows the light/dark theme. `defaultOpen` starts expanded. */
+export const CollapsibleSection = ({ title, children, defaultOpen = true, className }) => {
+    const [open, setOpen] = React.useState(defaultOpen);
+    return (
+        <Card className={clsx('overflow-hidden', className)}>
+            <button
+                type="button"
+                onClick={() => setOpen(o => !o)}
+                aria-expanded={open}
+                className="w-full flex items-center justify-between gap-2 px-4 py-3 text-left
+                           hover:bg-zinc-50 dark:hover:bg-white/[0.03] transition-colors"
+            >
+                <span className="text-[15px] font-bold text-zinc-900 dark:text-white truncate">
+                    {title}
+                </span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"
+                     className={clsx('flex-shrink-0 text-zinc-400 dark:text-zinc-500 transition-transform duration-200', open && 'rotate-180')}>
+                    <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+            </button>
+            {open && (
+                <div className="px-3 pb-3 pt-0 border-t border-zinc-100 dark:border-zinc-800/70">
+                    {children}
+                </div>
+            )}
+        </Card>
+    );
+};
+
 /* ─── donut score ring ───────────────────────────────────────────────────── */
 export const ScoreRing = ({ score, size = 88, stroke = 9, color }) => {
     const s = Math.min(100, Math.max(0, Math.round(score)));

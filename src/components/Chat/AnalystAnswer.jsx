@@ -4,7 +4,7 @@ import { Gauge, PieChart, Newspaper, ChevronDown, ChevronUp, ExternalLink, BookT
 import StockChart from './StockChart';
 import { useStreamingText } from '../../hooks/useStreamingText';
 import {
-    BRAND, fmtINR, InlineMd, Card, MiniLabel, SectionBanner,
+    BRAND, fmtINR, InlineMd, Card, MiniLabel, CollapsibleSection,
     CompanyCard, VerdictBand, MarketStatsCard, buildMarketStats,
     ScoreGrid, getScores, ScorecardHeader, MetricCell,
 } from './answerKit';
@@ -240,30 +240,27 @@ const PatternSection = ({ patternSummary, chartData, symbolLabel, indicatorsTabl
     if (!chart && cells.length === 0) return null;
 
     return (
-        <>
-            <SectionBanner>Pattern Detection</SectionBanner>
-            <Card className="p-3">
-                {chart && (
-                    <StockChart
-                        chartData={chart}
-                        symbol={symbolLabel}
-                        patternOverlays={patternSummary}
-                        variant="quick"
-                        defaultType="candle"
-                    />
-                )}
-                {cells.length > 0 && (
-                    <div className={clsx('grid gap-3 mt-1', cells.length >= 4 ? 'sm:grid-cols-2' : cells.length === 3 ? 'sm:grid-cols-3' : cells.length === 2 ? 'sm:grid-cols-2' : 'grid-cols-1')}>
-                        {cells.map(({ label, text }) => (
-                            <div key={label} className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-black/30 px-3 py-2.5">
-                                <MiniLabel className="mb-1">{label}</MiniLabel>
-                                <p className="text-[11.5px] leading-snug text-zinc-700 dark:text-zinc-200">{text}</p>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </Card>
-        </>
+        <CollapsibleSection title="Pattern Detection">
+            {chart && (
+                <StockChart
+                    chartData={chart}
+                    symbol={symbolLabel}
+                    patternOverlays={patternSummary}
+                    variant="quick"
+                    defaultType="candle"
+                />
+            )}
+            {cells.length > 0 && (
+                <div className={clsx('grid gap-3 mt-1', cells.length >= 4 ? 'sm:grid-cols-2' : cells.length === 3 ? 'sm:grid-cols-3' : cells.length === 2 ? 'sm:grid-cols-2' : 'grid-cols-1')}>
+                    {cells.map(({ label, text }) => (
+                        <div key={label} className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-black/30 px-3 py-2.5">
+                            <MiniLabel className="mb-1">{label}</MiniLabel>
+                            <p className="text-[11.5px] leading-snug text-zinc-700 dark:text-zinc-200">{text}</p>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </CollapsibleSection>
     );
 };
 
@@ -933,10 +930,11 @@ const AnalystAnswer = ({
 
             {sections.scoreGrid && hasScores && (
                 <Stage show={shown(3)}>
-                    <div className="space-y-3">
-                        <SectionBanner>Venty Score</SectionBanner>
-                        <ScoreGrid scoreCard={scoreCard} managementSentiment={managementSentiment} />
-                    </div>
+                    <CollapsibleSection title="Venty Score">
+                        <div className="pt-3">
+                            <ScoreGrid scoreCard={scoreCard} managementSentiment={managementSentiment} />
+                        </div>
+                    </CollapsibleSection>
                 </Stage>
             )}
 
