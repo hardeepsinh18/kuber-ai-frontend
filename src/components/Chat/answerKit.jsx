@@ -111,7 +111,7 @@ export const CollapsibleSection = ({ title, children, defaultOpen = true, classN
                 </svg>
             </button>
             {open && (
-                <div className="px-3 pb-3 pt-0 border-t border-zinc-100 dark:border-zinc-800/70">
+                <div className="px-2.5 pb-2.5 pt-2.5 sm:px-3 sm:pb-3 sm:pt-3 border-t border-zinc-100 dark:border-zinc-800/70">
                     {children}
                 </div>
             )}

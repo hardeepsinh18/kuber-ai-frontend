@@ -243,16 +243,18 @@ const PatternSection = ({ patternSummary, chartData, symbolLabel, indicatorsTabl
     return (
         <CollapsibleSection title="Pattern Detection">
             {chart && (
-                <StockChart
-                    chartData={chart}
-                    symbol={symbolLabel}
-                    patternOverlays={patternSummary}
-                    variant="quick"
-                    defaultType="candle"
-                />
+                <div className={clsx('p-3 min-w-0', INNER_CARD)}>
+                    <StockChart
+                        chartData={chart}
+                        symbol={symbolLabel}
+                        patternOverlays={patternSummary}
+                        variant="quick"
+                        defaultType="candle"
+                    />
+                </div>
             )}
             {cells.length > 0 && (
-                <div className={clsx('grid gap-3 mt-1', cells.length >= 4 ? 'sm:grid-cols-2' : cells.length === 3 ? 'sm:grid-cols-3' : cells.length === 2 ? 'sm:grid-cols-2' : 'grid-cols-1')}>
+                <div className={clsx('grid gap-3 mt-3', cells.length >= 4 ? 'sm:grid-cols-2' : cells.length === 3 ? 'sm:grid-cols-3' : cells.length === 2 ? 'sm:grid-cols-2' : 'grid-cols-1')}>
                     {cells.map(({ label, text }) => (
                         <div key={label} className="rounded-xl border border-zinc-200 dark:border-zinc-800/80 bg-zinc-50 dark:bg-[#0d0c0b] px-3 py-2.5">
                             <MiniLabel className="mb-1">{label}</MiniLabel>
