@@ -23,7 +23,7 @@ const ASSETS = {
     full: '/brand/venty-full-dark-v3.png',
     'full-light': '/brand/venty-full-light-v3.png',
     wordmark: '/brand/venty-wordmark-dark.png',
-    'wordmark-light': '/brand/venty-wordmark-light.png',
+    'wordmark-light': '/brand/venty-wordmark-light-v2.png',
 };
 
 const KuberLogo = ({ size = 36, variant = 'mark', className = '', alt = 'Venty' }) => (
