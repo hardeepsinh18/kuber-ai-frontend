@@ -4,23 +4,24 @@
  *
  * `size` = rendered height in px (width scales to the asset's aspect ratio).
  * `variant`:
- *   'mark'       → robot mark, white-face — reads best on dark UI (default)
- *   'mark-light' → robot mark, dark-face — for light backgrounds
+ *   'mark'       → robot mark for DARK UI: yellow frame, black face, white eyes (default)
+ *   'mark-light' → robot mark for LIGHT UI: all-black line-art robot
  *   'full'       → full logo (mark + VENTY^AI + tagline) for dark backgrounds
- *   'full-light' → full logo for light backgrounds
+ *   'full-light' → full logo, all-black, for light backgrounds
  *   'wordmark'   → VENTY^AI wordmark + tagline, no robot
  */
-// NOTE: the -v2 suffix on the full logos is a cache-bust, not a redesign.
-// These files are served with `Cache-Control: immutable, max-age=1yr` but their
-// names are NOT content-hashed, so a browser that cached the old (mis-padded)
-// venty-full-dark.png would keep it for a year and never see the fix. Renaming
-// the URL is the only way to reach those clients. If either full logo is ever
-// re-exported, bump to -v3 rather than overwriting in place.
+// The version suffix on these filenames is a cache-bust, not a redesign. Files
+// are served `Cache-Control: immutable, max-age=1yr` but names are NOT
+// content-hashed, so a browser that cached an old file keeps it for a year.
+// Renaming the URL is the only way to reach those clients — bump the suffix
+// (mark→v2, full→v3) rather than overwriting a name in place.
+//   v2/v3 (2026-07-28): robot face is now black on dark (no white face); the
+//   light-theme marks/logo are all-black per brand "Venty Logo 1 Final" pages 3/4/0/1.
 const ASSETS = {
-    mark: '/brand/venty-mark.png',
-    'mark-light': '/brand/venty-mark-light.png',
-    full: '/brand/venty-full-dark-v2.png',
-    'full-light': '/brand/venty-full-light-v2.png',
+    mark: '/brand/venty-mark-v2.png',
+    'mark-light': '/brand/venty-mark-light-v2.png',
+    full: '/brand/venty-full-dark-v3.png',
+    'full-light': '/brand/venty-full-light-v3.png',
     wordmark: '/brand/venty-wordmark-dark.png',
     'wordmark-light': '/brand/venty-wordmark-light.png',
 };
