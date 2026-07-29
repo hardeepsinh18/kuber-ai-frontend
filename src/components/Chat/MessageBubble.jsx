@@ -68,11 +68,9 @@ const stripResponseChrome = (text) => {
     return out.trim();
 };
 
-// Detect if a response contains a disclaimer (before stripping)
-const hasDisclaimerText = (text) => {
-    if (!text || typeof text !== 'string') return false;
-    return /disclaimer/i.test(text) || /multi.factor analysis for education/i.test(text) || /consult a sebi/i.test(text);
-};
+// CONF-COPY-001: there is deliberately no hasDisclaimerText() gate any more. The
+// disclaimer is rendered unconditionally from DISCLAIMER_TEXT below; de-duplication
+// of a model-emitted disclaimer line is handled by stripResponseChrome() above.
 
 // For focused intents — remove irrelevant sections from the LLM text.
 // Universal focused-intent filter:
@@ -685,7 +683,15 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
         if (onFeedback && messageId) onFeedback(messageId, rating);
     }, [feedbackRating, onFeedback, messageId]);
 
-    const showDisclaimer = !isUser && isEffectivelyDone && hasDisclaimerText(content || displayedText);
+    // CONF-COPY-001 / QA-C-003: the education-only disclaimer is a REGULATORY control,
+    // so it must not depend on the LLM choosing to emit the right words. It previously
+    // rendered only when the model's prose happened to match a disclaimer regex, which
+    // meant any answer where the model omitted or reworded the line — including BUY/SELL
+    // verdicts carrying entry, stop and target levels — shipped with no disclaimer.
+    // Render it unconditionally for every completed assistant message, from the
+    // DISCLAIMER_TEXT constant; stripResponseChrome() removes any model-emitted
+    // duplicate from the prose above.
+    const showDisclaimer = !isUser && isEffectivelyDone;
     const strippedText = !isUser ? stripResponseChrome(rawText) : rawText;
     // K-002: verdict answers keep their full narrative — only the four single-aspect
     // intents get the opening-paragraph filter
