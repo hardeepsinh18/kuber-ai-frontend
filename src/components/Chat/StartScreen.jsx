@@ -73,6 +73,9 @@ const StartScreen = ({ onStartChat, onScannerResult, responseMode, setResponseMo
                                     onChange={e => { setInput(e.target.value); autoResize(e.target); }}
                                     onKeyDown={onKey}
                                     placeholder="Ask Venty anything finance..."
+                                    /* QA-C-010: match the API's own ceiling
+                                       (ChatRequest.query max_length=2000). */
+                                    maxLength={2000}
                                     style={{ resize: 'none', overflow: 'hidden', minHeight: '48px' }}
                                     className="w-full px-4 pt-3.5 pb-2 bg-transparent outline-none border-none
                                                text-[13.5px] text-zinc-900 dark:text-zinc-100

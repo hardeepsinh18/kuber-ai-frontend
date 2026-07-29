@@ -136,6 +136,14 @@ export function AuthProvider({ children }) {
   }, []);
 
   const signInWithEmail = async (email, password) => {
+    // SEC-C-007: the no-password demo branch is gated on import.meta.env.DEV, which
+    // Vite statically replaces with false and dead-code-eliminates, so it physically
+    // cannot exist in a production bundle. Gating on the runtime truthiness of a
+    // config value meant a misconfigured deploy silently degraded OPEN — any
+    // email+password pair minted a session.
+    if (!authConfigured && !import.meta.env.DEV) {
+      throw new Error('Sign-in is not available right now. Please try again later.');
+    }
     if (!authConfigured) {
       if (!email || !password) throw new Error('Enter your email and password');
       const demoUser = { id: 'demo', email, user_metadata: { full_name: email.split('@')[0] } };
@@ -161,6 +169,11 @@ export function AuthProvider({ children }) {
   };
 
   const signUpWithEmail = async (email, password, metadata = {}) => {
+    // SEC-C-007: see signInWithEmail — no account creation without a real provider
+    // in a production build.
+    if (!authConfigured && !import.meta.env.DEV) {
+      throw new Error('Sign-up is not available right now. Please try again later.');
+    }
     if (!authConfigured) {
       if (!email || !password) throw new Error('Enter your email and password');
       const demoUser = { id: 'demo', email, user_metadata: { full_name: metadata.full_name || email.split('@')[0] } };
