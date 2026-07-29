@@ -78,6 +78,12 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
                                 onKeyDown={handleKeyDown}
                                 placeholder="Ask Venty anything finance..."
                                 disabled={isLoading}
+                                /* QA-C-010: bound the input to what the API actually
+                                   accepts (ChatRequest.query max_length=2000). Without
+                                   it a paste of tens of thousands of characters was
+                                   accepted, re-laid-out on every keystroke, and only
+                                   rejected server-side after submit. */
+                                maxLength={2000}
                                 style={{ resize: 'none', overflow: 'hidden', minHeight: '24px' }}
                                 className="w-full bg-transparent border-none outline-none text-[13px] leading-relaxed py-0.5
                                            text-zinc-900 placeholder:text-zinc-400

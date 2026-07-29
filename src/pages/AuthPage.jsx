@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import KuberLogo from '../components/KuberLogo';
+import usePrefersReducedMotion from '../hooks/usePrefersReducedMotion';
 
 const GoogleIcon = () => (
     <svg width="18" height="18" viewBox="0 0 24 24">
@@ -19,6 +20,7 @@ export default function AuthPage() {
     const { signInWithEmail, signUpWithEmail, confirmSignUpCode, resendConfirmationCode, signInWithGoogle, isAuthenticated, supabaseConfigured } = useAuth();
     const { theme } = useTheme();
     const isDark = theme === 'dark';
+    const reducedMotion = usePrefersReducedMotion();
 
     // mode: 'signin' | 'signup' | 'confirm' (confirm = enter the emailed code after signup)
     const [mode,      setMode]    = useState('signin');
@@ -134,13 +136,18 @@ export default function AuthPage() {
             {/* Background video */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className="absolute inset-0" style={{ backgroundColor: bg }} />
-                <video
-                    key={theme}
-                    src={isDark ? '/bg-dark.mp4' : '/bg-light.mp4'}
-                    autoPlay loop muted playsInline
-                    className="absolute inset-0 w-full h-full object-cover"
-                    style={{ opacity: isDark ? 0.40 : 0.55 }}
-                />
+                {/* QA-C-004: skipped entirely under reduced motion — that also avoids
+                    the ~7 MB download for users who asked not to see animation. */}
+                {!reducedMotion && (
+                    <video
+                        key={theme}
+                        src={isDark ? '/bg-dark.mp4' : '/bg-light.mp4'}
+                        autoPlay loop muted playsInline
+                        aria-hidden="true"
+                        className="absolute inset-0 w-full h-full object-cover"
+                        style={{ opacity: isDark ? 0.40 : 0.55 }}
+                    />
+                )}
                 <div className="absolute inset-0" style={{ backgroundColor: isDark ? 'rgba(0,0,0,0.25)' : 'rgba(245,242,232,0.30)' }} />
             </div>
 

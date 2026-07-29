@@ -970,7 +970,20 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
         const normalized = textToSend.trim();
         const now = Date.now();
 
-        if (!normalized) return;
+        // QA-C-009: .trim() only strips ASCII whitespace, so a message made entirely
+        // of zero-width or bidi-control characters passed the emptiness guard and was
+        // sent to the paid API as an effectively blank query. Normalise (NFKC) and
+        // strip the invisible ranges for the EMPTINESS TEST only — the original text
+        // is what gets sent, so legitimate content is never altered.
+        const visible = textToSend
+            .normalize('NFKC')
+            // eslint-disable-next-line no-irregular-whitespace
+            .replace(/[​-‏‪-‮⁠-⁤﻿]/g, '')
+            // eslint-disable-next-line no-control-regex, no-irregular-whitespace
+            .replace(/[ --]/g, '')
+            .trim();
+
+        if (!normalized || !visible) return;
         if (isLoadingRef.current || abortControllerRef.current) return;
         if ((now - lastSendAtRef.current) < 350 && lastSendTextRef.current === normalized) return;
 
