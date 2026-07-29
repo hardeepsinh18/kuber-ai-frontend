@@ -462,16 +462,33 @@ export const VerdictBand = ({ verdict, verdictIntent, signal, verdictText, conte
         if (fbTarget == null) fbTarget = isSell ? nearby.below : nearby.above;
     }
 
+    // AI-002/AI-011: track WHERE each level came from, not just its value.
+    // 'computed' = a typed field from the signal/verdict engine. 'model-text' = a
+    // number scraped out of LLM prose by extractLevelsFromText/extractNearbyLevels.
+    // The two were rendered identically in an authoritative band, so a figure the
+    // model invented was indistinguishable from one the engine computed — the exact
+    // violation of this file's own asserted contract that levels are "computed or
+    // absent, never invented". Until the backend populates the typed fields (it
+    // currently emits no `signal` object at all on the live API), prose-derived
+    // levels are still shown — losing them would strip the band entirely — but they
+    // are now visibly marked as model narrative rather than presented as computed.
     const fmtLevel = (sigVal, parsed, fb) => {
-        if (sigVal != null) return fmtINR(sigVal, 2);
-        if (parsed) return parsed.hi ? `₹${fmtNum(parsed.lo)}–${fmtNum(parsed.hi)}` : fmtINR(parsed.lo, 2);
-        return fb != null ? fmtINR(fb, 2) : null;
+        if (sigVal != null) return { value: fmtINR(sigVal, 2), source: 'computed' };
+        if (parsed) {
+            return {
+                value: parsed.hi ? `₹${fmtNum(parsed.lo)}–${fmtNum(parsed.hi)}` : fmtINR(parsed.lo, 2),
+                source: 'model-text',
+            };
+        }
+        // Pattern-engine support/resistance are computed; a bare current price is too.
+        return fb != null ? { value: fmtINR(fb, 2), source: 'computed' } : null;
     };
     const levels = [
-        { label: 'Entry', value: fmtLevel(signal?.ideal_entry, textLevels.entry, fbEntry) },
-        { label: 'Stop Loss', value: fmtLevel(signal?.stop_loss, textLevels.stop, fbStop) },
-        { label: 'Target', value: fmtLevel(signal?.target, textLevels.target, fbTarget) },
+        { label: 'Entry', ...(fmtLevel(signal?.ideal_entry, textLevels.entry, fbEntry) || {}) },
+        { label: 'Stop Loss', ...(fmtLevel(signal?.stop_loss, textLevels.stop, fbStop) || {}) },
+        { label: 'Target', ...(fmtLevel(signal?.target, textLevels.target, fbTarget) || {}) },
     ].filter(l => l.value);
+    const hasModelText = levels.some(l => l.source === 'model-text');
 
     return (
         <div className={clsx('overflow-hidden', (flush && !raised) ? '' : 'rounded-xl')} style={{ backgroundColor: BRAND }}>
@@ -483,15 +500,25 @@ export const VerdictBand = ({ verdict, verdictIntent, signal, verdictText, conte
                     </p>
                     <p className="text-[26px] font-black text-black leading-none">{rec}</p>
                 </div>
-                {levels.map(({ label, value }) => (
+                {levels.map(({ label, value, source }) => (
                     <div key={label} className="px-4 py-3">
                         <p className="text-[9px] font-extrabold uppercase tracking-[0.2em] text-black/60 mb-1">
                             {label}
+                            {source === 'model-text' && (
+                                <span title="Read from the written analysis, not computed by the engine"> *</span>
+                            )}
                         </p>
                         <p className="text-[20px] font-extrabold text-black leading-none">{value}</p>
                     </div>
                 ))}
             </div>
+            {/* AI-002: provenance footnote — a level lifted from the model's prose must
+                not look identical to one the engine computed. */}
+            {hasModelText && (
+                <p className="px-4 pb-2.5 -mt-0.5 text-[10px] font-semibold text-black/55 leading-snug">
+                    * Read from the written analysis, not computed by the engine. Verify before acting.
+                </p>
+            )}
         </div>
     );
 };
