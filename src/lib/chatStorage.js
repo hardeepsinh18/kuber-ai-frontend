@@ -4,20 +4,67 @@
  * Optional userId for future backend sync (guest = local-only).
  */
 
-const CHAT_LIST_KEY = 'stockhug_chat_list';
+const CHAT_LIST_BASE = 'stockhug_chat_list';
 const CHAT_PREFIX = 'stockhug_chat_';
-const PENDING_DELETES_KEY = 'stockhug_pending_deletes';
+const PENDING_DELETES_BASE = 'stockhug_pending_deletes';
 // No artificial caps — server (Supabase) is the permanent store;
 // localStorage is a fast local cache, not the authoritative limit.
 const MAX_MESSAGES_PER_CHAT = 2000; // guard only against single-chat runaway
 
+/**
+ * SEC-C-002: cached chats are namespaced per signed-in identity, so one profile's
+ * financial queries can never be read by the next person to sign in on a shared
+ * device. The suffix is the Cognito `sub`; signed-out/guest use keeps the legacy
+ * un-suffixed keys so existing local history survives this change.
+ *
+ * Set once from AuthContext rather than threaded through every call site — the
+ * module API is unchanged, so no consumer needs to know about namespacing.
+ */
+let activeUserSub = null;
+
+export function setStorageIdentity(userSub) {
+    activeUserSub = userSub || null;
+}
+
+function ns(baseKey) {
+    return activeUserSub ? `${baseKey}::${activeUserSub}` : baseKey;
+}
+
 function getStorageKey(chatId) {
-    return `${CHAT_PREFIX}${chatId}`;
+    return ns(`${CHAT_PREFIX}${chatId}`);
+}
+
+function chatListKey() {
+    return ns(CHAT_LIST_BASE);
+}
+
+function pendingDeletesKey() {
+    return ns(PENDING_DELETES_BASE);
+}
+
+/**
+ * SEC-C-002: purge every locally cached chat for every identity. Called on sign-out
+ * so the bytes are gone, not merely unreachable — namespacing alone leaves them on
+ * disk for recovery, and purging alone re-exposes them if a crash beats the purge.
+ */
+export function clearAllLocalChats() {
+    try {
+        const doomed = Object.keys(localStorage).filter(
+            (k) => k.startsWith(CHAT_PREFIX)
+                || k === CHAT_LIST_BASE || k.startsWith(`${CHAT_LIST_BASE}::`)
+                || k === PENDING_DELETES_BASE || k.startsWith(`${PENDING_DELETES_BASE}::`)
+        );
+        doomed.forEach((k) => {
+            try { localStorage.removeItem(k); } catch { /* ignore */ }
+        });
+    } catch (e) {
+        console.warn('chatStorage: clearAllLocalChats failed:', e);
+    }
 }
 
 export function getChatList() {
     try {
-        const raw = localStorage.getItem(CHAT_LIST_KEY);
+        const raw = localStorage.getItem(chatListKey());
         if (!raw) return [];
         const list = JSON.parse(raw);
         return Array.isArray(list) ? list : [];
@@ -40,7 +87,7 @@ export function getChatMessages(chatId) {
 
 export function saveChatList(list) {
     try {
-        localStorage.setItem(CHAT_LIST_KEY, JSON.stringify(list));
+        localStorage.setItem(chatListKey(), JSON.stringify(list));
     } catch (e) {
         console.warn('chatStorage: saveChatList failed (quota) — list not updated locally:', e);
     }
@@ -109,7 +156,7 @@ export function saveChatMessages(chatId, messages) {
 
 export function getPendingDeletes() {
     try {
-        const raw = localStorage.getItem(PENDING_DELETES_KEY);
+        const raw = localStorage.getItem(pendingDeletesKey());
         return raw ? JSON.parse(raw) : [];
     } catch { return []; }
 }
@@ -118,14 +165,14 @@ export function addPendingDelete(id) {
     try {
         const list = getPendingDeletes();
         if (!list.includes(id)) list.push(id);
-        localStorage.setItem(PENDING_DELETES_KEY, JSON.stringify(list));
+        localStorage.setItem(pendingDeletesKey(), JSON.stringify(list));
     } catch {}
 }
 
 export function clearPendingDelete(id) {
     try {
         const list = getPendingDeletes().filter((d) => d !== id);
-        localStorage.setItem(PENDING_DELETES_KEY, JSON.stringify(list));
+        localStorage.setItem(pendingDeletesKey(), JSON.stringify(list));
     } catch {}
 }
 
