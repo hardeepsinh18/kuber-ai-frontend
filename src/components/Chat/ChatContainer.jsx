@@ -724,7 +724,7 @@ const deriveSymbolFromMessage = (m) => {
 
 const ChatContainer = ({ sidebarOpen, routeChatId }) => {
     const { chatId: routeChatIdParam } = useParams();
-    const { accessToken, refreshSession } = useAuth();
+    const { accessToken, refreshSession, loading: authLoading } = useAuth();
     const { theme } = useTheme();
     const { setChatActive } = useChatMode();
     const { messages, setMessages, ensureCurrentChat, loadChat, currentChatId, currentChatIdRef, isChatLoading, chatLoadError, setChatLoadError } = useChatHistory();
@@ -835,12 +835,24 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
         setIsLoading(false);
     }, [clearStreamingTimeout]);
 
-    // When opening /chat/:chatId, load that chat
+    // When opening /chat/:chatId, load that chat.
+    //
+    // Gated on `!authLoading`: chat storage is namespaced per signed-in identity
+    // (SEC-C-002), and that namespace is only set once AuthContext's async
+    // Cognito session check resolves. Without this gate, a page load/refresh
+    // ran this effect immediately — before the identity was known — reading
+    // local cache under the wrong (un-suffixed) key and skipping the backend
+    // fallback (accessToken was still null too), so the chat looked empty.
+    // Worse, it never retried: once `currentChatId` gets set from that bad
+    // first attempt, `routeChatIdParam !== currentChatId` goes false and this
+    // effect never fires again for the same route, permanently stranding an
+    // otherwise-fine chat as "empty" for the rest of the session.
     useEffect(() => {
+        if (authLoading) return;
         if (routeChatId && routeChatIdParam && routeChatIdParam !== currentChatId) {
             loadChat(routeChatIdParam);
         }
-    }, [routeChatId, routeChatIdParam, currentChatId, loadChat]);
+    }, [routeChatId, routeChatIdParam, currentChatId, loadChat, authLoading]);
 
     // Keep the URL in sync with the active chat so a REFRESH restores it. A brand-new chat
     // started on the "/" route gets a currentChatId but the URL stays bare — so a refresh landed

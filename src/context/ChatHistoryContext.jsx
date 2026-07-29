@@ -6,7 +6,7 @@ import { useAuth } from './AuthContext';
 const ChatHistoryContext = createContext(null);
 
 export function ChatHistoryProvider({ children }) {
-    const { accessToken, supabaseConfigured } = useAuth();
+    const { accessToken, supabaseConfigured, loading: authLoading } = useAuth();
     const [chatList, setChatList] = useState([]);
     const [currentChatId, setCurrentChatId] = useState(null);
     const [messages, setMessages] = useState([]);
@@ -81,7 +81,16 @@ export function ChatHistoryProvider({ children }) {
     // 1. Show localStorage immediately (minus pending-deletes) — instant sidebar, no limits.
     // 2. If logged in, fetch ALL chats from server in background — server is the permanent store.
     // 3. Retry any pending-delete API calls so server stays in sync.
+    //
+    // Gated on `!authLoading`: chat storage is namespaced per signed-in identity
+    // (SEC-C-002) via chatStorage.setStorageIdentity(), which AuthContext only
+    // calls once its async Cognito session check resolves. Running this before
+    // that read the wrong (un-suffixed) local namespace and marked
+    // isLoadedRef true prematurely, which could let the persist effect start
+    // writing under that same wrong namespace for anything that happened in
+    // the split second before the real identity was known.
     useEffect(() => {
+        if (authLoading) return;
         const pendingDeletes = chatStorage.getPendingDeletes();
 
         function buildLocalList() {
@@ -117,7 +126,7 @@ export function ChatHistoryProvider({ children }) {
         } else {
             setIsListLoading(false);
         }
-    }, [accessToken, supabaseConfigured, refreshChatListFromServer]);
+    }, [accessToken, supabaseConfigured, refreshChatListFromServer, authLoading]);
 
     // Re-sync whenever the tab becomes visible/focused again — this is what
     // actually surfaces chats created on another device (phone) without
