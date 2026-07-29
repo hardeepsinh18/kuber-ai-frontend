@@ -17,9 +17,13 @@ import { streamChatRequest } from '../../lib/streamChat';
 const API_BASE = getApiBase();
 const API_ENDPOINT = `${API_BASE}/api/v1/chat`;
 const STREAM_ENDPOINT = `${API_BASE}/api/v1/chat/stream`;
-// Real SSE token streaming (default on). Set VITE_CHAT_STREAMING=0 to disable and
-// always use the plain /chat request. Any streaming failure auto-falls-back too.
-const CHAT_STREAMING_ENABLED = import.meta.env.VITE_CHAT_STREAMING !== '0';
+// SSE token streaming is DISABLED by default. Streaming the raw answer markdown
+// flashed the deprecated plain-text layout (## Technical Picture / plain price)
+// before the structured card layout rendered — a jarring "old response then new
+// response" swap. The polished flow is: thinking animation → structured answer.
+// The streaming endpoint stays deployed; set VITE_CHAT_STREAMING=1 to re-enable
+// (only worthwhile once streaming is scoped to simple, non-structured answers).
+const CHAT_STREAMING_ENABLED = import.meta.env.VITE_CHAT_STREAMING === '1';
 const FEEDBACK_ENDPOINT = `${API_BASE}/api/v1/feedback`;
 // Default 120s: multi-symbol comparisons + fundamentals + LLM can exceed 60s on EC2.
 const REQUEST_TIMEOUT_MS = Number(import.meta.env.VITE_CHAT_TIMEOUT_MS || 120000);
