@@ -19,8 +19,12 @@ export function ChatHistoryProvider({ children }) {
     const currentChatIdRef = useRef(null);
     const lastListRefreshRef = useRef(0);
     const listRefreshInFlightRef = useRef(false);
+    const messagesRef = useRef([]);
+    const accessTokenRef = useRef(null);
 
     useEffect(() => { currentChatIdRef.current = currentChatId; }, [currentChatId]);
+    useEffect(() => { messagesRef.current = messages; }, [messages]);
+    useEffect(() => { accessTokenRef.current = accessToken; }, [accessToken]);
 
     // Fetch the server's chat list and merge it into local state/localStorage.
     // Used both on mount and on tab focus/visibility — a chat created on another
@@ -135,50 +139,50 @@ export function ChatHistoryProvider({ children }) {
         };
     }, [accessToken, refreshChatListFromServer]);
 
-    // Persist current chat when messages or currentChatId change (debounced).
-    useEffect(() => {
-        if (!currentChatId || !isLoadedRef.current) return;
-        if (persistTimeoutRef.current) clearTimeout(persistTimeoutRef.current);
-        persistTimeoutRef.current = setTimeout(() => {
-            // Use the id from THIS render's closure, not currentChatIdRef.current.
-            // The ref reads whatever chat is open when the timer fires, which is
-            // not necessarily the chat these `messages` belong to — pairing them
-            // wrongly writes one chat's messages under another chat's key.
-            const chatId = currentChatId;
-            if (!chatId || currentChatIdRef.current !== chatId) return;
-            const hasMessages = messages.length > 0;
-            const hasNewMessages = messages.length > syncedMessageCountRef.current;
-            if (hasMessages) {
-                const title = chatStorage.getTitleFromMessages(messages);
+    // The actual persist work, extracted so it can run either on the 400ms
+    // debounce OR eagerly (flushed) the instant the debounce would otherwise
+    // be cancelled — a chat switch, tab hide, or page unload. Previously the
+    // debounce's cleanup only did `clearTimeout`, silently discarding
+    // whatever hadn't been saved yet: since streaming resets this timer on
+    // every token, the FIRST chance it ever gets to fire is ~400ms after the
+    // answer finishes rendering. Switching chats or refreshing inside that
+    // window lost the entire exchange — both the question and the answer —
+    // because nothing had reached localStorage or the server yet.
+    const flushPersist = useCallback((chatId, messages, accessToken) => {
+        if (!chatId) return;
+        const hasMessages = messages.length > 0;
+        const hasNewMessages = messages.length > syncedMessageCountRef.current;
+        if (hasMessages) {
+            const title = chatStorage.getTitleFromMessages(messages);
+            try {
+                // Keep chartData in localStorage so the chart (and its pattern overlay)
+                // survives a refresh / chat switch directly — no backend round-trip needed.
+                chatStorage.saveChatMessages(chatId, messages);
+            } catch {
+                // Over quota with chartData included — retry WITHOUT it (stripped). Those
+                // charts are still on the server (metadata._chartData) and get restored by
+                // loadChat()'s backend hydration, so nothing is lost.
                 try {
-                    // Keep chartData in localStorage so the chart (and its pattern overlay)
-                    // survives a refresh / chat switch directly — no backend round-trip needed.
-                    chatStorage.saveChatMessages(chatId, messages);
+                    const stripped = messages.map(({ chartData: _cd, ...rest }) => rest);
+                    chatStorage.saveChatMessages(chatId, stripped);
                 } catch {
-                    // Over quota with chartData included — retry WITHOUT it (stripped). Those
-                    // charts are still on the server (metadata._chartData) and get restored by
-                    // loadChat()'s backend hydration, so nothing is lost.
-                    try {
-                        const stripped = messages.map(({ chartData: _cd, ...rest }) => rest);
-                        chatStorage.saveChatMessages(chatId, stripped);
-                    } catch {
-                        // still over quota — messages are safely on the server, no pruning
-                    }
+                    // still over quota — messages are safely on the server, no pruning
                 }
-                setChatList((prev) => {
-                    const next = prev.map((c) =>
-                        c.id === chatId
-                            ? { ...c, title, ...(hasNewMessages ? { updatedAt: Date.now() } : {}) }
-                            : c
-                    );
-                    const found = next.some((c) => c.id === chatId);
-                    if (!found) next.unshift({ id: chatId, title, updatedAt: Date.now() });
-                    chatStorage.saveChatList(next);
-                    return next;
-                });
-                if (accessToken) {
-                    const start = syncedMessageCountRef.current;
-                    const newOnes = messages.slice(start).map((m) => ({
+            }
+            setChatList((prev) => {
+                const next = prev.map((c) =>
+                    c.id === chatId
+                        ? { ...c, title, ...(hasNewMessages ? { updatedAt: Date.now() } : {}) }
+                        : c
+                );
+                const found = next.some((c) => c.id === chatId);
+                if (!found) next.unshift({ id: chatId, title, updatedAt: Date.now() });
+                chatStorage.saveChatList(next);
+                return next;
+            });
+            if (accessToken) {
+                const start = syncedMessageCountRef.current;
+                const newOnes = messages.slice(start).map((m) => ({
                         role: m.role === 'ai' ? 'assistant' : 'user',
                         content: m.content ?? '',
                         metadata: {
@@ -241,15 +245,74 @@ export function ChatHistoryProvider({ children }) {
                                 console.warn('Chat sync to backend failed (messages safe in localStorage):', err?.message);
                             });
                     }
-                    chatsApi.updateChatTitle(chatId, title, accessToken).catch(() => {});
-                }
+                chatsApi.updateChatTitle(chatId, title, accessToken).catch(() => {});
             }
+        }
+    }, []);
+
+    // Debounce persisting while messages are actively changing (e.g. tokens
+    // streaming in) so we're not hitting localStorage/the API on every token.
+    // Cleanup here ONLY cancels — it re-runs on every token during streaming
+    // (messages changes each time), and flushing there would fire a full
+    // save + API round-trip per token instead of once, 400ms after the last
+    // change. The "flush instead of discard" fix lives in the effect below,
+    // which is keyed on currentChatId alone so it only fires on an actual
+    // chat switch, not on ordinary message updates within the same chat.
+    useEffect(() => {
+        if (!currentChatId || !isLoadedRef.current) return undefined;
+        if (persistTimeoutRef.current) clearTimeout(persistTimeoutRef.current);
+        persistTimeoutRef.current = setTimeout(() => {
             persistTimeoutRef.current = null;
+            flushPersist(currentChatId, messages, accessToken);
         }, 400);
         return () => {
             if (persistTimeoutRef.current) clearTimeout(persistTimeoutRef.current);
         };
-    }, [currentChatId, messages, accessToken]);
+    }, [currentChatId, messages, accessToken, flushPersist]);
+
+    // Fires only when the chat identity itself changes (or on unmount) —
+    // never on a mid-stream `messages` update within the same chat. This is
+    // the moment a pending debounce from the PREVIOUS chat must be flushed
+    // rather than silently dropped: without it, asking a question and
+    // switching away before the 400ms silence window elapsed lost the whole
+    // exchange, since streaming keeps resetting the timer above right up
+    // until the last token arrives.
+    useEffect(() => {
+        const chatId = currentChatId;
+        return () => {
+            if (persistTimeoutRef.current) {
+                clearTimeout(persistTimeoutRef.current);
+                persistTimeoutRef.current = null;
+                flushPersist(chatId, messagesRef.current, accessTokenRef.current);
+            }
+        };
+    }, [currentChatId, flushPersist]);
+
+    // A hard refresh or tab close kills the JS runtime outright — the effect
+    // cleanup above never gets to run, so a pending debounce would otherwise
+    // vanish along with everything the user just did. `pagehide` fires
+    // reliably in that case (unlike `beforeunload`, which mobile browsers and
+    // bfcache navigations can skip); `visibilitychange`→hidden is a second
+    // safety net for backgrounding on mobile. Both read refs, not closed-over
+    // state, since this effect is registered once and must see the latest
+    // values whenever it actually fires.
+    useEffect(() => {
+        const flushNow = () => {
+            if (!persistTimeoutRef.current) return;
+            clearTimeout(persistTimeoutRef.current);
+            persistTimeoutRef.current = null;
+            flushPersist(currentChatIdRef.current, messagesRef.current, accessTokenRef.current);
+        };
+        const onVisibilityChange = () => {
+            if (document.visibilityState === 'hidden') flushNow();
+        };
+        window.addEventListener('pagehide', flushNow);
+        document.addEventListener('visibilitychange', onVisibilityChange);
+        return () => {
+            window.removeEventListener('pagehide', flushNow);
+            document.removeEventListener('visibilitychange', onVisibilityChange);
+        };
+    }, [flushPersist]);
 
     const ensureCurrentChat = useCallback(async () => {
         if (currentChatId) return currentChatId;
