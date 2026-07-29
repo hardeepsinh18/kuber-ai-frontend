@@ -406,12 +406,18 @@ export default function AuthPage() {
 
                 {/* Terms */}
                 <p style={{ textAlign: 'center', fontSize: 11, color: labelColor, marginTop: 16, lineHeight: 1.7 }}>
+                    {/* QA-C-007: at 11px these anchors were ~15px tall — below the 24px
+                        minimum target size (WCAG 2.2 SC 2.5.8), which makes them hard to
+                        hit on a phone. inline-block + vertical padding grows the HIT AREA
+                        to 24px without changing the type size or the visual layout. */}
                     By continuing you agree to our{' '}
                     <a href="/terms" target="_blank" rel="noopener noreferrer"
-                       style={{ color: textSub, textDecoration: 'underline', cursor: 'pointer' }}>Terms of Service</a>
+                       style={{ color: textSub, textDecoration: 'underline', cursor: 'pointer',
+                                display: 'inline-block', paddingBlock: 5 }}>Terms of Service</a>
                     {' '}and{' '}
                     <a href="/privacy" target="_blank" rel="noopener noreferrer"
-                       style={{ color: textSub, textDecoration: 'underline', cursor: 'pointer' }}>Privacy Policy</a>
+                       style={{ color: textSub, textDecoration: 'underline', cursor: 'pointer',
+                                display: 'inline-block', paddingBlock: 5 }}>Privacy Policy</a>
                 </p>
 
                 {/* Footer */}
