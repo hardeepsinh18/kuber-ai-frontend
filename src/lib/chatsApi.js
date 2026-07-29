@@ -77,10 +77,15 @@ export async function createChat(accessToken, title = 'New chat') {
 }
 
 export async function updateChatTitle(id, title, accessToken) {
+  // keepalive: lets this survive a page unload/refresh that happens right
+  // after a response finishes (the exact window the debounced persist used
+  // to lose) — a plain in-flight fetch can otherwise be cancelled when the
+  // page tears down.
   const res = await fetch(chatUrl(id), {
     method: 'PATCH',
     headers: getHeaders(accessToken),
     body: JSON.stringify({ title }),
+    keepalive: true,
   });
   if (res.status === 404 || res.status === 501) return null;
   if (!res.ok) throw new Error(await res.text().catch(() => ` ${res.status}`));
@@ -92,6 +97,7 @@ export async function appendMessages(id, messages, accessToken) {
     method: 'POST',
     headers: getHeaders(accessToken),
     body: JSON.stringify({ messages }),
+    keepalive: true,
   });
   if (res.status === 404 || res.status === 501) return null;
   if (!res.ok) throw new Error(await res.text().catch(() => ` ${res.status}`));
