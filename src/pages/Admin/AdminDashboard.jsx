@@ -5,10 +5,13 @@ import {
     MessageSquare, Search, ChevronLeft, ChevronRight,
     RefreshCw, TrendingUp, Zap, Database, X
 } from 'lucide-react';
-import { getApiBase } from '../../lib/apiBase';
+import { getApiOrigin } from '../../lib/apiBase';
 import { getIdToken } from '../../lib/supabase';
 
-const API_BASE = getApiBase();   // '' = same-origin (/api/v1/...); set VITE_API_BASE for dev
+// QA-C-001: use the ORIGIN-resolving accessor, not getApiBase(). The latter is ''
+// for the same-origin deployment, and `new URL('/api/v1/...')` with no origin
+// throws — which made every panel below fail to load in UAT.
+const API_BASE = getApiOrigin();
 const API_PREFIX = '/api/v1';
 
 // SEC-004/SEC-C-002: authenticate admin calls with the signed-in admin's own

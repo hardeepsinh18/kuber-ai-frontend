@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 // Side-effect import runs Amplify.configure(); helpers below drive the session.
 import { authConfigured, getIdToken } from '../lib/supabase';
 import { getApiBase } from '../lib/apiBase';
+import { setStorageIdentity, clearAllLocalChats } from '../lib/chatStorage';
 import {
   signIn as cognitoSignIn,
   signUp as cognitoSignUp,
@@ -50,8 +51,15 @@ export function AuthProvider({ children }) {
         try { const cu = await getCurrentUser(); id = cu?.userId || cu?.username || ''; } catch (_) {}
       }
       setIdToken(token);
-      setUser({ id, email, user_metadata: { full_name: fullName } });
+      // QA-C-002: surface the Cognito group claim so AdminGuard can gate on it
+      // without a build-time email list baked into the public bundle.
+      const groups = Array.isArray(claims['cognito:groups']) ? claims['cognito:groups'] : [];
+      // SEC-C-002: bind the local chat cache to this identity BEFORE publishing the
+      // user, so no consumer can read the previous profile's namespace in between.
+      setStorageIdentity(id);
+      setUser({ id, email, groups, user_metadata: { full_name: fullName } });
     } catch {
+      setStorageIdentity(null);
       setUser(null); setIdToken(null);
     }
   };
@@ -79,7 +87,11 @@ export function AuthProvider({ children }) {
       // Demo mode — restore from localStorage (unchanged behavior when unconfigured)
       try {
         const saved = localStorage.getItem(DEMO_KEY);
-        if (saved) setUser(JSON.parse(saved));
+        if (saved) {
+          const demo = JSON.parse(saved);
+          setStorageIdentity(demo?.id);
+          setUser(demo);
+        }
       } catch (_) {}
       setLoading(false);
       return;
@@ -102,6 +114,10 @@ export function AuthProvider({ children }) {
         case 'signedOut':
         case 'tokenRefresh_failure':
         case 'signInWithRedirect_failure':
+          // SEC-C-002: covers sign-out triggered outside our signOut() (another
+          // tab, session expiry) — purge here too or the cache outlives the session.
+          clearAllLocalChats();
+          setStorageIdentity(null);
           setUser(null); setIdToken(null);
           break;
         default:
@@ -124,6 +140,7 @@ export function AuthProvider({ children }) {
       if (!email || !password) throw new Error('Enter your email and password');
       const demoUser = { id: 'demo', email, user_metadata: { full_name: email.split('@')[0] } };
       localStorage.setItem(DEMO_KEY, JSON.stringify(demoUser));
+      setStorageIdentity(demoUser.id);
       setUser(demoUser);
       return demoUser;
     }
@@ -148,6 +165,7 @@ export function AuthProvider({ children }) {
       if (!email || !password) throw new Error('Enter your email and password');
       const demoUser = { id: 'demo', email, user_metadata: { full_name: metadata.full_name || email.split('@')[0] } };
       localStorage.setItem(DEMO_KEY, JSON.stringify(demoUser));
+      setStorageIdentity(demoUser.id);
       setUser(demoUser);
       return demoUser;
     }
@@ -194,13 +212,20 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // SEC-C-002: signing out must end the session ON THIS DEVICE — purge the cached
+  // chats before clearing the user, so a shared/family device leaves no financial
+  // queries readable by the next person to sign in.
   const signOut = async () => {
     if (!authConfigured) {
       localStorage.removeItem(DEMO_KEY);
+      clearAllLocalChats();
+      setStorageIdentity(null);
       setUser(null);
       return;
     }
     await cognitoSignOut();
+    clearAllLocalChats();
+    setStorageIdentity(null);
     setUser(null);
     setIdToken(null);
   };

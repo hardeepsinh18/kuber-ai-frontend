@@ -7,4 +7,17 @@ export function getApiBase() {
   return API_BASE;
 }
 
+/**
+ * QA-C-001: an absolute base for callers that build a `new URL(...)`.
+ *
+ * getApiBase() returns '' when VITE_API_BASE is unset — the correct same-origin
+ * default for relative fetches, but `new URL('/api/v1/x')` with no origin throws
+ * TypeError: Invalid URL, which took the whole admin dashboard down in exactly
+ * the deployed configuration. Resolve to the page origin instead.
+ */
+export function getApiOrigin() {
+  if (API_BASE) return API_BASE;
+  return (typeof window !== 'undefined' && window.location?.origin) || '';
+}
+
 // Logs are only on the separate logs-viewer project (e.g. kuberailogs-*.vercel.app), not on this app.
