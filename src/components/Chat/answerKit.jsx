@@ -362,6 +362,10 @@ const _verdictTone = (v) => ({
     'CAUTIOUS BUY':      'text-street-yellow-ink dark:text-[#FDD405]',
     'WAIT / ACCUMULATE': 'text-zinc-600 dark:text-zinc-300',
     'AVOID':             'text-red-500 dark:text-red-400',
+    // QA-001 / QA-002: states the verdict engine emits when it refuses to recommend —
+    // missing technical coverage, or a projection that came back below today's price.
+    'INSUFFICIENT DATA': 'text-zinc-500 dark:text-zinc-400',
+    'AVOID / WAIT':      'text-red-500 dark:text-red-400',
 }[v] || 'text-zinc-600 dark:text-zinc-300');
 
 const HorizonRow = ({ tenor, v, cells }) => {
