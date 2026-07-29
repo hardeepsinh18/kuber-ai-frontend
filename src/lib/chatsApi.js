@@ -31,12 +31,27 @@ async function safeJson(res) {
 }
 
 export async function getChats(accessToken) {
-  const res = await fetch(chatsUrl(), { method: 'GET', headers: getHeaders(accessToken) });
-  if (res.status === 404 || res.status === 501) return null;
-  if (!res.ok) throw new Error(await res.text().catch(() => `${res.status}`));
-  const data = await safeJson(res);
-  if (!data) return [];
-  return Array.isArray(data) ? data : data?.chats ?? data?.items ?? [];
+  // Backend caps a single page at 100 (FastAPI Query le=100) and defaults to
+  // 20 if omitted — pull every page so users with >20 threads (or with
+  // threads created on another device) see their full history, not just the
+  // most-recently-touched 20.
+  const PAGE_SIZE = 100;
+  let offset = 0;
+  const all = [];
+  for (;;) {
+    const res = await fetch(`${chatsUrl()}?limit=${PAGE_SIZE}&offset=${offset}`, {
+      method: 'GET',
+      headers: getHeaders(accessToken),
+    });
+    if (res.status === 404 || res.status === 501) return offset === 0 ? null : all;
+    if (!res.ok) throw new Error(await res.text().catch(() => `${res.status}`));
+    const data = await safeJson(res);
+    const page = data ? (Array.isArray(data) ? data : data?.chats ?? data?.items ?? []) : [];
+    all.push(...page);
+    if (page.length < PAGE_SIZE) break;
+    offset += PAGE_SIZE;
+  }
+  return all;
 }
 
 export async function getChat(id, accessToken) {

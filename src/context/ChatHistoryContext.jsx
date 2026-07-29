@@ -17,8 +17,61 @@ export function ChatHistoryProvider({ children }) {
     const isLoadedRef = useRef(false);
     const syncedMessageCountRef = useRef(0);
     const currentChatIdRef = useRef(null);
+    const lastListRefreshRef = useRef(0);
+    const listRefreshInFlightRef = useRef(false);
 
     useEffect(() => { currentChatIdRef.current = currentChatId; }, [currentChatId]);
+
+    // Fetch the server's chat list and merge it into local state/localStorage.
+    // Used both on mount and on tab focus/visibility — a chat created on another
+    // device (e.g. mobile) only ever shows up here once this runs again, since
+    // there is no push/websocket sync.
+    const refreshChatListFromServer = useCallback((token) => {
+        if (!token || listRefreshInFlightRef.current) return Promise.resolve();
+        listRefreshInFlightRef.current = true;
+        lastListRefreshRef.current = Date.now();
+        return chatsApi.getChats(token)
+            .then((serverList) => {
+                if (!serverList) return; // 404/501 — no chat API, keep local
+                const pDeletes = chatStorage.getPendingDeletes();
+                // Server is source of truth: show all chats, no date/count filter.
+                // Skip server-side empty "New chat" entries (title=null/New chat, no
+                // local messages) — these are leftover from abandoned sessions.
+                // Delete them from the server in the background to keep it clean.
+                const merged = serverList
+                    .filter((c) => !pDeletes.includes(c.id))
+                    .filter((c) => {
+                        const title = c.title ?? c.name ?? '';
+                        const isEmpty = (!title || title === 'New chat') &&
+                            chatStorage.getChatMessages(c.id).length === 0;
+                        if (isEmpty) {
+                            // Clean up server side silently
+                            chatsApi.deleteChat(c.id, token).catch(() => {});
+                        }
+                        return !isEmpty;
+                    })
+                    .map((c) => ({
+                        id: c.id,
+                        title: c.title ?? c.name ?? 'New chat',
+                        updatedAt: chatStorage.toTimestamp(c.updated_at ?? c.updatedAt),
+                    }));
+                // The currently open chat may have a newer title/timestamp locally
+                // than what the server has committed yet (append + title-update are
+                // separate, in-flight async calls) — don't let a background refresh
+                // flicker it back to a stale server value while it's being typed in.
+                const openId = currentChatIdRef.current;
+                setChatList((prev) => {
+                    const prevOpen = openId ? prev.find((c) => c.id === openId) : null;
+                    const next = prevOpen && !merged.some((c) => c.id === openId)
+                        ? [...merged, prevOpen]
+                        : merged.map((c) => (c.id === openId && prevOpen ? prevOpen : c));
+                    chatStorage.saveChatList(next);
+                    return next;
+                });
+            })
+            .catch(() => {}) // server fetch failed — local list already shown
+            .finally(() => { listRefreshInFlightRef.current = false; });
+    }, []);
 
     // Load chat list on mount.
     // 1. Show localStorage immediately (minus pending-deletes) — instant sidebar, no limits.
@@ -42,42 +95,17 @@ export function ChatHistoryProvider({ children }) {
         setIsListLoading(!!accessToken);
 
         if (accessToken) {
-            // Retry pending deletes so server eventually catches up
-            pendingDeletes.forEach((id) => {
+            // Retry pending deletes so server eventually catches up, THEN fetch —
+            // otherwise the list fetch can race an in-flight delete and read a
+            // stale server row back into localStorage right as the delete's own
+            // .then() clears the pending-delete flag that would have hidden it.
+            const pendingDeleteCalls = pendingDeletes.map((id) =>
                 chatsApi.deleteChat(id, accessToken)
                     .then(() => chatStorage.clearPendingDelete(id))
-                    .catch(() => {});
-            });
-
-            chatsApi.getChats(accessToken)
-                .then((serverList) => {
-                    if (!serverList) return; // 404/501 — no chat API, keep local
-                    const pDeletes = chatStorage.getPendingDeletes();
-                    // Server is source of truth: show all chats, no date/count filter.
-                    // Skip server-side empty "New chat" entries (title=null/New chat, no
-                    // local messages) — these are leftover from abandoned sessions.
-                    // Delete them from the server in the background to keep it clean.
-                    const merged = serverList
-                        .filter((c) => !pDeletes.includes(c.id))
-                        .filter((c) => {
-                            const title = c.title ?? c.name ?? '';
-                            const isEmpty = (!title || title === 'New chat') &&
-                                chatStorage.getChatMessages(c.id).length === 0;
-                            if (isEmpty) {
-                                // Clean up server side silently
-                                chatsApi.deleteChat(c.id, accessToken).catch(() => {});
-                            }
-                            return !isEmpty;
-                        })
-                        .map((c) => ({
-                            id: c.id,
-                            title: c.title ?? c.name ?? 'New chat',
-                            updatedAt: chatStorage.toTimestamp(c.updated_at ?? c.updatedAt),
-                        }));
-                    setChatList(merged);
-                    chatStorage.saveChatList(merged);
-                })
-                .catch(() => {}) // server fetch failed — local list already shown
+                    .catch(() => {})
+            );
+            Promise.all(pendingDeleteCalls)
+                .then(() => refreshChatListFromServer(accessToken))
                 .finally(() => setIsListLoading(false));
         } else if (supabaseConfigured) {
             setChatList([]);
@@ -85,7 +113,27 @@ export function ChatHistoryProvider({ children }) {
         } else {
             setIsListLoading(false);
         }
-    }, [accessToken, supabaseConfigured]);
+    }, [accessToken, supabaseConfigured, refreshChatListFromServer]);
+
+    // Re-sync whenever the tab becomes visible/focused again — this is what
+    // actually surfaces chats created on another device (phone) without
+    // requiring a manual page reload. Throttled so rapid tab switching
+    // doesn't spam the API.
+    useEffect(() => {
+        if (!accessToken) return undefined;
+        const MIN_INTERVAL_MS = 15_000;
+        const maybeRefresh = () => {
+            if (document.visibilityState !== 'visible') return;
+            if (Date.now() - lastListRefreshRef.current < MIN_INTERVAL_MS) return;
+            refreshChatListFromServer(accessToken);
+        };
+        window.addEventListener('focus', maybeRefresh);
+        document.addEventListener('visibilitychange', maybeRefresh);
+        return () => {
+            window.removeEventListener('focus', maybeRefresh);
+            document.removeEventListener('visibilitychange', maybeRefresh);
+        };
+    }, [accessToken, refreshChatListFromServer]);
 
     // Persist current chat when messages or currentChatId change (debounced).
     useEffect(() => {
