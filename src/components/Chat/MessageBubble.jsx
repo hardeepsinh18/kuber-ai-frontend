@@ -846,7 +846,18 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                                     {/* Company logo / letter avatar */}
                                     <div className="w-10 h-10 rounded-lg border border-zinc-200 dark:border-zinc-700/60 bg-white dark:bg-zinc-800 flex items-center justify-center flex-shrink-0 overflow-hidden">
                                         {aag.logo_url ? (
-                                            <img src={aag.logo_url} alt={primarySymbolLabel} className="w-full h-full object-contain p-1" />
+                                            <>
+                                                <img
+                                                    src={aag.logo_url}
+                                                    alt={primarySymbolLabel}
+                                                    className="w-full h-full object-contain p-1"
+                                                    onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'flex'; }}
+                                                />
+                                                {/* Fallback letter avatar shown only if the logo image fails to load */}
+                                                <span className="hidden w-full h-full items-center justify-center text-sm font-bold text-[#FDD405]">
+                                                    {(companyName || primarySymbolLabel || '?').charAt(0).toUpperCase()}
+                                                </span>
+                                            </>
                                         ) : (
                                             <span className="text-sm font-bold text-[#FDD405]">
                                                 {(companyName || primarySymbolLabel || '?').charAt(0).toUpperCase()}
