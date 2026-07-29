@@ -1,0 +1,8 @@
+# 72 Street / Venty — security contact
+# https://securitytxt.org/  (RFC 9116)
+
+Contact: mailto:security@72street.ai
+Expires: 2027-07-29T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://aws.72street.ai/.well-known/security.txt
+Policy: https://github.com/72streetai/KuberAI-Backend-UAT/blob/main/SECURITY.md
