@@ -5,8 +5,13 @@
 <head>
   <meta charset="UTF-8" />
   <!-- Montserrat — 72 Street brand body typeface (Gobold display font self-hosted via index.css) -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <!-- SEC-C-001: the font-origin preconnect hints were removed deliberately. A
+       preconnect is evaluated against connect-src, which does not list
+       fonts.googleapis.com, and the audit's browser run recorded exactly that
+       CSP violation — the one thing blocking the policy from being switched from
+       Report-Only to enforcing. The stylesheet below is checked against style-src
+       and the font files against font-src, both of which already allow these
+       origins, so this costs a few ms of DNS warm-up and nothing visually. -->
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <!-- 72 Street brand mark (yellow vertical logo) -->
   <link rel="icon" type="image/png" sizes="32x32" href="/brand/favicon-32.png" />
