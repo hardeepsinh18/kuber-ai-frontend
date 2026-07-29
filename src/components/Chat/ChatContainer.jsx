@@ -1296,7 +1296,13 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                     const detail = errorData.detail || errorData.message || errorData.error;
                     let msg;
                     if (response.status === 401 || response.status === 403) {
-                        msg = 'Session expired. Please sign in again.';
+                        // SEC-001: /chat now requires authentication (CHAT_AUTH_MODE=enforce),
+                        // so a 401 means EITHER an expired session OR a visitor who was
+                        // never signed in. "Session expired" is wrong and confusing for the
+                        // second case, which is now the common one.
+                        msg = accessToken
+                            ? 'Session expired. Please sign in again.'
+                            : 'Please sign in to use Venty.';
                     } else if (response.status === 429) {
                         msg = 'Too many requests. Please wait a moment and try again.';
                     } else if (response.status === 404) {
