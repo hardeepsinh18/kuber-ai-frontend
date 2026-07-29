@@ -101,22 +101,16 @@ const MiniLine = ({ data, color = '#22c55e', years }) => {
 /* ─── P/E Gradient Bar ───────────────────────────────────────────────────── */
 const PEGradientBar = ({ pe, sectorPe, symbol }) => {
     const max = Math.max((sectorPe || 30) * 1.9, (pe || 20) * 1.8, 55);
-    const pePos     = Math.min(Math.max(((pe || 0) / max) * 100, 4), 94);
-    const sectorPos = Math.min(Math.max(((sectorPe || 28) / max) * 100, 4), 94);
+    const pePos = Math.min(Math.max(((pe || 0) / max) * 100, 4), 94);
     const sym = (symbol || 'STK').toUpperCase().replace(/\.NS|\.BO|-EQ|NSE:|BSE:/gi, '').slice(0, 4);
 
     return (
         <div className="w-full px-1">
-            {/* reserve vertical space: label 14px + circle 28px + tick 4px = ~46px above bar */}
-            <div className="relative" style={{ paddingTop: 46 }}>
-                {/* Sector avg label */}
-                <div className="absolute text-[9px] text-zinc-400 whitespace-nowrap"
-                     style={{ left: `${sectorPos}%`, top: 0, transform: 'translateX(-50%)' }}>
-                    Sector {sectorPe || 28}x
-                </div>
+            {/* reserve vertical space: circle 28px + tick 4px = ~32px above bar */}
+            <div className="relative" style={{ paddingTop: 32 }}>
                 {/* Symbol yellow circle */}
                 <div className="absolute z-10 flex flex-col items-center"
-                     style={{ left: `${pePos}%`, top: 14, transform: 'translateX(-50%)' }}>
+                     style={{ left: `${pePos}%`, top: 0, transform: 'translateX(-50%)' }}>
                     <div className="w-7 h-7 rounded-full bg-[#FDD405] border-2 border-zinc-400 dark:border-zinc-900 flex items-center justify-center text-[7px] font-black text-black shadow">
                         {sym}
                     </div>
@@ -124,10 +118,7 @@ const PEGradientBar = ({ pe, sectorPe, symbol }) => {
                 </div>
                 {/* Gradient bar */}
                 <div className="relative h-3 rounded-full"
-                     style={{ background: 'linear-gradient(to right,#22c55e 0%,#84cc16 25%,#eab308 50%,#f97316 75%,#ef4444 100%)' }}>
-                    <div className="absolute top-0 bottom-0 w-px bg-zinc-900/40 dark:bg-white/50"
-                         style={{ left: `${sectorPos}%` }} />
-                </div>
+                     style={{ background: 'linear-gradient(to right,#22c55e 0%,#84cc16 25%,#eab308 50%,#f97316 75%,#ef4444 100%)' }} />
             </div>
             <div className="flex justify-between text-[9px] text-zinc-500 mt-1">
                 <span>CHEAP</span><span>EXPENSIVE</span>
@@ -144,22 +135,24 @@ const ROEViz = ({ roe }) => {
             <p className="text-[9px] text-zinc-500 uppercase tracking-wide text-center mb-2">
                 Every ₹100 Invested Earns
             </p>
-            <div className="flex items-center justify-center gap-2 flex-wrap">
-                <div className="text-center">
-                    <p className="text-xl font-bold text-zinc-900 dark:text-white leading-none">₹100</p>
-                    <p className="text-[9px] text-zinc-500 mt-0.5">YOU INVEST</p>
+            {/* Three columns on one baseline: same number size, same caption size. */}
+            <div className="flex items-start justify-center gap-5 flex-nowrap">
+                <div className="flex flex-col items-center text-center">
+                    <span className="text-lg font-bold text-zinc-900 dark:text-white leading-none h-6 flex items-center">₹100</span>
+                    <span className="text-[9px] text-zinc-500 mt-1 whitespace-nowrap">YOU INVEST</span>
                 </div>
-                <div className="flex flex-col items-center gap-0.5">
-                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">+{profit}%</span>
-                    <svg width="36" height="10" viewBox="0 0 36 10">
-                        <line x1="0" y1="5" x2="28" y2="5" stroke="#22c55e" strokeWidth="2" />
-                        <polygon points="26,1 36,5 26,9" fill="#22c55e" />
-                    </svg>
-                    <span className="text-[9px] text-zinc-500">PER YEAR</span>
+                <div className="flex flex-col items-center text-center">
+                    <span className="h-6 flex items-center">
+                        <svg width="44" height="10" viewBox="0 0 44 10">
+                            <line x1="0" y1="5" x2="36" y2="5" stroke="#22c55e" strokeWidth="2" />
+                            <polygon points="34,1 44,5 34,9" fill="#22c55e" />
+                        </svg>
+                    </span>
+                    <span className="text-[9px] text-zinc-500 mt-1 whitespace-nowrap">+{profit}% PER YEAR</span>
                 </div>
-                <div className="w-14 h-14 rounded-full bg-emerald-50 dark:bg-emerald-950/50 border-2 border-emerald-500 flex flex-col items-center justify-center">
-                    <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400 leading-none">₹{profit}</span>
-                    <span className="text-[7px] text-emerald-600 dark:text-emerald-500 text-center leading-tight mt-0.5">PROFIT{'\n'}BACK</span>
+                <div className="flex flex-col items-center text-center">
+                    <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400 leading-none h-6 flex items-center">₹{profit}</span>
+                    <span className="text-[9px] text-emerald-600 dark:text-emerald-500 mt-1 whitespace-nowrap">PROFIT</span>
                 </div>
             </div>
         </div>
@@ -227,24 +220,30 @@ const DebtGauge = ({ value }) => {
 
 /* ─── Net Margin split bar ───────────────────────────────────────────────── */
 const ProfitSliceBar = ({ netMargin }) => {
-    const profit = Math.round(Math.min(100, Math.max(0, netMargin || 0)));
-    const cost = 100 - profit;
+    // Show the exact margin so the bar matches the headline value (8.90%, not a
+    // rounded 9). Widths use the same number; the profit slice gets a floor so a
+    // small margin still has room for its label.
+    const exact      = Math.min(100, Math.max(0, Number(netMargin) || 0));
+    const profitPct  = `${exact.toFixed(2)}%`;
+    const costPct    = `${(100 - exact).toFixed(2)}%`;
+    const profitW    = Math.max(exact, 22);
+    const costW      = 100 - profitW;
     return (
         <div className="w-full">
             <p className="text-[9px] text-zinc-500 text-center uppercase tracking-wide mb-2">
-                From Every ₹100 of Sales
+                Of Every 100% of Sales
             </p>
             <div className="flex rounded-lg overflow-hidden h-8 w-full">
-                {profit > 0 && (
-                    <div className="flex items-center justify-center text-[11px] font-bold text-white bg-emerald-600"
-                         style={{ width: `${profit}%` }}>
-                        ₹{profit}
+                {exact > 0 && (
+                    <div className="flex items-center justify-center text-[11px] font-bold text-white bg-emerald-600 whitespace-nowrap px-1"
+                         style={{ width: `${profitW}%` }}>
+                        {profitPct}
                     </div>
                 )}
-                {cost > 0 && (
-                    <div className="flex items-center justify-center text-[11px] font-semibold text-zinc-600 dark:text-zinc-400 bg-zinc-200 dark:bg-zinc-800"
-                         style={{ width: `${cost}%` }}>
-                        ₹{cost}
+                {costW > 0 && (
+                    <div className="flex items-center justify-center text-[11px] font-semibold text-zinc-600 dark:text-zinc-400 bg-zinc-200 dark:bg-zinc-800 whitespace-nowrap px-1"
+                         style={{ width: `${costW}%` }}>
+                        {costPct}
                     </div>
                 )}
             </div>

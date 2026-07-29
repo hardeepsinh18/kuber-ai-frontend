@@ -1673,33 +1673,34 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                     <div ref={bottomRef} className="h-4" />
                 </div>
 
-                {/* Scroll to bottom button — inside the card */}
-                {showScrollButton && (
-                    <button
-                        onClick={scrollToBottom}
-                        className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10
-                                   flex items-center justify-center w-9 h-9 rounded-full
-                                   bg-white/90 backdrop-blur
-                                   border border-zinc-200/80
-                                   shadow-sm hover:shadow-md
-                                   opacity-70 hover:opacity-100
-                                   transition-all duration-200 ease-out
-                                   hover:scale-105 active:scale-95
-                                   group"
-                        aria-label="Scroll to bottom"
-                    >
-                        <svg
-                            className="w-[18px] h-[18px] text-zinc-600/80 group-hover:text-zinc-900 transition-colors"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                        </svg>
-                    </button>
-                )}
-                {/* ── Input bar — with the mode-switch popover / disambiguation picker anchored just above it ── */}
+                {/* ── Input bar — with the scroll-to-bottom button, mode-switch popover
+                       and disambiguation picker anchored just above it ── */}
                 <div className="relative">
+                    {/* Scroll to bottom — sits above the composer, never below it */}
+                    {showScrollButton && (
+                        <button
+                            onClick={scrollToBottom}
+                            className="absolute -top-11 left-1/2 -translate-x-1/2 z-20
+                                       flex items-center justify-center w-9 h-9 rounded-full
+                                       bg-white/90 dark:bg-zinc-800/90 backdrop-blur
+                                       border border-zinc-200/80 dark:border-zinc-700/80
+                                       shadow-sm hover:shadow-md
+                                       opacity-70 hover:opacity-100
+                                       transition-all duration-200 ease-out
+                                       hover:scale-105 active:scale-95
+                                       group"
+                            aria-label="Scroll to bottom"
+                        >
+                            <svg
+                                className="w-[18px] h-[18px] text-zinc-600/80 dark:text-zinc-300 group-hover:text-zinc-900 dark:group-hover:text-white transition-colors"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                            </svg>
+                        </button>
+                    )}
                     {modeSwitchPrompt && (
                         <ModeSwitchPrompt
                             query={modeSwitchPrompt.query}
