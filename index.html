@@ -18,9 +18,13 @@
   <link rel="icon" type="image/png" sizes="192x192" href="/brand/favicon-192.png" />
   <link rel="apple-touch-icon" href="/brand/favicon-180.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <!-- QA-C-013: the PWA meta tags (mobile-web-app-capable, apple-mobile-web-app-*)
+       were removed. They advertise a standalone installable app, but there is no web
+       app manifest in the project, so installation never worked — the tags promised
+       a capability the build does not ship. Removing them is the honest fix; if
+       installability becomes a product goal, add a real manifest (name, short_name,
+       start_url, display, icons) and reinstate them together. theme-color is kept:
+       it colours the mobile browser chrome and needs no manifest. -->
   <meta name="theme-color" content="#fdd405" />
 
   <title>Venty — AI Stock Market Assistant by 72 Street</title>
