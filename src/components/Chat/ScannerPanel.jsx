@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { X, TrendingUp, BarChart2, CandlestickChart, BookOpen, Check } from 'lucide-react';
 import { getApiBase } from '../../lib/apiBase';
 import { getScannerSignal } from '../../lib/scannerSignal';
+import { useAuth } from '../../context/AuthContext';
 
 const API_BASE = getApiBase();
 const SCANNER_ENDPOINT = `${API_BASE}/api/v1/scanner`;
@@ -167,6 +168,7 @@ const SCAN_MESSAGES = [
 ];
 
 const ScannerPanel = ({ onSelectScanner, onClose }) => {
+    const { accessToken } = useAuth();
     const panelRef = useRef(null);
     const pollRef  = useRef(null);
     const msgRef   = useRef(null);
@@ -256,7 +258,10 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                 names.map(name =>
                     fetch(SCANNER_ENDPOINT, {
                         method:  'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+                        },
                         body:    JSON.stringify(toRequestBody(name)),
                     }).then(async r => {
                         const data = await r.json().catch(() => ({}));
