@@ -1611,7 +1611,14 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             <div className="flex-1 overflow-hidden flex flex-col relative">
                 <div
                     ref={chatContainerRef}
-                    className="flex-1 overflow-y-auto pt-4 pb-2 custom-scrollbar"
+                    /* pb-40 reserves room for the composer, which is now OVERLAID on
+                       this scroller rather than sitting in the flex flow below it.
+                       In-flow, the composer was its own solid row: content scrolled
+                       up to its top edge and was clipped mid-sentence (the disclaimer
+                       line cut in half), which read as two stacked panels. Overlaid
+                       + padded, the transcript scrolls THROUGH the fade and passes
+                       under the input instead of stopping dead at it. */
+                    className="flex-1 overflow-y-auto pt-4 pb-40 custom-scrollbar"
                 >
                     {messages.filter(msg => msg && msg.role).map((msg) => (
                         <React.Fragment key={msg.id}>

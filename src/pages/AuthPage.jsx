@@ -227,8 +227,8 @@ export default function AuthPage() {
                                         border: '1px solid rgba(253,212,5,0.20)',
                                         borderRadius: 10, color: inputColor, fontSize: 14, outline: 'none', letterSpacing: 2,
                                     }}
-                                    onFocus={e => e.target.style.borderColor = 'rgba(253,212,5,0.60)'}
-                                    onBlur={e => e.target.style.borderColor = 'rgba(253,212,5,0.20)'}
+                                    onFocus={e => { e.target.style.borderColor = 'rgba(253,212,5,0.60)'; e.target.style.outline = '2px solid #fdd405'; e.target.style.outlineOffset = '2px'; }}
+                                    onBlur={e => { e.target.style.borderColor = 'rgba(253,212,5,0.20)'; e.target.style.outline = 'none'; }}
                                 />
                             </div>
 
@@ -288,8 +288,8 @@ export default function AuthPage() {
                                         border: '1px solid rgba(253,212,5,0.20)',
                                         borderRadius: 10, color: inputColor, fontSize: 14, outline: 'none',
                                     }}
-                                    onFocus={e => e.target.style.borderColor = 'rgba(253,212,5,0.60)'}
-                                    onBlur={e => e.target.style.borderColor = 'rgba(253,212,5,0.20)'}
+                                    onFocus={e => { e.target.style.borderColor = 'rgba(253,212,5,0.60)'; e.target.style.outline = '2px solid #fdd405'; e.target.style.outlineOffset = '2px'; }}
+                                    onBlur={e => { e.target.style.borderColor = 'rgba(253,212,5,0.20)'; e.target.style.outline = 'none'; }}
                                 />
                             </div>
                         )}
@@ -312,8 +312,8 @@ export default function AuthPage() {
                                     border: '1px solid rgba(253,212,5,0.20)',
                                     borderRadius: 10, color: inputColor, fontSize: 14, outline: 'none',
                                 }}
-                                onFocus={e => e.target.style.borderColor = 'rgba(253,212,5,0.60)'}
-                                onBlur={e => e.target.style.borderColor = 'rgba(253,212,5,0.20)'}
+                                onFocus={e => { e.target.style.borderColor = 'rgba(253,212,5,0.60)'; e.target.style.outline = '2px solid #fdd405'; e.target.style.outlineOffset = '2px'; }}
+                                onBlur={e => { e.target.style.borderColor = 'rgba(253,212,5,0.20)'; e.target.style.outline = 'none'; }}
                             />
                         </div>
 
@@ -335,8 +335,8 @@ export default function AuthPage() {
                                     border: '1px solid rgba(253,212,5,0.20)',
                                     borderRadius: 10, color: inputColor, fontSize: 14, outline: 'none',
                                 }}
-                                onFocus={e => e.target.style.borderColor = 'rgba(253,212,5,0.60)'}
-                                onBlur={e => e.target.style.borderColor = 'rgba(253,212,5,0.20)'}
+                                onFocus={e => { e.target.style.borderColor = 'rgba(253,212,5,0.60)'; e.target.style.outline = '2px solid #fdd405'; e.target.style.outlineOffset = '2px'; }}
+                                onBlur={e => { e.target.style.borderColor = 'rgba(253,212,5,0.20)'; e.target.style.outline = 'none'; }}
                             />
                         </div>
 
