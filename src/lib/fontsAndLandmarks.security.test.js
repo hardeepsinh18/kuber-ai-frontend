@@ -115,3 +115,28 @@ describe('QA-C-008: landmark structure', () => {
         }
     });
 });
+
+describe('QA-C-011 / PERF-F-017: heavy vendors are not preloaded on first paint', () => {
+    const cfg = read('vite.config.js');
+
+    it('modulePreload filters the view-only vendor chunks', () => {
+        expect(cfg).toContain('modulePreload');
+        expect(cfg).toContain('resolveDependencies');
+        expect(cfg).toMatch(/chart-vendor\|markdown-vendor|markdown-vendor\|chart-vendor/);
+    });
+
+    it('the chunks are still DECLARED, only their preload is dropped', () => {
+        // Deleting the manualChunks entries would inline 754 KB into the main bundle —
+        // strictly worse than preloading them. The fix is preload-only.
+        expect(cfg).toContain("'chart-vendor'");
+        expect(cfg).toContain("'markdown-vendor'");
+    });
+
+    it('the chunks the shell genuinely needs are still preloaded', () => {
+        // react-vendor and motion-vendor are used by the sign-in screen itself, so
+        // filtering those too would trade one waterfall for another.
+        const filter = cfg.slice(cfg.indexOf('resolveDependencies'), cfg.indexOf('chunkSizeWarningLimit'));
+        expect(filter).not.toContain('react-vendor');
+        expect(filter).not.toContain('motion-vendor');
+    });
+});
