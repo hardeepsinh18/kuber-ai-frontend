@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import KuberLogo from '../components/KuberLogo';
 import usePrefersReducedMotion from '../hooks/usePrefersReducedMotion';
+import useSkipHeavyBackdrop from '../hooks/useSkipHeavyBackdrop';
 
 const GoogleIcon = () => (
     <svg width="18" height="18" viewBox="0 0 24 24">
@@ -21,6 +22,10 @@ export default function AuthPage() {
     const { theme } = useTheme();
     const isDark = theme === 'dark';
     const reducedMotion = usePrefersReducedMotion();
+    // QA-C-005: the sign-in screen is the FIRST thing a new user loads, so a 6.8 MB
+    // decorative video here is the worst-placed download in the app. Skipped on narrow
+    // viewports and under saveData, in addition to the reduced-motion skip.
+    const skipHeavyBackdrop = useSkipHeavyBackdrop();
 
     // mode: 'signin' | 'signup' | 'confirm' (confirm = enter the emailed code after signup)
     const [mode,      setMode]    = useState('signin');
@@ -138,11 +143,12 @@ export default function AuthPage() {
                 <div className="absolute inset-0" style={{ backgroundColor: bg }} />
                 {/* QA-C-004: skipped entirely under reduced motion — that also avoids
                     the ~7 MB download for users who asked not to see animation. */}
-                {!reducedMotion && (
+                {!reducedMotion && !skipHeavyBackdrop && (
                     <video
                         key={theme}
                         src={isDark ? '/bg-dark.mp4' : '/bg-light.mp4'}
                         autoPlay loop muted playsInline
+                        preload="none"
                         aria-hidden="true"
                         className="absolute inset-0 w-full h-full object-cover"
                         style={{ opacity: isDark ? 0.40 : 0.55 }}
