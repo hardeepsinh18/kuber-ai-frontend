@@ -1,6 +1,9 @@
 // AWS Cognito auth via AWS Amplify v6 (replaces the former Supabase client).
 // Configures Amplify once at import time and exposes small helpers for AuthContext.
-// File kept at this path so importers don't move; it no longer talks to Supabase.
+//
+// QA-C-014: renamed from lib/supabase.js. The old name outlived the Supabase
+// integration by months and actively misled anyone reading the tree into thinking
+// Supabase was still in the auth path — the audit flagged it for exactly that.
 import { Amplify } from 'aws-amplify';
 import { fetchAuthSession } from 'aws-amplify/auth';
 

@@ -4,7 +4,7 @@ import {
   CheckCircle2, RefreshCw, ChevronDown, ChevronRight, Clock,
 } from 'lucide-react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
-import { getIdToken } from '../../lib/supabase'
+import { getIdToken } from '../../lib/auth'
 import { getApiBase } from '../../lib/apiBase'
 
 // Same-origin relative /api/* (behind CloudFront/ALB). The portfolio engine is mounted on

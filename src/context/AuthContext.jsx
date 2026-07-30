@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 // Side-effect import runs Amplify.configure(); helpers below drive the session.
-import { authConfigured, getIdToken } from '../lib/supabase';
+import { authConfigured, getIdToken } from '../lib/auth';
 import { getApiBase } from '../lib/apiBase';
 import { setStorageIdentity, clearAllLocalChats } from '../lib/chatStorage';
 import {
@@ -259,7 +259,14 @@ export function AuthProvider({ children }) {
     signInWithGoogle,
     signOut,
     refreshSession,
-    // Key name kept so consumers (e.g. ChatHistoryContext) don't change.
+    // QA-C-014: `authConfigured` is the honest name — this app authenticates via
+    // AWS Cognito (Amplify); Supabase was retired. New code should read this key.
+    authConfigured,
+    // Deprecated alias, kept so the existing consumers (Sidebar, LoginModal,
+    // ChatHistoryContext, ...) keep working. Renaming all of them in the same commit
+    // as the file move would make a mechanical change hard to review and risks a
+    // missed call site silently reading undefined — which is falsy and would signal
+    // "auth not configured", i.e. fail OPEN. Migrate call sites separately, then drop.
     supabaseConfigured: authConfigured,
   };
 

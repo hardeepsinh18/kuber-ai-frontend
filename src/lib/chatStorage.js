@@ -1,7 +1,23 @@
 /**
- * Chat history persistence using localStorage.
- * Schema: chat_list = [{ id, title, updatedAt }], chat_{id} = messages[]
- * Optional userId for future backend sync (guest = local-only).
+ * Chat history CACHE in localStorage.
+ *
+ * QA-C-014: this header used to say "persistence ... Optional userId for future
+ * backend sync", which overstated what this module guarantees. What is actually
+ * true today:
+ *
+ *  - This is a CACHE, not the record of truth. The server (see lib/chatsApi.js) is
+ *    authoritative for a signed-in user; this exists so the sidebar and a reopened
+ *    thread render instantly instead of waiting on a request.
+ *  - It is NOT durable. Entries are evicted under quota pressure (writeWithEviction
+ *    below), cleared on sign-out, and a browser can drop localStorage at any time.
+ *  - For a GUEST there is no server copy, so a cleared cache means the history is
+ *    genuinely gone. That is why saveChatMessages THROWS on quota exhaustion rather
+ *    than failing silently — callers retry with a smaller payload.
+ *  - Keys are namespaced per Cognito sub (SEC-C-002), so two profiles on one device
+ *    cannot read each other's threads.
+ *
+ * Schema: <prefix>chat_list::<sub> = [{ id, title, updatedAt }],
+ *         <prefix>chat_<id>::<sub> = messages[]
  */
 
 const CHAT_LIST_BASE = 'stockhug_chat_list';
