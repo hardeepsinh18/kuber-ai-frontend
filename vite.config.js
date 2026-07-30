@@ -24,6 +24,27 @@ export default defineConfig({
         },
       },
     },
+    // QA-C-011 / PERF-F-017: do not MODULEPRELOAD the heavy view-only vendors.
+    //
+    // chart-vendor (601 KB) and markdown-vendor (153 KB) are only needed once a user is
+    // authenticated and looking at an answer, but Vite emitted a <link rel="modulepreload">
+    // for every manual chunk — so 754 KB was fetched on the sign-in screen, before the
+    // user had an account, on every cold load. That is ~44% of the bundle spent on code
+    // the current screen cannot use.
+    //
+    // Filtering the preload list does NOT remove the chunks or change any import: they
+    // still load, just on demand when the importing component first renders, instead of
+    // being pushed eagerly at first paint.
+    //
+    // Chosen over converting the ~8 importing components to React.lazy(): that would
+    // change render timing across the whole chat UI (charts, markdown, fundamentals) and
+    // require Suspense boundaries at each site. This gets the first-load win with a
+    // one-file, behaviour-preserving change. The lazy-import refactor remains the deeper
+    // fix if first-paint on the chat route needs to improve too.
+    modulePreload: {
+      resolveDependencies: (_url, deps) =>
+        deps.filter((d) => !/(chart-vendor|markdown-vendor)/.test(d)),
+    },
     // Raise chunk warning threshold — recharts is legitimately large
     chunkSizeWarningLimit: 600,
     // Source maps for production error tracking
