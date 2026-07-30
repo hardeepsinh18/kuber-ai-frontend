@@ -76,16 +76,27 @@ export async function createChat(accessToken, title = 'New chat') {
   return data?.id ?? data?.chat_id ?? null;
 }
 
+// Chrome/Firefox reject any keepalive request once the combined in-flight
+// keepalive body size crosses ~64KB — there's no graceful degradation, the
+// fetch just fails. A rich Analyst-mode answer (chart data + scorecards +
+// filings + sentiment, all embedded in message metadata) routinely blows
+// past that on its own. So keepalive is opt-in per call, only for payloads
+// small enough that the browser won't reject them outright — otherwise a
+// plain fetch (which at least works normally, just isn't unload-safe) is
+// strictly better than one guaranteed to fail.
+const KEEPALIVE_SAFE_BYTES = 60_000;
+
+function keepaliveIfSmall(body) {
+  return body.length < KEEPALIVE_SAFE_BYTES;
+}
+
 export async function updateChatTitle(id, title, accessToken) {
-  // keepalive: lets this survive a page unload/refresh that happens right
-  // after a response finishes (the exact window the debounced persist used
-  // to lose) — a plain in-flight fetch can otherwise be cancelled when the
-  // page tears down.
+  const body = JSON.stringify({ title });
   const res = await fetch(chatUrl(id), {
     method: 'PATCH',
     headers: getHeaders(accessToken),
-    body: JSON.stringify({ title }),
-    keepalive: true,
+    body,
+    keepalive: keepaliveIfSmall(body),
   });
   if (res.status === 404 || res.status === 501) return null;
   if (!res.ok) throw new Error(await res.text().catch(() => ` ${res.status}`));
@@ -93,11 +104,12 @@ export async function updateChatTitle(id, title, accessToken) {
 }
 
 export async function appendMessages(id, messages, accessToken) {
+  const body = JSON.stringify({ messages });
   const res = await fetch(messagesUrl(id), {
     method: 'POST',
     headers: getHeaders(accessToken),
-    body: JSON.stringify({ messages }),
-    keepalive: true,
+    body,
+    keepalive: keepaliveIfSmall(body),
   });
   if (res.status === 404 || res.status === 501) return null;
   if (!res.ok) throw new Error(await res.text().catch(() => ` ${res.status}`));
