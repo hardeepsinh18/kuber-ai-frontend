@@ -1,0 +1,15 @@
+# QA-C-016: an explicit crawl policy. Previously absent (the path returned 403),
+# which leaves crawler behaviour to guesswork and lets internal surfaces be indexed.
+
+User-agent: *
+
+# Authenticated and internal surfaces — nothing here is useful in a search index,
+# and indexing them advertises the routes.
+Disallow: /admin
+Disallow: /admin/
+Disallow: /chat/
+Disallow: /preview
+Disallow: /api/
+
+# Everything else (the marketing surface, legal pages) is fine to crawl.
+Allow: /
