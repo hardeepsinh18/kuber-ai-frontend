@@ -138,8 +138,10 @@ export default function AuthPage() {
         <div className="min-h-screen w-full flex flex-col items-center justify-center px-4 py-10 relative overflow-hidden"
              style={{ backgroundColor: bg }}>
 
-            {/* Background video */}
-            <div className="fixed inset-0 z-0 pointer-events-none">
+            {/* QA-C-008: aria-hidden — this is a purely decorative backdrop. Without it
+                the video and its two tint layers are orphaned content outside any
+                landmark, which is what axe flagged as a region violation. */}
+            <div className="fixed inset-0 z-0 pointer-events-none" aria-hidden="true">
                 <div className="absolute inset-0" style={{ backgroundColor: bg }} />
                 {/* QA-C-004: skipped entirely under reduced motion — that also avoids
                     the ~7 MB download for users who asked not to see animation. */}
@@ -157,8 +159,10 @@ export default function AuthPage() {
                 <div className="absolute inset-0" style={{ backgroundColor: isDark ? 'rgba(0,0,0,0.25)' : 'rgba(245,242,232,0.30)' }} />
             </div>
 
-            {/* Content */}
-            <motion.div
+            {/* QA-C-008: the sign-in card is the document's main content, so it needs a
+                <main> landmark — exactly one per document. framer-motion renders whatever
+                tag `motion.main` names, so this keeps the entrance animation. */}
+            <motion.main
                 initial={{ opacity: 0, y: 18 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
@@ -431,7 +435,7 @@ export default function AuthPage() {
                     <span style={{ fontSize: 11, color: textSub }}>Powered by</span>
                     <span className="brand-display" style={{ fontSize: 12, fontWeight: 700, color: '#FDD405', letterSpacing: '0.14em' }}>72 STREET</span>
                 </div>
-            </motion.div>
+            </motion.main>
 
             <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
