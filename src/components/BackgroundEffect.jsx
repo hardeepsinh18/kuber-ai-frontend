@@ -2,6 +2,7 @@ import { memo } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useChatMode } from '../context/ChatModeContext';
 import usePrefersReducedMotion from '../hooks/usePrefersReducedMotion';
+import useSkipHeavyBackdrop from '../hooks/useSkipHeavyBackdrop';
 
 const BackgroundEffect = memo(() => {
     const { theme } = useTheme();
@@ -11,7 +12,10 @@ const BackgroundEffect = memo(() => {
     const reducedMotion = usePrefersReducedMotion();
     const isDark = theme === 'dark';
     const src = isDark ? '/bg-dark.mp4' : '/bg-light.mp4';
-    const showVideo = !isChatActive && !reducedMotion;
+    // QA-C-005: also skip the 5.7-6.8 MB download on narrow viewports and when the user
+    // has asked the browser to save data. Decorative backdrop, real bandwidth.
+    const skipHeavy = useSkipHeavyBackdrop();
+    const showVideo = !isChatActive && !reducedMotion && !skipHeavy;
 
     // Chat active: solid bg with subtle yellow tint, no video
     const solidBg = isDark
@@ -31,6 +35,7 @@ const BackgroundEffect = memo(() => {
                     loop
                     muted
                     playsInline
+                    preload="none"
                     aria-hidden="true"
                     className="absolute inset-0 w-full h-full object-cover"
                     style={{ opacity: isDark ? 0.50 : 0.60 }}

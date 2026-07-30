@@ -103,7 +103,22 @@ function App() {
               <Route path="/login" element={<AuthPage />} />
               <Route path="/terms" element={<LegalPage doc="terms" />} />
               <Route path="/privacy" element={<LegalPage doc="privacy" />} />
-              <Route path="/preview" element={<PreviewPage />} />
+              {/* SEC-C-004: /preview is the internal visual test harness. It renders
+                  FABRICATED analyst output against REAL NSE tickers (TCS, WIPRO,
+                  HDFCBANK, ICICIBANK) with no "sample data" marking, and it was
+                  publicly reachable at https://aws.72street.ai/preview — so invented
+                  prices and verdicts on real listed companies were being served from
+                  our own domain. That is a misleading-financial-content problem, not a
+                  cosmetic one.
+
+                  Gated on import.meta.env.DEV, which is false in production builds, so
+                  Vite tree-shakes the route AND PreviewPage out of the bundle entirely
+                  — the same mechanism that removed the demo-login branch in SEC-C-007
+                  (verified there by grepping the built asset). The harness keeps
+                  working in `npm run dev`. */}
+              {import.meta.env.DEV && (
+                <Route path="/preview" element={<PreviewPage />} />
+              )}
               <Route path="/*" element={<AppContent />} />
             </Routes>
           </BrowserRouter>
