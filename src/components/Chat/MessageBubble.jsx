@@ -839,16 +839,22 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                         const companyName = aag.company_name || aag.display_name;
                         const volStr = fmtVol(aag.volume);
                         const mcapStr = fmtMcap(aag.market_cap);
+                        // Derive the logo from the symbol (full ticker incl. .NS/.BO) so it resolves
+                        // even for chats saved before logo_url existed or that stored a now-dead host
+                        // (old Supabase). The API serves /api/logos/<SYM>.png; a symbol we don't ship
+                        // 404s → onError falls back to the letter avatar.
+                        const logoSym = aag.symbol || metadata?.symbols?.[0];
+                        const logoSrc = logoSym ? `/api/logos/${logoSym}.png` : aag.logo_url;
                         return (
                             <div className="mb-4 rounded-xl border border-zinc-200/60 dark:border-zinc-700/60 bg-zinc-50 dark:bg-[#1C1B15] overflow-hidden">
                                 {/* Main row: logo, name, price, change */}
                                 <div className="flex items-center gap-3 px-4 pt-3 pb-3">
                                     {/* Company logo / letter avatar */}
                                     <div className="w-10 h-10 rounded-lg border border-zinc-200 dark:border-zinc-700/60 bg-white dark:bg-zinc-800 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                                        {aag.logo_url ? (
+                                        {logoSrc ? (
                                             <>
                                                 <img
-                                                    src={aag.logo_url}
+                                                    src={logoSrc}
                                                     alt={primarySymbolLabel}
                                                     className="w-full h-full object-contain p-1"
                                                     onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'flex'; }}

@@ -144,6 +144,11 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
         />
     );
 
+    // Logo derived from the symbol (full ticker incl. .NS/.BO) so it resolves even for chats
+    // saved before logo_url existed; a symbol we don't ship 404s → onError shows the trend icon.
+    const chartLogoSym = atAGlance?.symbol || chart_metadata?.symbol || symbol;
+    const chartLogoSrc = chartLogoSym ? `/api/logos/${chartLogoSym}.png` : atAGlance?.logo_url;
+
     return (
         <div className={clsx(
             isQuick ? 'w-full' : 'w-full my-4 rounded-xl border border-zinc-200 dark:border-zinc-700/50 bg-white dark:bg-zinc-900/60 p-4',
@@ -152,9 +157,9 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
             {!isQuick && (
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
-                        {atAGlance?.logo_url ? (
+                        {chartLogoSrc ? (
                             <img
-                                src={atAGlance.logo_url}
+                                src={chartLogoSrc}
                                 alt={symbol}
                                 className="w-8 h-8 rounded-lg object-contain bg-white border border-zinc-200/60 dark:border-zinc-700/40 flex-shrink-0"
                                 onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'flex'; }}
@@ -162,7 +167,7 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                         ) : null}
                         <div className={clsx(
                             'p-1.5 rounded-lg',
-                            atAGlance?.logo_url ? 'hidden' : '',
+                            chartLogoSrc ? 'hidden' : '',
                             isPositive ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-rose-100 dark:bg-rose-900/30'
                         )}>
                             {isPositive
