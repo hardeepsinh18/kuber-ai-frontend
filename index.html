@@ -4,15 +4,21 @@
 
 <head>
   <meta charset="UTF-8" />
-  <!-- Montserrat — 72 Street brand body typeface (Gobold display font self-hosted via index.css) -->
-  <!-- SEC-C-001: the font-origin preconnect hints were removed deliberately. A
-       preconnect is evaluated against connect-src, which does not list
-       fonts.googleapis.com, and the audit's browser run recorded exactly that
-       CSP violation — the one thing blocking the policy from being switched from
-       Report-Only to enforcing. The stylesheet below is checked against style-src
-       and the font files against font-src, both of which already allow these
-       origins, so this costs a few ms of DNS warm-up and nothing visually. -->
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <!-- SEC-C-009: the Google Fonts <link> for Montserrat was REMOVED. Both Montserrat
+       and Gobold are now self-hosted via @font-face in src/index.css, served from our
+       own origin out of public/fonts/.
+
+       Why removal rather than adding SRI: Google generates the font CSS per user-agent,
+       so its bytes differ between visitors and an integrity hash cannot be pinned — the
+       SRI gap was unfixable while the third-party origin remained. Self-hosting also
+       stops disclosing every visitor's IP to Google on first paint, and it lets the CSP
+       drop fonts.googleapis.com from style-src and fonts.gstatic.com from font-src
+       (SEC-C-003 / EXT-002), removing the last third-party origin from the policy.
+
+       SEC-C-001 (earlier, kept for history): the preconnect hints were removed because a
+       preconnect is evaluated against connect-src, which never listed the font origins —
+       that was the CSP violation blocking the switch from Report-Only to enforcing. With
+       the stylesheet itself now gone, that whole class of violation is closed. -->
   <!-- 72 Street brand mark (yellow vertical logo) -->
   <link rel="icon" type="image/png" sizes="32x32" href="/brand/favicon-32.png" />
   <link rel="icon" type="image/png" sizes="192x192" href="/brand/favicon-192.png" />
