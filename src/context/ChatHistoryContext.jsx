@@ -30,10 +30,23 @@ export function ChatHistoryProvider({ children }) {
     // Used both on mount and on tab focus/visibility — a chat created on another
     // device (e.g. mobile) only ever shows up here once this runs again, since
     // there is no push/websocket sync.
+    //
+    // Throttled here (not just at the focus-listener call site) so EVERY
+    // caller shares one cooldown, and persisted to sessionStorage rather than
+    // just a React ref: a plain ref resets to zero on every full page
+    // reload, so repeated F5 refreshes in a short window (a real usage
+    // pattern during active testing/debugging, not just tab-switching) could
+    // each fire a fresh multi-page fetch — 2-3 requests per pageload — and
+    // burn through the backend/WAF rate limit (20 req/60s) fast enough to
+    // 429 the SAME window's other calls, including the actual message save.
+    const REFRESH_THROTTLE_KEY = 'stockhug_last_chats_refresh';
     const refreshChatListFromServer = useCallback((token) => {
         if (!token || listRefreshInFlightRef.current) return Promise.resolve();
+        const last = Number(sessionStorage.getItem(REFRESH_THROTTLE_KEY) || 0) || lastListRefreshRef.current;
+        if (Date.now() - last < 15_000) return Promise.resolve();
         listRefreshInFlightRef.current = true;
         lastListRefreshRef.current = Date.now();
+        try { sessionStorage.setItem(REFRESH_THROTTLE_KEY, String(Date.now())); } catch { /* ignore */ }
         return chatsApi.getChats(token)
             .then((serverList) => {
                 if (!serverList) return; // 404/501 — no chat API, keep local
