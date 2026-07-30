@@ -49,11 +49,40 @@ const PRIVACY = [
     ['Third parties',
         'To answer your questions we use service providers — market-data sources and AI/LLM providers — ' +
         'which process the query needed to produce a response. Authentication uses AWS Cognito.'],
+    // CONF-REG-002: the four sections below are required by India's DPDP Rules
+    // (notified 2025-11-13) and were missing. The retention figures and endpoint
+    // paths are TRUE as implemented (DATA_RETENTION_DAYS=90; GET /api/v1/privacy/export
+    // and POST /api/v1/privacy/delete both exist and are authenticated).
+    //
+    // TWO PLACEHOLDERS MUST BE FILLED BEFORE THIS IS RELIED ON — marked [TO BE
+    // CONFIRMED] below. A named Data Protection Officer and a working postal address
+    // are statutory requirements; nobody but 72 Street can supply them, and inventing
+    // them would be worse than leaving the gap visible. Legal should review the whole
+    // section before it is treated as the authoritative notice.
+    ['How long we keep it',
+        'Chat queries and technical request logs are automatically deleted after 90 days. ' +
+        'Your account record (email, and the display name you provide) is kept while your ' +
+        'account exists, and is removed when you erase your account. Aggregate, ' +
+        'non-identifying usage counts may be retained longer to monitor reliability.'],
+    ['Your rights, and how to use them',
+        'You can request a copy of your data, correct it, or erase it. Signed in, you can ' +
+        'export everything we hold via the privacy endpoints in the app, and erasing your ' +
+        'account permanently deletes your chats and account record. You can also withdraw ' +
+        'consent at any time — withdrawing consent for the Service as a whole means erasing ' +
+        'your account, since we cannot generate answers without processing your query.'],
+    ['Grievance redressal',
+        'If you have a complaint about how your data is handled, contact our Data Protection ' +
+        'Officer: [TO BE CONFIRMED — name] at privacy@72street.ai, [TO BE CONFIRMED — postal ' +
+        'address]. We will acknowledge within 3 business days and respond substantively ' +
+        'within 30 days. If you are not satisfied with our response, you may escalate the ' +
+        'complaint to the Data Protection Board of India, which is the final route under the ' +
+        'Digital Personal Data Protection Act, 2023.'],
     ['Your choices',
         'You can use much of the Service without signing in. For questions about your data, or to ask ' +
         'about access or deletion, contact 72 Street through our website.'],
     ['Contact',
-        'Privacy questions: reach 72 Street through the channels listed on our website.'],
+        'Privacy questions: privacy@72street.ai, or reach 72 Street through the channels ' +
+        'listed on our website.'],
 ];
 
 
