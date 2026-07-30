@@ -6,7 +6,7 @@ import {
     RefreshCw, TrendingUp, Zap, Database, X
 } from 'lucide-react';
 import { getApiOrigin } from '../../lib/apiBase';
-import { getIdToken } from '../../lib/supabase';
+import { getIdToken } from '../../lib/auth';
 
 // QA-C-001: use the ORIGIN-resolving accessor, not getApiBase(). The latter is ''
 // for the same-origin deployment, and `new URL('/api/v1/...')` with no origin
