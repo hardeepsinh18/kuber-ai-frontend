@@ -278,6 +278,26 @@ const Monogram = ({ text }) => {
     );
 };
 
+/* Logo tile — the company logo served at /api/logos/<SYM>.png (same-origin, so
+ * CSP-safe), falling back to the monogram when we ship no logo for that symbol
+ * (onError) or there is no symbol. Uses the FULL ticker (incl. .NS/.BO). */
+const LogoTile = ({ symbol, text }) => {
+    if (!symbol) return <Monogram text={text} />;
+    const initials = String(text || '?').replace(/[^A-Za-z0-9]/g, '').slice(0, 3).toUpperCase() || '?';
+    return (
+        <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden
+                        bg-zinc-100 dark:bg-white/[0.06] border border-zinc-200 dark:border-white/10">
+            <img
+                src={`/api/logos/${symbol}.png`}
+                alt={initials}
+                className="w-full h-full object-contain p-1"
+                onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'flex'; }}
+            />
+            <span className="hidden w-full h-full items-center justify-center text-[13px] font-black tracking-tight text-zinc-700 dark:text-zinc-100">{initials}</span>
+        </div>
+    );
+};
+
 /* ─── Company card — logo · name · NSE:SYM · price · day change ──────────── */
 export const CompanyCard = ({ metadata = {}, symbolLabel = '', flush = false, raised = false }) => {
     const aag = metadata?.at_a_glance || {};
@@ -294,7 +314,7 @@ export const CompanyCard = ({ metadata = {}, symbolLabel = '', flush = false, ra
     const Wrapper = (flush && !raised) ? 'div' : (raised ? 'div' : Card);
     return (
         <Wrapper className={clsx('flex items-center gap-3 px-4 py-3', cls)}>
-            <Monogram text={symbolLabel || companyName} />
+            <LogoTile symbol={aag.symbol || metadata?.symbols?.[0]} text={symbolLabel || companyName} />
             <div className="flex-1 min-w-0">
                 {companyName && (
                     <p className="text-[15px] font-bold text-zinc-900 dark:text-white leading-tight truncate">
