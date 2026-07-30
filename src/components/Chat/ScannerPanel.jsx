@@ -258,7 +258,16 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                         method:  'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body:    JSON.stringify(toRequestBody(name)),
-                    }).then(r => r.json())
+                    }).then(async r => {
+                        const data = await r.json().catch(() => ({}));
+                        if (!r.ok || !data.job_id) {
+                            const detail = data?.detail;
+                            const msg = typeof detail === 'string' ? detail
+                                : detail?.message || `HTTP ${r.status}`;
+                            throw new Error(msg);
+                        }
+                        return data;
+                    })
                 )
             );
             jobs = names.map((name, i) => ({ name, jobId: launches[i].job_id }));
@@ -289,8 +298,13 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                         .filter(j => !jobResults.has(j.name))
                         .map(j =>
                             fetch(`${SCANNER_ENDPOINT}/status/${j.jobId}`)
-                                .then(r => r.json())
-                                .then(res => ({ ...res, _name: j.name }))
+                                .then(async r => {
+                                    const data = await r.json().catch(() => ({}));
+                                    // job expired/missing from Redis (404) — treat as a
+                                    // hard error instead of polling a dead id for 3 minutes.
+                                    if (!r.ok) return { status: 'error', error: data?.detail || `HTTP ${r.status}`, _name: j.name };
+                                    return { ...data, _name: j.name };
+                                })
                         )
                 );
 
