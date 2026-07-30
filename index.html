@@ -31,17 +31,32 @@
   <meta name="description" content="Venty by 72 Street: Ask anything about Indian stocks, NIFTY, fundamentals, screener, and market trends. Wealth has a new address." />
 
   <!-- Open Graph (WhatsApp, Facebook, LinkedIn previews) -->
+  <!-- CONF-BRAND-ASSET-001: three problems fixed here.
+       1. og:image was a RELATIVE path ("/brand/favicon-512.png"). Crawlers
+          require an absolute URL, so link previews were showing no image at all.
+       2. It pointed at a 512x512 favicon. A square icon renders as a small
+          thumbnail; a landscape asset renders as a large card. Now uses the
+          1214x736 brand lockup, with width/height declared so a crawler need not
+          fetch the file to lay the card out.
+       3. twitter:card was "summary" (small square) and there was no twitter:image
+          at all — now summary_large_image with an explicit image.
+       og:url is intentionally the canonical marketing origin, not the UAT host, so
+       a shared link resolves to the public site rather than to aws.72street.ai. -->
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Venty — AI Stock Market Assistant by 72 Street" />
   <meta property="og:description" content="Ask anything about Indian stocks, NIFTY, fundamentals, and market trends. Wealth has a new address." />
-  <meta property="og:url" content="https://72street.ai" />
+  <meta property="og:url" content="https://72street.ai/" />
   <meta property="og:site_name" content="Venty" />
-  <meta property="og:image" content="/brand/favicon-512.png" />
+  <meta property="og:image" content="https://72street.ai/brand/venty-full-dark-v3.png" />
+  <meta property="og:image:width" content="1214" />
+  <meta property="og:image:height" content="736" />
+  <meta property="og:image:alt" content="Venty by 72 Street — AI stock market assistant" />
 
   <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Venty — AI Stock Market Assistant by 72 Street" />
   <meta name="twitter:description" content="Ask anything about Indian stocks, NIFTY, fundamentals, and market trends. Wealth has a new address." />
+  <meta name="twitter:image" content="https://72street.ai/brand/venty-full-dark-v3.png" />
 </head>
 
 <body>

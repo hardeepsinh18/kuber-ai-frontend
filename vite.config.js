@@ -15,7 +15,11 @@ export default defineConfig({
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
           'chart-vendor': ['recharts', 'lightweight-charts'],
           'markdown-vendor': ['react-markdown', 'remark-gfm'],
-          'supabase-vendor': ['@supabase/supabase-js'],
+          // QA-C-015: no 'supabase-vendor' chunk. Supabase was retired in favour of
+          // Cognito and nothing under src/ imports @supabase/supabase-js any more,
+          // but naming it here forced Rollup to emit the chunk and a modulepreload
+          // link for it — so every visitor fetched a vendor bundle for a dependency
+          // the app no longer uses. The package is also dropped from package.json.
           'motion-vendor': ['framer-motion'],
         },
       },
