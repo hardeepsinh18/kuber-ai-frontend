@@ -136,8 +136,12 @@ export const CollapsibleSection = ({ title, children, defaultOpen = true, classN
                     <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
             </button>
+            {/* No border-t on the body: the header and its content are ONE card, and
+                a rule between them cut the card in half visually — most obvious on
+                "Pattern Detection", where it sat directly under the title. The
+                header's own padding already separates the two. */}
             {open && (
-                <div className="px-2.5 pb-2.5 pt-2.5 sm:px-3 sm:pb-3 sm:pt-3 border-t border-zinc-100 dark:border-zinc-800/70">
+                <div className="px-2.5 pb-2.5 pt-0.5 sm:px-3 sm:pb-3 sm:pt-1">
                     {children}
                 </div>
             )}
