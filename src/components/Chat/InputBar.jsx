@@ -48,8 +48,31 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
 
     return (
         <>
-        <div className="px-4 pb-10 pt-2">
-            <div className="w-full max-w-3xl mx-auto">
+        {/* The composer used to sit on an opaque strip the same height as its
+            padding, which read as a second panel butted against the transcript —
+            a hard horizontal seam right above the input. Now the strip is a
+            gradient that starts fully transparent and eases into the page colour
+            so a message scrolling underneath fades out instead of hitting an edge.
+            pointer-events stay off the fade layer so the transcript below it is
+            still clickable.
+
+            The colours MUST match BackgroundEffect's chat-active background
+            (#121315 dark / #F0EDE4 light). They previously ended at #0A0A0A /
+            #F5F2E8 — the START-SCREEN colours — so once a chat was open the fade
+            resolved to a slightly different shade than the page behind it, and the
+            seam came back as a faint band between the answer and the input box.
+
+            Taller ramp (-top-24) and a lighter midpoint so the transition reads as
+            gradual rather than a step. */}
+        <div className="relative px-4 pb-10 pt-2">
+            <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-x-0 bottom-0 -top-24 z-0
+                           bg-gradient-to-b
+                           from-transparent via-[#F0EDE4]/70 to-[#F0EDE4]
+                           dark:from-transparent dark:via-[#121315]/70 dark:to-[#121315]"
+            />
+            <div className="relative z-10 w-full max-w-3xl mx-auto">
 
                 <div className="w-full relative group">
 
@@ -60,9 +83,15 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
                              boxShadow: '0 0 20px rgba(253,212,5,0.12), 0 0 50px rgba(253,212,5,0.06)'
                          }}>
 
-                    {/* Card */}
+                    {/* Card — a soft top-to-bottom gradient instead of one flat
+                        fill. #1a1a1a everywhere made the card a visibly lighter
+                        rectangle pasted on the page; easing #171717 → #101010
+                        lets its lower edge settle into the page colour so the
+                        card and the strip below it read as one surface. */}
                     <div className="relative flex flex-col rounded-[11px] overflow-hidden transition-all duration-300
-                                    bg-white dark:bg-[#1a1a1a]">
+                                    bg-gradient-to-b
+                                    from-white to-[#FBF9F2]
+                                    dark:from-[#171717] dark:to-[#101010]">
 
                         {/* Short / Long term quick-reply buttons moved into the chat:
                             MessageBubble renders the highlighted HorizonChoice directly
