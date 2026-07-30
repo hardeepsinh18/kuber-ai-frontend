@@ -64,15 +64,35 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
 
             Taller ramp (-top-24) and a lighter midpoint so the transition reads as
             gradual rather than a step. */}
-        <div className="relative px-4 pb-10 pt-2">
+        {/* absolute, not in-flow: the parent is `relative`, so this floats OVER the
+            scroller. In the flow it was a solid row and the transcript stopped dead
+            at its top edge — the clipped-mid-sentence disclaimer in the report. The
+            scroller carries pb-40 to reserve this height so nothing ends up
+            permanently hidden underneath. */}
+        <div className="absolute inset-x-0 bottom-0 z-20 px-4 pb-10 pt-2 pointer-events-none">
+            {/* Tall, multi-stop ramp. A 2-stop gradient still shows a faint edge where
+                it meets the page; going transparent -> 40% -> 85% -> solid over ~14rem
+                spreads the transition far enough that there is no perceptible seam. */}
             <div
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-x-0 bottom-0 -top-24 z-0
-                           bg-gradient-to-b
-                           from-transparent via-[#F0EDE4]/70 to-[#F0EDE4]
-                           dark:from-transparent dark:via-[#121315]/70 dark:to-[#121315]"
+                className="pointer-events-none absolute inset-x-0 bottom-0 -top-56 z-0 dark:hidden"
+                style={{
+                    background:
+                        'linear-gradient(to bottom, rgba(240,237,228,0) 0%, rgba(240,237,228,0.40) 35%, rgba(240,237,228,0.85) 65%, rgb(240,237,228) 88%)',
+                }}
             />
-            <div className="relative z-10 w-full max-w-3xl mx-auto">
+            <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-x-0 bottom-0 -top-56 z-0 hidden dark:block"
+                style={{
+                    background:
+                        'linear-gradient(to bottom, rgba(18,19,21,0) 0%, rgba(18,19,21,0.40) 35%, rgba(18,19,21,0.85) 65%, rgb(18,19,21) 88%)',
+                }}
+            />
+            {/* pointer-events re-enabled here: the wrapper disables them so clicks pass
+                THROUGH the fade to the transcript underneath, but the composer itself
+                must stay interactive. */}
+            <div className="relative z-10 w-full max-w-3xl mx-auto pointer-events-auto">
 
                 <div className="w-full relative group">
 
