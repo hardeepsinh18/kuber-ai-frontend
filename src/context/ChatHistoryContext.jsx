@@ -5,6 +5,46 @@ import { useAuth } from './AuthContext';
 
 const ChatHistoryContext = createContext(null);
 
+// Shared by flushPersist (live sync) and persistOrphanedMessage (silent sync of an
+// answer whose request was superseded before it could be shown) — same wire shape,
+// one place to keep them in sync. See the persist whitelist comment on _toServerMessage's
+// callers: every field added to a chat message for rendering must be mirrored here or a
+// chat rehydrated from the server (other device / cleared cache) renders differently
+// from a live one.
+function _toServerMessage(m) {
+    return {
+        role: m.role === 'ai' ? 'assistant' : 'user',
+        content: m.content ?? '',
+        metadata: {
+            ...(m.metadata || {}),
+            ...(m.thinkingSteps?.length ? { _thinkingSteps: m.thinkingSteps } : {}),
+            ...(m.newsHeadlines?.length ? { _newsHeadlines: m.newsHeadlines } : {}),
+            ...(m.suggestedFollowUps?.length ? { _suggestedFollowUps: m.suggestedFollowUps } : {}),
+            ...(m.processingTime != null ? { _processingTime: m.processingTime } : {}),
+            ...(m.signal != null ? { _signal: m.signal } : {}),
+            ...(m.chartData != null ? { _chartData: m.chartData } : {}),
+            ...(m.scoreCard != null ? { _scoreCard: m.scoreCard } : {}),
+            ...(m.indicatorsTable != null ? { _indicatorsTable: m.indicatorsTable } : {}),
+            ...(m.patternSummary != null ? { _patternSummary: m.patternSummary } : {}),
+            ...(m.technicalSummary != null ? { _technicalSummary: m.technicalSummary } : {}),
+            ...(m.managementSentiment != null ? { _managementSentiment: m.managementSentiment } : {}),
+            ...(m.annualReportIntelligence != null ? { _annualReportIntelligence: m.annualReportIntelligence } : {}),
+            ...(m.companyFilings != null ? { _companyFilings: m.companyFilings } : {}),
+            ...(m.recentDevelopments != null ? { _recentDevelopments: m.recentDevelopments } : {}),
+            ...(m.aiTake != null ? { _aiTake: m.aiTake } : {}),
+            ...(m.queryIntent != null ? { _queryIntent: m.queryIntent } : {}),
+            ...(m.query != null ? { _query: m.query } : {}),
+            ...(m.responseMode != null ? { _responseMode: m.responseMode } : {}),
+            ...(m.sourceDocuments?.length ? { _sourceDocuments: m.sourceDocuments } : {}),
+            ...(m.isError ? { _isError: true } : {}),
+            ...(m.isClientNotice ? { _isClientNotice: true } : {}),
+            ...(m.failedQuery ? { _failedQuery: m.failedQuery } : {}),
+            ...(m.isScannerResult ? { _isScannerResult: true } : {}),
+            ...(m._topicReset ? { _topicReset: true } : {}),
+        },
+    };
+}
+
 export function ChatHistoryProvider({ children }) {
     const { accessToken, supabaseConfigured, loading: authLoading } = useAuth();
     const [chatList, setChatList] = useState([]);
@@ -204,71 +244,70 @@ export function ChatHistoryProvider({ children }) {
             });
             if (accessToken) {
                 const start = syncedMessageCountRef.current;
-                const newOnes = messages.slice(start).map((m) => ({
-                        role: m.role === 'ai' ? 'assistant' : 'user',
-                        content: m.content ?? '',
-                        metadata: {
-                            ...(m.metadata || {}),
-                            ...(m.thinkingSteps?.length ? { _thinkingSteps: m.thinkingSteps } : {}),
-                            ...(m.newsHeadlines?.length ? { _newsHeadlines: m.newsHeadlines } : {}),
-                            ...(m.suggestedFollowUps?.length ? { _suggestedFollowUps: m.suggestedFollowUps } : {}),
-                            ...(m.processingTime != null ? { _processingTime: m.processingTime } : {}),
-                            ...(m.signal != null ? { _signal: m.signal } : {}),
-                            // K-042/K-105: persist the structured cards + display mode so a
-                            // chat rehydrated from the server (other device / cleared
-                            // localStorage) renders the same rich answer, not bare text.
-                            // chartData is stripped from localStorage (quota) but the server
-                            // (jsonb) can hold it — persist here so the chart survives a
-                            // device switch, matching the restore path in loadChat().
-                            ...(m.chartData != null ? { _chartData: m.chartData } : {}),
-                            ...(m.scoreCard != null ? { _scoreCard: m.scoreCard } : {}),
-                            ...(m.indicatorsTable != null ? { _indicatorsTable: m.indicatorsTable } : {}),
-                            ...(m.patternSummary != null ? { _patternSummary: m.patternSummary } : {}),
-                            ...(m.technicalSummary != null ? { _technicalSummary: m.technicalSummary } : {}),
-                            ...(m.managementSentiment != null ? { _managementSentiment: m.managementSentiment } : {}),
-                            ...(m.annualReportIntelligence != null ? { _annualReportIntelligence: m.annualReportIntelligence } : {}),
-                            ...(m.companyFilings != null ? { _companyFilings: m.companyFilings } : {}),
-                            ...(m.recentDevelopments != null ? { _recentDevelopments: m.recentDevelopments } : {}),
-                            ...(m.aiTake != null ? { _aiTake: m.aiTake } : {}),
-                            ...(m.queryIntent != null ? { _queryIntent: m.queryIntent } : {}),
-                            ...(m.query != null ? { _query: m.query } : {}),
-                            ...(m.responseMode != null ? { _responseMode: m.responseMode } : {}),
-                            // Rendered but previously never persisted, so a chat
-                            // rehydrated from the server (other device / cleared
-                            // cache) silently lost its Sources panel and Retry
-                            // button. _isError/_isClientNotice additionally keep
-                            // error bubbles OUT of chat_history after a reload —
-                            // without them a stored "⚠️ Something went wrong" comes
-                            // back indistinguishable from a real assistant turn.
-                            ...(m.sourceDocuments?.length ? { _sourceDocuments: m.sourceDocuments } : {}),
-                            ...(m.isError ? { _isError: true } : {}),
-                            ...(m.isClientNotice ? { _isClientNotice: true } : {}),
-                            ...(m.failedQuery ? { _failedQuery: m.failedQuery } : {}),
-                            ...(m.isScannerResult ? { _isScannerResult: true } : {}),
-                            // The follow-up context boundary (K-056) must survive a
-                            // reload, or the stale stock leaks back in.
-                            ...(m._topicReset ? { _topicReset: true } : {}),
-                        },
-                    }));
-                    if (newOnes.length > 0) {
-                        // Reserve the counter BEFORE the request, not in .then().
-                        // A POST routinely outlives the 400ms debounce, so run 2
-                        // used to read the still-unadvanced start and re-send the
-                        // messages run 1 was already sending (server ends up with
-                        // m0,m1,m0,m1,m2). Roll back on failure so they retry.
-                        const sentThrough = messages.length;
-                        syncedMessageCountRef.current = sentThrough;
-                        chatsApi.appendMessages(chatId, newOnes, accessToken)
-                            .catch((err) => {
-                                syncedMessageCountRef.current = Math.min(
-                                    syncedMessageCountRef.current,
-                                    start
-                                );
-                                console.warn('Chat sync to backend failed (messages safe in localStorage):', err?.message);
-                            });
-                    }
+                // K-042/K-105: persist the structured cards + display mode so a chat
+                // rehydrated from the server (other device / cleared localStorage) renders
+                // the same rich answer, not bare text. chartData is stripped from
+                // localStorage (quota) but the server (jsonb) can hold it. _isError/
+                // _isClientNotice keep error bubbles OUT of chat_history after a reload —
+                // without them a stored "⚠️ Something went wrong" comes back
+                // indistinguishable from a real assistant turn. _topicReset (K-056) must
+                // survive a reload, or the stale stock leaks back in.
+                const newOnes = messages.slice(start).map(_toServerMessage);
+                if (newOnes.length > 0) {
+                    // Reserve the counter BEFORE the request, not in .then().
+                    // A POST routinely outlives the 400ms debounce, so run 2
+                    // used to read the still-unadvanced start and re-send the
+                    // messages run 1 was already sending (server ends up with
+                    // m0,m1,m0,m1,m2). Roll back on failure so they retry.
+                    const sentThrough = messages.length;
+                    syncedMessageCountRef.current = sentThrough;
+                    chatsApi.appendMessages(chatId, newOnes, accessToken)
+                        .catch((err) => {
+                            syncedMessageCountRef.current = Math.min(
+                                syncedMessageCountRef.current,
+                                start
+                            );
+                            console.warn('Chat sync to backend failed (messages safe in localStorage):', err?.message);
+                        });
+                }
                 chatsApi.updateChatTitle(chatId, title, accessToken).catch(() => {});
             }
+        }
+    }, []);
+
+    // A request whose answer arrived after it was superseded (user sent another
+    // message, or switched chats, before this one resolved) — see ChatContainer's
+    // `superseded` handling. Rather than discard the answer (the old behavior: the
+    // question stays in history forever with no reply, and the reply never existed
+    // anywhere — confirmed via chat_messages audit, e.g. rapid-retry bursts where the
+    // last attempt in a burst got no saved response at all), save it directly to the
+    // TARGET chat's storage + server record without touching the live `messages`
+    // state or `syncedMessageCountRef` (which tracks whatever chat is CURRENTLY open,
+    // not necessarily this one). Never shown live; recoverable if the user reopens
+    // that chat later.
+    const persistOrphanedMessage = useCallback((chatId, message, accessToken) => {
+        if (!chatId || !message) return;
+        try {
+            const existing = chatStorage.getChatMessages(chatId) || [];
+            const updated = [...existing, message];
+            try {
+                chatStorage.saveChatMessages(chatId, updated);
+            } catch {
+                try {
+                    const stripped = updated.map(({ chartData: _cd, ...rest }) => rest);
+                    chatStorage.saveChatMessages(chatId, stripped);
+                } catch {
+                    // still over quota — best effort, server sync below is the source of truth
+                }
+            }
+        } catch (e) {
+            console.warn('persistOrphanedMessage: local cache write failed:', e?.message);
+        }
+        if (accessToken) {
+            chatsApi.appendMessages(chatId, [_toServerMessage(message)], accessToken)
+                .catch((err) => {
+                    console.warn('persistOrphanedMessage: server sync failed:', err?.message);
+                });
         }
     }, []);
 
@@ -566,6 +605,7 @@ export function ChatHistoryProvider({ children }) {
         loadChat,
         deleteChat,
         renameChat,
+        persistOrphanedMessage,
     };
 
     return (
