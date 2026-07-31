@@ -14,6 +14,22 @@ import { getApiBase } from '../../lib/apiBase';
 import { streamChatRequest } from '../../lib/streamChat';
 
 // API base — '' = same-origin relative /api/* (behind CloudFront/ALB). Set VITE_API_BASE for dev.
+// PERF-F-006: retry backoff with FULL JITTER.
+//
+// Both retry sites below used a hardcoded 2500 ms. A backend rolling restart takes ~30 s
+// and drops every in-flight request at once, so every affected client woke up and retried
+// at exactly the same instant — a synchronised wave hitting an origin that was still
+// coming up, which can turn a brief blip into a sustained one.
+//
+// Full jitter (random across the whole window, not base + random) spreads those retries
+// evenly instead. This changes only WHEN a retry fires, never WHETHER: the retry count,
+// the conditions that trigger it, and the abort checks around it are all untouched.
+//
+// Mean wait is BASE/2 = 1250 ms, so the common single-client case is on average faster
+// than before, and the worst case is unchanged at BASE.
+const RETRY_BACKOFF_MS = 2500;
+const retryDelay = () => Math.floor(Math.random() * RETRY_BACKOFF_MS);
+
 const API_BASE = getApiBase();
 const API_ENDPOINT = `${API_BASE}/api/v1/chat`;
 const STREAM_ENDPOINT = `${API_BASE}/api/v1/chat/stream`;
@@ -1280,12 +1296,12 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                     if (e.name === 'AbortError') {
                         throw new Error('The request timed out — the server may be busy. Please retry.');
                     }
-                    await new Promise(r => setTimeout(r, 2500));
+                    await new Promise(r => setTimeout(r, retryDelay()));
                     if (requestId !== activeRequestIdRef.current) return;
                     response = await doFetch();
                 }
                 if ([502, 503, 504].includes(response.status)) {
-                    await new Promise(r => setTimeout(r, 2500));
+                    await new Promise(r => setTimeout(r, retryDelay()));
                     if (requestId !== activeRequestIdRef.current) return;
                     response = await doFetch();
                 }
