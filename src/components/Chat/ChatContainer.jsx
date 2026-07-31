@@ -1609,8 +1609,13 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             )}
 
             <div className="flex-1 overflow-hidden flex flex-col relative">
-                <div
+                <main
                     ref={chatContainerRef}
+                    /* QA-C-008: the conversation is the main content of this screen, so it carries
+                       the <main> landmark. aria-live="polite" also means a streamed reply is
+                       announced to a screen reader instead of appearing silently. */
+                    aria-label="Conversation"
+                    aria-live="polite"
                     /* pb-40 reserves room for the composer, which is now OVERLAID on
                        this scroller rather than sitting in the flex flow below it.
                        In-flow, the composer was its own solid row: content scrolled
@@ -1690,7 +1695,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                     )}
 
                     <div ref={bottomRef} className="h-4" />
-                </div>
+                </main>
 
                 {/* ── Input bar — with the scroll-to-bottom button, mode-switch popover
                        and disambiguation picker anchored just above it ── */}
