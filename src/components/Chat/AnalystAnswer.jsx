@@ -302,9 +302,6 @@ const SignalBreakdown = ({ signals }) => {
                                     <span className={clsx('px-1.5 py-[1px] rounded text-[9px] font-extrabold uppercase tracking-wider border', st.chip)}>
                                         {st.label}
                                     </span>
-                                    <span className="ml-auto text-[10px] font-bold tabular-nums text-zinc-400 dark:text-zinc-500">
-                                        +{s.points}
-                                    </span>
                                 </div>
                                 {s.detail && (
                                     <p className="mt-0.5 text-[11px] leading-snug text-zinc-500 dark:text-zinc-400">{stripAiDashes(s.detail)}</p>
