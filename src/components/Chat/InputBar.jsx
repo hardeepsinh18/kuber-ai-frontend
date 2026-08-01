@@ -69,13 +69,17 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
             at its top edge — the clipped-mid-sentence disclaimer in the report. The
             scroller carries pb-40 to reserve this height so nothing ends up
             permanently hidden underneath. */}
-        {/* Gutters + max-w-4xl (below) mirror the answer column in MessageBubble, so
-            the composer lines up with the card above it. The transcript scroller
-            carries scrollbar-gutter: stable for the same reason: this bar is a
-            sibling OUTSIDE that scroller, so without a reserved gutter the scroller's
-            content is ~6px narrower and the two identical max-w-4xl columns centre in
-            different widths. */}
-        <div className="absolute inset-x-0 bottom-0 z-20 px-4 sm:px-6 md:px-8 pb-10 pt-2 pointer-events-none">
+        {/* NO horizontal padding here — it belongs on the max-w-4xl element below.
+            The gradient layers underneath must stay full-bleed, so this wrapper only
+            positions; see the comment on that element for why the pairing matters.
+
+            The right inset mirrors the strip that scrollbar-gutter: stable reserves
+            inside the transcript scroller (6px, 4px under 640px — see
+            ::-webkit-scrollbar in index.css). This bar is a sibling OUTSIDE that
+            scroller, so it spans the full width while the answer column centres in
+            the width minus that gutter; measured, the composer sat 3px right of the
+            answer card without this. */}
+        <div className="absolute left-0 right-[4px] sm:right-[6px] bottom-0 z-20 pb-10 pt-2 pointer-events-none">
             {/* Tall, multi-stop ramp. A 2-stop gradient still shows a faint edge where
                 it meets the page; going transparent -> 40% -> 85% -> solid over ~14rem
                 spreads the transition far enough that there is no perceptible seam. */}
@@ -99,11 +103,14 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
                 THROUGH the fade to the transcript underneath, but the composer itself
                 must stay interactive.
 
-                max-w-4xl + the wrapper's px-4 sm:px-6 md:px-8 deliberately mirror the
-                answer column (same pair in ChatContainer/MessageBubble). At max-w-3xl
-                with flat px-4 the composer was visibly narrower than the answer card
-                above it and its edges did not line up with the card's. */}
-            <div className="relative z-10 w-full max-w-4xl mx-auto pointer-events-auto">
+                max-w-4xl and px-4 sm:px-6 md:px-8 MUST sit on the SAME element, exactly
+                as the answer column does it in MessageBubble. With the padding on the
+                parent instead, max-w-4xl caps a box that still has room for it, so the
+                gutters never come out of the 896px — measured 896 wide against the
+                answer column's 832 (= 896 - 2*32), i.e. 64px too wide at md and up,
+                and 4-6px too wide below it. Keeping the pair together is what makes
+                the composer line up with the card above it. */}
+            <div className="relative z-10 w-full max-w-4xl mx-auto px-4 sm:px-6 md:px-8 pointer-events-auto">
 
                 <div className="w-full relative group">
 

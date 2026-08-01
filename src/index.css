@@ -278,8 +278,13 @@ body {
   height: 6px;
 }
 
-/* Mobile: thinner scrollbar */
-@media (max-width: 640px) {
+/* Mobile: thinner scrollbar.
+   639.98px, not 640px: Tailwind's `sm:` applies at min-width 640px, so a
+   max-width:640px query overlaps it by exactly one pixel. Anything that mirrors
+   this width with sm: utilities (the composer insets itself by the reserved
+   scrollbar strip to line up with the answer column) was then 2px out at exactly
+   vw=640. Keep this boundary complementary to Tailwind's. */
+@media (max-width: 639.98px) {
   ::-webkit-scrollbar {
     width: 4px;
     height: 4px;
