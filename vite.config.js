@@ -1,8 +1,45 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { buildMetaCsp } from './src/security/csp.js'
+
+/**
+ * ISS-14 / SEC-C-001: emit the CSP into the built index.html.
+ *
+ * The policy itself lives in src/security/csp.js with per-directive rationale.
+ * Injecting it here means the shipped artifact carries its own baseline policy
+ * instead of depending solely on an out-of-repo CloudFront header policy that
+ * nothing in this repo pins or reviews.
+ *
+ * Build-only: the dev server is not the artifact being hardened, and a dev-time
+ * CSP would block Vite's HMR client (inline scripts + ws:) for no security gain.
+ */
+function cspMeta() {
+  return {
+    name: 'inject-csp-meta',
+    apply: 'build',
+    transformIndexHtml: {
+      order: 'post',
+      handler(html) {
+        return {
+          html,
+          tags: [
+            {
+              tag: 'meta',
+              attrs: {
+                'http-equiv': 'Content-Security-Policy',
+                content: buildMetaCsp(),
+              },
+              injectTo: 'head-prepend',
+            },
+          ],
+        }
+      },
+    },
+  }
+}
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), cspMeta()],
   test: {
     environment: 'jsdom',
     include: ['src/**/*.test.{js,jsx}'],
