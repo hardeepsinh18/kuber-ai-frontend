@@ -1617,18 +1617,26 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
     }
 
     // Which AI message should show the interactive clarification picker right now:
-    // the latest AI reply that is a disambiguation, was received THIS session
-    // (freshDisambigId — never a reloaded one), and hasn't been dismissed. The
-    // redundant numbered list in the bubble text is trimmed by MessageBubble in all
-    // cases, independent of this.
+    // the message received THIS session (freshDisambigId — never a reloaded one)
+    // that actually carries the disambiguation, and hasn't been dismissed.
+    //
+    // This resolves freshDisambigId directly rather than checking "is the LAST AI
+    // message the fresh one". Asking an ambiguous query twice ("tata", then "tata"
+    // again) left the picker keyed to the newest AI message while the payload lived
+    // on the older one, so it rendered under the wrong answer and drew across that
+    // answer's Analysis-steps bar and heading. The redundant numbered list in the
+    // bubble text is trimmed by MessageBubble in all cases, independent of this.
     const activeClarificationId = (() => {
-        if (isLoading) return null;
-        const lastAI = [...messages].reverse().find(m => m.role === 'ai');
-        if (!lastAI || lastAI.id !== freshDisambigId) return null;
-        const d = lastAI?.metadata?.disambiguation;
+        if (isLoading || !freshDisambigId) return null;
+        if (dismissedDisambigId === freshDisambigId) return null;
+        const target = messages.find(m => m.id === freshDisambigId && m.role === 'ai');
+        const d = target?.metadata?.disambiguation;
         if (!d || !d.ambiguous || !Array.isArray(d.suggestions) || d.suggestions.length === 0) return null;
-        if (dismissedDisambigId === lastAI.id) return null;
-        return lastAI.id;
+        // Only while it is still the newest answer — once the user has moved on to
+        // another question, the stale picker must not linger mid-transcript.
+        const lastAI = [...messages].reverse().find(m => m.role === 'ai');
+        if (lastAI?.id !== freshDisambigId) return null;
+        return freshDisambigId;
     })();
 
     return (
