@@ -191,9 +191,12 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
 
             <div className="flex flex-wrap items-center gap-2 mb-4">
                 <div className={clsx(
-                    // Single row on every screen: no wrapping; full-width + horizontal
-                    // scroll on mobile as a safety so all four types stay on one line.
-                    'flex items-center gap-0 sm:gap-1 overflow-x-auto w-full sm:w-auto',
+                    // Single row on every screen: no wrapping; horizontal scroll as a
+                    // safety so all four types stay on one line. NOT w-full on mobile —
+                    // that reserved the whole line even though the four buttons do not
+                    // fill it, leaving dead space after Renko and forcing the range row
+                    // (ml-auto) to wrap below and hug the right edge.
+                    'flex items-center gap-0 sm:gap-1 overflow-x-auto max-w-full',
                     isQuick && 'p-1 rounded-xl border border-zinc-200 dark:border-zinc-700/60 bg-zinc-50 dark:bg-black/30'
                 )}>
                     {TYPE_ORDER.map((key) => {
@@ -226,7 +229,10 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                     })}
                 </div>
 
-                <div className="flex items-center gap-1 ml-auto">
+                {/* ml-auto only from sm: up. On mobile this row wraps onto its own line,
+                    where ml-auto pushed 1M/3M/6M/1Y to the far right, away from the
+                    type buttons above them; left-aligned they share one edge. */}
+                <div className="flex items-center gap-1 sm:ml-auto">
                     {chartType === 'renko' && renko.brickSize > 0 && (
                         <span
                             title="Renko brick size (ATR-14 based)"
