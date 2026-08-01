@@ -167,7 +167,10 @@ export default function SourcesPanel({ sourceDocuments = [] }) {
   const totalCount = groups.reduce((sum, g) => sum + g.items.length, 0);
 
   return (
-    <div className="px-4 max-w-3xl mx-auto w-full mb-3">
+    {/* max-w-4xl + px-4 sm:px-6 md:px-8 to match the answer column it belongs to
+        (same pair in ChatContainer/MessageBubble/InputBar) — at max-w-3xl the
+        Sources row was inset from the answer above it. */}
+    <div className="px-4 sm:px-6 md:px-8 max-w-4xl mx-auto w-full mb-3">
       {/* Pill toggle */}
       <button
         onClick={() => setPanelOpen(o => !o)}

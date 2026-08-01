@@ -69,7 +69,7 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
             at its top edge — the clipped-mid-sentence disclaimer in the report. The
             scroller carries pb-40 to reserve this height so nothing ends up
             permanently hidden underneath. */}
-        <div className="absolute inset-x-0 bottom-0 z-20 px-4 pb-10 pt-2 pointer-events-none">
+        <div className="absolute inset-x-0 bottom-0 z-20 px-4 sm:px-6 md:px-8 pb-10 pt-2 pointer-events-none">
             {/* Tall, multi-stop ramp. A 2-stop gradient still shows a faint edge where
                 it meets the page; going transparent -> 40% -> 85% -> solid over ~14rem
                 spreads the transition far enough that there is no perceptible seam. */}
@@ -91,8 +91,13 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
             />
             {/* pointer-events re-enabled here: the wrapper disables them so clicks pass
                 THROUGH the fade to the transcript underneath, but the composer itself
-                must stay interactive. */}
-            <div className="relative z-10 w-full max-w-3xl mx-auto pointer-events-auto">
+                must stay interactive.
+
+                max-w-4xl + the wrapper's px-4 sm:px-6 md:px-8 deliberately mirror the
+                answer column (same pair in ChatContainer/MessageBubble). At max-w-3xl
+                with flat px-4 the composer was visibly narrower than the answer card
+                above it and its edges did not line up with the card's. */}
+            <div className="relative z-10 w-full max-w-4xl mx-auto pointer-events-auto">
 
                 <div className="w-full relative group">
 
