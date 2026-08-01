@@ -4,11 +4,12 @@ import { useEffect } from 'react';
  * Company disambiguation selector — shown when a query maps to a business group
  * (e.g. "HDFC" → HDFC Bank / HDFC AMC / HDFC Life, "Tata" → TCS / TMPV / Tata Steel…).
  *
- * Rendered as an anchored dropdown that rises directly out of the composer: the
- * caller positions it `bottom-full` inside the InputBar's relative wrapper and
- * constrains it to the composer's width (max-w-3xl), so it reads as part of the
- * input box, not a detached floating card. Long groups scroll inside the panel
- * instead of growing the whole thing off-screen. Theme-aware (light + dark).
+ * Rendered inline in the message flow, directly beneath the answer that asked
+ * "which one did you mean?" and at the same width as the bubble, so it reads as
+ * part of that answer and scrolls away with it. It is deliberately NOT a floating
+ * overlay: anchored above the composer it covered both the answer text and the
+ * input box. Long groups scroll inside the panel instead of growing the whole
+ * thing off-screen. Theme-aware (light + dark).
  */
 const GroupClarificationPopup = ({ groupName, candidates, onSelect, onDismiss, disabled }) => {
     const tickerOf = (c) =>
@@ -38,12 +39,12 @@ const GroupClarificationPopup = ({ groupName, candidates, onSelect, onDismiss, d
         <div
             role="listbox"
             aria-label={`${groupName} companies`}
-            className="overflow-hidden rounded-2xl backdrop-blur-xl
-                       bg-white/95 dark:bg-[#141310]/95
+            className="overflow-hidden rounded-2xl
+                       bg-white dark:bg-[#141310]
                        border border-[#FDD405]/60 dark:border-[#FDD405]/35
                        ring-1 ring-black/5 dark:ring-white/5
-                       shadow-[0_20px_60px_-12px_rgba(0,0,0,0.28)] dark:shadow-[0_24px_64px_-12px_rgba(0,0,0,0.75)]
-                       animate-in fade-in slide-in-from-bottom-2 duration-200"
+                       shadow-sm dark:shadow-none
+                       animate-in fade-in slide-in-from-top-1 duration-200"
         >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-2.5
@@ -70,8 +71,10 @@ const GroupClarificationPopup = ({ groupName, candidates, onSelect, onDismiss, d
                 >×</button>
             </div>
 
-            {/* Candidate list — scrolls when the group is long */}
-            <div className="max-h-[min(46vh,340px)] overflow-y-auto custom-scrollbar overscroll-contain">
+            {/* Candidate list — inline in the page flow, so it expands to fit rather
+                than nesting its own scrollbar inside the chat scroller. The cap is a
+                safety valve for very long groups only. */}
+            <div className="max-h-[min(70vh,560px)] overflow-y-auto custom-scrollbar overscroll-contain">
                 {shown.map((c, i) => {
                     const ticker = (c.ticker || '').replace('.NS', '').replace('.BO', '');
                     const name = c.name || ticker;

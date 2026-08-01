@@ -1716,6 +1716,23 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                                 responseMode={msg.role === 'ai' ? (msg.responseMode || null) : null}
                             />
 
+                            {/* Group disambiguation picker — rendered inline, directly under
+                                the answer that asked "which one did you mean?", so it reads
+                                as part of that answer and scrolls with it. It used to float
+                                above the composer (absolute bottom-full), which covered the
+                                answer text and the input box. Width matches the bubble. */}
+                            {msg.role === 'ai' && msg.id === activeClarificationId && (
+                                <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 md:px-8 mt-1 mb-3">
+                                    <GroupClarificationPopup
+                                        groupName={msg.metadata?.disambiguation?.group_name}
+                                        candidates={msg.metadata?.disambiguation?.suggestions}
+                                        disabled={isLoading}
+                                        onSelect={(ticker) => { setDismissedDisambigId(msg.id); handleSend(ticker); }}
+                                        onDismiss={() => setDismissedDisambigId(msg.id)}
+                                    />
+                                </div>
+                            )}
+
                             {/* Retry — re-send the failed query so the user never loses it */}
                             {msg.role === 'ai' && (msg.isError || msg.isClientNotice) && msg.failedQuery && (
                                 <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 md:px-8 -mt-1 mb-2">
@@ -1779,27 +1796,6 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                             onClose={() => setModeSwitchPrompt(null)}
                         />
                     )}
-                    {/* Group disambiguation picker — anchored to the top of the composer so it
-                        reads as rising out of the input box (matches its max-w-3xl width). */}
-                    {(() => {
-                        if (!activeClarificationId) return null;
-                        const lastAI = messages.find(m => m.id === activeClarificationId);
-                        const d = lastAI?.metadata?.disambiguation;
-                        if (!d) return null;
-                        return (
-                            <div className="absolute bottom-full inset-x-0 z-40 px-4 mb-2 pointer-events-none">
-                                <div className="w-full max-w-3xl mx-auto pointer-events-auto">
-                                    <GroupClarificationPopup
-                                        groupName={d.group_name}
-                                        candidates={d.suggestions}
-                                        disabled={isLoading}
-                                        onSelect={(ticker) => { setDismissedDisambigId(lastAI.id); handleSend(ticker); }}
-                                        onDismiss={() => setDismissedDisambigId(lastAI.id)}
-                                    />
-                                </div>
-                            </div>
-                        );
-                    })()}
                 <InputBar
                     input={input}
                     setInput={setInput}
