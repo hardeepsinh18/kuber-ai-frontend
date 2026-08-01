@@ -743,7 +743,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
     const { accessToken, refreshSession, loading: authLoading } = useAuth();
     const { theme } = useTheme();
     const { setChatActive } = useChatMode();
-    const { messages, setMessages, ensureCurrentChat, loadChat, currentChatId, currentChatIdRef, isChatLoading, chatLoadError, setChatLoadError } = useChatHistory();
+    const { messages, setMessages, ensureCurrentChat, loadChat, currentChatId, currentChatIdRef, isChatLoading, chatLoadError, setChatLoadError, persistOrphanedMessage } = useChatHistory();
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -1268,7 +1268,8 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                                 ? { ...m, content: (m.content || '') + delta } : m));
                         },
                     });
-                    if (requestId !== activeRequestIdRef.current) return;
+                    // Don't drop the answer here even if superseded — still finalize it
+                    // below (silently persisted instead of shown; see `superseded` handling).
                     didStream = true;
                 } catch (streamErr) {
                     // Streaming failed — drop the preview and fall back to /chat.
@@ -1317,7 +1318,8 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                     }
                 }
 
-                if (requestId !== activeRequestIdRef.current) return;
+                // Don't drop the answer here even if superseded — still finalize it
+                // below (silently persisted instead of shown; see `superseded` handling).
 
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
@@ -1346,15 +1348,23 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 responseData = await response.json();
             }
 
-            // The user switched chats while this was in flight. Committing now
-            // would append this answer to a different conversation.
+            // A request whose answer no longer belongs on screen — either the user
+            // switched to a different chat, or sent another message in THIS chat
+            // before this one resolved. Previously this just returned here, discarding
+            // the answer entirely: the question stayed in chat history forever with no
+            // reply, and the reply never existed anywhere — confirmed via a
+            // chat_messages audit (rapid-retry bursts where the last attempt in a burst
+            // got no saved response at all). Now: every live-UI side effect below is
+            // skipped, but the answer is still built and saved to the chat it actually
+            // belongs to — see persistOrphanedMessage below — just not displayed, since
+            // the view has already moved on.
+            const superseded = !isSameChat() || requestId !== activeRequestIdRef.current;
             if (!isSameChat()) {
-                if (import.meta.env.DEV) console.warn('[Context] Dropping response — chat switched mid-request');
+                if (import.meta.env.DEV) console.warn('[Context] Chat switched mid-request — answer will be saved silently, not shown');
                 setShowThinking(false);
                 setThinkingSteps([]);
                 isLoadingRef.current = false;
                 setIsLoading(false);
-                return;
             }
 
             if (import.meta.env.DEV) {
@@ -1365,17 +1375,21 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             // Calculate processing time
             const endTime = Date.now();
             const timeTaken = (endTime - requestStartTime) / 1000; // in seconds
-            setProcessingTime(timeTaken);
+            if (!superseded) setProcessingTime(timeTaken);
 
             if (import.meta.env.DEV) {
                 console.log('API Response:', responseData);
                 console.log('Processing time:', timeTaken.toFixed(2), 'seconds');
             }
-            
-            // Hide thinking and show the steps that were processed
-            setShowThinking(false);
-            setThinkingSteps(dynamicSteps);
-            
+
+            // Hide thinking and show the steps that were processed — skipped when
+            // superseded so a stale response can't clear/overwrite whatever the
+            // NEWER, still-active request is currently showing.
+            if (!superseded) {
+                setShowThinking(false);
+                setThinkingSteps(dynamicSteps);
+            }
+
             const rawResponseText = responseData.content || responseData.answer || '';
             // Detect backend-side error responses and substitute a helpful message.
             // The substituted text is OURS, not the model's — it is flagged as a
@@ -1398,10 +1412,13 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             const metadata = responseData.metadata || { symbols: confidentSymbols };
 
             // Update active stock context from the backend's authoritative response.
-            // Uses every possible field the backend might put the symbol in.
+            // Uses every possible field the backend might put the symbol in. The
+            // shared ref update is skipped when superseded — a stale response must
+            // never overwrite the active-symbol context out from under whatever
+            // conversation is actually on screen now.
             const resolvedSym = extractSymbolFromResponse(responseData, metadata, chartData, confidentSymbols);
             if (resolvedSym) {
-                activeContextSymbolRef.current = resolvedSym;
+                if (!superseded) activeContextSymbolRef.current = resolvedSym;
                 // Persist on the message so reopening this chat restores the context
                 // (deriveSymbolFromMessage reads _contextSymbol first).
                 metadata._contextSymbol = resolvedSym;
@@ -1426,7 +1443,8 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             const aiMessageId = didStream ? streamPreviewId : genId();
             // Streamed messages already rendered real tokens live — don't run the
             // fake typewriter again; it would re-animate text the user already read.
-            if (!didStream) setStreamingMessageId(aiMessageId); // Mark this message as streaming
+            // Skipped when superseded: there's no live bubble left to animate.
+            if (!didStream && !superseded) setStreamingMessageId(aiMessageId); // Mark this message as streaming
 
             const aiMessage = {
                 id: aiMessageId,
@@ -1458,31 +1476,43 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 processingTime: timeTaken,
                 responseMode,
             };
-            // Upsert: replace the streamed preview bubble (same id) in place so there
-            // is no flicker; for the non-streaming path this is a plain append.
-            setMessages(prev => {
-                const idx = prev.findIndex(m => m.id === aiMessageId);
-                if (idx === -1) return [...prev, aiMessage];
-                const copy = prev.slice();
-                copy[idx] = aiMessage;
-                return copy;
-            });
+            if (superseded) {
+                // Not shown live — the view has already moved on. If this was a
+                // streamed request, an empty (or partial) preview bubble for it is
+                // still sitting in whatever chat is CURRENTLY open; remove it rather
+                // than leaving a permanent blank bubble. Filtering by this specific id
+                // is a no-op if that bubble belongs to a different, no-longer-open chat.
+                if (didStream) {
+                    setMessages(prev => prev.filter(m => m.id !== streamPreviewId));
+                }
+                persistOrphanedMessage(sendChatId, aiMessage, accessToken);
+            } else {
+                // Upsert: replace the streamed preview bubble (same id) in place so there
+                // is no flicker; for the non-streaming path this is a plain append.
+                setMessages(prev => {
+                    const idx = prev.findIndex(m => m.id === aiMessageId);
+                    if (idx === -1) return [...prev, aiMessage];
+                    const copy = prev.slice();
+                    copy[idx] = aiMessage;
+                    return copy;
+                });
 
-            // Auto-show the group-clarification picker only for THIS freshly-received
-            // disambiguation. On a page reload the last message may still be a
-            // disambiguation, but freshDisambigId resets to null on mount, so the popup
-            // never flashes over the loading screen — the restored bubble just shows the
-            // trimmed question instead.
-            if (metadata?.disambiguation?.suggestions?.length) {
-                setFreshDisambigId(aiMessageId);
+                // Auto-show the group-clarification picker only for THIS freshly-received
+                // disambiguation. On a page reload the last message may still be a
+                // disambiguation, but freshDisambigId resets to null on mount, so the popup
+                // never flashes over the loading screen — the restored bubble just shows the
+                // trimmed question instead.
+                if (metadata?.disambiguation?.suggestions?.length) {
+                    setFreshDisambigId(aiMessageId);
+                }
+
+                // MessageBubble calls onStreamingDone when its animation finishes.
+                // Safety fallback clears streaming state if the callback never fires (45s max).
+                clearStreamingTimeout();
+                streamingTimeoutRef.current = setTimeout(() => {
+                    setStreamingMessageId(null);
+                }, 45000);
             }
-
-            // MessageBubble calls onStreamingDone when its animation finishes.
-            // Safety fallback clears streaming state if the callback never fires (45s max).
-            clearStreamingTimeout();
-            streamingTimeoutRef.current = setTimeout(() => {
-                setStreamingMessageId(null);
-            }, 45000);
 
         } catch (err) {
             if (requestId !== activeRequestIdRef.current) return;

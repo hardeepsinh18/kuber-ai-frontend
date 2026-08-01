@@ -1138,9 +1138,10 @@ const ChartPatternCard = ({ cp }) => {
 /* ─── PATTERN DETECTION & RESISTANCE ALERT ───────────────────────────────── */
 // Hide patterns that formed longer ago than this (bars ≈ trading days on a daily chart).
 // Keeps the section focused on recent formations instead of stale ones from months back.
-// Product rule: ~30 trading days — includes recently-triggered (broken-out) patterns, not
-// just half-formed ones. Kept in sync with StockChart's MAX_PATTERN_AGE_DAYS.
-const MAX_PATTERN_AGE_DAYS = 30;
+// Product rule: ~45 trading days — includes recently-triggered (broken-out) patterns, not
+// just half-formed ones (bumped from 30, see StockChart's MAX_PATTERN_AGE_DAYS comment).
+// Kept in sync with StockChart's MAX_PATTERN_AGE_DAYS.
+const MAX_PATTERN_AGE_DAYS = 45;
 // Candlestick patterns are a much shorter-lived signal than a chart pattern —
 // never surface one older than 5 trading days. Kept in sync with StockChart's
 // and AnalystAnswer's MAX_CANDLESTICK_AGE_DAYS.

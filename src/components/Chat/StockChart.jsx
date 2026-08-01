@@ -17,9 +17,12 @@ import { useTheme } from '../../context/ThemeContext';
  */
 
 // Hide chart-pattern overlays that formed longer ago than this (bars ≈ trading days).
-// Product rule: ~30 trading days — recent enough to be actionable, but wide enough to
-// include already-triggered patterns. Kept in sync with FundamentalCard.
-const MAX_PATTERN_AGE_DAYS = 30;
+// Product rule: ~45 trading days — recent enough to be actionable, but wide enough to
+// include already-triggered patterns (bumped from 30: a confirmed breakout can sit a
+// few weeks past its trigger and still be worth seeing — e.g. a 33-bar-old triggered
+// H&S was being hidden from the chart while its caption still referenced it, an
+// inconsistent state). Kept in sync with FundamentalCard.
+const MAX_PATTERN_AGE_DAYS = 45;
 
 // Candlestick patterns (Hammer, Harami, Engulfing, Star, ...) are a much shorter-
 // lived signal than a chart pattern — a Hammer from 25 bars ago isn't actionable
