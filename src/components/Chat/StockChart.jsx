@@ -231,8 +231,10 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
 
                 {/* ml-auto only from sm: up. On mobile this row wraps onto its own line,
                     where ml-auto pushed 1M/3M/6M/1Y to the far right, away from the
-                    type buttons above them; left-aligned they share one edge. */}
-                <div className="flex items-center gap-1 sm:ml-auto">
+                    type buttons above them; left-aligned they share one edge.
+                    w-full on mobile so the zoom cluster below can ml-auto itself to the
+                    opposite edge instead of trailing the ranges as one centred clump. */}
+                <div className="flex items-center gap-1 w-full sm:w-auto sm:ml-auto">
                     {chartType === 'renko' && renko.brickSize > 0 && (
                         <span
                             title="Renko brick size (ATR-14 based)"
@@ -255,7 +257,10 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                             {label}
                         </button>
                     ))}
-                    <div className="flex items-center gap-0.5 ml-1 border border-zinc-200 dark:border-zinc-700 rounded-lg overflow-hidden">
+                    {/* ml-auto on mobile parks zoom/expand at the right edge, so the
+                        ranges keep the left edge rather than the two reading as one
+                        centred group; ml-1 from sm: up where the whole row is right-aligned. */}
+                    <div className="flex items-center gap-0.5 ml-auto sm:ml-1 border border-zinc-200 dark:border-zinc-700 rounded-lg overflow-hidden">
                         <button onClick={() => panelRef.current?.zoomIn()} title="Zoom in" aria-label="Zoom in"
                             className="p-1.5 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
                             <ZoomIn className="w-3.5 h-3.5" />
