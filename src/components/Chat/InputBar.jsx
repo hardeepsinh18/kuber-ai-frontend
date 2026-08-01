@@ -3,6 +3,8 @@ import { Square, ScanLine, Rocket } from 'lucide-react';
 import { clsx } from 'clsx';
 import ScannerPanel from './ScannerPanel';
 import IpoPanel from './IpoPanel';
+import CompanySuggest from './CompanySuggest';
+import { useCompanySuggest } from '../../hooks/useCompanySuggest';
 
 const QUERIES = [
     'Show me TCS fundamentals and valuation',
@@ -20,6 +22,7 @@ const MODES = [
 
 const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horizonQuestion = false, horizonSymbol = '', onHorizonChoice, responseMode, setResponseMode, onScannerResult }) => {
     const inputRef = useRef(null);
+    const boxRef = useRef(null);
     const [scannerOpen, setScannerOpen] = useState(false);
     const [ipoOpen, setIpoOpen] = useState(false);
 
@@ -28,6 +31,15 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
         el.style.height = 'auto';
         el.style.height = `${Math.min(el.scrollHeight, 150)}px`;
     }, []);
+
+    const suggest = useCompanySuggest({
+        value: input,
+        anchorRef: boxRef,
+        onPick: (c) => {
+            setInput(c.name);
+            setTimeout(() => inputRef.current?.focus(), 0);
+        },
+    });
 
     useEffect(() => {
         if (!isLoading && inputRef.current) inputRef.current.focus();
@@ -38,6 +50,7 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
     }, [input]);
 
     const handleKeyDown = (e) => {
+        if (suggest.onKeyDown(e)) return;
         if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
     };
 
@@ -112,7 +125,9 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
                 the composer line up with the card above it. */}
             <div className="relative z-10 w-full max-w-4xl mx-auto px-4 sm:px-6 md:px-8 pointer-events-auto">
 
-                <div className="w-full relative group">
+                <div ref={boxRef} className="w-full relative group">
+
+                    <CompanySuggest {...suggest.dropdownProps} direction="up" />
 
                     {/* Thin amber border + outer glow */}
                     <div className="p-[1px] rounded-xl transition-all duration-300"

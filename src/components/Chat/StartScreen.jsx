@@ -4,6 +4,8 @@ import { clsx } from 'clsx';
 import { ScanLine, Rocket } from 'lucide-react';
 import ScannerPanel from './ScannerPanel';
 import IpoPanel from './IpoPanel';
+import CompanySuggest from './CompanySuggest';
+import { useCompanySuggest } from '../../hooks/useCompanySuggest';
 
 const QUERIES = [
     'Show me TCS fundamentals and valuation',
@@ -30,6 +32,7 @@ const StartScreen = ({ onStartChat, onScannerResult, responseMode, setResponseMo
     const [scannerOpen, setScannerOpen] = useState(false);
     const [ipoOpen, setIpoOpen] = useState(false);
     const inputRef = useRef(null);
+    const boxRef = useRef(null);
 
     const autoResize = useCallback((el) => {
         if (!el) return;
@@ -37,8 +40,18 @@ const StartScreen = ({ onStartChat, onScannerResult, responseMode, setResponseMo
         el.style.height = `${Math.min(el.scrollHeight, 140)}px`;
     }, []);
 
+    const suggest = useCompanySuggest({
+        value: input,
+        anchorRef: boxRef,
+        onPick: (c) => {
+            setInput(c.name);
+            setTimeout(() => inputRef.current?.focus(), 0);
+        },
+    });
+
     const send = () => { if (input.trim()) onStartChat(input, 'stock'); };
     const onKey = (e) => {
+        if (suggest.onKeyDown(e)) return;
         if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
     };
 
@@ -60,11 +73,12 @@ const StartScreen = ({ onStartChat, onScannerResult, responseMode, setResponseMo
 
                     {/* Input card */}
                     <motion.div {...fadeUp(0.08)}>
-                        <div className="group relative p-[1px] rounded-2xl transition-all duration-300"
+                        <div ref={boxRef} className="group relative p-[1px] rounded-2xl transition-all duration-300"
                              style={{
                                  background: 'linear-gradient(135deg, rgba(253,212,5,0.55) 0%, rgba(253,212,5,0.25) 50%, rgba(253,212,5,0.55) 100%)',
                                  boxShadow: '0 0 20px rgba(253,212,5,0.12), 0 0 50px rgba(253,212,5,0.06)'
                              }}>
+                            <CompanySuggest {...suggest.dropdownProps} direction="down" />
                             <div className="rounded-[15px] bg-white dark:bg-[#141414] overflow-hidden">
                                 <textarea
                                     ref={inputRef}
