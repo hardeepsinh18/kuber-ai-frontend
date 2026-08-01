@@ -46,9 +46,12 @@ const MetricCard = ({ title, subtitle, badge, children, bottomLabel, bottomValue
         'bg-zinc-50 dark:bg-[#0d0c0b] rounded-xl border border-zinc-200 dark:border-zinc-800/80 p-3 flex flex-col',
         className
     )}>
-        <div className="flex items-start justify-between mb-2 gap-2">
-            <div className="min-w-0">
-                {subtitle && <p className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wide leading-none">{subtitle}</p>}
+        {/* flex-wrap so a long uppercase subtitle drops the badge to its own line
+            instead of colliding with it in a narrow column; leading-tight because
+            leading-none clipped the descenders once the subtitle wrapped. */}
+        <div className="flex flex-wrap items-start justify-between mb-2 gap-x-2 gap-y-1">
+            <div className="min-w-0 flex-1">
+                {subtitle && <p className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wide leading-tight">{subtitle}</p>}
                 <p className="text-[11px] font-normal text-zinc-500 dark:text-zinc-400 mt-0.5 leading-tight">{title}</p>
             </div>
             {badge && <RatingBadge label={badge} />}
@@ -135,8 +138,11 @@ const ROEViz = ({ roe }) => {
             <p className="text-[9px] text-zinc-500 uppercase tracking-wide text-center mb-2">
                 Every ₹100 Invested Earns
             </p>
-            {/* Three columns on one baseline: same number size, same caption size. */}
-            <div className="flex items-start justify-center gap-5 flex-nowrap">
+            {/* Three columns on one baseline: same number size, same caption size.
+                min-w-0 + a shrinkable gap so the row fits a narrow tile instead of
+                overflowing it — the captions are nowrap, so with a fixed gap-5 and
+                flex-nowrap the "PROFIT" column was clipped by the card edge. */}
+            <div className="flex items-start justify-center gap-2 sm:gap-5 flex-nowrap min-w-0">
                 <div className="flex flex-col items-center text-center">
                     <span className="text-lg font-bold text-zinc-900 dark:text-white leading-none h-6 flex items-center">₹100</span>
                     <span className="text-[9px] text-zinc-500 mt-1 whitespace-nowrap">YOU INVEST</span>
@@ -478,7 +484,12 @@ const FinancialScoreCard = ({ fund, symbol, flat = false }) => {
                         </div>
                     )}
 
-                    <div className="grid grid-cols-1 xs:grid-cols-2 gap-3">
+                    {/* sm:, not xs: — at the 375px xs breakpoint two columns leave each
+                        card ~165px, which is not enough for an uppercase subtitle
+                        ("RETURN ON CAPITAL EMPLOYED") beside its rating badge, and the
+                        ROE illustration (₹100 → ₹X, nowrap) overflows its tile. Phones
+                        get one full-width card; the pair returns at 640px. */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {pe != null && (
                         <MetricCard title="Price tag" subtitle="P/E RATIO" badge={peLabel}
                             bottomLabel={`You pay ~${Math.round(pe)} yrs of profit`}
@@ -580,7 +591,10 @@ const FiveYearScoreCard = ({ fund }) => {
                       : <ChevronDown size={15} className="text-zinc-500 dark:text-zinc-400 flex-shrink-0" />}
             </button>
             {open && (
-                <div className="p-3 grid grid-cols-1 xs:grid-cols-2 gap-3 bg-zinc-50 dark:bg-[#0d0c0b]">
+                // sm:, not xs: — same reasoning as the metric grid above: these use the
+                // same card shell (uppercase subtitle + badge) around a 5-year bar
+                // chart, which is unreadable at the ~165px an xs two-column gives.
+                <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-3 bg-zinc-50 dark:bg-[#0d0c0b]">
                     {hist.revenue_cr?.length > 0 && (
                         <MetricCard title="Revenue" subtitle="TOP LINE · ₹ CR"
                             badge={hist.revenue_cagr ? `+${hist.revenue_cagr}% CAGR` : null}
