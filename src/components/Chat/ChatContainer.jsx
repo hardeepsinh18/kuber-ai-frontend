@@ -1677,6 +1677,15 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                        line cut in half), which read as two stacked panels. Overlaid
                        + padded, the transcript scrolls THROUGH the fade and passes
                        under the input instead of stopping dead at it. */
+                    /* scrollbar-gutter: stable keeps this scroller's CONTENT box the
+                       same width whether or not the scrollbar is showing. The composer
+                       is a sibling AFTER </main>, so it is not inside this scroller and
+                       never loses width to the scrollbar; without a stable gutter the
+                       transcript is ~6px narrower, so the answer column and the composer
+                       centre their identical max-w-4xl in different widths and the input
+                       box does not line up with the card above it. Also stops the whole
+                       transcript shifting sideways when a short chat grows scrollable. */
+                    style={{ scrollbarGutter: 'stable' }}
                     className="flex-1 overflow-y-auto pt-4 pb-40 custom-scrollbar"
                 >
                     {messages.filter(msg => msg && msg.role).map((msg) => (
