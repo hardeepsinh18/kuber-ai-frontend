@@ -5,4 +5,9 @@ Contact: mailto:security@72street.ai
 Expires: 2027-07-29T00:00:00.000Z
 Preferred-Languages: en
 Canonical: https://aws.72street.ai/.well-known/security.txt
-Policy: https://github.com/72streetai/KuberAI-Backend-UAT/blob/main/SECURITY.md
+# SEC-C-003 (RFC 9116): Policy must resolve to something a REPORTER can actually
+# reach. It previously pointed at 72streetai/KuberAI-Backend-UAT on GitHub — a
+# PRIVATE repo (verified private by the audit's own positive controls), so every
+# external researcher following it got a 404. The policy is now served from this
+# same origin, next to this file, so it is reachable by anyone who can read this.
+Policy: https://aws.72street.ai/.well-known/security-policy.txt
