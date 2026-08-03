@@ -88,9 +88,46 @@ function AppContent() {
   );
 }
 
+/**
+ * QA-C-001: the splash ran on EVERY load — a fixed 2.2s gate in front of the
+ * router, including every in-session reload and every return visit, with no
+ * informational payload after the first time. That is pure added time-to-
+ * interactive for a returning user.
+ *
+ * It now shows once per browser session. sessionStorage (not localStorage) is
+ * deliberate: the brand moment still plays for a genuinely new visit, but a
+ * reload or a second tab in the same session goes straight to the app.
+ *
+ * Reads are wrapped because sessionStorage throws in Safari private mode and
+ * when storage is disabled — in that case we simply show the splash, which is
+ * the current behaviour and never a broken screen.
+ */
+export const SPLASH_SEEN_KEY = 'venty:splash-seen';
+
+export function hasSeenSplashThisSession() {
+  try {
+    return sessionStorage.getItem(SPLASH_SEEN_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function markSplashSeen() {
+  try {
+    sessionStorage.setItem(SPLASH_SEEN_KEY, '1');
+  } catch {
+    /* storage unavailable — the splash just shows again next load */
+  }
+}
+
 function App() {
-  const [splashDone, setSplashDone] = useState(false);
-  const handleSplashDone = useCallback(() => setSplashDone(true), []);
+  // Initialised from session state, so a returning user never renders the
+  // splash at all (rather than rendering and hiding it, which would still flash).
+  const [splashDone, setSplashDone] = useState(hasSeenSplashThisSession);
+  const handleSplashDone = useCallback(() => {
+    markSplashSeen();
+    setSplashDone(true);
+  }, []);
 
   return (
     <ThemeProvider>
