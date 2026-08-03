@@ -1,5 +1,6 @@
 {
-  "name": "kuberai",
+  "_comment_name": "EXT-006: scoped to @72street/. An UNSCOPED internal name that is unclaimed on the public registry is a standing dependency-confusion foothold — any build or CI that resolves this name against public npm would fetch whatever a squatter published under it. A scope the org controls removes that: @72street/venty-frontend cannot be published by anyone else once the scope is reserved. Renaming is safe here because nothing imports this package by name; it is the app root, not a library. Remaining (registry-side, not code): publicly reserve the @72street scope on npm, and configure any internal registry to PROXY public npm rather than run dual-endpoint resolution.",
+  "name": "@72street/venty-frontend",
   "private": true,
   "version": "0.0.0",
   "type": "module",

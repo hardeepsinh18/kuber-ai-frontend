@@ -10,6 +10,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useChatHistory } from '../context/ChatHistoryContext';
 import LoginModal from './Auth/LoginModal';
+import PrivacyControls from './PrivacyControls';
 import KuberLogo from './KuberLogo';
 
 const relativeTime = (ts) => {
@@ -355,6 +356,11 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, onPortfolioClick, showLog
                                     Sign out
                                 </button>
                             </div>
+
+                            {/* CONF-D-003 (DPDP): access + erasure, reachable in-product.
+                                The endpoints existed; nothing called them, so the rights
+                                described on LegalPage could not actually be exercised. */}
+                            <PrivacyControls compact />
                         </div>
                     </div>
                 </div>

@@ -33,7 +33,18 @@ export default function AuthPage() {
     const [password, setPassword] = useState('');
     const [fullName, setFullName] = useState('');
     const [confirmCode, setConfirmCode] = useState('');
-    const [updates,  setUpdates]  = useState(true);
+    // CONF-D-011 (DPDP): marketing consent must be OPT-IN. This defaulted to true,
+    // so every signup pre-agreed to SMS/WhatsApp marketing without an affirmative
+    // act — a pre-ticked box is not valid consent under the DPDP Act, and bundling
+    // it with the signup flow makes it worse. Defaults to false; the user has to
+    // tick it deliberately.
+    //
+    // NOTE: this value is still not transmitted or recorded anywhere — the control
+    // is cosmetic today. Unchecked-by-default is the honest state while that is
+    // true: it promises nothing and pre-consents to nothing. Wiring it to a
+    // recorded, timestamped consent preference (with withdrawal) is the remaining
+    // half of CONF-D-011 and needs a backend consent store.
+    const [updates,  setUpdates]  = useState(false);
     const [error,   setError]   = useState('');
     const [info,    setInfo]    = useState('');
     const [loading, setLoading] = useState(false);
