@@ -101,11 +101,15 @@ export function useCompanySuggest({ value, onSelect, anchorRef }) {
   const pick = useCallback((item) => {
     if (!item) return;
     // Replace only the matched company span, preserving the rest of the query.
+    // Use the backend's `query` fill token (the symbol when the display name is
+    // shared by several tickers, e.g. "HDFC Mutual Fund" ETFs), falling back to
+    // the name so a stale response without the field still works.
+    const token = item.query || item.name;
     const raw = value ?? '';
     const info = extractCompanyQuery(raw);
     const newValue = info
-      ? raw.slice(0, info.start) + item.name + raw.slice(info.end)
-      : item.name;
+      ? raw.slice(0, info.start) + token + raw.slice(info.end)
+      : token;
     suppressRef.current = true;
     setOpen(false); setResults([]); setActive(-1);
     onSelect?.(newValue, item);

@@ -107,6 +107,23 @@ describe('useCompanySuggest + CompanySuggest', () => {
     expect(onSelect).toHaveBeenCalledWith('Vedanta Limited', VEDL);
   });
 
+  it('fills the backend query token (symbol) for ambiguously-named entries', async () => {
+    // Two ETFs share the display name "HDFC Mutual Fund"; the backend sends a
+    // distinct `query` (the symbol) so selection resolves to the right ticker.
+    const etfA = { symbol: 'HDFCNIFTY', name: 'HDFC Mutual Fund', ticker: 'HDFCNIFTY.BO', query: 'HDFCNIFTY' };
+    const etfB = { symbol: 'HDFCSENSEX', name: 'HDFC Mutual Fund', ticker: 'HDFCSENSEX.BO', query: 'HDFCSENSEX' };
+    searchSymbols.mockResolvedValue([etfA, etfB]);
+    const onSelect = vi.fn();
+    render(<Harness onSelect={onSelect} />);
+    type('hdf mutual');
+    await screen.findByRole('listbox');
+    const box = screen.getByLabelText('q');
+    fireEvent.keyDown(box, { key: 'ArrowDown' }); // first row (etfA)
+    fireEvent.keyDown(box, { key: 'ArrowDown' }); // second row (etfB)
+    fireEvent.keyDown(box, { key: 'Enter' });
+    expect(onSelect).toHaveBeenCalledWith('HDFCSENSEX', etfB);
+  });
+
   it('navigates with ArrowDown and selects with Enter', async () => {
     const onSelect = vi.fn();
     render(<Harness onSelect={onSelect} />);
