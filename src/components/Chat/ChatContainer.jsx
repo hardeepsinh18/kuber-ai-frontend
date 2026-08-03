@@ -538,7 +538,18 @@ const extractStockSymbols = (query) => {
     for (const [alias, symbol] of multiWordAliases) {
         if (queryLower.includes(alias)) {
             if (!confident.includes(symbol)) confident.push(symbol);
-            rewrittenQuery = rewrittenQuery.replace(new RegExp(alias, 'gi'), symbol);
+            // Only rewrite when the alias is NOT the head of a longer company name the
+            // user actually typed. Replacing "tata consultancy" inside the full legal
+            // name "tata consultancy services limited" produced the Frankenstein query
+            // "TCS Services Limited", which the backend then fuzzy-matched to an unrelated
+            // "… Services Limited" company (IMEC Services). The confident hint above
+            // already carries the ticker, so the query rewrite is only a cosmetic aid —
+            // skip it whenever another word immediately follows the alias.
+            const escaped = alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            rewrittenQuery = rewrittenQuery.replace(
+                new RegExp(`${escaped}\\b(?!\\s+[a-z0-9&])`, 'gi'),
+                symbol
+            );
         }
     }
 
