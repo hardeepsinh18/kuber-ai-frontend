@@ -1,10 +1,12 @@
 // Headless typeahead controller for the chat input's company autocomplete.
 //
-// Owns debounce, request cancellation, keyboard nav, and outside-click. Pairs
-// with the CompanySuggest dropdown component:
+// Owns debounce, request cancellation, keyboard nav, and outside-click. Unlike a
+// plain search box, it works inside natural-language queries: from
+// "should i buy reli" it extracts "reli", suggests Reliance, and on select
+// replaces only that portion -> "should i buy Reliance Industries Limited".
 //
 //   const box = useRef(null);
-//   const sug = useCompanySuggest({ value: input, onPick: (c) => setInput(c.name), anchorRef: box });
+//   const sug = useCompanySuggest({ value: input, onSelect: setInput, anchorRef: box });
 //   <div ref={box} className="relative">
 //     <textarea onKeyDown={(e) => { if (sug.onKeyDown(e)) return; ...sendLogic }} ... />
 //     <CompanySuggest {...sug.dropdownProps} direction="up" />
@@ -13,10 +15,50 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { searchSymbols, MIN_CHARS } from '../lib/symbolSearch';
 
 const DEBOUNCE_MS = 150;
-const MAX_WORDS = 5; // "state bank of india" = 4; questions run longer -> no dropdown
+const MAX_QUERY_WORDS = 4; // company names top out ~4 words ("state bank of india")
 const MAX_CHARS = 40;
 
-export function useCompanySuggest({ value, onPick, anchorRef }) {
+// Scaffolding words that wrap a company name in a question but are never part of
+// it. Trimmed from BOTH ends of the input so the middle (the company) is what we
+// search: "should i buy X share price" -> "X", "what is the price of X" -> "X".
+const FILLER = new Set([
+  'should', 'shall', 'could', 'would', 'can', 'will', 'do', 'does', 'did',
+  'is', 'are', 'am', 'was', 'were', 'be', 'been',
+  'i', 'we', 'you', 'u', 'me', 'us', 'my', 'our',
+  'buy', 'buying', 'bought', 'sell', 'selling', 'sold', 'hold', 'holding',
+  'invest', 'investing', 'purchase',
+  'a', 'an', 'the', 'this', 'that',
+  'good', 'bad', 'best', 'better', 'worth', 'safe', 'right', 'now', 'today', 'currently',
+  'to', 'of', 'about', 'on', 'in', 'for', 'at', 'with', 'from',
+  'tell', 'show', 'give', 'find', 'get', 'know', 'think', 'suggest', 'recommend',
+  'check', 'explain', 'analyse', 'analyze',
+  'what', 'whats', "what's", 'how', 'hows', 'why', 'which', 'when',
+  'price', 'target', 'view', 'opinion', 'outlook', 'thoughts',
+  'or', 'not', 'and', 'vs', 'versus', 'than',
+  'share', 'shares', 'stock', 'stocks',
+]);
+
+const isFiller = (tok) => FILLER.has(tok.toLowerCase().replace(/[^\w']/g, ''));
+
+// Returns { text, start, end } for the company-name span within `value`, or null
+// if nothing searchable remains after trimming filler from both ends.
+export function extractCompanyQuery(value) {
+  const raw = value ?? '';
+  const tokens = [...raw.matchAll(/\S+/g)];
+  if (tokens.length === 0) return null;
+
+  let i = 0;
+  let j = tokens.length;
+  while (i < j && isFiller(tokens[i][0])) i++;
+  while (j > i && isFiller(tokens[j - 1][0])) j--;
+  if (j - i <= 0 || j - i > MAX_QUERY_WORDS) return null;
+
+  const start = tokens[i].index;
+  const end = tokens[j - 1].index + tokens[j - 1][0].length;
+  return { text: raw.slice(start, end), start, end };
+}
+
+export function useCompanySuggest({ value, onSelect, anchorRef }) {
   const [results, setResults] = useState([]);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
@@ -32,9 +74,9 @@ export function useCompanySuggest({ value, onPick, anchorRef }) {
     // synchronously in the effect body — avoids cascading renders on every
     // keystroke and keeps the fetch/close paths in one place.
     debounceRef.current = setTimeout(async () => {
-      const q = (value || '').trim();
-      const words = q.split(/\s+/).filter(Boolean);
-      const eligible = q.length >= MIN_CHARS && q.length <= MAX_CHARS && words.length <= MAX_WORDS;
+      const info = extractCompanyQuery(value);
+      const q = info ? info.text.trim() : '';
+      const eligible = q.length >= MIN_CHARS && q.length <= MAX_CHARS;
 
       if (abortRef.current) abortRef.current.abort();
       if (!eligible) { setResults([]); setOpen(false); setActive(-1); return; }
@@ -58,10 +100,16 @@ export function useCompanySuggest({ value, onPick, anchorRef }) {
 
   const pick = useCallback((item) => {
     if (!item) return;
+    // Replace only the matched company span, preserving the rest of the query.
+    const raw = value ?? '';
+    const info = extractCompanyQuery(raw);
+    const newValue = info
+      ? raw.slice(0, info.start) + item.name + raw.slice(info.end)
+      : item.name;
     suppressRef.current = true;
     setOpen(false); setResults([]); setActive(-1);
-    onPick?.(item);
-  }, [onPick]);
+    onSelect?.(newValue, item);
+  }, [onSelect, value]);
 
   // Return true if the key was handled here (parent should stop its own handling).
   const onKeyDown = useCallback((e) => {

@@ -43,8 +43,8 @@ const StartScreen = ({ onStartChat, onScannerResult, responseMode, setResponseMo
     const suggest = useCompanySuggest({
         value: input,
         anchorRef: boxRef,
-        onPick: (c) => {
-            setInput(c.name);
+        onSelect: (newValue) => {
+            setInput(newValue);
             setTimeout(() => inputRef.current?.focus(), 0);
         },
     });

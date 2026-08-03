@@ -35,8 +35,8 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
     const suggest = useCompanySuggest({
         value: input,
         anchorRef: boxRef,
-        onPick: (c) => {
-            setInput(c.name);
+        onSelect: (newValue) => {
+            setInput(newValue);
             setTimeout(() => inputRef.current?.focus(), 0);
         },
     });
