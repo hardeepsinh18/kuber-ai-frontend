@@ -399,27 +399,24 @@ export function ChatHistoryProvider({ children }) {
 
     const newChat = useCallback(() => {
         if (currentChatId && messages.length > 0) {
-            const title = chatStorage.getTitleFromMessages(messages);
-            // Strip chartData, exactly as the debounced persist does. Writing the
-            // raw messages here bypassed the quota guard on every new-chat click,
-            // and multi-symbol OHLCV blobs are what actually blows the quota.
-            try {
-                chatStorage.saveChatMessages(
-                    currentChatId,
-                    messages.map(({ chartData: _cd, ...rest }) => rest)
-                );
-            } catch (e) {
-                console.warn('newChat: could not cache previous chat locally:', e?.message);
+            // Flush this chat's outstanding message(s) — content, chartData, and
+            // every other field — to localStorage AND the server before we switch
+            // away. This used to be a plain chartData-stripping localStorage write,
+            // relying on the debounce/chat-switch-cleanup effects to have already
+            // synced the latest AI answer to the server. In practice that raced the
+            // "New Chat" click closely enough that the answer (with its chart) was
+            // sometimes never appended server-side — confirmed via backend logs
+            // showing only the user's question reached /messages, never the AI
+            // reply — so once this stripping write removed chartData from
+            // localStorage, there was nothing left to restore it from on reopen.
+            // flushPersist uses the CURRENT (not-yet-reset) syncedMessageCountRef,
+            // so it sends only what's outstanding — no duplicate-append risk (see
+            // the reset note below on why the counter itself must NOT move yet).
+            if (persistTimeoutRef.current) {
+                clearTimeout(persistTimeoutRef.current);
+                persistTimeoutRef.current = null;
             }
-            setChatList((prev) => {
-                const next = prev.map((c) =>
-                    c.id === currentChatId ? { ...c, title, updatedAt: Date.now() } : c
-                );
-                const found = next.some((c) => c.id === currentChatId);
-                if (!found) next.unshift({ id: currentChatId, title, updatedAt: Date.now() });
-                chatStorage.saveChatList(next);
-                return next;
-            });
+            flushPersist(currentChatId, messages, accessToken);
         }
 
         // Reset the sync counter ONLY when the chat actually switches. Doing it
@@ -440,9 +437,21 @@ export function ChatHistoryProvider({ children }) {
         } else {
             switchTo(fallbackId());
         }
-    }, [currentChatId, messages, accessToken]);
+    }, [currentChatId, messages, accessToken, flushPersist]);
 
     const loadChat = useCallback((id) => {
+        // Same guarantee as newChat(): flush the chat we're LEAVING synchronously
+        // instead of trusting the debounce/chat-switch-cleanup effects to have
+        // already synced its latest message (chartData included) to the server.
+        // Uses refs (not closed-over state) since this callback isn't re-created
+        // per keystroke/message — it's handed to every sidebar chat-item onClick.
+        if (currentChatIdRef.current && currentChatIdRef.current !== id && messagesRef.current.length > 0) {
+            if (persistTimeoutRef.current) {
+                clearTimeout(persistTimeoutRef.current);
+                persistTimeoutRef.current = null;
+            }
+            flushPersist(currentChatIdRef.current, messagesRef.current, accessTokenRef.current);
+        }
         setCurrentChatId(id);
         setChatLoadError(null);
         syncedMessageCountRef.current = 0;
@@ -544,7 +553,7 @@ export function ChatHistoryProvider({ children }) {
                 setIsChatLoading(false);
             });
         }
-    }, [accessToken]);
+    }, [accessToken, flushPersist]);
 
     const deleteChat = useCallback((id) => {
         // Immediately mark as pending-delete in localStorage.
