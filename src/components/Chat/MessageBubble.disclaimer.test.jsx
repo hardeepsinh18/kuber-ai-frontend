@@ -98,4 +98,14 @@ describe('CONF-COPY-001: disclaimer does not depend on model output', () => {
         });
         expect(container.textContent).not.toContain(DISCLAIMER_SENTINEL);
     });
+
+    it('never renders a disclaimer on a client-authored error bubble', () => {
+        const { container } = renderBubble({
+            role: 'ai',
+            content: '⚠️ Something went wrong. Please try again.',
+            isError: true,
+            isStreaming: false,
+        });
+        expect(container.textContent).not.toContain(DISCLAIMER_SENTINEL);
+    });
 });

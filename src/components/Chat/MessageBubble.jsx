@@ -521,7 +521,7 @@ const FollowUpChips = ({ chips, onClick }) => (
     </div>
 );
 
-const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, isScannerResult = false, chartData = null, metadata = {}, signal = null, patternSummary = null, technicalSummary = null, indicatorsTable = null, scoreCard = null, managementSentiment = null, annualReportIntelligence = null, companyFilings = null, recentDevelopments = null, aiTake = null, suggestedFollowUps = null, newsHeadlines = null, queryIntent = 'full', query = null, onFollowUpClick = null, onStreamingDone = null, messageId = null, onFeedback = null, responseMode = null }) => {
+const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, isScannerResult = false, isError = false, chartData = null, metadata = {}, signal = null, patternSummary = null, technicalSummary = null, indicatorsTable = null, scoreCard = null, managementSentiment = null, annualReportIntelligence = null, companyFilings = null, recentDevelopments = null, aiTake = null, suggestedFollowUps = null, newsHeadlines = null, queryIntent = 'full', query = null, onFollowUpClick = null, onStreamingDone = null, messageId = null, onFeedback = null, responseMode = null }) => {
     const isUser = role === 'user';
 
     // Group-disambiguation replies ("HDFC" → HDFC Bank / AMC / Life) carry the full
@@ -690,8 +690,10 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
     // verdicts carrying entry, stop and target levels — shipped with no disclaimer.
     // Render it unconditionally for every completed assistant message, from the
     // DISCLAIMER_TEXT constant; stripResponseChrome() removes any model-emitted
-    // duplicate from the prose above.
-    const showDisclaimer = !isUser && isEffectivelyDone;
+    // duplicate from the prose above. Client-authored error/notice bubbles
+    // ("Something went wrong", "Request timed out") are not analysis and never
+    // carry the disclaimer.
+    const showDisclaimer = !isUser && isEffectivelyDone && !isError;
     const strippedText = !isUser ? stripResponseChrome(rawText) : rawText;
     // K-002: verdict answers keep their full narrative — only the four single-aspect
     // intents get the opening-paragraph filter

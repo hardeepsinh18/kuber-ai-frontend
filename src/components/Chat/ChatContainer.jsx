@@ -1708,6 +1708,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                                 role={msg.role}
                                 content={typeof msg.content === 'string' ? msg.content : String(msg.content ?? '')}
                                 isScannerResult={msg.isScannerResult || false}
+                                isError={!!(msg.isError || msg.isClientNotice)}
                                 isStreaming={msg.id === streamingMessageId}
                                 isLoading={isLoading}
                                 chartData={msg.chartData}
