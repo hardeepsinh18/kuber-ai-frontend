@@ -39,6 +39,30 @@ const STREAM_ENDPOINT = `${API_BASE}/api/v1/chat/stream`;
 // response" swap. The polished flow is: thinking animation → structured answer.
 // The streaming endpoint stays deployed; set VITE_CHAT_STREAMING=1 to re-enable
 // (only worthwhile once streaming is scoped to simple, non-structured answers).
+//
+// PERF-F-007 (audit 2026-08-01) recommends enabling this. Two corrections before
+// anyone acts on that:
+//
+//   1. It is NOT a capacity fix. The audit argues streaming would "release scarce
+//      request slots" because there are only 2 gunicorn workers. Those are UVICORN
+//      (async) workers — each serves many concurrent requests — and the blocking
+//      LLM call is already offloaded via asyncio.to_thread
+//      (response_pipeline.py, format_response). A slow request does not hold a
+//      slot. The real concurrency ceiling is the THREAD POOL, which is PERF-F-001
+//      and is now tunable via THREAD_POOL_MAX_WORKERS. Streaming buys perceived
+//      latency (first token ~2s instead of a blank ~30s wait) and nothing else.
+//
+//   2. The flash is NOT an event-ordering problem, so flipping this flag will not
+//      fix it. The backend already emits in the right order: `data` (cards/chart)
+//      fires BEFORE the ~10s LLM step, then `token` deltas, then `done`. The flash
+//      is that tokens render as plain markdown and `done` then REPLACES that
+//      bubble with the structured layout — two renderings of the same content.
+//
+// The safe path to sequential top-to-bottom rendering is to make the preview and
+// the final render the SAME component: cards render from `data` at their final
+// position, tokens fill the prose area beneath them, `done` fills the remaining
+// fields. Nothing is ever replaced. That is real work in MessageBubble /
+// AnalystAnswer — not a config flag.
 const CHAT_STREAMING_ENABLED = import.meta.env.VITE_CHAT_STREAMING === '1';
 const FEEDBACK_ENDPOINT = `${API_BASE}/api/v1/feedback`;
 // Default 120s: multi-symbol comparisons + fundamentals + LLM can exceed 60s on EC2.
