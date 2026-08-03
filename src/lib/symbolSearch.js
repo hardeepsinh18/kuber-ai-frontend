@@ -11,6 +11,7 @@ import { getApiBase } from './apiBase';
 const API_BASE = getApiBase(); // '' = same-origin relative /api/*
 const MIN_CHARS = 2;
 const MAX_CACHE = 200;
+const CACHE_BUST_WINDOW = 60_000; // rolling HTTP-cache-bust bucket: max 60s stale
 
 const _cache = new Map(); // normKey -> results[]
 
@@ -31,7 +32,13 @@ export async function searchSymbols(query, { limit = 8, signal } = {}) {
   const cacheKey = `${key}|${limit}`;
   if (_cache.has(cacheKey)) return _cache.get(cacheKey);
 
-  const url = `${API_BASE}/api/v1/symbols/search?q=${encodeURIComponent(key)}&limit=${limit}`;
+  // Rolling cache-bust token (changes each CACHE_BUST_WINDOW ms). The in-session
+  // Map above already dedupes repeat prefixes, so this costs nothing there; its
+  // job is the browser/CDN HTTP cache. A stale entry cached under an older token
+  // (or an old header) is bypassed on the next page load, and staleness after any
+  // deploy self-heals within one window — no hard-refresh required.
+  const cb = Math.floor(Date.now() / CACHE_BUST_WINDOW);
+  const url = `${API_BASE}/api/v1/symbols/search?q=${encodeURIComponent(key)}&limit=${limit}&cb=${cb}`;
   const res = await fetch(url, { method: 'GET', signal });
   if (!res.ok) throw new Error(`symbol search ${res.status}`);
 
