@@ -10,7 +10,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useChatHistory } from '../context/ChatHistoryContext';
 import LoginModal from './Auth/LoginModal';
-import PrivacyControls from './PrivacyControls';
+// import PrivacyControls from './PrivacyControls'; // temporarily unmounted — see footer
 import KuberLogo from './KuberLogo';
 
 const relativeTime = (ts) => {
@@ -359,8 +359,14 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, onPortfolioClick, showLog
 
                             {/* CONF-D-003 (DPDP): access + erasure, reachable in-product.
                                 The endpoints existed; nothing called them, so the rights
-                                described on LegalPage could not actually be exercised. */}
-                            <PrivacyControls compact />
+                                described on LegalPage could not actually be exercised.
+
+                                Temporarily hidden from the sidebar footer — these move
+                                under the settings button once that lands. The component
+                                and /privacy/* clients are untouched; re-mount to restore.
+                                NOTE: while hidden, DPDP access/erasure has no in-product
+                                entry point again, so this needs to be short-lived. */}
+                            {/* <PrivacyControls compact /> */}
                         </div>
                     </div>
                 </div>
