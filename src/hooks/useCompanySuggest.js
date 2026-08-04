@@ -12,10 +12,13 @@
 //     <CompanySuggest {...sug.dropdownProps} direction="up" />
 //   </div>
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { searchSymbols, MIN_CHARS } from '../lib/symbolSearch';
+import { searchSymbols } from '../lib/symbolSearch';
 
 const DEBOUNCE_MS = 150;
 const MAX_QUERY_WORDS = 4; // company names top out ~4 words ("state bank of india")
+// Minimum company fragment before we search. 3 (not 2) so bare 2-char noise like
+// "re" or "bu" never opens the dropdown — real tickers/names are >= 3 chars.
+const MIN_FRAGMENT_CHARS = 3;
 const MAX_CHARS = 40;
 
 // Scaffolding words that wrap a company name in a question but are never part of
@@ -38,10 +41,26 @@ const FILLER = new Set([
   'share', 'shares', 'stock', 'stocks',
 ]);
 
-const isFiller = (tok) => FILLER.has(tok.toLowerCase().replace(/[^\w']/g, ''));
+const normToken = (tok) => tok.toLowerCase().replace(/[^\w']/g, '');
+
+// A token is "filler-ish" if it's a scaffolding word (exact match) OR a proper
+// prefix of one — i.e. a command word the user is still typing: "bu" -> "buy",
+// "sho" -> "should", "inves" -> "invest". Trimming these from both ends is what
+// stops the dropdown from firing on half-typed commands like "should i bu"
+// (which used to search the fragment "bu" and surface random tickers).
+const isFillerish = (tok) => {
+  const w = normToken(tok);
+  if (!w) return false;
+  if (FILLER.has(w)) return true;
+  for (const f of FILLER) {
+    if (f.length > w.length && f.startsWith(w)) return true;
+  }
+  return false;
+};
 
 // Returns { text, start, end } for the company-name span within `value`, or null
-// if nothing searchable remains after trimming filler from both ends.
+// if nothing searchable remains after trimming filler (and half-typed commands)
+// from both ends.
 export function extractCompanyQuery(value) {
   const raw = value ?? '';
   const tokens = [...raw.matchAll(/\S+/g)];
@@ -49,8 +68,8 @@ export function extractCompanyQuery(value) {
 
   let i = 0;
   let j = tokens.length;
-  while (i < j && isFiller(tokens[i][0])) i++;
-  while (j > i && isFiller(tokens[j - 1][0])) j--;
+  while (i < j && isFillerish(tokens[i][0])) i++;
+  while (j > i && isFillerish(tokens[j - 1][0])) j--;
   if (j - i <= 0 || j - i > MAX_QUERY_WORDS) return null;
 
   const start = tokens[i].index;
@@ -76,7 +95,7 @@ export function useCompanySuggest({ value, onSelect, anchorRef }) {
     debounceRef.current = setTimeout(async () => {
       const info = extractCompanyQuery(value);
       const q = info ? info.text.trim() : '';
-      const eligible = q.length >= MIN_CHARS && q.length <= MAX_CHARS;
+      const eligible = q.length >= MIN_FRAGMENT_CHARS && q.length <= MAX_CHARS;
 
       if (abortRef.current) abortRef.current.abort();
       if (!eligible) { setResults([]); setOpen(false); setActive(-1); return; }

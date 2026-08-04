@@ -67,6 +67,21 @@ describe('extractCompanyQuery', () => {
     expect(extractCompanyQuery('   ')).toBeNull();
   });
 
+  it('returns null while a command word is still being typed (filler prefix)', () => {
+    // The trailing token is a half-typed scaffolding word, not a company.
+    expect(extractCompanyQuery('should i bu')).toBeNull();   // -> "buy"
+    expect(extractCompanyQuery('sho')).toBeNull();           // -> "should"
+    expect(extractCompanyQuery('sel')).toBeNull();           // -> "sell"
+    expect(extractCompanyQuery('inves')).toBeNull();         // -> "invest"
+    expect(extractCompanyQuery('should i sel')).toBeNull();  // -> "sell"
+  });
+
+  it('still extracts a bare company name that is not a command prefix', () => {
+    expect(t('reli')).toBe('reli');
+    expect(t('tcs')).toBe('tcs');
+    expect(t('vedan')).toBe('vedan');
+  });
+
   it('returns null when the remaining span is longer than a company name', () => {
     // 5 non-filler words in the middle -> not a single company lookup
     expect(extractCompanyQuery('compare hdfc bank icici bank kotak bank axis bank')).toBeNull();
@@ -146,6 +161,20 @@ describe('useCompanySuggest + CompanySuggest', () => {
   it('does not search below the minimum character threshold', async () => {
     render(<Harness onSelect={() => {}} />);
     type('v');
+    await new Promise((r) => setTimeout(r, 220));
+    expect(searchSymbols).not.toHaveBeenCalled();
+  });
+
+  it('does not search a bare 2-char fragment', async () => {
+    render(<Harness onSelect={() => {}} />);
+    type('re');
+    await new Promise((r) => setTimeout(r, 220));
+    expect(searchSymbols).not.toHaveBeenCalled();
+  });
+
+  it('does not search while a command word is still being typed', async () => {
+    render(<Harness onSelect={() => {}} />);
+    type('should i bu');
     await new Promise((r) => setTimeout(r, 220));
     expect(searchSymbols).not.toHaveBeenCalled();
   });
