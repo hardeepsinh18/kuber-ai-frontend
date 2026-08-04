@@ -8,6 +8,8 @@ import {
   signUp as cognitoSignUp,
   confirmSignUp as cognitoConfirmSignUp,
   resendSignUpCode as cognitoResendSignUpCode,
+  resetPassword as cognitoResetPassword,
+  confirmResetPassword as cognitoConfirmResetPassword,
   signInWithRedirect,
   signOut as cognitoSignOut,
   fetchAuthSession,
@@ -203,6 +205,20 @@ export function AuthProvider({ children }) {
     await cognitoResendSignUpCode({ username: email });
   };
 
+  // Kicks off the "forgot password" flow — Cognito emails a code out-of-band
+  // per pool settings. Callers should follow this with confirmForgotPassword.
+  const forgotPassword = async (email) => {
+    if (!authConfigured) throw new Error('Password reset is not available right now.');
+    return cognitoResetPassword({ username: email });
+  };
+
+  // Completes the reset with the emailed code + new password. Does NOT sign the
+  // user in — callers should follow a successful reset with signInWithEmail.
+  const confirmForgotPassword = async (email, code, newPassword) => {
+    if (!authConfigured) throw new Error('Password reset is not available right now.');
+    await cognitoConfirmResetPassword({ username: email, confirmationCode: code, newPassword });
+  };
+
   const signInWithGoogle = async () => {
     if (!authConfigured) throw new Error('Google sign-in requires Cognito');
     // Redirects to the Cognito hosted UI (Google federation); returns to
@@ -256,6 +272,8 @@ export function AuthProvider({ children }) {
     signUpWithEmail,
     confirmSignUpCode,
     resendConfirmationCode,
+    forgotPassword,
+    confirmForgotPassword,
     signInWithGoogle,
     signOut,
     refreshSession,

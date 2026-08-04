@@ -18,7 +18,7 @@ const GoogleIcon = () => (
 
 export default function AuthPage() {
     const navigate = useNavigate();
-    const { signInWithEmail, signUpWithEmail, confirmSignUpCode, resendConfirmationCode, signInWithGoogle, isAuthenticated, supabaseConfigured } = useAuth();
+    const { signInWithEmail, signUpWithEmail, confirmSignUpCode, resendConfirmationCode, forgotPassword, confirmForgotPassword, signInWithGoogle, isAuthenticated, supabaseConfigured } = useAuth();
     const { theme } = useTheme();
     const isDark = theme === 'dark';
     const reducedMotion = usePrefersReducedMotion();
@@ -28,11 +28,15 @@ export default function AuthPage() {
     const skipHeavyBackdrop = useSkipHeavyBackdrop();
 
     // mode: 'signin' | 'signup' | 'confirm' (confirm = enter the emailed code after signup)
+    //       | 'forgot' (enter email to request a reset code) | 'reset' (enter code + new password)
     const [mode,      setMode]    = useState('signin');
     const [email,    setEmail]    = useState('');
     const [password, setPassword] = useState('');
     const [fullName, setFullName] = useState('');
     const [confirmCode, setConfirmCode] = useState('');
+    const [resetCode, setResetCode] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmNewPassword, setConfirmNewPassword] = useState('');
     // CONF-D-011 (DPDP): marketing consent must be OPT-IN. This defaulted to true,
     // so every signup pre-agreed to SMS/WhatsApp marketing without an affirmative
     // act — a pre-ticked box is not valid consent under the DPDP Act, and bundling
@@ -53,7 +57,10 @@ export default function AuthPage() {
         if (isAuthenticated) navigate('/', { replace: true });
     }, [isAuthenticated, navigate]);
 
-    const switchMode = (m) => { setMode(m); setError(''); setInfo(''); };
+    const switchMode = (m) => {
+        setMode(m); setError(''); setInfo('');
+        setConfirmCode(''); setResetCode(''); setNewPassword(''); setConfirmNewPassword('');
+    };
 
     const handleContinue = async (e) => {
         e.preventDefault();
@@ -111,6 +118,55 @@ export default function AuthPage() {
         setError(''); setInfo(''); setLoading(true);
         try {
             await resendConfirmationCode(email.trim());
+            setInfo('Code resent — check your email.');
+        } catch (err) {
+            setError(err.message || 'Could not resend code');
+        } finally { setLoading(false); }
+    };
+
+    const handleForgotSubmit = async (e) => {
+        e.preventDefault();
+        if (!email.trim()) { setError('Please enter your email address'); return; }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError('Please enter a valid email'); return; }
+        setError(''); setInfo(''); setLoading(true);
+        try {
+            await forgotPassword(email.trim());
+            setMode('reset');
+            setInfo('We emailed you a reset code.');
+        } catch (err) {
+            setError(err.message || 'Could not send reset code');
+        } finally { setLoading(false); }
+    };
+
+    const handleResetSubmit = async (e) => {
+        e.preventDefault();
+        if (!resetCode.trim()) { setError('Please enter the reset code'); return; }
+        // Matches the Cognito user pool's password policy: 8+ chars, upper, lower, number, symbol.
+        if (
+            newPassword.length < 8 ||
+            !/[A-Z]/.test(newPassword) ||
+            !/[a-z]/.test(newPassword) ||
+            !/[0-9]/.test(newPassword) ||
+            !/[^A-Za-z0-9]/.test(newPassword)
+        ) {
+            setError('Password must be 8+ characters with an uppercase letter, lowercase letter, number, and symbol.');
+            return;
+        }
+        if (newPassword !== confirmNewPassword) { setError('Passwords do not match'); return; }
+        setError(''); setInfo(''); setLoading(true);
+        try {
+            await confirmForgotPassword(email.trim(), resetCode.trim(), newPassword);
+            await signInWithEmail(email.trim(), newPassword);
+            navigate('/', { replace: true });
+        } catch (err) {
+            setError(err.message || 'Invalid or expired code');
+        } finally { setLoading(false); }
+    };
+
+    const handleForgotResend = async () => {
+        setError(''); setInfo(''); setLoading(true);
+        try {
+            await forgotPassword(email.trim());
             setInfo('Code resent — check your email.');
         } catch (err) {
             setError(err.message || 'Could not resend code');
@@ -207,7 +263,7 @@ export default function AuthPage() {
 
                     <div style={{ height: 3, background: 'linear-gradient(90deg, transparent 0%, #FDD405 30%, #FDD405 70%, transparent 100%)', opacity: 0.9 }} />
 
-                    {mode !== 'confirm' && (
+                    {mode !== 'confirm' && mode !== 'forgot' && mode !== 'reset' && (
                         <div style={{ display: 'flex', gap: 4, margin: '18px 24px 0', padding: 3, borderRadius: 10, background: inputBg }}>
                             {['signin', 'signup'].map(m => (
                                 <button key={m} type="button" onClick={() => switchMode(m)}
@@ -288,6 +344,171 @@ export default function AuthPage() {
                                 </button>
                             </div>
                         </form>
+                    ) : mode === 'forgot' ? (
+                        <form onSubmit={handleForgotSubmit} className="p-6 flex flex-col gap-4">
+                            <p style={{ fontSize: 13, color: textSub }}>
+                                Enter your account email and we'll send you a code to reset your password.
+                            </p>
+
+                            <div>
+                                <label className="block text-[11px] font-semibold uppercase tracking-widest mb-2" style={{ color: labelColor }}>
+                                    Email address
+                                </label>
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={e => { setEmail(e.target.value); setError(''); }}
+                                    placeholder="you@example.com"
+                                    autoComplete="email"
+                                    autoFocus
+                                    style={{
+                                        width: '100%', padding: '11px 14px', boxSizing: 'border-box',
+                                        background: inputBg,
+                                        border: '1px solid rgba(253,212,5,0.20)',
+                                        borderRadius: 10, color: inputColor, fontSize: 14, outline: 'none',
+                                    }}
+                                    onFocus={e => { e.target.style.borderColor = 'rgba(253,212,5,0.60)'; e.target.style.outline = '2px solid #fdd405'; e.target.style.outlineOffset = '2px'; }}
+                                    onBlur={e => { e.target.style.borderColor = 'rgba(253,212,5,0.20)'; e.target.style.outline = 'none'; }}
+                                />
+                            </div>
+
+                            {error && (
+                                <p style={{ fontSize: 12, color: '#f87171', background: 'rgba(127,29,29,0.15)', border: '1px solid rgba(153,27,27,0.3)', borderRadius: 8, padding: '8px 12px' }}>
+                                    {error}
+                                </p>
+                            )}
+                            {info && !error && (
+                                <p style={{ fontSize: 12, color: '#4ade80', background: 'rgba(20,83,45,0.15)', border: '1px solid rgba(22,101,52,0.3)', borderRadius: 8, padding: '8px 12px' }}>
+                                    {info}
+                                </p>
+                            )}
+
+                            <button type="submit" disabled={loading}
+                                style={{
+                                    width: '100%', padding: '13px', background: '#FDD405',
+                                    border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700,
+                                    color: '#111', cursor: loading ? 'not-allowed' : 'pointer',
+                                    opacity: loading ? 0.6 : 1,
+                                    boxShadow: '0 4px 20px rgba(253,212,5,0.28)',
+                                }}>
+                                {loading
+                                    ? <span style={{ display: 'inline-block', width: 16, height: 16, border: '2px solid rgba(0,0,0,0.2)', borderTopColor: '#000', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                                    : 'Send reset code →'}
+                            </button>
+
+                            <button type="button" onClick={() => switchMode('signin')} disabled={loading}
+                                style={{ background: 'none', border: 'none', color: textSub, fontSize: 12, cursor: 'pointer', padding: 0, alignSelf: 'flex-start' }}>
+                                ← Back to sign in
+                            </button>
+                        </form>
+                    ) : mode === 'reset' ? (
+                        <form onSubmit={handleResetSubmit} className="p-6 flex flex-col gap-4">
+                            <p style={{ fontSize: 13, color: textSub }}>
+                                Enter the code we emailed to <span style={{ color: textMain, fontWeight: 600 }}>{email}</span>, plus a new password.
+                            </p>
+
+                            <div>
+                                <label className="block text-[11px] font-semibold uppercase tracking-widest mb-2" style={{ color: labelColor }}>
+                                    Reset code
+                                </label>
+                                <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={resetCode}
+                                    onChange={e => { setResetCode(e.target.value); setError(''); }}
+                                    placeholder="123456"
+                                    autoComplete="one-time-code"
+                                    autoFocus
+                                    style={{
+                                        width: '100%', padding: '11px 14px', boxSizing: 'border-box',
+                                        background: inputBg,
+                                        border: '1px solid rgba(253,212,5,0.20)',
+                                        borderRadius: 10, color: inputColor, fontSize: 14, outline: 'none', letterSpacing: 2,
+                                    }}
+                                    onFocus={e => { e.target.style.borderColor = 'rgba(253,212,5,0.60)'; e.target.style.outline = '2px solid #fdd405'; e.target.style.outlineOffset = '2px'; }}
+                                    onBlur={e => { e.target.style.borderColor = 'rgba(253,212,5,0.20)'; e.target.style.outline = 'none'; }}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-[11px] font-semibold uppercase tracking-widest mb-2" style={{ color: labelColor }}>
+                                    New password
+                                </label>
+                                <input
+                                    type="password"
+                                    value={newPassword}
+                                    onChange={e => { setNewPassword(e.target.value); setError(''); }}
+                                    placeholder="••••••••"
+                                    autoComplete="new-password"
+                                    minLength={8}
+                                    style={{
+                                        width: '100%', padding: '11px 14px', boxSizing: 'border-box',
+                                        background: inputBg,
+                                        border: '1px solid rgba(253,212,5,0.20)',
+                                        borderRadius: 10, color: inputColor, fontSize: 14, outline: 'none',
+                                    }}
+                                    onFocus={e => { e.target.style.borderColor = 'rgba(253,212,5,0.60)'; e.target.style.outline = '2px solid #fdd405'; e.target.style.outlineOffset = '2px'; }}
+                                    onBlur={e => { e.target.style.borderColor = 'rgba(253,212,5,0.20)'; e.target.style.outline = 'none'; }}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-[11px] font-semibold uppercase tracking-widest mb-2" style={{ color: labelColor }}>
+                                    Confirm new password
+                                </label>
+                                <input
+                                    type="password"
+                                    value={confirmNewPassword}
+                                    onChange={e => { setConfirmNewPassword(e.target.value); setError(''); }}
+                                    placeholder="••••••••"
+                                    autoComplete="new-password"
+                                    minLength={8}
+                                    style={{
+                                        width: '100%', padding: '11px 14px', boxSizing: 'border-box',
+                                        background: inputBg,
+                                        border: '1px solid rgba(253,212,5,0.20)',
+                                        borderRadius: 10, color: inputColor, fontSize: 14, outline: 'none',
+                                    }}
+                                    onFocus={e => { e.target.style.borderColor = 'rgba(253,212,5,0.60)'; e.target.style.outline = '2px solid #fdd405'; e.target.style.outlineOffset = '2px'; }}
+                                    onBlur={e => { e.target.style.borderColor = 'rgba(253,212,5,0.20)'; e.target.style.outline = 'none'; }}
+                                />
+                            </div>
+
+                            {error && (
+                                <p style={{ fontSize: 12, color: '#f87171', background: 'rgba(127,29,29,0.15)', border: '1px solid rgba(153,27,27,0.3)', borderRadius: 8, padding: '8px 12px' }}>
+                                    {error}
+                                </p>
+                            )}
+                            {info && !error && (
+                                <p style={{ fontSize: 12, color: '#4ade80', background: 'rgba(20,83,45,0.15)', border: '1px solid rgba(22,101,52,0.3)', borderRadius: 8, padding: '8px 12px' }}>
+                                    {info}
+                                </p>
+                            )}
+
+                            <button type="submit" disabled={loading}
+                                style={{
+                                    width: '100%', padding: '13px', background: '#FDD405',
+                                    border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700,
+                                    color: '#111', cursor: loading ? 'not-allowed' : 'pointer',
+                                    opacity: loading ? 0.6 : 1,
+                                    boxShadow: '0 4px 20px rgba(253,212,5,0.28)',
+                                }}>
+                                {loading
+                                    ? <span style={{ display: 'inline-block', width: 16, height: 16, border: '2px solid rgba(0,0,0,0.2)', borderTopColor: '#000', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                                    : 'Reset password →'}
+                            </button>
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                                <button type="button" onClick={() => switchMode('signin')} disabled={loading}
+                                    style={{ background: 'none', border: 'none', color: textSub, cursor: 'pointer', padding: 0 }}>
+                                    ← Back to sign in
+                                </button>
+                                <button type="button" onClick={handleForgotResend} disabled={loading}
+                                    style={{ background: 'none', border: 'none', color: '#FDD405', fontWeight: 600, cursor: 'pointer', padding: 0 }}>
+                                    Resend code
+                                </button>
+                            </div>
+                        </form>
                     ) : (
                     <form onSubmit={handleContinue} className="p-6 flex flex-col gap-4">
 
@@ -340,9 +561,17 @@ export default function AuthPage() {
 
                         {/* Password */}
                         <div>
-                            <label className="block text-[11px] font-semibold uppercase tracking-widest mb-2" style={{ color: labelColor }}>
-                                Password
-                            </label>
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: labelColor }}>
+                                    Password
+                                </label>
+                                {mode === 'signin' && (
+                                    <button type="button" onClick={() => switchMode('forgot')} disabled={loading}
+                                        style={{ background: 'none', border: 'none', color: '#FDD405', fontSize: 11.5, fontWeight: 600, cursor: 'pointer', padding: 0 }}>
+                                        Forgot password?
+                                    </button>
+                                )}
+                            </div>
                             <input
                                 type="password"
                                 value={password}
