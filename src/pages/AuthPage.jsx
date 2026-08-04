@@ -145,8 +145,17 @@ export default function AuthPage() {
     const orColor    = isDark ? 'rgba(82,82,91,1)' : 'rgba(113,113,122,1)';
     const googleBg   = isDark ? '#fff' : '#fff';
 
+    // The card + logo are taller than a short viewport (laptop at 100% zoom, small
+    // screens). This used to be `justify-center` + `overflow-hidden`: once content
+    // exceeded the viewport, centring pushed the logo off the top edge and
+    // `overflow-hidden` clipped it away with no way to scroll to it — so the logo
+    // was visible only when zoomed out or on a tall screen.
+    // `justify-start` + `my-auto` on the inner block centres while there IS room and
+    // degrades to top-aligned + scrollable when there is not, so nothing is ever
+    // unreachable. overflow-x stays hidden — the decorative backdrop is what needed
+    // clipping, and it is `fixed`, so it is unaffected either way.
     return (
-        <div className="min-h-screen w-full flex flex-col items-center justify-center px-4 py-10 relative overflow-hidden"
+        <div className="min-h-screen w-full flex flex-col items-center justify-start px-4 py-10 relative overflow-x-hidden overflow-y-auto"
              style={{ backgroundColor: bg }}>
 
             {/* QA-C-008: aria-hidden — this is a purely decorative backdrop. Without it
@@ -177,7 +186,7 @@ export default function AuthPage() {
                 initial={{ opacity: 0, y: 18 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                className="relative z-10 w-full max-w-sm flex flex-col items-center">
+                className="relative z-10 w-full max-w-sm flex flex-col items-center my-auto">
 
                 {/* Logo */}
                 <div className="flex items-center gap-3 mb-6">
