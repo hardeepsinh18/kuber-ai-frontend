@@ -6,6 +6,25 @@ import { useTheme } from '../context/ThemeContext';
 import KuberLogo from '../components/KuberLogo';
 import usePrefersReducedMotion from '../hooks/usePrefersReducedMotion';
 import useSkipHeavyBackdrop from '../hooks/useSkipHeavyBackdrop';
+import { getApiBase } from '../lib/apiBase';
+
+const SUBSCRIBE_ENDPOINT = `${getApiBase()}/api/v1/subscribe`;
+
+// Record a marketing opt-in when the user affirmatively ticks the consent box.
+// Fire-and-forget with keepalive so it survives the navigation to '/', and fully
+// swallowed — a failed opt-in must never block or fail the sign-in/sign-up flow.
+function postSubscribe(email) {
+    try {
+        fetch(SUBSCRIBE_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            keepalive: true,
+            body: JSON.stringify({ email, opted_in: true, source: 'login_page' }),
+        }).catch(err => console.warn('subscribe failed:', err?.message || err));
+    } catch (err) {
+        console.warn('subscribe error:', err?.message || err);
+    }
+}
 
 const GoogleIcon = () => (
     <svg width="18" height="18" viewBox="0 0 24 24">
@@ -43,11 +62,10 @@ export default function AuthPage() {
     // it with the signup flow makes it worse. Defaults to false; the user has to
     // tick it deliberately.
     //
-    // NOTE: this value is still not transmitted or recorded anywhere — the control
-    // is cosmetic today. Unchecked-by-default is the honest state while that is
-    // true: it promises nothing and pre-consents to nothing. Wiring it to a
-    // recorded, timestamped consent preference (with withdrawal) is the remaining
-    // half of CONF-D-011 and needs a backend consent store.
+    // When ticked, handleContinue records the consent via POST /api/v1/subscribe
+    // into the marketing_subscribers table (timestamped created_at/updated_at).
+    // Only an affirmative tick is transmitted — an untouched box records nothing.
+    // A user-facing withdrawal UI is still TODO (the backend accepts opted_in=false).
     const [updates,  setUpdates]  = useState(false);
     const [error,   setError]   = useState('');
     const [info,    setInfo]    = useState('');
@@ -79,6 +97,8 @@ export default function AuthPage() {
             return;
         }
         setError(''); setInfo(''); setLoading(true);
+        // CONF-D-011: record the affirmative marketing opt-in (fire-and-forget).
+        if (updates) postSubscribe(email.trim());
         try {
             if (mode === 'signup') {
                 const res = await signUpWithEmail(email.trim(), password, { full_name: fullName.trim() });
