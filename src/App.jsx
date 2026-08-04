@@ -89,18 +89,21 @@ function AppContent() {
 }
 
 /**
- * QA-C-001: the splash ran on EVERY load — a fixed 2.2s gate in front of the
- * router, including every in-session reload and every return visit, with no
- * informational payload after the first time. That is pure added time-to-
- * interactive for a returning user.
+ * The splash plays on EVERY load, including reloads and second tabs.
  *
- * It now shows once per browser session. sessionStorage (not localStorage) is
- * deliberate: the brand moment still plays for a genuinely new visit, but a
- * reload or a second tab in the same session goes straight to the app.
+ * History: QA-C-001 previously gated it to once per browser session via
+ * sessionStorage, to avoid spending a returning user's time-to-interactive on a
+ * brand moment with no informational payload. That was reverted deliberately
+ * (product call, 2026-08-04) — the splash is wanted on every reload.
  *
- * Reads are wrapped because sessionStorage throws in Safari private mode and
- * when storage is disabled — in that case we simply show the splash, which is
- * the current behaviour and never a broken screen.
+ * The known trade-off is the one QA-C-001 raised: every reload now costs ~2.2s
+ * before the app is interactive. If that becomes a complaint, the lever is
+ * SplashScreen's own fade/done timers, or restoring the session gate below.
+ *
+ * The storage helpers are kept and still exported: they are the documented seam
+ * for re-introducing a gate, and they must never throw (sessionStorage raises in
+ * Safari private mode and when storage is disabled). They are intentionally not
+ * consulted when deciding whether to render the splash.
  */
 export const SPLASH_SEEN_KEY = 'venty:splash-seen';
 
@@ -116,15 +119,17 @@ export function markSplashSeen() {
   try {
     sessionStorage.setItem(SPLASH_SEEN_KEY, '1');
   } catch {
-    /* storage unavailable — the splash just shows again next load */
+    /* storage unavailable — nothing to degrade, the splash shows regardless */
   }
 }
 
 function App() {
-  // Initialised from session state, so a returning user never renders the
-  // splash at all (rather than rendering and hiding it, which would still flash).
-  const [splashDone, setSplashDone] = useState(hasSeenSplashThisSession);
+  // Always starts false, so the splash renders on every load. Deliberately NOT
+  // seeded from hasSeenSplashThisSession() — that is what made reloads skip it.
+  const [splashDone, setSplashDone] = useState(false);
   const handleSplashDone = useCallback(() => {
+    // Still recorded so anything else that wants "has the user seen it this
+    // session" keeps working, and so restoring the gate is a one-line change.
     markSplashSeen();
     setSplashDone(true);
   }, []);
