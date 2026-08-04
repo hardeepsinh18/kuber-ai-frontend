@@ -59,10 +59,29 @@ const PRIVACY = [
     // are statutory requirements; nobody but 72 Street can supply them, and inventing
     // them would be worse than leaving the gap visible. Legal should review the whole
     // section before it is treated as the authoritative notice.
+    // CONF-D-010: this section previously said "chat queries ... deleted after 90
+    // days", which was NOT true and understated retention. The 90-day purge covers
+    // api_usage_log only (query text, IP, timing metadata). Your actual chat
+    // history — questions AND our answers, including buy/sell verdicts — lives in
+    // chat_messages and is retained while the account exists, because 72 Street
+    // operates as a SEBI-registered Research Analyst and those regulations require
+    // records of research and recommendations to be retained and justifiable to the
+    // regulator after the fact.
+    //
+    // Stating the shorter figure was the harder position to defend under DPDP: the
+    // published promise and the system behaviour disagreed, and the promise was the
+    // more generous one. This text now matches what the code does.
     ['How long we keep it',
-        'Chat queries and technical request logs are automatically deleted after 90 days. ' +
-        'Your account record (email, and the display name you provide) is kept while your ' +
-        'account exists, and is removed when you erase your account. Aggregate, ' +
+        'Your chat history — your questions and our responses, including any analysis ' +
+        'or verdict we provide — is kept for as long as your account exists. We are ' +
+        'required to do this: 72 Street operates as a SEBI-registered Research Analyst, ' +
+        'and SEBI regulations require us to retain records of the research and ' +
+        'recommendations we give, so they can be reviewed by the regulator. ' +
+        'Technical request logs (the query text we log for diagnostics, your IP address ' +
+        'and timing data) are automatically deleted after 90 days. ' +
+        'Your account record (email, and the display name you provide) is kept while ' +
+        'your account exists. You can erase your account at any time from the app, ' +
+        'which permanently deletes your chat history and account record. Aggregate, ' +
         'non-identifying usage counts may be retained longer to monitor reliability.'],
     ['Your rights, and how to use them',
         'You can request a copy of your data, correct it, or erase it. Signed in, you can ' +
