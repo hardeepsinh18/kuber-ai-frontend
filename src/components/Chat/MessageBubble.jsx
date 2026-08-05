@@ -1240,19 +1240,19 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                                     );
                                 },
                                 table: ({ children }) => (
-                                    <div className="my-6 overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-[#1C1B15] shadow-sm">
+                                    <div className="my-4 overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800/80 bg-zinc-50 dark:bg-[#0d0c0b]">
                                         <table className="min-w-full border-collapse">
                                             {children}
                                         </table>
                                     </div>
                                 ),
                                 thead: ({ children }) => (
-                                    <thead className="bg-[#FDD405]">
+                                    <thead className="bg-[#FDD405]/[0.14] dark:bg-[#FDD405]/[0.10] border-b-2 border-[#FDD405]">
                                         {children}
                                     </thead>
                                 ),
                                 tbody: ({ children }) => (
-                                    <tbody className="divide-y divide-[#FDD405]">
+                                    <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800/70">
                                         {children}
                                     </tbody>
                                 ),
@@ -1260,14 +1260,14 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                                     const isHeader = node?.parent?.tagName === 'thead';
                                     return (
                                         <tr className={clsx(
-                                            !isHeader && "hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40 transition-colors odd:bg-zinc-50/30 dark:odd:bg-zinc-900/20"
+                                            !isHeader && "transition-colors hover:bg-[#FDD405]/[0.06] dark:hover:bg-[#FDD405]/[0.05]"
                                         )}>
                                             {children}
                                         </tr>
                                     );
                                 },
                                 th: ({ children }) => (
-                                    <th className="px-4 py-3 text-left text-[14px] font-bold text-black border-b border-black/10">
+                                    <th className="px-3.5 py-2.5 text-left text-[9px] font-extrabold uppercase tracking-[0.14em] text-zinc-700 dark:text-[#FDD405] whitespace-nowrap">
                                         {children}
                                     </th>
                                 ),
@@ -1278,12 +1278,18 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                                     // painted dates ("2024-25"), ranges ("10-15%") and fiscal years red
                                     const isNegative = /(?<!\d)[−-][\d.,]+%/.test(textStr)
                                         || /^\s*[−-]\s*₹?[\d.,]+\s*$/.test(textStr);
+                                    // Numeric cells get tabular figures so columns line up down
+                                    // the page - the whole point of a table of numbers.
+                                    const isNumeric = /^[\s\u20b9$]*[\u2212-]?[\d.,]+\s*(%|x|Cr|L\s*Cr|K)?\s*$/i.test(textStr)
+                                        || /^Rs\s*[\d.,]+/i.test(textStr);
                                     return (
                                         <td className={clsx(
-                                            "px-4 py-3 text-[15px] align-top",
-                                            isPositive && "text-emerald-600 dark:text-emerald-400 font-medium",
-                                            isNegative && "text-rose-600 dark:text-rose-400 font-medium",
-                                            !isPositive && !isNegative && "text-zinc-700 dark:text-zinc-300"
+                                            "px-3.5 py-2.5 text-[13px] align-middle",
+                                            isNumeric && "tabular-nums",
+                                            // Brand green for gains; red stays for real losses only.
+                                            isPositive && "text-[#0e9e37] dark:text-emerald-400 font-semibold",
+                                            isNegative && "text-rose-600 dark:text-rose-400 font-semibold",
+                                            !isPositive && !isNegative && "text-zinc-700 dark:text-zinc-200"
                                         )}>
                                             {children}
                                         </td>
