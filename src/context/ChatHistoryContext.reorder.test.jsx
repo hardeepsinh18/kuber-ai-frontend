@@ -150,6 +150,57 @@ describe('opening an old chat', () => {
         expect(bumped, 'reading a chat must not re-sort it to the top').toBe(false);
     });
 
+    it('sends no write to the server when a chat is only read', async () => {
+        // The local list above was already guarded, but the SERVER round-trip was
+        // not: flushPersist PATCHed the title on every flush, including one caused
+        // purely by opening a chat. That PATCH makes the backend touch updated_at,
+        // so the next list refresh legitimately reports the chat as the most
+        // recently updated and it floats to the top — with the sidebar showing
+        // "now" for a chat from yesterday. Reading must be a no-op on the wire.
+        render(
+            <ChatHistoryProvider>
+                <Probe />
+            </ChatHistoryProvider>
+        );
+
+        await act(async () => { api.loadChat(OLD); });
+        await act(async () => { resolveGetChat(); await Promise.resolve(); await Promise.resolve(); });
+        await waitFor(() => expect(screen.getByTestId('count').textContent).toBe('2'));
+        await act(async () => { await vi.advanceTimersByTimeAsync(900); });
+
+        expect(
+            chatsApi.updateChatTitle.mock.calls.length,
+            'opening a chat must not PATCH its title'
+        ).toBe(0);
+        expect(
+            chatsApi.appendMessages.mock.calls.length,
+            'opening a chat must not re-append its messages'
+        ).toBe(0);
+    });
+
+    it('does write to the server once the user adds a message', async () => {
+        // Guard against over-correcting: suppressing the read-only PATCH must not
+        // suppress a real one, or renames and new turns stop syncing.
+        render(
+            <ChatHistoryProvider>
+                <Probe />
+            </ChatHistoryProvider>
+        );
+
+        await act(async () => { api.loadChat(OLD); });
+        await act(async () => { resolveGetChat(); await Promise.resolve(); await Promise.resolve(); });
+        await waitFor(() => expect(screen.getByTestId('count').textContent).toBe('2'));
+        await act(async () => { await vi.advanceTimersByTimeAsync(900); });
+
+        await act(async () => {
+            api.setMessages((prev) => [...prev, { id: 'm3', role: 'user', content: 'and its debt?' }]);
+        });
+        await act(async () => { await vi.advanceTimersByTimeAsync(900); });
+
+        expect(chatsApi.appendMessages.mock.calls.length).toBeGreaterThan(0);
+        expect(chatsApi.updateChatTitle.mock.calls.length).toBeGreaterThan(0);
+    });
+
     it('recovers the answer when localStorage only cached the question', async () => {
         // The reported bug. localStorage is lossy: it evicts under quota
         // pressure, and a persist that lands mid-stream can store the user's

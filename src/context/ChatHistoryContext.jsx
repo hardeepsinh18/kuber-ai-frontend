@@ -231,6 +231,13 @@ export function ChatHistoryProvider({ children }) {
                     // still over quota — messages are safely on the server, no pruning
                 }
             }
+            // Read BEFORE setChatList writes the new list. Deliberately not captured
+            // inside the state updater: React does not guarantee the updater runs
+            // synchronously, and a deferred one would leave this false and silently
+            // stop syncing genuine title changes. chatStorage is the same list the
+            // updater persists, so it is an equivalent view with no timing coupling.
+            const knownTitle = chatStorage.getChatList().find((c) => c.id === chatId)?.title;
+            const titleChanged = !knownTitle || (title && title !== knownTitle);
             setChatList((prev) => {
                 const next = prev.map((c) =>
                     c.id === chatId
@@ -270,7 +277,18 @@ export function ChatHistoryProvider({ children }) {
                             console.warn('Chat sync to backend failed (messages safe in localStorage):', err?.message);
                         });
                 }
-                chatsApi.updateChatTitle(chatId, title, accessToken).catch(() => {});
+                // Only PATCH when something actually changed. This used to fire on
+                // EVERY flush — including one caused purely by opening a chat, since
+                // hydrating it changes `messages` and schedules the debounce. The
+                // backend touches updated_at on that PATCH, so merely reading a chat
+                // made the server report it as the most recently updated: the next
+                // list refresh pulled that fresh timestamp back and the chat jumped
+                // to the top of the sidebar showing "now", even for a chat from
+                // yesterday. Guarding the local updatedAt alone was not enough,
+                // because the server value overrides it on refresh.
+                if (hasNewMessages || titleChanged) {
+                    chatsApi.updateChatTitle(chatId, title, accessToken).catch(() => {});
+                }
             }
         }
     }, []);
