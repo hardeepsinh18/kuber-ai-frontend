@@ -79,7 +79,13 @@ const StartScreen = ({ onStartChat, onScannerResult, responseMode, setResponseMo
                                  boxShadow: '0 0 20px rgba(253,212,5,0.12), 0 0 50px rgba(253,212,5,0.06)'
                              }}>
                             <CompanySuggest {...suggest.dropdownProps} direction="down" />
-                            <div className="rounded-[15px] bg-white dark:bg-[#141414] overflow-hidden">
+                            {/* Same soft gradient fill as the chat composer (InputBar)
+                                so the two never read as different surfaces. */}
+                            <div className="rounded-[15px] overflow-hidden
+                                            bg-gradient-to-b
+                                            from-white to-[#FBF9F2]
+                                            dark:from-[#171717] dark:to-[#101010]">
+
                                 <textarea
                                     ref={inputRef}
                                     rows={2}
