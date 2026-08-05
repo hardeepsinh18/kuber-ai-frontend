@@ -263,7 +263,13 @@ const SYMBOL_HINT_STOPWORDS = new Set([
  * raw       = individual words that look like tickers but may be parts of a company name
  *             ("prince pipes" → ["PRINCE","PIPES"]) — sending these confuses the backend
  */
-const extractStockSymbols = (query) => {
+// Exported for tests: the alias table is the single point where a typed company
+// name becomes a confident ticker hint, and a wrong hint here overrides the
+// backend entirely (see ChatContainer.aliases.test.js). The rule below is a
+// hot-reload ergonomics warning, not a correctness one — a pure helper next to
+// the component that uses it is worth more than a marginally faster HMR tick.
+// eslint-disable-next-line react-refresh/only-export-components
+export const extractStockSymbols = (query) => {
     const confident = [];
     const raw = [];
 
@@ -347,6 +353,21 @@ const extractStockSymbols = (query) => {
         'steel authority of india': 'SAIL',
         'sail steel': 'SAIL',
         'icici bank': 'ICICIBANK',
+        // ICICI/Bajaj/Godrej group companies. Without these the bare-prefix
+        // aliases below ('icici', 'bajaj', 'godrej') swallowed the whole group:
+        // "icici lombard" resolved to ICICIBANK and the card rendered the BANK's
+        // price, chart and verdict under an insurance question.
+        // Tickers verified against the live symbol-search master list.
+        'icici lombard': 'ICICIGI',
+        'icici general': 'ICICIGI',
+        'icici general insurance': 'ICICIGI',
+        'icici prudential': 'ICICIPRULI',
+        'icici pru': 'ICICIPRULI',
+        'icici prudential life': 'ICICIPRULI',
+        'bajaj holdings': 'BAJAJHLDNG',
+        'godrej consumer': 'GODREJCP',
+        'godrej industries': 'GODREJIND',
+        'godrej agrovet': 'GODREJAGRO',
         'axis bank': 'AXISBANK',
         'kotak bank': 'KOTAKBANK',
         'state bank': 'SBIN',
@@ -549,6 +570,18 @@ const extractStockSymbols = (query) => {
         'macrotech': 'LODHA',
     };
 
+    // House names shared by multiple listed companies. A bare head resolves to the
+    // flagship ("icici" → ICICIBANK), but the head followed by another company word
+    // must NOT, or the whole group collapses onto the flagship.
+    const GROUP_HEADS = new Set(['icici', 'bajaj', 'godrej', 'tata', 'aditya', 'kotak', 'hdfc']);
+    // Words that may legitimately follow a head while still meaning the flagship —
+    // "icici bank share price", "hdfc bank today". These keep the normal behaviour.
+    const GROUP_HEAD_OK_NEXT = new Set([
+        'share', 'shares', 'stock', 'stocks', 'price', 'today', 'now', 'chart',
+        'analysis', 'fundamentals', 'technicals', 'target', 'view', 'outlook',
+        'buy', 'sell', 'hold', 'vs', 'and', 'or', 'is', 'has', 'was',
+    ]);
+
     const queryLower = query.toLowerCase();
     // rewrittenQuery replaces alias text with the actual ticker so the backend
     // receives "tell about SAIL" instead of "tell about sail" — prevents fuzzy mismatch
@@ -584,8 +617,26 @@ const extractStockSymbols = (query) => {
         if (!cleaned) continue;
         const cleanedLower = cleaned.toLowerCase();
 
-        // Alias match (single-word) → confident + rewrite
-        if (stockAliases[cleanedLower] && !confident.includes(stockAliases[cleanedLower])) {
+        // Alias match (single-word) → confident + rewrite.
+        //
+        // GROUP_HEADS are house names shared by several listed companies. Bare
+        // "icici" means ICICIBANK, but "icici lombard" is a DIFFERENT company —
+        // and the word pass used to force-resolve the head anyway, so the answer
+        // card showed ICICIBANK's price and verdict for an insurance question.
+        // The multi-word pass above already caught the combinations we know
+        // (icici lombard, godrej consumer, …). Reaching here with a following
+        // word means it is a group company we have no mapping for, so we send NO
+        // hint and let the backend resolve it against the full NSE master list —
+        // silence is recoverable, a confidently wrong ticker is not.
+        const isGroupHead = GROUP_HEADS.has(cleanedLower);
+        const nextWord = (words[words.indexOf(word) + 1] || '')
+            .replace(/[.,!?;:()'"/]/g, '').toLowerCase();
+        const headSwallowsNext = isGroupHead
+            && nextWord
+            && !GROUP_HEAD_OK_NEXT.has(nextWord);
+
+        if (stockAliases[cleanedLower] && !headSwallowsNext
+            && !confident.includes(stockAliases[cleanedLower])) {
             confident.push(stockAliases[cleanedLower]);
             rewrittenQuery = rewrittenQuery.replace(
                 new RegExp(`\\b${cleaned}\\b`, 'gi'),
