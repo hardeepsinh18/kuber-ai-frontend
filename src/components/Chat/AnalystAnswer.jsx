@@ -12,6 +12,7 @@ import {
     FinancialScoreCard as FinancialDetailCard,
 } from './FundamentalCard';
 import { answerSections, firstParagraph, metricAnswer } from './answerSections';
+import { fmtNum, fmtPct, fmtMultiple, fmtRatio } from '../../utils/metricFormat';
 
 /**
  * AnalystAnswer — "one tap deeper" layout for Analyst mode.
@@ -363,15 +364,18 @@ const TechnicalScorecard = ({ tech, technicalSummary, indicatorsTable, score }) 
 /* ─── FUNDAMENTAL SCORECARD ──────────────────────────────────────────────── */
 /* Labels spelled out so a first-time investor can read the card without a
    glossary — "Debt-to-Equity", not "D/E" or "Debt/Equity". */
+/* fmt comes from utils/metricFormat so this grid prints the SAME digits as the
+   FundamentalCard tiles. These were on 1 decimal while the cards were on 2, so a
+   single ROE showed as both "51.8%" and "51.80%" in one answer. */
 const RATIO_DEFS = {
-    pe_ratio:       { label: 'P/E Ratio',           fmt: (v) => `${Number(v).toFixed(1)}x`,  noteFromThr: (t) => t != null ? `Sector ${Number(t).toFixed(1)}` : null, name: 'P/E' },
-    roe:            { label: 'Return on Equity',    fmt: (v) => `${Number(v).toFixed(1)}%`, note: 'ROE',  name: 'ROE' },
-    roce:           { label: 'Return on Capital Employed', fmt: (v) => `${Number(v).toFixed(1)}%`, note: 'ROCE', name: 'ROCE' },
-    net_margin:     { label: 'Net Profit Margin',   fmt: (v) => `${Number(v).toFixed(1)}%`, name: 'Net margin' },
-    debt_equity:    { label: 'Debt-to-Equity',      fmt: (v) => Number(v).toFixed(2),       name: 'Debt-to-equity' },
-    revenue_growth: { label: 'Revenue Growth',      fmt: (v) => `${Number(v).toFixed(1)}%`, note: 'YoY',  name: 'Revenue growth' },
-    profit_growth:  { label: 'Profit Growth',       fmt: (v) => `${Number(v).toFixed(1)}%`, note: 'YoY',  name: 'Profit growth' },
-    dividend_yield: { label: 'Dividend Yield',      fmt: (v) => `${Number(v).toFixed(2)}%`, name: 'Dividend yield' },
+    pe_ratio:       { label: 'P/E Ratio',           fmt: fmtMultiple, noteFromThr: (t) => t != null ? `Sector ${fmtNum(t)}` : null, name: 'P/E' },
+    roe:            { label: 'Return on Equity',    fmt: fmtPct,   note: 'ROE',  name: 'ROE' },
+    roce:           { label: 'Return on Capital Employed', fmt: fmtPct, note: 'ROCE', name: 'ROCE' },
+    net_margin:     { label: 'Net Profit Margin',   fmt: fmtPct,   name: 'Net margin' },
+    debt_equity:    { label: 'Debt-to-Equity',      fmt: fmtRatio, name: 'Debt-to-equity' },
+    revenue_growth: { label: 'Revenue Growth',      fmt: fmtPct,   note: 'YoY',  name: 'Revenue growth' },
+    profit_growth:  { label: 'Profit Growth',       fmt: fmtPct,   note: 'YoY',  name: 'Profit growth' },
+    dividend_yield: { label: 'Dividend Yield',      fmt: fmtPct,   name: 'Dividend yield' },
 };
 
 const getRatio = (v) => {
@@ -390,7 +394,9 @@ const FundamentalScorecard = ({ fund, score, symbolLabel }) => {
     const cons = [];
     Object.entries(RATIO_DEFS).forEach(([key, def]) => {
         const [value, threshold, label] = getRatio(ratios[key]);
-        if (value == null) return;
+        // Skip anything the shared formatter can't render (null, '', non-numeric)
+        // rather than printing a "NaN%" / "null" cell.
+        if (value == null || !Number.isFinite(Number(value))) return;
         if (cells.length < 8) {
             cells.push({
                 label: def.label,

@@ -13,6 +13,8 @@
  * @returns {{verdictBand,chart,marketStats,patterns,scoreGrid,technicalCard,
  *            fundamentalCard,sentiment,news,takeaways,directAnswer}} booleans
  */
+import { fmtPct, fmtMultiple, fmtRatio } from '../../utils/metricFormat';
+
 /**
  * First real paragraph of a markdown answer — skips headings, bullets, tables and
  * blockquotes. Used as the "why" summary when there's no hoisted verdict, and as
@@ -32,26 +34,27 @@ export const firstParagraph = (md) => {
     return null;
 };
 
-const _round = (v, d) => Number(v).toFixed(d);
-
 /* Which fundamental metric a single-metric question is asking about, and how to
    phrase its value. Keyed to scoreCard.fundamental.ratios (see RATIO_DEFS in
-   AnalystAnswer). Order matters — first regex hit wins. */
+   AnalystAnswer). Order matters — first regex hit wins.
+
+   fmt comes from utils/metricFormat so the prose quotes the same digits the cards
+   render: an ROE of 51.7981 reads "51.80%" in the sentence and on the tile. */
 const METRIC_MATCHERS = [
     { re: /\bp\s*[/-]?\s*e\b|\bpe\b|price[\s-]*to[\s-]*earn|price.{0,6}earn/i,
-      key: 'pe_ratio', name: 'P/E', fmt: (v) => `${_round(v, 1)}x`,
-      ctx: (t) => (t != null ? ` versus the sector's ${_round(t, 1)}x` : '') },
-    { re: /\broe\b|return on equity/i,        key: 'roe',            name: 'ROE',             fmt: (v) => `${_round(v, 1)}%` },
-    { re: /\broce\b|return on capital/i,      key: 'roce',           name: 'ROCE',            fmt: (v) => `${_round(v, 1)}%` },
+      key: 'pe_ratio', name: 'P/E', fmt: fmtMultiple,
+      ctx: (t) => (t != null ? ` versus the sector's ${fmtMultiple(t)}` : '') },
+    { re: /\broe\b|return on equity/i,        key: 'roe',            name: 'ROE',             fmt: fmtPct },
+    { re: /\broce\b|return on capital/i,      key: 'roce',           name: 'ROCE',            fmt: fmtPct },
     { re: /net[\s-]*margin|profit[\s-]*margin|\bmargins?\b|profitability/i,
-      key: 'net_margin',     name: 'net margin',      fmt: (v) => `${_round(v, 1)}%` },
+      key: 'net_margin',     name: 'net margin',      fmt: fmtPct },
     { re: /debt[\s/.-]*(?:to[\s/.-]+)?equity|\bd\s*\/\s*e\b|leverage/i,
-      key: 'debt_equity',    name: 'debt-to-equity',  fmt: (v) => _round(v, 2) },
+      key: 'debt_equity',    name: 'debt-to-equity',  fmt: fmtRatio },
     { re: /revenue[\s-]*(growth|cagr)|sales[\s-]*growth/i,
-      key: 'revenue_growth', name: 'revenue growth',  fmt: (v) => `${_round(v, 1)}%` },
+      key: 'revenue_growth', name: 'revenue growth',  fmt: fmtPct },
     { re: /profit[\s-]*growth|earnings[\s-]*growth/i,
-      key: 'profit_growth',  name: 'profit growth',   fmt: (v) => `${_round(v, 1)}%` },
-    { re: /dividend/i,                        key: 'dividend_yield', name: 'dividend yield',  fmt: (v) => `${_round(v, 2)}%` },
+      key: 'profit_growth',  name: 'profit growth',   fmt: fmtPct },
+    { re: /dividend/i,                        key: 'dividend_yield', name: 'dividend yield',  fmt: fmtPct },
 ];
 
 /* Normalise a ratios entry to [value, threshold, label] — mirrors getRatio(). */

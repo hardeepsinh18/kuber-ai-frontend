@@ -40,7 +40,7 @@ describe('AnalystAnswer intent narrowing', () => {
         expect(text).toContain('The P/E of Reliance is');
         // The full-wall sections are gone
         expect(container.querySelector('canvas')).toBeNull();      // no StockChart
-        expect(text).not.toContain('Venty Score');              // no overall score grid
+        expect(text).not.toContain('Venty AI Score');              // no overall score grid
         expect(text).not.toContain('Kuber Verdict');               // no BUY/SELL verdict band
     });
 
@@ -53,7 +53,9 @@ describe('AnalystAnswer intent narrowing', () => {
         });
         const text = container.textContent;
         // The metric answer (built from data) leads — even though content opens on P/E 22.4
-        expect(text).toContain("RELIANCE's P/E is 23.2x versus the sector's 25.0x — fair.");
+        // 2 decimals: utils/metricFormat is the shared precision for every surface.
+        // Comma, not an em dash: stripAiDashes rewrites the verdict separator.
+        expect(text).toContain("RELIANCE's P/E is 23.20x versus the sector's 25.00x, fair.");
         expect(text).not.toContain('The P/E of Reliance is'); // the opening paragraph is NOT used
     });
 
@@ -64,6 +66,6 @@ describe('AnalystAnswer intent narrowing', () => {
         const { container } = renderAnswer({ ...baseProps, chartData: undefined, queryIntent: 'full' });
         const text = container.textContent;
         expect(text).toContain('Why this verdict');
-        expect(text).toContain('Venty Score');
+        expect(text).toContain('Venty AI Score');
     });
 });

@@ -12,12 +12,17 @@ describe('metricAnswer', () => {
         },
     };
 
+    // Values render at METRIC_DECIMALS (2) via utils/metricFormat, the same
+    // formatter the FundamentalCard tiles and Analyst grid use — so the prose and
+    // the cards always quote identical digits. Previously the prose rounded to 1
+    // decimal, which both disagreed with the cards and dropped a real digit
+    // (an ROE of 8.91 read as "8.9%").
     it('answers a P/E question with the P/E, sector context and verdict', () => {
         expect(metricAnswer('pe ratio of reliance', fund, 'RELIANCE'))
-            .toBe("RELIANCE's P/E is 23.2x versus the sector's 25.0x — fair.");
+            .toBe("RELIANCE's P/E is 23.20x versus the sector's 25.00x — fair.");
     });
     it('answers an ROE question with ROE (no sector context)', () => {
-        expect(metricAnswer('reliance ROE', fund, 'RELIANCE')).toBe("RELIANCE's ROE is 8.9% — weak.");
+        expect(metricAnswer('reliance ROE', fund, 'RELIANCE')).toBe("RELIANCE's ROE is 8.91% — weak.");
     });
     it('answers a debt/equity question', () => {
         expect(metricAnswer('what is the d/e of reliance', fund, 'RELIANCE'))
@@ -32,7 +37,7 @@ describe('metricAnswer', () => {
     });
     it('accepts object-shaped ratio entries too', () => {
         const objFund = { ratios: { pe_ratio: { value: 23.2, threshold: 25, label: 'FAIR' } } };
-        expect(metricAnswer('pe ratio', objFund, 'TCS')).toBe("TCS's P/E is 23.2x versus the sector's 25.0x — fair.");
+        expect(metricAnswer('pe ratio', objFund, 'TCS')).toBe("TCS's P/E is 23.20x versus the sector's 25.00x — fair.");
     });
     it('returns null when the query names no known metric', () => {
         expect(metricAnswer('show me the chart', fund, 'RELIANCE')).toBeNull();

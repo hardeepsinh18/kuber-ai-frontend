@@ -9,6 +9,7 @@ import {
 import { ChevronDown, ChevronUp, X, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { clsx } from 'clsx';
 import PatternAnnotationLayer from './PatternAnnotationLayer';
+import { fmtNum, fmtPct, fmtMultiple, fmtRatio } from '../../utils/metricFormat';
 
 /* ─── label classifiers ──────────────────────────────────────────────────── */
 // Backend RATING_LABEL: {5:"Exceptional", 4:"Strong", 3:"Average", 2:"Weak", 1:"Poor"}
@@ -131,8 +132,11 @@ const PEGradientBar = ({ pe, sectorPe, symbol }) => {
 };
 
 /* ─── ROE "Money engine" ─────────────────────────────────────────────────── */
+// The ₹100 → ₹X illustration and the "+X% PER YEAR" caption both read the SAME
+// formatted value as the card's footer (fmtPct), so the visual can never disagree
+// with the headline number the way Math.round did (51.80% rendering as ₹52 / +52%).
 const ROEViz = ({ roe }) => {
-    const profit = Math.round(roe || 0);
+    const profit = fmtNum(roe);
     return (
         <div className="w-full">
             <p className="text-[9px] text-zinc-500 uppercase tracking-wide text-center mb-2">
@@ -171,8 +175,8 @@ const SmallGauge = ({ value, sublabel, size = 88 }) => {
     const r = 32, cx = 40, cy = 42, circ = 2 * Math.PI * r;
     const filled = (pct / 100) * circ;
     const color = '#FDD405';
-    // Centre reads the true value to 2 decimals so it matches the bottom value exactly.
-    const shown = value != null ? Number(value).toFixed(2) : '—';
+    // Centre reads the shared formatter so it matches the bottom value exactly.
+    const shown = fmtNum(value) ?? '—';
     return (
         <div className="flex flex-col items-center gap-1">
             <svg viewBox="0 0 80 88" width={size} height={size}>
@@ -230,8 +234,8 @@ const ProfitSliceBar = ({ netMargin }) => {
     // rounded 9). Widths use the same number; the profit slice gets a floor so a
     // small margin still has room for its label.
     const exact      = Math.min(100, Math.max(0, Number(netMargin) || 0));
-    const profitPct  = `${exact.toFixed(2)}%`;
-    const costPct    = `${(100 - exact).toFixed(2)}%`;
+    const profitPct  = fmtPct(exact);
+    const costPct    = fmtPct(100 - exact);
     const profitW    = Math.max(exact, 22);
     const costW      = 100 - profitW;
     return (
@@ -422,9 +426,9 @@ const FinancialScoreCard = ({ fund, symbol, flat = false }) => {
     const [revGr, , revGrLabel]    = getR('revenue_growth');
     const [profGr, , profGrLabel]  = getR('profit_growth');
 
-    // Percentages show two decimals, consistently across the gauge and the bottom
-    // value so the two never disagree ("16%" vs "16.1%").
-    const pct2 = (v) => (v != null ? `${Number(v).toFixed(2)}%` : null);
+    // Percentages come from the shared formatter so the gauge, the visual inside
+    // the tile, the tile footer and the Analyst grid all print the same digits.
+    const pct2 = fmtPct;
 
     const peers    = fund?.peers ?? null;
     const peerGroup = fund?.peer_group ?? 'SECTOR';
@@ -492,8 +496,8 @@ const FinancialScoreCard = ({ fund, symbol, flat = false }) => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {pe != null && (
                         <MetricCard title="Price tag" subtitle="P/E RATIO" badge={peLabel}
-                            bottomLabel={`You pay ~${Math.round(pe)} yrs of profit`}
-                            bottomValue={`${pe}x`}>
+                            bottomLabel={`You pay ~${fmtNum(pe)} yrs of profit`}
+                            bottomValue={fmtMultiple(pe)}>
                             <PEGradientBar pe={pe} sectorPe={sectorPe || 28} symbol={symbol} />
                         </MetricCard>
                     )}
@@ -520,7 +524,7 @@ const FinancialScoreCard = ({ fund, symbol, flat = false }) => {
                     {debt != null && (
                         <MetricCard title="Debt stress" subtitle="DEBT / EQUITY" badge={debtLabel}
                             bottomLabel="Safe < 1.0 · Risky > 2.0"
-                            bottomValue={Number(debt).toFixed(2)}>
+                            bottomValue={fmtRatio(debt)}>
                             <DebtGauge value={debt} />
                         </MetricCard>
                     )}
@@ -622,31 +626,31 @@ const FiveYearScoreCard = ({ fund }) => {
                     {hist.roce_pct?.length > 0 && (
                         <MetricCard title="ROCE" subtitle="CAPITAL EFFICIENCY · %"
                             badge={hist.roce_label ?? null}
-                            bottomLabel={first(hist.roce_pct) != null ? `${first(hist.roce_pct)}% → ${last(hist.roce_pct)}%` : null}
+                            bottomLabel={first(hist.roce_pct) != null ? `${fmtPct(first(hist.roce_pct))} → ${fmtPct(last(hist.roce_pct))}` : null}
                             bottomValue={first(hist.roce_pct) != null && last(hist.roce_pct) != null
-                                ? `+${Math.round(last(hist.roce_pct) - first(hist.roce_pct))} pts` : null}>
+                                ? `+${fmtNum(last(hist.roce_pct) - first(hist.roce_pct))} pts` : null}>
                             <MiniLine data={hist.roce_pct} color="#22c55e" years={years} />
                         </MetricCard>
                     )}
                     {hist.roe_pct?.length > 0 && (
                         <MetricCard title="ROE" subtitle="RETURN ON EQUITY · %"
                             badge={hist.roe_label ?? null}
-                            bottomLabel={first(hist.roe_pct) != null ? `${first(hist.roe_pct)}% → ${last(hist.roe_pct)}%` : null}
-                            bottomValue={null}>
+                            bottomLabel={first(hist.roe_pct) != null ? `${fmtPct(first(hist.roe_pct))} → ${fmtPct(last(hist.roe_pct))}` : null}
+                            bottomValue={fmtPct(last(hist.roe_pct))}>
                             <MiniLine data={hist.roe_pct} color="#22c55e" years={years} />
                         </MetricCard>
                     )}
                     {hist.net_margin_pct?.length > 0 && (
                         <MetricCard title="Net Margin" subtitle="PROFITABILITY · %"
                             badge={hist.margin_label ?? null}
-                            bottomValue={last(hist.net_margin_pct) != null ? `${last(hist.net_margin_pct)}%` : null}>
+                            bottomValue={fmtPct(last(hist.net_margin_pct))}>
                             <MiniLine data={hist.net_margin_pct} color="#22c55e" years={years} />
                         </MetricCard>
                     )}
                     {hist.dividend_yield_pct?.length > 0 && hist.dividend_yield_pct.some(v => v > 0) && (
                         <MetricCard title="Dividend Yield" subtitle="INCOME TO INVESTOR · %"
                             badge={hist.divyld_label ?? null}
-                            bottomValue={last(hist.dividend_yield_pct) != null ? `${last(hist.dividend_yield_pct)}%` : null}>
+                            bottomValue={fmtPct(last(hist.dividend_yield_pct))}>
                             <MiniBar data={hist.dividend_yield_pct.map(v => v || 0)} color="#22c55e" years={years} />
                         </MetricCard>
                     )}
