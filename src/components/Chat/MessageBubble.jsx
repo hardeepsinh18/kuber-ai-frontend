@@ -1240,19 +1240,19 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                                     );
                                 },
                                 table: ({ children }) => (
-                                    <div className="my-4 overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800/80 bg-zinc-50 dark:bg-[#0d0c0b]">
+                                    <div className="my-4 overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-700/50 bg-white dark:bg-[#201d19]">
                                         <table className="min-w-full border-collapse">
                                             {children}
                                         </table>
                                     </div>
                                 ),
                                 thead: ({ children }) => (
-                                    <thead className="bg-[#FDD405]/[0.14] dark:bg-[#FDD405]/[0.10] border-b-2 border-[#FDD405]">
+                                    <thead className="bg-gradient-to-b from-[#FDD405]/[0.18] to-[#FDD405]/[0.07] dark:from-[#FDD405]/[0.16] dark:to-[#FDD405]/[0.05] border-b border-[#FDD405]/70">
                                         {children}
                                     </thead>
                                 ),
                                 tbody: ({ children }) => (
-                                    <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800/70">
+                                    <tbody className="divide-y divide-zinc-200/80 dark:divide-white/[0.06]">
                                         {children}
                                     </tbody>
                                 ),
@@ -1260,14 +1260,14 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                                     const isHeader = node?.parent?.tagName === 'thead';
                                     return (
                                         <tr className={clsx(
-                                            !isHeader && "transition-colors hover:bg-[#FDD405]/[0.06] dark:hover:bg-[#FDD405]/[0.05]"
+                                            !isHeader && "transition-colors even:bg-black/[0.02] dark:even:bg-white/[0.02] hover:bg-[#FDD405]/[0.08] dark:hover:bg-[#FDD405]/[0.07]"
                                         )}>
                                             {children}
                                         </tr>
                                     );
                                 },
                                 th: ({ children }) => (
-                                    <th className="px-3.5 py-2.5 text-left text-[9px] font-extrabold uppercase tracking-[0.14em] text-zinc-700 dark:text-[#FDD405] whitespace-nowrap">
+                                    <th className="px-3.5 py-3 text-left text-[9px] font-extrabold uppercase tracking-[0.16em] text-zinc-900 dark:text-[#FDD405] whitespace-nowrap">
                                         {children}
                                     </th>
                                 ),
@@ -1284,7 +1284,7 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                                         || /^Rs\s*[\d.,]+/i.test(textStr);
                                     return (
                                         <td className={clsx(
-                                            "px-3.5 py-2.5 text-[13px] align-middle",
+                                            "px-3.5 py-3 text-[13px] align-middle",
                                             isNumeric && "tabular-nums",
                                             // Brand green for gains; red stays for real losses only.
                                             isPositive && "text-[#0e9e37] dark:text-emerald-400 font-semibold",
