@@ -386,11 +386,30 @@ const OverallHealthScore = ({ score, label, summary, ratingsSum, components }) =
 /* ─── FINANCIAL SCORE CARD (collapsible 2-col grid) ─────────────────────── */
 const FIN_SCORE_INFO = 'Composite of the fundamental metrics below (P/E vs sector, ROE, ROCE, net margin, debt/equity, revenue & profit growth). Each metric is rated and normalized to 100. ≥70 = Strong · 50-69 = Average · 35-49 = Weak · <35 = Poor.';
 
+/**
+ * How many years the growth CAGRs actually cover.
+ *
+ * The growth cards were hardcoded "5 YR CAGR" while the backend supplies only 3
+ * years of history, so the label claimed a longer track record than the number
+ * behind it covered — a correctness problem on a financial surface, not a
+ * wording one. Deriving it from the payload means the label can never drift
+ * again: if history grows to 5 years the card says 5 on its own.
+ *
+ * Falls back to 3 (what production serves today) rather than to 5, so an absent
+ * or degenerate `years` array understates rather than overstates the span.
+ */
+// Hot-reload ergonomics warning, not correctness — a pure helper beside the
+// component that uses it is worth more than a marginally faster HMR tick.
+// eslint-disable-next-line react-refresh/only-export-components
+export const cagrSpan = (hist) =>
+    (Array.isArray(hist?.years) && hist.years.length > 1) ? hist.years.length : 3;
+
 const FinancialScoreCard = ({ fund, symbol, flat = false }) => {
     const [open, setOpen] = React.useState(false);
     const ratios = fund?.ratios ?? {};
     const hist   = fund?.historical ?? null;
     const years  = hist?.years ?? ['FY22', 'FY23', 'FY24', 'FY25', 'FY26'];
+    const cagrLabel = `${cagrSpan(hist)} YR CAGR`;
 
     // Financial quality score: backend fund.score when present, else derived
     // from the per-metric ratings (strong=1, watch=0.5, risk=0 → % of max)
@@ -529,7 +548,7 @@ const FinancialScoreCard = ({ fund, symbol, flat = false }) => {
                         </MetricCard>
                     )}
                     {revGr != null && (
-                        <MetricCard title="Sales growth" subtitle="REVENUE · 5 YR CAGR" badge={revGrLabel}
+                        <MetricCard title="Sales growth" subtitle={`REVENUE · ${cagrLabel}`} badge={revGrLabel}
                             bottomLabel="Goal > 10% per year"
                             bottomValue={pct2(revGr)}>
                             {hist?.revenue_cr?.length
@@ -539,7 +558,7 @@ const FinancialScoreCard = ({ fund, symbol, flat = false }) => {
                         </MetricCard>
                     )}
                     {profGr != null && (
-                        <MetricCard title="Profit pace" subtitle="NET PROFIT · 5 YR CAGR" badge={profGrLabel}
+                        <MetricCard title="Profit pace" subtitle={`NET PROFIT · ${cagrLabel}`} badge={profGrLabel}
                             bottomLabel="Goal > 10% per year"
                             bottomValue={pct2(profGr)}>
                             {hist?.net_profit_cr?.length
