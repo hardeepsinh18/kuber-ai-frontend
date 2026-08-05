@@ -578,11 +578,13 @@ export const MarketStatsCard = ({ stats, flush = false, raised = false }) => {
 /* ─── VENTY SCORE — overall donut + technical/fundamental/sentimental ─── */
 export const getScores = (scoreCard, managementSentiment) => {
     const comp = scoreCard?.overall?.components || {};
-    const normalize = (v) => (v != null && v <= 10 ? v * 10 : v);
+    // Fundamental engine emits a genuine 0-100 score (v3 floors at 20; v4 can go
+    // to 0). Do NOT rescale — the old "≤10 → ×10" guard mis-rendered low v4
+    // scores (e.g. 5 → 50). See fundamental_engine.py.
     return {
         overall: scoreCard?.overall?.score ?? null,
         technical: comp.technical ?? scoreCard?.technical?.score ?? null,
-        fundamental: comp.financial ?? normalize(scoreCard?.fundamental?.score) ?? null,
+        fundamental: comp.financial ?? scoreCard?.fundamental?.score ?? null,
         sentimental: comp.management ?? managementSentiment?.tone_score ?? null,
     };
 };
