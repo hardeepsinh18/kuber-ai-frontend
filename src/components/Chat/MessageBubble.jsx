@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { clsx } from 'clsx';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -14,6 +14,8 @@ import AITake from './AITake';
 import QuickAnswer from './QuickAnswer';
 import AnalystAnswer from './AnalystAnswer';
 import ComparisonAnswer from './ComparisonAnswer';
+import ScreenerAnswer from './ScreenerAnswer';
+import { parseScreenerRows, screenerProse } from './screenerRows';
 import { IndicatorsTable, stripAiDashes } from './answerKit';
 
 const normalizeSymbol = (s) => {
@@ -586,6 +588,30 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                 && /head to head|## comparison scorecard/i.test(content || '')));
     const isStructuredLayout = !isComparisonAnswer && (isQuickLayout || isAnalystLayout);
 
+    // Screener/list answers only — never touches a message that already has a
+    // layout, and never a user turn or a Scanners result (which has its own
+    // animated list treatment). Parsing is memoised on content because it walks
+    // the whole answer and this component re-renders on every streamed chunk.
+    const screenerEligible = !isUser
+        && !isScannerResult
+        && !isStructuredLayout
+        && !isComparisonAnswer
+        && !metadata?.disambiguation?.ambiguous;
+    const screenerRows = useMemo(
+        () => (screenerEligible ? parseScreenerRows(content) : []),
+        [screenerEligible, content]
+    );
+    const screenerText = useMemo(
+        () => (screenerRows.length > 0 ? screenerProse(content) : { intro: '', outro: '' }),
+        [screenerRows.length, content]
+    );
+    // Prefer the answer's own H1/H2 ("Highest P/E Ratios in the IT Sector") so the
+    // card is titled the way the model framed it, not with a generic label.
+    const screenerTitle = useMemo(() => {
+        const h = String(content || '').match(/^\s*#{1,6}\s*(.+?)\s*$/m);
+        return h ? h[1].replace(/\*\*/g, '').trim() : 'Results';
+    }, [content]);
+
     // Use streaming hook for AI messages — the structured layouts are "the instant
     // read", so they skip the typewriter and render the whole screen at once.
     const { displayedText, isComplete } = useStreamingText(
@@ -1003,9 +1029,28 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                         </div>
                     )}
 
+                    {/* ── Screener / list answers ─────────────────────────
+                        "highest P/E in IT" describes a LIST, so it carries no
+                        price/signal/scoreCard and never qualified for the
+                        structured layouts above — it rendered as bare prose while
+                        single-stock answers got the card UI. This puts it in the
+                        same card system as a ranked list.
+                        Gated on >= 2 parsed rows (see screenerRows.js): anything
+                        the parser is not confident about falls straight through to
+                        the markdown below, exactly as before. */}
+                    {screenerRows.length > 0 && (
+                        <ScreenerAnswer
+                            rows={screenerRows}
+                            intro={screenerText.intro}
+                            outro={screenerText.outro}
+                            title={screenerTitle}
+                        />
+                    )}
+
                     {/* ── AI text (markdown) ──────────────────────────── */}
                     <div className={`prose prose-base max-w-none dark:prose-invert${isScannerResult ? ' scanner-result' : ''}`}
-                         style={isScannerResult ? { animation: 'slideUpFade 0.5s cubic-bezier(0.22,1,0.36,1) both' } : {}}>
+                         style={isScannerResult ? { animation: 'slideUpFade 0.5s cubic-bezier(0.22,1,0.36,1) both' } : {}}
+                         hidden={screenerRows.length > 0}>
                         <ReactMarkdown
                             remarkPlugins={[remarkGfm]}
                             components={{

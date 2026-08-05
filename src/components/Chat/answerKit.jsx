@@ -285,7 +285,7 @@ const Monogram = ({ text }) => {
 /* Logo tile — the company logo served at /api/logos/<SYM>.png (same-origin, so
  * CSP-safe), falling back to the monogram when we ship no logo for that symbol
  * (onError) or there is no symbol. Uses the FULL ticker (incl. .NS/.BO). */
-const LogoTile = ({ symbol, text }) => {
+export const LogoTile = ({ symbol, text }) => {
     if (!symbol) return <Monogram text={text} />;
     const initials = String(text || '?').replace(/[^A-Za-z0-9]/g, '').slice(0, 3).toUpperCase() || '?';
     return (
