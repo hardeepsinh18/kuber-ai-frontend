@@ -15,6 +15,7 @@ import QuickAnswer from './QuickAnswer';
 import AnalystAnswer from './AnalystAnswer';
 import ComparisonAnswer from './ComparisonAnswer';
 import ScreenerAnswer from './ScreenerAnswer';
+import GeneralAnswer from './GeneralAnswer';
 import { parseScreenerRows, screenerProse } from './screenerRows';
 import { IndicatorsTable, stripAiDashes } from './answerKit';
 
@@ -523,6 +524,9 @@ const FollowUpChips = ({ chips, onClick }) => (
     </div>
 );
 
+const GeneralAnswerShell = ({ active, children }) =>
+    active ? <GeneralAnswer>{children}</GeneralAnswer> : <>{children}</>;
+
 const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, isScannerResult = false, isError = false, chartData = null, metadata = {}, signal = null, patternSummary = null, technicalSummary = null, indicatorsTable = null, scoreCard = null, managementSentiment = null, annualReportIntelligence = null, companyFilings = null, recentDevelopments = null, aiTake = null, suggestedFollowUps = null, newsHeadlines = null, queryIntent = 'full', query = null, onFollowUpClick = null, onStreamingDone = null, messageId = null, onFeedback = null, responseMode = null }) => {
     const isUser = role === 'user';
 
@@ -694,6 +698,27 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
     const isEffectivelyDone = !isStreaming || (
         !isFull && !isFundamentals && isStreaming && /\n#{1,4}[^a-zA-Z\n]*[a-zA-Z]/m.test(rawText)
     );
+
+    // Wrap plain-prose answers in the shared answer box so every query type uses
+    // one container. Excluded on purpose:
+    //  - user turns (their own bubble),
+    //  - messages that already have a layout (structured / comparison / screener),
+    //  - Scanners results, which have their own animated list treatment,
+    //  - errors and client notices, which must stay visually distinct from an answer,
+    //  - disambiguation and horizon prompts, whose interactive chips render inside
+    //    this block and rely on the classic flow.
+    // While still streaming the text stays bare, so the typewriter doesn't run
+    // inside a card that pops in around it.
+    const useGeneralShell = !isUser
+        && !isScannerResult
+        && !isError
+        && !isStructuredLayout
+        && !isComparisonAnswer
+        && screenerRows.length === 0
+        && !metadata?.disambiguation?.ambiguous
+        && !hasHorizonQuestion(content || '')
+        && !(isStreaming && !isEffectivelyDone)
+        && String(content || '').trim().length > 0;
 
     // Cards below the text should be hidden while streaming and fade in after.
     const [cardsVisible, setCardsVisible] = React.useState(!isStreaming);
@@ -1048,6 +1073,12 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                     )}
 
                     {/* ── AI text (markdown) ──────────────────────────── */}
+                    {/* Wrapped in the shared answer box when this message has no
+                        structured layout of its own (market/sector commentary,
+                        concept questions), so every query type renders in the same
+                        container instead of some answers sitting bare on the page.
+                        The markdown pipeline below is untouched. */}
+                    <GeneralAnswerShell active={useGeneralShell}>
                     <div className={`prose prose-base max-w-none dark:prose-invert${isScannerResult ? ' scanner-result' : ''}`}
                          style={isScannerResult ? { animation: 'slideUpFade 0.5s cubic-bezier(0.22,1,0.36,1) both' } : {}}
                          hidden={screenerRows.length > 0}>
@@ -1273,6 +1304,7 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                             <HorizonChoice symbol={primarySymbolLabel} onChoice={onFollowUpClick} />
                         )}
                     </div>
+                    </GeneralAnswerShell>
 
                     {/* ── Post-text structured sections — hidden while streaming, fade in after ── */}
                     <div className={clsx('transition-opacity duration-500', cardsVisible ? 'opacity-100' : 'opacity-0 pointer-events-none')}>
