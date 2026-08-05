@@ -778,7 +778,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
     const { accessToken, refreshSession, loading: authLoading } = useAuth();
     const { theme } = useTheme();
     const { setChatActive } = useChatMode();
-    const { messages, setMessages, ensureCurrentChat, loadChat, currentChatId, currentChatIdRef, isChatLoading, chatLoadError, setChatLoadError, persistOrphanedMessage } = useChatHistory();
+    const { messages, setMessages, ensureCurrentChat, loadChat, currentChatId, currentChatIdRef, isChatLoading, chatLoadError, setChatLoadError, persistOrphanedMessage, markChatTouched } = useChatHistory();
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -1072,6 +1072,9 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
         // a const inside the try is out of scope there — every request error
         // became a ReferenceError that skipped the wrong-chat guard entirely.
         const sendChatId = await ensureCurrentChat();
+        // The one and only signal that re-sorts the sidebar. Opening, hydrating or
+        // switching away from a chat must never move it; sending a message must.
+        markChatTouched(sendChatId);
         const isSameChat = () => currentChatIdRef.current === sendChatId;
 
         try {

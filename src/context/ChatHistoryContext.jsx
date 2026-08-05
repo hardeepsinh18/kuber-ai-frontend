@@ -61,6 +61,11 @@ export function ChatHistoryProvider({ children }) {
     const listRefreshInFlightRef = useRef(false);
     const messagesRef = useRef([]);
     const accessTokenRef = useRef(null);
+    // Chats the user has actually contributed a message to in this session. This is
+    // the ONLY thing that re-sorts the sidebar — see flushPersist. A Set (not a
+    // boolean) because a send can be flushed after the user has already switched
+    // away, and the flush must still credit the chat the message belongs to.
+    const touchedChatsRef = useRef(new Set());
 
     useEffect(() => { currentChatIdRef.current = currentChatId; }, [currentChatId]);
     useEffect(() => { messagesRef.current = messages; }, [messages]);
@@ -233,9 +238,22 @@ export function ChatHistoryProvider({ children }) {
     // answer finishes rendering. Switching chats or refreshing inside that
     // window lost the entire exchange — both the question and the answer —
     // because nothing had reached localStorage or the server yet.
-    const flushPersist = useCallback((chatId, messages, accessToken) => {
+    const flushPersist = useCallback((chatId, messages, accessToken, opts) => {
         if (!chatId) return;
         const hasMessages = messages.length > 0;
+        // `messages.length > syncedMessageCountRef` infers "the user did something"
+        // from a count, and that inference has been wrong in every direction: chats
+        // reordered themselves on open, on hydration of a partially cached chat, and
+        // on switching away. The count moves for reasons that are not user activity
+        // (server hydration, cache eviction, merges), so it cannot be the signal that
+        // re-sorts the sidebar.
+        //
+        // Activity is now explicit: ONLY a real user turn marks a chat as touched,
+        // via markChatTouched() from the send path. Everything else — opening,
+        // hydrating, leaving, background refresh — still persists content, but
+        // leaves updatedAt exactly where it was. Sends still pass through here, so
+        // nothing about syncing changes; only the ordering signal is narrowed.
+        const userTouched = opts?.userTouched === true || touchedChatsRef.current.has(chatId);
         const hasNewMessages = messages.length > syncedMessageCountRef.current;
         if (hasMessages) {
             const title = chatStorage.getTitleFromMessages(messages);
@@ -264,7 +282,7 @@ export function ChatHistoryProvider({ children }) {
             setChatList((prev) => {
                 const next = prev.map((c) =>
                     c.id === chatId
-                        ? { ...c, title, ...(hasNewMessages ? { updatedAt: Date.now() } : {}) }
+                        ? { ...c, title, ...(userTouched ? { updatedAt: Date.now() } : {}) }
                         : c
                 );
                 const found = next.some((c) => c.id === chatId);
@@ -415,6 +433,15 @@ export function ChatHistoryProvider({ children }) {
             document.removeEventListener('visibilitychange', onVisibilityChange);
         };
     }, [flushPersist]);
+
+    /**
+     * Mark a chat as genuinely touched by the user — the only signal that moves it
+     * to the top of the sidebar. Called from the send path (and rename), never from
+     * open/hydrate/leave, so merely reading a chat can no longer re-sort the list.
+     */
+    const markChatTouched = useCallback((chatId) => {
+        if (chatId) touchedChatsRef.current.add(chatId);
+    }, []);
 
     const ensureCurrentChat = useCallback(async () => {
         if (currentChatId) return currentChatId;
@@ -657,6 +684,9 @@ export function ChatHistoryProvider({ children }) {
     }, [accessToken, currentChatId]);
 
     const renameChat = useCallback((id, title) => {
+        // An explicit user action, so it counts as touching the chat — both for the
+        // updatedAt set below and for any later flush of the same chat.
+        touchedChatsRef.current.add(id);
         if (accessToken) chatsApi.updateChatTitle(id, title, accessToken).catch(() => {});
         setChatList((prev) => {
             const next = prev.map((c) => (c.id === id ? { ...c, title, updatedAt: Date.now() } : c));
@@ -684,6 +714,7 @@ export function ChatHistoryProvider({ children }) {
         chatLoadError,
         setChatLoadError,
         ensureCurrentChat,
+        markChatTouched,
         newChat,
         loadChat,
         deleteChat,

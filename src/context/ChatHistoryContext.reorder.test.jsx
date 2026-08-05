@@ -265,6 +265,106 @@ describe('opening an old chat', () => {
         ).not.toContain('Here is the full analyst answer body.');
     });
 
+    it('does not bump the chat being LEFT when switching between two chats', async () => {
+        // What the screenshots actually showed: click chat B, and the chat that was
+        // already open (A) jumps to "now" — even though nothing was typed in either.
+        //
+        // loadChat flushes the chat it is LEAVING before switching. That flush is
+        // correct in itself (it protects an answer still inside the 400ms debounce),
+        // but it runs unconditionally whenever the outgoing chat has any messages.
+        // If A was merely opened, its messages came from storage/server, not from
+        // the user — so the flush must not record them as new activity.
+        const A = 'chat-a';
+        const B = 'chat-b';
+
+        chatStorage.getChatList.mockReturnValue([
+            { id: A, title: 'Show me TCS fundamentals', updatedAt: 1000 },
+            { id: B, title: 'ICICI Bank Limited', updatedAt: 2000 },
+        ]);
+        chatStorage.getChatMessages.mockImplementation(() => [
+            { id: 'm1', role: 'user', content: 'q' },
+            { id: 'm2', role: 'ai', content: 'a' },
+        ]);
+        chatsApi.getChats.mockResolvedValue([
+            { id: A, title: 'Show me TCS fundamentals', updated_at: 1000 },
+            { id: B, title: 'ICICI Bank Limited', updated_at: 2000 },
+        ]);
+        chatsApi.getChat.mockResolvedValue({
+            id: A,
+            messages: [
+                { id: 'm1', role: 'user', content: 'q', metadata: {} },
+                { id: 'm2', role: 'assistant', content: 'a', metadata: {} },
+            ],
+        });
+
+        render(
+            <ChatHistoryProvider>
+                <Probe />
+            </ChatHistoryProvider>
+        );
+
+        // Open A (read only), let everything settle.
+        await act(async () => { api.loadChat(A); });
+        await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+        await act(async () => { await vi.advanceTimersByTimeAsync(900); });
+
+        chatStorage.saveChatList.mockClear();
+        chatsApi.appendMessages.mockClear();
+        chatsApi.updateChatTitle.mockClear();
+
+        // Now click B. A is flushed on the way out — it must not be re-stamped.
+        await act(async () => { api.loadChat(B); });
+        await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+        await act(async () => { await vi.advanceTimersByTimeAsync(900); });
+
+        const aBumped = chatStorage.saveChatList.mock.calls
+            .flatMap(([list]) => list ?? [])
+            .filter((c) => c.id === A)
+            .some((c) => (c.updatedAt ?? 0) > 1000);
+
+        expect(aBumped, 'leaving a chat must not move it to the top').toBe(false);
+        expect(
+            chatsApi.appendMessages.mock.calls.length,
+            'leaving a read-only chat must not re-append its messages'
+        ).toBe(0);
+    });
+
+    it('never re-sorts on message-count growth alone, only on an explicit send', async () => {
+        // The invariant behind all of the above. Four separate fixes each removed
+        // one way for a COUNT change to be misread as user activity (open, hydrate
+        // a partial cache, switch away, background refresh) — and the bug survived
+        // each one, because the count is simply not the right signal: it moves for
+        // hydration, eviction and merges too.
+        //
+        // Ordering is now driven by markChatTouched(), which only the send path
+        // calls. This asserts the property directly: grow the message list without
+        // a send, and the chat must not move.
+        render(
+            <ChatHistoryProvider>
+                <Probe />
+            </ChatHistoryProvider>
+        );
+
+        await act(async () => { api.loadChat(OLD); });
+        await act(async () => { resolveGetChat(); await Promise.resolve(); await Promise.resolve(); });
+        await act(async () => { await vi.advanceTimersByTimeAsync(900); });
+
+        chatStorage.saveChatList.mockClear();
+
+        // Messages appear WITHOUT a send — exactly what hydration/merge looks like.
+        await act(async () => {
+            api.setMessages((prev) => [...prev, { id: 'x1', role: 'ai', content: 'hydrated, not sent' }]);
+        });
+        await act(async () => { await vi.advanceTimersByTimeAsync(900); });
+
+        const bumped = chatStorage.saveChatList.mock.calls
+            .flatMap(([list]) => list ?? [])
+            .filter((c) => c.id === OLD)
+            .some((c) => (c.updatedAt ?? 0) > 1000);
+
+        expect(bumped, 'a message arriving without a user send must not re-sort').toBe(false);
+    });
+
     it('does write to the server once the user adds a message', async () => {
         // Guard against over-correcting: suppressing the read-only PATCH must not
         // suppress a real one, or renames and new turns stop syncing.
@@ -348,8 +448,12 @@ describe('opening an old chat', () => {
 
         chatStorage.saveChatList.mockClear();
 
-        // The user types — this SHOULD move the chat to the top.
+        // The user sends a message — this SHOULD move the chat to the top.
+        // markChatTouched is the explicit activity signal the send path calls
+        // (ChatContainer), replacing the old "message count grew" inference which
+        // fired for hydration and merges too. Driving it here mirrors a real send.
         await act(async () => {
+            api.markChatTouched(OLD);
             api.setMessages((prev) => [...prev, { id: 'm3', role: 'user', content: 'and its debt?' }]);
         });
         await act(async () => { await vi.advanceTimersByTimeAsync(900); });
