@@ -118,10 +118,33 @@ export function ChatHistoryProvider({ children }) {
                 // flicker it back to a stale server value while it's being typed in.
                 const openId = currentChatIdRef.current;
                 setChatList((prev) => {
-                    const prevOpen = openId ? prev.find((c) => c.id === openId) : null;
-                    const next = prevOpen && !merged.some((c) => c.id === openId)
-                        ? [...merged, prevOpen]
-                        : merged.map((c) => (c.id === openId && prevOpen ? prevOpen : c));
+                    const prevById = new Map(prev.map((c) => [c.id, c]));
+                    const prevOpen = openId ? prevById.get(openId) : null;
+                    const withServer = merged.map((c) => (c.id === openId && prevOpen ? prevOpen : c));
+
+                    // Keep the EARLIER timestamp for any chat we already know about.
+                    //
+                    // This refresh runs on mount, on focus and on visibilitychange, and
+                    // it used to overwrite updatedAt with whatever the server reported —
+                    // so anything that touched the row server-side re-sorted the sidebar
+                    // under the user, with no local action at all. Chats from yesterday
+                    // showed "now" and the order shuffled on its own.
+                    //
+                    // The client cannot tell a genuine content update from an incidental
+                    // row touch, so it declines to move a chat it already has a record
+                    // for. A real new turn raises updatedAt through flushPersist (which
+                    // is the local, verifiable signal) rather than through this refresh.
+                    // Chats this device has never seen — created on another device —
+                    // have nothing to preserve and keep the server value, so cross-device
+                    // sync still works.
+                    const next = withServer.map((c) => {
+                        if (c.id === openId) return c;                  // handled above
+                        const known = prevById.get(c.id);
+                        if (!known || known.updatedAt == null) return c; // unseen → trust server
+                        return { ...c, updatedAt: Math.min(known.updatedAt, c.updatedAt ?? known.updatedAt) };
+                    });
+
+                    if (prevOpen && !merged.some((c) => c.id === openId)) next.push(prevOpen);
                     chatStorage.saveChatList(next);
                     return next;
                 });
