@@ -561,6 +561,21 @@ export function ChatHistoryProvider({ children }) {
                             }
                             return merged;
                         });
+                        // Everything up to the server's length came FROM the server, so
+                        // count it as already synced. Without this the ref kept the
+                        // shorter LOCAL count while the merge grew `messages` to the
+                        // server length, and flushPersist read the difference as "the user
+                        // added messages" — re-appending them and bumping updatedAt purely
+                        // because the chat was opened. That is what made the reordering
+                        // look random: it only struck chats whose local cache was partial
+                        // (quota eviction, or a persist that landed mid-stream).
+                        // Math.max so a local-only tail still awaiting sync is not marked
+                        // as already sent. Set outside the updater — mutating a ref inside
+                        // one is a side effect that StrictMode can run twice.
+                        syncedMessageCountRef.current = Math.max(
+                            syncedMessageCountRef.current,
+                            msgs.length
+                        );
                     } else {
                         setMessages(msgs);
                         syncedMessageCountRef.current = msgs.length;

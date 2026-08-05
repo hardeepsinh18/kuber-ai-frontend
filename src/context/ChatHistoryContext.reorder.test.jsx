@@ -178,6 +178,93 @@ describe('opening an old chat', () => {
         ).toBe(0);
     });
 
+    it('sends no write when a PARTIALLY cached chat is only read', async () => {
+        // The case the earlier no-write test missed, and the reason the bug looked
+        // intermittent ("sometimes it moves, sometimes it doesn't").
+        //
+        // With an EMPTY local cache, loadChat takes the setMessages(msgs) branch,
+        // which advances syncedMessageCountRef to the server length — so nothing
+        // looks new and nothing is written. But when localStorage holds only SOME
+        // of the messages, the merge branch runs: it grows `messages` to the
+        // server's length while syncedMessageCountRef stays at the shorter LOCAL
+        // count. flushPersist then sees messages.length > syncedMessageCountRef,
+        // concludes the user added messages, re-appends them and bumps updatedAt.
+        // Purely from opening the chat.
+        //
+        // Which chats are partially cached depends on quota eviction and on
+        // whether a persist landed mid-stream, hence the randomness.
+        chatStorage.getChatMessages.mockReturnValue([
+            { id: 'm1', role: 'user', content: 'Reliance Infrastructure Limited' },
+        ]);
+
+        render(
+            <ChatHistoryProvider>
+                <Probe />
+            </ChatHistoryProvider>
+        );
+
+        await act(async () => { api.loadChat(OLD); });
+        await act(async () => { resolveGetChat(); await Promise.resolve(); await Promise.resolve(); });
+        await waitFor(() => expect(screen.getByTestId('count').textContent).toBe('2'));
+        await act(async () => { await vi.advanceTimersByTimeAsync(900); });
+
+        expect(
+            chatsApi.appendMessages.mock.calls.length,
+            'hydrating a partially cached chat must not re-append its messages'
+        ).toBe(0);
+        expect(
+            chatsApi.updateChatTitle.mock.calls.length,
+            'hydrating a partially cached chat must not PATCH its title'
+        ).toBe(0);
+
+        const bumped = chatStorage.saveChatList.mock.calls
+            .flatMap(([list]) => list ?? [])
+            .filter((c) => c.id === OLD)
+            .some((c) => (c.updatedAt ?? 0) > 1000);
+        expect(bumped, 'hydrating a partially cached chat must not re-sort it').toBe(false);
+    });
+
+    it('does not mark a local-only tail as synced when hydrating', async () => {
+        // The risk in advancing syncedMessageCountRef after the merge: push it past
+        // the server's length and a message that never reached the server would be
+        // recorded as already sent. The ref therefore advances to the SERVER's
+        // length only (Math.max with the existing value, never beyond msgs.length).
+        //
+        // Scope note: loadChat seeds the ref from the LOCAL count, so a tail that
+        // localStorage holds but the server does not is already treated as synced
+        // before this code runs. That is a pre-existing limitation of tracking sync
+        // state as a COUNT rather than per-message — it fails identically with and
+        // without the change here, and fixing it means reworking the sync bookkeeping
+        // (risking duplicate sends), which is out of scope for this bug. What this
+        // test pins is that the hydration path does not make it any worse.
+        chatStorage.getChatMessages.mockReturnValue([
+            { id: 'm1', role: 'user', content: 'Reliance Infrastructure Limited' },
+            { id: 'm2', role: 'ai', content: 'Here is the full analyst answer body.' },
+            { id: 'm3', role: 'user', content: 'never reached the server' },
+        ]);
+
+        render(
+            <ChatHistoryProvider>
+                <Probe />
+            </ChatHistoryProvider>
+        );
+
+        await act(async () => { api.loadChat(OLD); });
+        await act(async () => { resolveGetChat(); await Promise.resolve(); await Promise.resolve(); });
+        await waitFor(() => expect(screen.getByTestId('count').textContent).toBe('3'));
+        await act(async () => { await vi.advanceTimersByTimeAsync(900); });
+
+        // The tail must survive in state regardless — never silently dropped.
+        expect(screen.getByTestId('count').textContent).toBe('3');
+
+        // And hydration must not re-send the messages the server already has.
+        const appended = chatsApi.appendMessages.mock.calls.flatMap(([, msgs]) => msgs ?? []);
+        expect(
+            appended.map((m) => m.content),
+            'hydration must not re-append messages the server already holds'
+        ).not.toContain('Here is the full analyst answer body.');
+    });
+
     it('does write to the server once the user adds a message', async () => {
         // Guard against over-correcting: suppressing the read-only PATCH must not
         // suppress a real one, or renames and new turns stop syncing.
