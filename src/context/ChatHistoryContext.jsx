@@ -518,13 +518,31 @@ export function ChatHistoryProvider({ children }) {
                         // pattern overlay into the already-shown messages, without clobbering
                         // any local-only message. Backend appends are order-preserving, so index
                         // alignment holds.
-                        setMessages(prev => prev.map((pm, i) => (
-                            msgs[i]
-                                ? { ...pm,
-                                    chartData: pm.chartData ?? msgs[i].chartData,
-                                    patternSummary: pm.patternSummary ?? msgs[i].patternSummary }
-                                : pm
-                        )));
+                        //
+                        // Walk the LONGER of the two arrays. Mapping over the local copy alone
+                        // silently dropped every server message past its end: localStorage is
+                        // lossy (it evicts under quota pressure, and a persist landing
+                        // mid-stream can store the question before the assistant turn exists),
+                        // so a chat cached with only the question re-opened with the answer
+                        // missing even though the server still had it. Taking the longer array
+                        // also protects the other direction — a local-only message the server
+                        // has not stored yet is still kept.
+                        setMessages(prev => {
+                            const len = Math.max(prev.length, msgs.length);
+                            const merged = [];
+                            for (let i = 0; i < len; i += 1) {
+                                const pm = prev[i];
+                                const sm = msgs[i];
+                                if (!pm) { merged.push(sm); continue; }   // server-only → adopt it
+                                if (!sm) { merged.push(pm); continue; }   // local-only → keep it
+                                merged.push({
+                                    ...pm,
+                                    chartData: pm.chartData ?? sm.chartData,
+                                    patternSummary: pm.patternSummary ?? sm.patternSummary,
+                                });
+                            }
+                            return merged;
+                        });
                     } else {
                         setMessages(msgs);
                         syncedMessageCountRef.current = msgs.length;

@@ -192,11 +192,42 @@ export function clearPendingDelete(id) {
     } catch {}
 }
 
+/**
+ * Normalise a server `updated_at` into an epoch ms value for sidebar ordering.
+ *
+ * Returns 0 — not Date.now() — when the value is missing or unparseable. The
+ * old Date.now() fallback was not a neutral default: it stamped the chat as
+ * "just now", so every background list refresh re-stamped those rows, floated
+ * them to the top of the sidebar and labelled them "now". Unknown must sort as
+ * OLD, so an unrecognised timestamp can never outrank a real one.
+ *
+ * Timezone-less strings are read as UTC. Postgres/FastAPI routinely serialise
+ * "2026-08-04T09:12:00" or "2026-08-04 09:12:00" with no offset, and JS parses
+ * the space form (and, per spec, the bare date-time form) as LOCAL time — which
+ * in IST shifted every such timestamp by 5h30m, mis-ordering the list and
+ * rendering wrong relative times. An EXPLICIT offset is still honoured.
+ */
 export function toTimestamp(updatedAt) {
-    if (!updatedAt) return Date.now();
-    if (typeof updatedAt === 'number') return updatedAt;
-    const ts = new Date(updatedAt).getTime();
-    return isNaN(ts) ? Date.now() : ts;
+    if (updatedAt == null || updatedAt === '') return 0;
+    if (typeof updatedAt === 'number') return Number.isFinite(updatedAt) ? updatedAt : 0;
+    if (typeof updatedAt !== 'string') return 0;
+
+    const raw = updatedAt.trim();
+    if (!raw) return 0;
+
+    // Already carries a zone (Z or ±HH:MM) → trust it as-is.
+    const hasZone = /(?:[Zz]|[+-]\d{2}:?\d{2})$/.test(raw);
+    // Date-only ("2026-08-04") is already parsed as UTC by spec — leave it.
+    const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(raw);
+
+    let candidate = raw;
+    if (!hasZone && !isDateOnly) {
+        const m = raw.match(/^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2}(?::\d{2})?(?:\.\d+)?)$/);
+        if (m) candidate = `${m[1]}T${m[2]}Z`;
+    }
+
+    const ts = new Date(candidate).getTime();
+    return Number.isNaN(ts) ? 0 : ts;
 }
 
 
