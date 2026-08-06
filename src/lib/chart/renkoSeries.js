@@ -70,10 +70,15 @@ class RenkoSeriesRenderer {
             const gap = Math.max(Math.min(data.barSpacing * 0.15, 3), 1.5);
             const w = Math.min(Math.max(data.barSpacing - gap, 2), 30);
 
+            let prevDate = null;
+            let prevX = null;
             for (let i = data.visibleRange.from; i < data.visibleRange.to; i++) {
                 const bar = data.bars[i];
                 const item = bar.originalData;
-                if (item?.brickOpen == null || item?.brickClose == null) continue;
+                if (item?.brickOpen == null || item?.brickClose == null) {
+                    prevDate = null;
+                    continue;
+                }
 
                 const yO = priceConverter(item.brickOpen);
                 const yC = priceConverter(item.brickClose);
@@ -84,6 +89,22 @@ class RenkoSeriesRenderer {
                 const halfW = (w * ratio) / 2;
                 const top = Math.min(yO, yC) * scope.verticalPixelRatio;
                 const h = Math.max(Math.abs(yC - yO) * scope.verticalPixelRatio, 1.5);
+
+                // A single trading day that moves 2+ brick sizes produces 2+
+                // bricks sharing one date — correct Renko math, but with the
+                // usual per-brick gap it reads as two unrelated bricks that
+                // happen to land on the same date. Consecutive same-day bricks
+                // are always price-contiguous (this brick's open is the last
+                // one's close), so bridge the gap with a thin band right at
+                // that shared price level to read as one continued move.
+                if (item.realDate === prevDate && prevX != null) {
+                    const boundaryY = yO * scope.verticalPixelRatio;
+                    const thickness = Math.max(2 * ratio, 1);
+                    ctx.fillStyle = color;
+                    ctx.globalAlpha = 0.7;
+                    ctx.fillRect(prevX + halfW, boundaryY - thickness / 2, x - halfW - (prevX + halfW), thickness);
+                    ctx.globalAlpha = 1;
+                }
 
                 // The live brick tracks today's close before it has completed a
                 // full brick move — drawn hollow/dashed so it never reads as a
@@ -107,6 +128,9 @@ class RenkoSeriesRenderer {
                     ctx.lineWidth = 0.5;
                     ctx.strokeRect(x - halfW, top, halfW * 2, h);
                 }
+
+                prevDate = item.realDate;
+                prevX = x;
             }
         });
     }
