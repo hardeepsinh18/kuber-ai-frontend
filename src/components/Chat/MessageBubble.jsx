@@ -465,30 +465,100 @@ const hasHorizonQuestion = (text) => {
     return /short\s*term.{0,40}or.{0,40}long\s*term|long\s*term.{0,40}or.{0,40}short\s*term/i.test(plain);
 };
 
+/**
+ * Time-horizon selector — shown when an answer asks "short term or long term?".
+ *
+ * Deliberately the SAME shape as GroupClarificationPopup (the "which HDFC company
+ * did you mean" picker): a bordered panel with a quiet header, a numbered list
+ * whose numbers double as 1-N keyboard shortcuts, and a footer hint. The two are
+ * the only clarifying questions in the product, so they should not look like two
+ * different features — this used to be a pair of loose pills floating under the
+ * text with no visual tie to the answer that asked.
+ */
 const HorizonChoice = ({ symbol, onChoice }) => {
     const base = symbol ? `${symbol} ` : '';
     const options = [
-        { label: 'Short Term', query: `${base}short term trading — entry, target, stop loss` },
-        { label: 'Long Term',  query: `${base}long term investment — fundamentals, growth outlook` },
+        {
+            label: 'Short Term',
+            hint: 'Entry, target, stop loss',
+            query: `${base}short term trading — entry, target, stop loss`,
+        },
+        {
+            label: 'Long Term',
+            hint: 'Fundamentals, growth outlook',
+            query: `${base}long term investment — fundamentals, growth outlook`,
+        },
     ];
+
+    // 1-N to pick, matching the company picker. Escape is intentionally NOT bound:
+    // there is nothing to fall back to, and the user can simply type instead.
+    React.useEffect(() => {
+        const handler = (e) => {
+            const idx = parseInt(e.key, 10);
+            if (idx >= 1 && idx <= options.length) {
+                e.preventDefault();
+                onChoice(options[idx - 1].query);
+            }
+        };
+        window.addEventListener('keydown', handler);
+        return () => window.removeEventListener('keydown', handler);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [onChoice, symbol]);
+
     return (
-        <div className="flex flex-wrap gap-2.5 mt-4 mb-1">
-            {options.map(({ label, query }) => (
+        <div
+            role="listbox"
+            aria-label="Choose a time horizon"
+            className="mt-3 overflow-hidden rounded-xl
+                       bg-zinc-50 dark:bg-white/[0.04]
+                       border border-zinc-200/80 dark:border-white/[0.08]
+                       animate-in fade-in slide-in-from-top-1 duration-200"
+        >
+            {/* A short label, not a question — the text above already asked it. */}
+            <div className="px-4 pt-3 pb-2">
+                <span className="text-[13px] font-medium text-zinc-500 dark:text-zinc-400">
+                    Select a time horizon
+                </span>
+            </div>
+
+            {options.map(({ label, hint, query }, i) => (
                 <button
                     key={label}
                     type="button"
+                    role="option"
+                    aria-selected="false"
                     onClick={() => onChoice(query)}
-                    className="px-5 py-2 rounded-full text-[13px] font-semibold
-                               text-zinc-700 dark:text-zinc-200
-                               bg-white dark:bg-zinc-800/70
-                               border border-zinc-300/70 dark:border-zinc-600/60
-                               hover:border-[#FDD405] dark:hover:border-[#FDD405]/70
-                               hover:bg-[#FDD405]/10 dark:hover:bg-[#FDD405]/10
-                               active:scale-[0.97]
-                               transition-all duration-150">
-                    {label}
+                    className="group flex items-center gap-3 w-full text-left px-4 py-2.5
+                               border-t border-zinc-200/70 dark:border-white/[0.06]
+                               hover:bg-zinc-100 dark:hover:bg-white/[0.06]
+                               transition-colors"
+                >
+                    <span className="w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0
+                                     text-[11px] font-medium
+                                     bg-zinc-200/70 text-zinc-500
+                                     dark:bg-white/[0.06] dark:text-zinc-400
+                                     group-hover:text-zinc-700 dark:group-hover:text-zinc-200
+                                     transition-colors">
+                        {i + 1}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                        <p className="text-[14px] text-zinc-800 dark:text-zinc-100 truncate">{label}</p>
+                        <p className="text-[11px] mt-0.5 text-zinc-500 dark:text-zinc-500 truncate">{hint}</p>
+                    </div>
                 </button>
             ))}
+
+            <div className="flex items-center justify-center gap-1.5 px-4 py-2
+                            border-t border-zinc-200/70 dark:border-white/[0.06]
+                            text-[10px] text-zinc-400 dark:text-zinc-600">
+                <span>Press</span>
+                <kbd className="px-1 rounded bg-zinc-200/70 text-zinc-500
+                                dark:bg-white/[0.06] dark:text-zinc-400">1</kbd>
+                <span>or</span>
+                <kbd className="px-1 rounded bg-zinc-200/70 text-zinc-500
+                                dark:bg-white/[0.06] dark:text-zinc-400">2</kbd>
+                <span>to select</span>
+            </div>
         </div>
     );
 };
@@ -721,8 +791,13 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
         && !isStructuredLayout
         && !isComparisonAnswer
         && screenerRows.length === 0
-        && !metadata?.disambiguation?.ambiguous
-        && !hasHorizonQuestion(content || '')
+        // Clarifying questions (horizon picker, company picker) DO get the shell:
+        // their selector should read as part of the answer that asked, not float
+        // loose beneath it. They were excluded when the shell was introduced —
+        // that is why the Short/Long panel had no card around it while every
+        // other reply did. The disclaimer is separately suppressed for these (see
+        // isClarifyingQuestion), so the box carries the question and its choices
+        // without implying an investment view.
         // Deliberately NOT gated on streaming. It was, to stop the typewriter
         // running inside a card that animated in around it — but that made the
         // answer render as bare prose for the whole stream and then SNAP into the
