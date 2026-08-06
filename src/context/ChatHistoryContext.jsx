@@ -66,6 +66,11 @@ export function ChatHistoryProvider({ children }) {
     // boolean) because a send can be flushed after the user has already switched
     // away, and the flush must still credit the chat the message belongs to.
     const touchedChatsRef = useRef(new Set());
+    // Chats the user has explicitly renamed. flushPersist re-derives a title from
+    // the first message on every flush, which silently clobbered a custom name and
+    // then pushed the derived one to the server — so the rename came back undone
+    // after a reload. A rename is an explicit choice and must win over derivation.
+    const renamedChatsRef = useRef(new Set());
 
     useEffect(() => { currentChatIdRef.current = currentChatId; }, [currentChatId]);
     useEffect(() => { messagesRef.current = messages; }, [messages]);
@@ -256,7 +261,15 @@ export function ChatHistoryProvider({ children }) {
         const userTouched = opts?.userTouched === true || touchedChatsRef.current.has(chatId);
         const hasNewMessages = messages.length > syncedMessageCountRef.current;
         if (hasMessages) {
-            const title = chatStorage.getTitleFromMessages(messages);
+            // A user-set name wins over the derived one. Checked against the
+            // persisted list too, not just this session's ref, so the rename also
+            // survives a reload (the ref is empty on a fresh page load, but the
+            // stored title is not).
+            const derived = chatStorage.getTitleFromMessages(messages);
+            const storedTitle = chatStorage.getChatList().find((c) => c.id === chatId)?.title;
+            const wasRenamed = renamedChatsRef.current.has(chatId)
+                || (storedTitle && storedTitle !== derived && storedTitle !== 'New chat');
+            const title = wasRenamed && storedTitle ? storedTitle : derived;
             try {
                 // Keep chartData in localStorage so the chart (and its pattern overlay)
                 // survives a refresh / chat switch directly — no backend round-trip needed.
@@ -687,6 +700,8 @@ export function ChatHistoryProvider({ children }) {
         // An explicit user action, so it counts as touching the chat — both for the
         // updatedAt set below and for any later flush of the same chat.
         touchedChatsRef.current.add(id);
+        // …and it must never be re-derived away by a later flush.
+        renamedChatsRef.current.add(id);
         if (accessToken) chatsApi.updateChatTitle(id, title, accessToken).catch(() => {});
         setChatList((prev) => {
             const next = prev.map((c) => (c.id === id ? { ...c, title, updatedAt: Date.now() } : c));
