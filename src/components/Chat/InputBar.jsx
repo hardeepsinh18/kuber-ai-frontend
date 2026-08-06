@@ -169,18 +169,40 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
                             disabled={isLoading}
                         />
                     ) : modeSwitch ? (
-                        <ClarifyDropdown
-                            title={`Switched to ${MODE_LABEL[modeSwitch.mode] || modeSwitch.mode}`}
-                            options={[{
-                                key: 'rerun',
-                                label: 'Run my last question',
-                                hint: modeSwitch.query,
-                                value: modeSwitch.query,
-                            }]}
-                            onPick={onModeSwitchRun}
-                            onDismiss={onModeSwitchDismiss}
-                            disabled={isLoading}
-                        />
+                        <div className="absolute left-0 right-0 bottom-full mb-2 z-50
+                                        flex items-center gap-2 px-3 py-2 rounded-xl
+                                        border border-zinc-200 dark:border-[#FDD405]/25
+                                        bg-white dark:bg-[#181613]
+                                        shadow-lg shadow-black/10 dark:shadow-black/40
+                                        animate-in fade-in slide-in-from-bottom-1 duration-200">
+                            <button
+                                type="button"
+                                disabled={isLoading}
+                                // onMouseDown, not onClick: fires before the textarea
+                                // blurs, so the row cannot close out from under the click.
+                                onMouseDown={(e) => { e.preventDefault(); if (!isLoading) onModeSwitchRun(); }}
+                                className="flex-1 min-w-0 flex items-baseline gap-2 text-left
+                                           disabled:opacity-50 disabled:cursor-not-allowed group"
+                            >
+                                <span className="text-[12.5px] font-semibold flex-shrink-0
+                                                 text-zinc-900 dark:text-[#FDD405]
+                                                 group-hover:underline underline-offset-2">
+                                    Re-run in {MODE_LABEL[modeSwitch.mode] || modeSwitch.mode}
+                                </span>
+                                <span className="text-[11.5px] truncate text-zinc-500 dark:text-zinc-400">
+                                    “{modeSwitch.query}”
+                                </span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={onModeSwitchDismiss}
+                                aria-label="Dismiss"
+                                className="w-5 h-5 flex items-center justify-center rounded-md flex-shrink-0
+                                           text-zinc-400 hover:text-zinc-700 hover:bg-zinc-200/70
+                                           dark:text-zinc-500 dark:hover:text-zinc-200 dark:hover:bg-white/10
+                                           transition-colors text-[13px] leading-none"
+                            >×</button>
+                        </div>
                     ) : null}
 
                     {/* Thin amber border + outer glow */}
