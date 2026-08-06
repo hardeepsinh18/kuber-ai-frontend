@@ -455,7 +455,13 @@ const ChartSection = ({ chartData, resolveSymbol, patternSummary, atAGlance }) =
 // Strip markdown bold/italic markers before testing so **short term** still matches
 const hasHorizonQuestion = (text) => {
     if (!text) return false;
-    const plain = text.replace(/\*+/g, '').replace(/_+/g, '');
+    // Strip markdown emphasis, and normalise the hyphen/en-dash forms the model
+    // uses interchangeably ("short-term" vs "short term") so one spelling cannot
+    // slip past the detector — that is what left a disclaimer under a question.
+    const plain = text
+        .replace(/\*+/g, '')
+        .replace(/_+/g, '')
+        .replace(/([A-Za-z])[-‐-―]([A-Za-z])/g, '$1 $2');
     return /short\s*term.{0,40}or.{0,40}long\s*term|long\s*term.{0,40}or.{0,40}short\s*term/i.test(plain);
 };
 
@@ -759,13 +765,20 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
     // there is one definition of "this message is a question, not an answer".
     // Client-authored notices ("Request timed out") are already covered: the caller
     // passes isError={msg.isError || msg.isClientNotice}.
-    const isClarifyingQuestion = hasHorizonQuestion(content || '') || _isDisambig;
-    const showDisclaimer = !isUser && isEffectivelyDone && !isError && !isClarifyingQuestion;
     const strippedText = !isUser ? stripResponseChrome(rawText) : rawText;
     // K-002: verdict answers keep their full narrative — only the four single-aspect
     // intents get the opening-paragraph filter
     const textToDisplay = (!isUser && queryIntent !== 'full' && queryIntent !== 'verdict' && queryIntent !== 'fundamentals')
         ? filterByIntent(strippedText, queryIntent) : strippedText;
+
+    // Checked against BOTH the raw content and the text actually rendered: the
+    // other horizon gates in this file key on textToDisplay (post strip +
+    // intent-filter), so testing only `content` could leave the chip showing
+    // while the disclaimer gate missed the same question.
+    const isClarifyingQuestion = _isDisambig
+        || hasHorizonQuestion(content || '')
+        || hasHorizonQuestion(textToDisplay || '');
+    const showDisclaimer = !isUser && isEffectivelyDone && !isError && !isClarifyingQuestion;
 
     const relevantNews = React.useMemo(() => {
         const headlines = Array.isArray(newsHeadlines) ? newsHeadlines : [];

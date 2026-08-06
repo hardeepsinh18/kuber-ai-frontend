@@ -51,6 +51,29 @@ describe('disclaimer is hidden on clarifying questions', () => {
         });
         expect(screen.queryByText(DISCLAIMER)).toBeNull();
     });
+
+    it('is absent when the model writes the hyphenated form', () => {
+        // "short-term or long-term" is the same question; only the spelling
+        // differs, and the original detector only allowed whitespace.
+        renderBubble({ content: 'Do you want a short-term or long-term view on TATAELXSI?' });
+        expect(screen.queryByText(DISCLAIMER)).toBeNull();
+    });
+
+    it('is absent when the model uses an en-dash', () => {
+        renderBubble({ content: 'Short–term or long–term for TATAELXSI?' });
+        expect(screen.queryByText(DISCLAIMER)).toBeNull();
+    });
+
+    it('is absent for a single-aspect intent, where the rendered text is filtered', () => {
+        // The rendered body is textToDisplay (post strip + intent filter), not the
+        // raw content. The gate checks both, so a question surviving only in the
+        // filtered text is still caught.
+        renderBubble({
+            content: 'Are you looking at TATAELXSI for short term or long term?',
+            queryIntent: 'technical',
+        });
+        expect(screen.queryByText(DISCLAIMER)).toBeNull();
+    });
 });
 
 describe('disclaimer still shows where it matters', () => {
