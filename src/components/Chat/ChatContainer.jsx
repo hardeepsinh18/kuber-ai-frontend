@@ -146,7 +146,17 @@ const extractQueryIntent = (query) => {
 
     // K-002: buy/sell decision queries get a focused verdict view (signal + score +
     // valuation + management tone) instead of defaulting to the full wall of cards
-    if (/should i (buy|sell|invest)|worth (buying|investing|it)|good (buy|investment)|buy or sell|\bgood stock\b/i.test(q)) {
+    // Typo-tolerant on the modal only. "shoukd i buy tata" is the same question as
+    // "should i buy tata", and requiring the exact spelling dropped it to the
+    // generic path — no verdict, no short/long-term follow-up. The MODAL is matched
+    // loosely (any s-h/s-o word of 3-6 letters, covering should/shoud/shold/shuld/
+    // sould/shd, plus can/shall/could/must), while the VERB list stays strict:
+    // buy/sell/invest are short and unambiguous, and loosening those would swallow
+    // unrelated queries.
+    const MODAL = '(?:s[hou][a-z]{1,4}|can|could|shall|must|shud)';
+    const VERB = '(?:buy|sell|invest|bye|by)';
+    if (new RegExp(`\\b${MODAL}\\s+(?:i|we|you)\\s+${VERB}\\b`, 'i').test(q)
+        || /worth (buying|investing|it)|good (buy|investment)|buy or sell|\bgood stock\b/i.test(q)) {
         return 'verdict';
     }
 
