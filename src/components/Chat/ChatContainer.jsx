@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import MessageBubble from './MessageBubble';
 import InputBar from './InputBar';
-import GroupClarificationPopup from './GroupClarificationPopup';
 import StartScreen from './StartScreen';
 import ThinkingPaths from './ThinkingPaths';
 import ScannerDrawer from './ScannerDrawer';
@@ -823,7 +822,9 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const [streamingMessageId, setStreamingMessageId] = useState(null); // Track which message is streaming
-    const [dismissedDisambigId, setDismissedDisambigId] = useState(null); // AI message id whose clarification popup the user dismissed
+    const [dismissedDisambigId, setDismissedDisambigId] = useState(null);
+    // Lets the user close the horizon dropdown and just type instead.
+    const [dismissedHorizonId, setDismissedHorizonId] = useState(null); // AI message id whose clarification popup the user dismissed
     const [freshDisambigId, setFreshDisambigId] = useState(null); // AI message id of a disambiguation received THIS session (popup auto-shows only for these, never for reloaded history)
     const [showThinking, setShowThinking] = useState(false); // Show thinking paths
     const [thinkingSteps, setThinkingSteps] = useState([]); // Store thinking steps
@@ -1827,17 +1828,6 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                                 as part of that answer and scrolls with it. It used to float
                                 above the composer (absolute bottom-full), which covered the
                                 answer text and the input box. Width matches the bubble. */}
-                            {msg.role === 'ai' && msg.id === activeClarificationId && (
-                                <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 md:px-8 mt-1 mb-3">
-                                    <GroupClarificationPopup
-                                        groupName={msg.metadata?.disambiguation?.group_name}
-                                        candidates={msg.metadata?.disambiguation?.suggestions}
-                                        disabled={isLoading}
-                                        onSelect={(ticker) => { setDismissedDisambigId(msg.id); handleSend(ticker); }}
-                                        onDismiss={() => setDismissedDisambigId(msg.id)}
-                                    />
-                                </div>
-                            )}
 
                             {/* Retry — re-send the failed query so the user never loses it */}
                             {msg.role === 'ai' && (msg.isError || msg.isClientNotice) && msg.failedQuery && (
@@ -1916,6 +1906,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                         if (isLoading) return false;
                         const lastAI = [...messages].reverse().find(m => m.role === 'ai');
                         if (!lastAI?.content) return false;
+                        if (lastAI.id && lastAI.id === dismissedHorizonId) return false;
                         const plain = lastAI.content.replace(/\*+/g, '').replace(/_+/g, '');
                         return /short\s*term.{0,40}or.{0,40}long\s*term|long\s*term.{0,40}or.{0,40}short\s*term/i.test(plain);
                     })()}
@@ -1926,6 +1917,33 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                             || '';
                     })()}
                     onHorizonChoice={(q) => handleSend(q)}
+                    onHorizonDismiss={() => setDismissedHorizonId(
+                        [...messages].reverse().find(m => m.role === 'ai')?.id ?? null
+                    )}
+                    /* Company disambiguation, same dropdown. Mapped to the generic
+                       {label,hint,value} shape here so ClarifyDropdown stays unaware
+                       of tickers. Sends the TICKER, not the display name — the LLM
+                       collapses long successor names back to the ambiguous parent and
+                       re-triggers the same question. */
+                    companyChoices={(() => {
+                        const msg = messages.find(m => m.id === activeClarificationId);
+                        const list = msg?.metadata?.disambiguation?.suggestions;
+                        if (!Array.isArray(list) || !list.length) return null;
+                        return list.slice(0, 9).map((c) => {
+                            const ticker = (c.ticker || '').replace(/\.(NS|BO)$/i, '');
+                            return {
+                                key: c.ticker || c.name,
+                                label: c.name || ticker,
+                                hint: [ticker, c.sector].filter(Boolean).join(' · '),
+                                value: ticker || c.name,
+                            };
+                        });
+                    })()}
+                    onCompanyChoice={(ticker) => {
+                        setDismissedDisambigId(activeClarificationId);
+                        handleSend(ticker);
+                    }}
+                    onCompanyDismiss={() => setDismissedDisambigId(activeClarificationId)}
                 />
                 </div>
             </div>

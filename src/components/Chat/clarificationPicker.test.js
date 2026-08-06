@@ -5,43 +5,63 @@ import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const SRC = path.resolve(here, 'ChatContainer.jsx');
-const POPUP = path.resolve(here, 'GroupClarificationPopup.jsx');
+const DROPDOWN = path.resolve(here, 'ClarifyDropdown.jsx');
 
 /**
- * Group-disambiguation picker placement.
+ * Group-disambiguation picker.
  *
- * Two defects, both visible as the picker covering the transcript:
+ * History matters here, because the placement has now moved twice:
  *
- * 1. It was an `absolute bottom-full` overlay on the input-bar wrapper, so a
- *    six-company group (Tata) was taller than the gap above the composer and
- *    drew over both the answer text and the input box.
- * 2. `activeClarificationId` resolved to whatever the LAST ai message was and
- *    only then compared it to freshDisambigId. Asking an ambiguous query twice
- *    ("tata", then "tata" again) meant the payload lived on the older message
- *    while the picker keyed to the newer one, rendering it under the wrong
- *    answer and across that answer's Analysis-steps bar.
+ * 1. It began as an `absolute bottom-full` overlay with NO height cap. A
+ *    six-company group (Tata) is ~440px tall, which is taller than the gap above
+ *    the composer on a laptop, so it drew over both the answer text and the input
+ *    box.
+ * 2. That was fixed by moving it inline into the message list.
+ * 3. It has since moved back to the composer (product decision, 2026-08-06): the
+ *    answer to a clarifying question is the user's next input, so the choice
+ *    belongs where they are about to type — and both clarifying prompts (company
+ *    picker, time-horizon picker) now share one ClarifyDropdown component instead
+ *    of looking like two different features.
+ *
+ * These tests therefore pin the PROPERTY that defect 1 was about — the picker
+ * must not be able to grow off-screen — rather than the placement itself, which
+ * is a design choice that has legitimately changed. Pinning the placement is what
+ * made this suite fail on an intended change.
+ *
+ * Defect 2 (wrong message owning the payload) is unrelated to placement and is
+ * still pinned exactly as before.
  */
 
 const src = fs.readFileSync(SRC, 'utf8');
-const popup = fs.readFileSync(POPUP, 'utf8');
+const dropdown = fs.readFileSync(DROPDOWN, 'utf8');
 
-describe('clarification picker is inline, not an overlay', () => {
-    it('does not anchor the picker above the composer any more', () => {
-        expect(src).not.toContain('absolute bottom-full inset-x-0 z-40');
+describe('clarification picker cannot cover the transcript', () => {
+    it('caps its own height so a long group scrolls instead of overflowing', () => {
+        // The actual regression guard: without this, six companies push the top of
+        // the panel off-screen (measured at top:-163 on a 420px-tall viewport).
+        expect(dropdown).toMatch(/max-h-\[min\(/);
+        expect(dropdown).toContain('overflow-y-auto');
     });
 
-    it('renders the picker inside the message list, keyed to its own message', () => {
-        expect(src).toContain('msg.role === \'ai\' && msg.id === activeClarificationId');
+    it('contains its own scrolling rather than the page scrolling behind it', () => {
+        expect(dropdown).toContain('overscroll-contain');
     });
 
-    it('reads the disambiguation off that same message, not a re-scanned lastAI', () => {
-        expect(src).toContain('msg.metadata?.disambiguation?.group_name');
-        expect(src).toContain('msg.metadata?.disambiguation?.suggestions');
+    it('bounds the number of options it will render', () => {
+        expect(dropdown).toContain('options.slice(0, 9)');
+    });
+});
+
+describe('one component serves both clarifying questions', () => {
+    it('the composer feeds it both the company and the horizon choices', () => {
+        expect(src).toContain('companyChoices');
+        expect(src).toContain('horizonQuestion');
     });
 
-    it('drops the floating-overlay chrome that caused the overlap', () => {
-        expect(popup).not.toContain('backdrop-blur-xl');
-        expect(popup).not.toContain('slide-in-from-bottom-2');
+    it('sends the ticker, not the display name', () => {
+        // The LLM collapses long successor names back to the ambiguous parent,
+        // which re-triggers the very question the user just answered.
+        expect(src).toMatch(/ticker\s*\|\|\s*c\.name/);
     });
 });
 

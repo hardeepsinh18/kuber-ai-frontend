@@ -4,6 +4,7 @@ import { clsx } from 'clsx';
 import ScannerPanel from './ScannerPanel';
 import IpoPanel from './IpoPanel';
 import CompanySuggest from './CompanySuggest';
+import ClarifyDropdown from './ClarifyDropdown';
 import { useCompanySuggest } from '../../hooks/useCompanySuggest';
 
 const QUERIES = [
@@ -20,7 +21,7 @@ const MODES = [
     { key: 'analyst', label: 'Analyst' },
 ];
 
-const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horizonQuestion = false, horizonSymbol = '', onHorizonChoice, responseMode, setResponseMode, onScannerResult }) => {
+const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horizonQuestion = false, horizonSymbol = '', onHorizonChoice, onHorizonDismiss, companyChoices = null, onCompanyChoice, onCompanyDismiss, responseMode, setResponseMode, onScannerResult }) => {
     const inputRef = useRef(null);
     const boxRef = useRef(null);
     const [scannerOpen, setScannerOpen] = useState(false);
@@ -128,6 +129,44 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
                 <div ref={boxRef} className="w-full relative group">
 
                     <CompanySuggest {...suggest.dropdownProps} direction="up" />
+
+                    {/* Clarifying-question dropdowns. Anchored here, over the composer,
+                        because the answer to a clarifying question IS the user's next
+                        input. Only one can be open at a time: the company picker takes
+                        precedence, since it is the more specific question. The company
+                        typeahead above only opens while the user is typing, and these
+                        only open when the user has NOT started typing, so they cannot
+                        collide. */}
+                    {companyChoices?.length > 0 ? (
+                        <ClarifyDropdown
+                            title="Select a company"
+                            options={companyChoices}
+                            onPick={onCompanyChoice}
+                            onDismiss={onCompanyDismiss}
+                            disabled={isLoading}
+                        />
+                    ) : horizonQuestion ? (
+                        <ClarifyDropdown
+                            title="Select a time horizon"
+                            options={[
+                                {
+                                    key: 'short',
+                                    label: 'Short Term',
+                                    hint: 'Entry, target, stop loss',
+                                    value: `${horizonSymbol ? `${horizonSymbol} ` : ''}short term trading — entry, target, stop loss`,
+                                },
+                                {
+                                    key: 'long',
+                                    label: 'Long Term',
+                                    hint: 'Fundamentals, growth outlook',
+                                    value: `${horizonSymbol ? `${horizonSymbol} ` : ''}long term investment — fundamentals, growth outlook`,
+                                },
+                            ]}
+                            onPick={onHorizonChoice}
+                            onDismiss={onHorizonDismiss}
+                            disabled={isLoading}
+                        />
+                    ) : null}
 
                     {/* Thin amber border + outer glow */}
                     <div className="p-[1px] rounded-xl transition-all duration-300"

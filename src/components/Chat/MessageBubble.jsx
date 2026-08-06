@@ -465,33 +465,6 @@ const hasHorizonQuestion = (text) => {
     return /short\s*term.{0,40}or.{0,40}long\s*term|long\s*term.{0,40}or.{0,40}short\s*term/i.test(plain);
 };
 
-const HorizonChoice = ({ symbol, onChoice }) => {
-    const base = symbol ? `${symbol} ` : '';
-    const options = [
-        { label: 'Short Term', query: `${base}short term trading — entry, target, stop loss` },
-        { label: 'Long Term',  query: `${base}long term investment — fundamentals, growth outlook` },
-    ];
-    return (
-        <div className="flex flex-wrap gap-2.5 mt-4 mb-1">
-            {options.map(({ label, query }) => (
-                <button
-                    key={label}
-                    type="button"
-                    onClick={() => onChoice(query)}
-                    className="px-5 py-2 rounded-full text-[13px] font-semibold
-                               text-zinc-700 dark:text-zinc-200
-                               bg-white dark:bg-zinc-800/70
-                               border border-zinc-300/70 dark:border-zinc-600/60
-                               hover:border-[#FDD405] dark:hover:border-[#FDD405]/70
-                               hover:bg-[#FDD405]/10 dark:hover:bg-[#FDD405]/10
-                               active:scale-[0.97]
-                               transition-all duration-150">
-                    {label}
-                </button>
-            ))}
-        </div>
-    );
-};
 
 // ─── Shared bottom chrome: disclaimer box + follow-up chips ──────────────────
 // Used by both the classic document layout and the Quick Answer layout.
@@ -1334,10 +1307,10 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                         {!isUser && isStreaming && !isComplete && (
                             <span className="inline-block w-[2px] h-4 bg-zinc-400 dark:bg-zinc-500 ml-0.5 animate-pulse"></span>
                         )}
-                        {/* Short/Long term choice — directly below the question text */}
-                        {!isUser && isEffectivelyDone && onFollowUpClick && hasHorizonQuestion(textToDisplay) && (
-                            <HorizonChoice symbol={primarySymbolLabel} onChoice={onFollowUpClick} />
-                        )}
+                        {/* The Short/Long choice is NOT rendered here any more — it lives in
+                            the composer dropdown (ClarifyDropdown via InputBar), next to where
+                            the user answers it. Rendering it here as well showed two pickers
+                            for one question. */}
                     </div>
                     </GeneralAnswerShell>
 
