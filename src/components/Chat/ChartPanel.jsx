@@ -17,6 +17,11 @@ const heikinBars = (bars) =>
     toHeikinAshi(bars.map((b) => ({ ...b, date: b.time })))
         .map(({ date, open, high, low, close }) => ({ time: date, open, high, low, close }));
 
+// Appends the in-progress brick (if any) so the series and its visible-range
+// window both extend through today, not just through the last completed brick.
+const withLiveBrick = (renko) =>
+    renko?.liveBrick ? [...(renko.bricks ?? []), renko.liveBrick] : (renko?.bricks ?? []);
+
 const ChartPanel = forwardRef(({ chartType, bars, renko, patternAnn, candlestickAnn, range, theme, className }, ref) => {
     const containerRef = useRef(null);
     const seriesRef = useRef(null);
@@ -62,7 +67,7 @@ const ChartPanel = forwardRef(({ chartType, bars, renko, patternAnn, candlestick
 
         let series;
         if (chartType === 'renko') {
-            const data = renkoData(renko?.bricks ?? []);
+            const data = renkoData(withLiveBrick(renko));
             series = chart.addCustomSeries(new RenkoSeries(), {});
             series.setData(data);
             // Synthetic times must display as their real completion dates.
@@ -163,7 +168,7 @@ const ChartPanel = forwardRef(({ chartType, bars, renko, patternAnn, candlestick
         const ts = chartRef.current?.timeScale();
         if (!ts || !range) return;
         if (chartType === 'renko') {
-            const vr = renkoVisibleRange(renko?.bricks ?? [], bars, range);
+            const vr = renkoVisibleRange(withLiveBrick(renko), bars, range);
             if (vr) ts.setVisibleLogicalRange(vr);
             return;
         }

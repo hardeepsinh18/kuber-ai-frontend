@@ -125,7 +125,7 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
         );
     }
 
-    const renkoEmpty = chartType === 'renko' && !renko.bricks.length;
+    const renkoEmpty = chartType === 'renko' && !renko.bricks.length && !renko.liveBrick;
 
     const emptyRenkoMsg = (
         <div className="flex h-full items-center justify-center px-6 text-center text-sm text-zinc-500 dark:text-zinc-400">

@@ -54,9 +54,15 @@ export const niceBrickSize = (x) => {
  * Returns { bricks, brickSize } where each brick is
  * { idx, date, open, close, dir } — dir is +1 (up) or -1 (down), and date is
  * the bar on which the brick completed (several bricks can share a date).
+ *
+ * Also returns `liveBrick` — the in-progress move from the last confirmed
+ * brick's edge to the latest close, dated the latest bar. It never counts as
+ * a completed brick, but without it the chart's rightmost point is whatever
+ * day the last brick happened to finish on, which reads as stale once a few
+ * days pass without a full brick move.
  */
 export const buildRenko = (data, brickSizeOverride = null) => {
-    if (!data || data.length < 2) return { bricks: [], brickSize: 0 };
+    if (!data || data.length < 2) return { bricks: [], brickSize: 0, liveBrick: null };
 
     let brickSize = brickSizeOverride;
     if (!brickSize) {
@@ -96,5 +102,11 @@ export const buildRenko = (data, brickSizeOverride = null) => {
         }
     }
 
-    return { bricks, brickSize };
+    const lastBar = data[data.length - 1];
+    const liveBase = bricks.length ? bricks[bricks.length - 1].close : top;
+    const liveBrick = lastBar.close === liveBase
+        ? null
+        : { date: lastBar.date, open: liveBase, close: lastBar.close, dir: lastBar.close > liveBase ? 1 : -1, live: true };
+
+    return { bricks, brickSize, liveBrick };
 };

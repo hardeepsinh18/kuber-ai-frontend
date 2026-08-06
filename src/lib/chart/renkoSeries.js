@@ -19,6 +19,7 @@ export const renkoData = (bricks) =>
         brickClose: b.close,
         dir: b.dir,
         realDate: b.date,
+        live: !!b.live,
         // LWC needs a numeric `value` per point for autoscaling.
         value: b.close,
     }));
@@ -84,13 +85,28 @@ class RenkoSeriesRenderer {
                 const top = Math.min(yO, yC) * scope.verticalPixelRatio;
                 const h = Math.max(Math.abs(yC - yO) * scope.verticalPixelRatio, 1.5);
 
-                ctx.fillStyle = color;
-                ctx.globalAlpha = 0.92;
-                ctx.fillRect(x - halfW, top, halfW * 2, h);
-                ctx.globalAlpha = 1;
-                ctx.strokeStyle = color;
-                ctx.lineWidth = 0.5;
-                ctx.strokeRect(x - halfW, top, halfW * 2, h);
+                // The live brick tracks today's close before it has completed a
+                // full brick move — drawn hollow/dashed so it never reads as a
+                // confirmed brick, but still anchors the chart to today's date.
+                if (item.live) {
+                    ctx.globalAlpha = 0.35;
+                    ctx.fillStyle = color;
+                    ctx.fillRect(x - halfW, top, halfW * 2, h);
+                    ctx.globalAlpha = 1;
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([3 * ratio, 2 * ratio]);
+                    ctx.strokeRect(x - halfW, top, halfW * 2, h);
+                    ctx.setLineDash([]);
+                } else {
+                    ctx.fillStyle = color;
+                    ctx.globalAlpha = 0.92;
+                    ctx.fillRect(x - halfW, top, halfW * 2, h);
+                    ctx.globalAlpha = 1;
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 0.5;
+                    ctx.strokeRect(x - halfW, top, halfW * 2, h);
+                }
             }
         });
     }
