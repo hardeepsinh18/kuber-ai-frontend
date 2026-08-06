@@ -12,6 +12,7 @@ export async function streamChatRequest({
     headers = {},
     onToken,
     onData,
+    onStep,
     onFirstEvent,
     timeoutMs = 120000,
     registerAbort,
@@ -65,6 +66,11 @@ export async function streamChatRequest({
         if (!sawFirst) { sawFirst = true; if (onFirstEvent) onFirstEvent(); }
         if (ev === 'token') {
             if (onToken && parsed.delta) onToken(parsed.delta);
+        } else if (ev === 'step') {
+            // Provenance as it happens: {id, phase: 'start'|'done', text, ok, ms}.
+            // `start` is the present-tense label, `done` the factual result under
+            // the same id, so the UI resolves the line in place.
+            if (onStep && parsed.id != null) onStep(parsed);
         } else if (ev === 'data') {
             if (onData) onData(parsed);
         } else if (ev === 'done') {

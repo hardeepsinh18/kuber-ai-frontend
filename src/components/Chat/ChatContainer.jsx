@@ -766,6 +766,9 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
     const [freshDisambigId, setFreshDisambigId] = useState(null); // AI message id of a disambiguation received THIS session (popup auto-shows only for these, never for reloaded history)
     const [showThinking, setShowThinking] = useState(false); // Show thinking paths
     const [thinkingSteps, setThinkingSteps] = useState([]); // Store thinking steps
+    // Steps streaming in over SSE while the request is in flight, keyed by id so a
+    // 'done' event resolves its 'start' line in place instead of appending a copy.
+    const [liveSteps, setLiveSteps] = useState([]);
     const [startTime, setStartTime] = useState(null); // Track request start time
     const [processingTime, setProcessingTime] = useState(0); // Track processing time
     const [showScrollButton, setShowScrollButton] = useState(false); // Show scroll-to-bottom button
@@ -1068,6 +1071,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             
             // Show thinking animation
             setShowThinking(true);
+            setLiveSteps([]);
             setThinkingSteps([]);
 
             if (import.meta.env.DEV) console.log('Sending query:', normalized);
@@ -1277,9 +1281,20 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                         headers,
                         timeoutMs: REQUEST_TIMEOUT_MS,
                         registerAbort: (c) => { abortControllerRef.current = c; },
-                        onFirstEvent: () => { setShowThinking(false); },
+                        onStep: (ev) => {
+                            if (requestId !== activeRequestIdRef.current || !isSameChat()) return;
+                            setLiveSteps(prev => {
+                                const at = prev.findIndex(s => s.id === ev.id);
+                                if (at === -1) return [...prev, ev];
+                                const next = prev.slice();
+                                next[at] = { ...next[at], ...ev };
+                                return next;
+                            });
+                        },
+                        onData: () => { setShowThinking(false); },
                         onToken: (delta) => {
                             if (requestId !== activeRequestIdRef.current || !isSameChat()) return;
+                            setShowThinking(false);
                             setMessages(prev => prev.map(m => m.id === streamPreviewId
                                 ? { ...m, content: (m.content || '') + delta } : m));
                         },
@@ -1787,7 +1802,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
 
                     {showThinking && (
                         <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 md:px-8 pb-2">
-                            <ThinkingPaths isThinking={true} />
+                            <ThinkingPaths isThinking={true} liveSteps={liveSteps} />
                         </div>
                     )}
 

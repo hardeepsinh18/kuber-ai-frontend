@@ -41,6 +41,56 @@ describe('ThinkingPaths', () => {
         expect(screen.getByText('1.7s')).toBeTruthy();
     });
 
+    it('shows live steps while the request is in flight', () => {
+        renderPanel({
+            isThinking: true,
+            liveSteps: [
+                { id: 1, phase: 'done', text: 'Read this as an investment-decision question', ok: true },
+                { id: 2, phase: 'start', text: 'Loading financials' },
+            ],
+        });
+
+        expect(screen.getByText('Read this as an investment-decision question')).toBeTruthy();
+        expect(screen.getByText('Loading financials')).toBeTruthy();
+    });
+
+    it('resolves a running step in place rather than duplicating it', () => {
+        const { rerender } = renderPanel({
+            isThinking: true,
+            liveSteps: [{ id: 2, phase: 'start', text: 'Loading financials' }],
+        });
+
+        rerender(
+            <ThemeProvider>
+                <ThinkingPaths
+                    isThinking
+                    liveSteps={[{
+                        id: 2, phase: 'done', ok: true,
+                        text: 'Loaded 6 valuation metrics for RELIANCE',
+                    }]}
+                />
+            </ThemeProvider>
+        );
+
+        expect(screen.queryByText('Loading financials')).toBeNull();
+        expect(screen.getByText('Loaded 6 valuation metrics for RELIANCE')).toBeTruthy();
+    });
+
+    it('keeps only the newest few live steps on screen', () => {
+        renderPanel({
+            isThinking: true,
+            liveSteps: [
+                { id: 1, phase: 'done', text: 'oldest step', ok: true },
+                { id: 2, phase: 'done', text: 'second step', ok: true },
+                { id: 3, phase: 'done', text: 'third step', ok: true },
+                { id: 4, phase: 'start', text: 'newest step' },
+            ],
+        });
+
+        expect(screen.queryByText('oldest step')).toBeNull();
+        expect(screen.getByText('newest step')).toBeTruthy();
+    });
+
     it('invents no steps while the request is in flight', () => {
         // The old build cycled eight hardcoded lines here ("Retrieving analyst
         // views…"), then replaced them with a different invented list on arrival.
