@@ -19,10 +19,10 @@ const TAB_EMPTY = {
 
 const SeriesBadge = ({ series }) => (
     <span
-        className={`px-1.5 py-0.5 rounded text-[9.5px] font-bold tracking-wide select-none ${
+        className={`px-1.5 py-px rounded text-[9px] font-extrabold uppercase tracking-[0.12em] select-none ${
             series === 'SME'
-                ? 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'
-                : 'bg-amber-100/70 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
+                ? 'bg-zinc-200/70 text-zinc-500 dark:bg-white/[0.06] dark:text-zinc-400'
+                : 'bg-[#FDD405]/15 text-zinc-900 dark:bg-[#FDD405]/15 dark:text-[#FDD405]'
         }`}
     >
         {series || 'EQ'}
@@ -45,18 +45,20 @@ const SubscriptionPill = ({ times }) => {
 };
 
 const IpoRow = ({ ipo, tab }) => (
-    <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border
-                    border-zinc-200/70 dark:border-white/8
-                    bg-white dark:bg-[#1d1d1d]
-                    hover:border-[#FDD405]/50 dark:hover:border-[#FDD405]/40 transition-colors">
+    <div className="flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl border
+                    border-zinc-200 bg-zinc-50
+                    dark:border-zinc-800/80 dark:bg-[#0d0c0b]
+                    hover:border-[#FDD405]/60 hover:bg-[#FDD405]/[0.04]
+                    dark:hover:border-[#FDD405]/50 dark:hover:bg-[#FDD405]/[0.04]
+                    transition-colors">
         <div className="min-w-0">
             <div className="flex items-center gap-2">
-                <p className="text-[13px] font-semibold text-zinc-900 dark:text-white truncate">
+                <p className="text-[13px] font-bold text-zinc-900 dark:text-white truncate">
                     {ipo.company}
                 </p>
                 <SeriesBadge series={ipo.series} />
             </div>
-            <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5 truncate">
+            <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-px truncate tabular-nums">
                 {ipo.symbol || '—'}
                 {ipo.price_band && ipo.price_band !== '—' && <> · {ipo.price_band}</>}
                 {tab === 'past' && ipo.issue_price != null && <> · issued at ₹{Math.round(ipo.issue_price).toLocaleString('en-IN')}</>}
@@ -64,7 +66,7 @@ const IpoRow = ({ ipo, tab }) => (
         </div>
         <div className="flex flex-col items-end gap-1 flex-shrink-0">
             {tab === 'current' && <SubscriptionPill times={ipo.subscription_times} />}
-            <p className="text-[10.5px] text-zinc-400 dark:text-zinc-500 whitespace-nowrap">
+            <p className="text-[10.5px] text-zinc-500 dark:text-zinc-400 whitespace-nowrap tabular-nums">
                 {tab === 'current'  && ipo.issue_end     && <>closes <span className="font-semibold text-zinc-600 dark:text-zinc-300">{ipo.issue_end}</span></>}
                 {tab === 'upcoming' && ipo.issue_start   && <>opens <span className="font-semibold text-zinc-600 dark:text-zinc-300">{ipo.issue_start}</span></>}
                 {tab === 'past'     && ipo.listing_date  && <>listed <span className="font-semibold text-zinc-600 dark:text-zinc-300">{ipo.listing_date}</span></>}
@@ -121,15 +123,15 @@ const IpoPanel = ({ onClose }) => {
                 ref={panelRef}
                 className="relative w-full max-w-2xl max-h-[85dvh] sm:max-h-[78vh] flex flex-col rounded-2xl border shadow-2xl overflow-hidden
                            bg-white border-zinc-200
-                           dark:bg-[#161616] dark:border-white/10"
+                           dark:bg-[#181613] dark:border-[#FDD405]/20"
             >
                 {/* Header — stacks on mobile (title row, then tab row); inline on sm+ */}
-                <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-5 py-3 sm:py-4 border-b border-zinc-100 dark:border-white/8 flex-shrink-0">
+                <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-5 py-3 sm:py-4 border-b border-zinc-200 dark:border-zinc-800/80 flex-shrink-0">
                     <div className="flex items-center justify-between gap-2 min-w-0">
                         <div className="flex items-center gap-2.5 min-w-0">
                             <Rocket size={17} style={{ color: '#FDD405' }} className="flex-shrink-0" />
                             <div className="min-w-0">
-                                <h2 className="text-[15px] font-semibold text-zinc-900 dark:text-white">IPO Corner</h2>
+                                <h2 className="text-[15px] font-bold text-zinc-900 dark:text-white">IPO Corner</h2>
                                 <p className="text-[12px] text-zinc-400 dark:text-zinc-500 mt-0.5">
                                     NSE main-board & SME issues · live from the exchange
                                 </p>
@@ -145,7 +147,7 @@ const IpoPanel = ({ onClose }) => {
                     </div>
 
                     <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                        <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-zinc-100 dark:bg-zinc-900 flex-1 sm:flex-none">
+                        <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-zinc-100 dark:bg-[#0d0c0b] flex-1 sm:flex-none">
                             {TABS.map(({ key, label }) => (
                                 <button
                                     key={key}
@@ -217,7 +219,7 @@ const IpoPanel = ({ onClose }) => {
                 </div>
 
                 {/* Footer */}
-                <div className="px-5 py-2.5 border-t border-zinc-100 dark:border-white/8 flex-shrink-0">
+                <div className="px-5 py-2.5 border-t border-zinc-200 dark:border-zinc-800/80 flex-shrink-0">
                     <p className="text-[10.5px] text-zinc-400 dark:text-zinc-600">
                         Source: NSE · refreshed through the trading day · verify on nseindia.com before applying
                     </p>
