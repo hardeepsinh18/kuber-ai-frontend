@@ -21,7 +21,9 @@ const MODES = [
     { key: 'analyst', label: 'Analyst' },
 ];
 
-const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horizonQuestion = false, horizonSymbol = '', onHorizonChoice, onHorizonDismiss, companyChoices = null, onCompanyChoice, onCompanyDismiss, responseMode, setResponseMode, onScannerResult }) => {
+const MODE_LABEL = { snap: 'Quick', analyst: 'Analyst' };
+
+const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horizonQuestion = false, horizonSymbol = '', onHorizonChoice, onHorizonDismiss, companyChoices = null, onCompanyChoice, onCompanyDismiss, modeSwitch = null, onModeSwitchRun, onModeSwitchDismiss, responseMode, setResponseMode, onScannerResult }) => {
     const inputRef = useRef(null);
     const boxRef = useRef(null);
     const [scannerOpen, setScannerOpen] = useState(false);
@@ -164,6 +166,19 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
                             ]}
                             onPick={onHorizonChoice}
                             onDismiss={onHorizonDismiss}
+                            disabled={isLoading}
+                        />
+                    ) : modeSwitch ? (
+                        <ClarifyDropdown
+                            title={`Switched to ${MODE_LABEL[modeSwitch.mode] || modeSwitch.mode}`}
+                            options={[{
+                                key: 'rerun',
+                                label: 'Run my last question',
+                                hint: modeSwitch.query,
+                                value: modeSwitch.query,
+                            }]}
+                            onPick={onModeSwitchRun}
+                            onDismiss={onModeSwitchDismiss}
                             disabled={isLoading}
                         />
                     ) : null}

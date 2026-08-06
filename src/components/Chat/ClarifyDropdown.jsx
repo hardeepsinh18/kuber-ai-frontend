@@ -47,13 +47,14 @@ export default function ClarifyDropdown({
             aria-label={title}
             className="absolute left-0 right-0 bottom-full mb-2 z-50
                        overflow-hidden rounded-xl
-                       border border-zinc-200 dark:border-zinc-700/80
-                       bg-white dark:bg-[#1a1a1a]
+                       border border-zinc-200 dark:border-[#FDD405]/25
+                       bg-white dark:bg-[#181613]
                        shadow-xl shadow-black/10 dark:shadow-black/50
                        animate-in fade-in slide-in-from-bottom-1 duration-200"
         >
-            <div className="flex items-center justify-between gap-3 px-4 pt-3 pb-2">
-                <span className="text-[13px] font-medium text-zinc-500 dark:text-zinc-400 truncate">
+            <div className="flex items-center justify-between gap-3 px-3 pt-2.5 pb-1.5">
+                <span className="text-[9px] font-extrabold uppercase tracking-[0.16em] truncate
+                                 text-zinc-900 dark:text-[#FDD405]">
                     {title}
                 </span>
                 {onDismiss && (
@@ -61,10 +62,10 @@ export default function ClarifyDropdown({
                         type="button"
                         onClick={onDismiss}
                         aria-label="Dismiss"
-                        className="w-6 h-6 flex items-center justify-center rounded-md flex-shrink-0
+                        className="w-5 h-5 flex items-center justify-center rounded-md flex-shrink-0
                                    text-zinc-400 hover:text-zinc-700 hover:bg-zinc-200/70
                                    dark:text-zinc-500 dark:hover:text-zinc-200 dark:hover:bg-white/10
-                                   transition-colors text-[15px] leading-none"
+                                   transition-colors text-[13px] leading-none"
                     >×</button>
                 )}
             </div>
@@ -75,7 +76,7 @@ export default function ClarifyDropdown({
                 earlier overlay version of this picker was moved inline. Capping to
                 the available space keeps the composer-anchored placement without
                 reintroducing it. */}
-            <div className="max-h-[min(46vh,320px)] overflow-y-auto custom-scrollbar overscroll-contain">
+            <div className="max-h-[min(42vh,272px)] overflow-y-auto custom-scrollbar overscroll-contain">
             {shown.map((opt, i) => (
                 <button
                     key={opt.key ?? opt.label}
@@ -86,23 +87,24 @@ export default function ClarifyDropdown({
                     // onMouseDown, not onClick: fires before the textarea blurs, so the
                     // dropdown cannot close out from under the click.
                     onMouseDown={(e) => { e.preventDefault(); if (!disabled) onPick(opt.value); }}
-                    className="group flex items-center gap-3 w-full text-left px-4 py-2.5
+                    className="group flex items-center gap-2.5 w-full text-left px-3 py-2
                                border-t border-zinc-200/70 dark:border-white/[0.06]
-                               hover:bg-zinc-100 dark:hover:bg-white/[0.06]
+                               hover:bg-[#FDD405]/[0.07] dark:hover:bg-[#FDD405]/[0.07]
                                disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                    <span className="w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0
-                                     text-[11px] font-medium
+                    <span className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0
+                                     text-[10px] font-bold tabular-nums
                                      bg-zinc-200/70 text-zinc-500
                                      dark:bg-white/[0.06] dark:text-zinc-400
-                                     group-hover:text-zinc-700 dark:group-hover:text-zinc-200
+                                     group-hover:bg-[#FDD405] group-hover:text-black
+                                     dark:group-hover:bg-[#FDD405] dark:group-hover:text-black
                                      transition-colors">
                         {i + 1}
                     </span>
                     <div className="flex-1 min-w-0">
-                        <p className="text-[14px] text-zinc-800 dark:text-zinc-100 truncate">{opt.label}</p>
+                        <p className="text-[13px] font-medium text-zinc-800 dark:text-zinc-100 truncate">{opt.label}</p>
                         {opt.hint && (
-                            <p className="text-[11px] mt-0.5 text-zinc-500 dark:text-zinc-500 truncate">
+                            <p className="text-[11px] mt-px text-zinc-500 dark:text-zinc-500 truncate">
                                 {opt.hint}
                             </p>
                         )}
@@ -112,7 +114,7 @@ export default function ClarifyDropdown({
 
             </div>
 
-            <div className="flex items-center justify-center gap-1.5 px-4 py-2
+            <div className="flex items-center justify-center gap-1.5 px-3 py-1.5
                             border-t border-zinc-200/70 dark:border-white/[0.06]
                             text-[10px] text-zinc-400 dark:text-zinc-600">
                 <span>Press</span>

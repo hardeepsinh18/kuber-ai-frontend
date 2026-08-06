@@ -687,69 +687,7 @@ const CHAT_MODES = [
     { key: 'analyst', label: 'Analyst' },
 ];
 
-const _MODE_LABEL = { snap: 'Quick', analyst: 'Analyst' };
 
-// Shown after the user flips Quick <-> Analyst with a prior question — offers to
-// re-run that question in the new mode, or dismiss and ask something new.
-// Non-blocking popover that floats just above the input bar after a mode switch.
-// Tap "Run my last question" to re-fire it in the new mode, or just type a new
-// question in the input below (sending anything dismisses it).
-const ModeSwitchPrompt = ({ query, mode, onRun, onClose }) => {
-    const label = _MODE_LABEL[mode] || mode;
-    return (
-        <div className="absolute bottom-full left-0 right-0 mb-3 px-4 sm:px-6 md:px-8 z-30 pointer-events-none">
-            <div className="max-w-4xl mx-auto flex justify-center sm:justify-start">
-                <div className="pointer-events-auto w-full max-w-[22rem] rounded-2xl border bg-white border-zinc-200
-                                dark:bg-[#181613] dark:border-zinc-800 shadow-xl p-3 space-y-2.5"
-                     style={{ animation: 'slideUpFade 0.3s cubic-bezier(0.22,1,0.36,1) both' }}>
-
-                    {/* Header. The close button is a real 24px hit target on its own
-                        row-end rather than a bare glyph crowding the text. */}
-                    <div className="flex items-start justify-between gap-3">
-                        <p className="text-[11.5px] leading-snug font-medium text-zinc-600 dark:text-zinc-400 min-w-0">
-                            Switched to{' '}
-                            <span className="font-bold text-zinc-900 dark:text-[#FDD405]">{label}</span>
-                        </p>
-                        <button onClick={onClose} aria-label="Dismiss"
-                            className="-m-1 p-1 rounded-md flex-shrink-0 text-zinc-400 transition-colors
-                                       hover:text-zinc-700 hover:bg-black/5
-                                       dark:hover:text-zinc-200 dark:hover:bg-white/10">
-                            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                                <path d="M1 1l10 10M11 1L1 11" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
-                            </svg>
-                        </button>
-                    </div>
-
-                    {/* Action — full width, uniform inset, same inner-card treatment as
-                        the answer surfaces. */}
-                    <button onClick={onRun}
-                        className="w-full flex items-center gap-3 text-left px-3 py-2.5 rounded-xl border
-                                   border-zinc-200 bg-zinc-50 hover:border-[#FDD405] hover:bg-[#FDD405]/[0.06]
-                                   dark:border-zinc-800/80 dark:bg-[#0d0c0b] dark:hover:border-[#FDD405]
-                                   dark:hover:bg-[#FDD405]/[0.06] transition-colors group">
-                        <span className="w-4 h-4 rounded-full border-2 flex-shrink-0 transition-colors
-                                         border-zinc-300 group-hover:border-[#FDD405]
-                                         dark:border-zinc-600 dark:group-hover:border-[#FDD405]" />
-                        <span className="min-w-0 flex-1">
-                            <span className="block text-[12px] font-semibold text-zinc-900 dark:text-white">
-                                Run my last question
-                            </span>
-                            <span className="block text-[11px] text-zinc-500 dark:text-zinc-400 truncate mt-0.5">
-                                “{query}”
-                            </span>
-                        </span>
-                    </button>
-
-                    {/* Moved out of the header: it explains the alternative, which is a
-                        hint about the input below, not part of the title. */}
-                    <p className="text-[10.5px] leading-snug text-zinc-400 dark:text-zinc-500 px-0.5">
-                        Or just type a new question below.
-                    </p>
-                </div>
-            </div>
-        </div>
-    );
-};
 
 // Stable unique ID generator — avoids Date.now() collisions
 const genId = () =>
@@ -1884,14 +1822,6 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                             </svg>
                         </button>
                     )}
-                    {modeSwitchPrompt && (
-                        <ModeSwitchPrompt
-                            query={modeSwitchPrompt.query}
-                            mode={modeSwitchPrompt.mode}
-                            onRun={() => { const q = modeSwitchPrompt.query; setModeSwitchPrompt(null); handleSend(q); }}
-                            onClose={() => setModeSwitchPrompt(null)}
-                        />
-                    )}
                 <InputBar
                     input={input}
                     setInput={setInput}
@@ -1944,6 +1874,17 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                         handleSend(ticker);
                     }}
                     onCompanyDismiss={() => setDismissedDisambigId(activeClarificationId)}
+                    /* Mode-switch re-run offer. Same dropdown as the clarifying
+                       questions: it asks the user something and its answer is their
+                       next input, so it belongs in the same place rather than being a
+                       third bespoke popover. */
+                    modeSwitch={modeSwitchPrompt}
+                    onModeSwitchRun={() => {
+                        const q = modeSwitchPrompt?.query;
+                        setModeSwitchPrompt(null);
+                        if (q) handleSend(q);
+                    }}
+                    onModeSwitchDismiss={() => setModeSwitchPrompt(null)}
                 />
                 </div>
             </div>
