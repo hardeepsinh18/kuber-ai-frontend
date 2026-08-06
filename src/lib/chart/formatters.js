@@ -45,6 +45,14 @@ export const formatCrosshairDate = (time) => {
     return `${DAYS[dt.getUTCDay()]} ${dt.getUTCDate()} ${MONTHS[dt.getUTCMonth()]} '${yy}`;
 };
 
+// Weekday-less variant for compact captions (e.g. "Data as of 5 Aug '26"),
+// where the day name would just add noise.
+export const formatShortDate = (time) => {
+    const dt = parseDay(time);
+    const yy = String(dt.getUTCFullYear()).slice(2);
+    return `${dt.getUTCDate()} ${MONTHS[dt.getUTCMonth()]} '${yy}`;
+};
+
 // TickMarkType: 0 Year, 1 Month, 2 DayOfMonth, 3 Time, 4 TimeWithSeconds.
 // Year boundaries render the full year so Jan '26 can never read as Jan '25.
 export const formatTickMark = (time, tickMarkType) => {

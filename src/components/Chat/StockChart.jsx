@@ -4,7 +4,7 @@ import { clsx } from 'clsx';
 import ChartPanel from './ChartPanel';
 import ChartFullscreen from './ChartFullscreen';
 import { normalizeOhlc } from '../../lib/chart/normalize';
-import { formatVolume } from '../../lib/chart/formatters';
+import { formatVolume, formatShortDate } from '../../lib/chart/formatters';
 import { buildRenko } from '../../lib/chartTransforms';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -235,6 +235,14 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                     w-full on mobile so the zoom cluster below can ml-auto itself to the
                     opposite edge instead of trailing the ranges as one centred clump. */}
                 <div className="flex items-center gap-1 w-full sm:w-auto sm:ml-auto">
+                    {chartType === 'renko' && bars.length > 0 && (
+                        <span
+                            title="Latest trading day loaded — a brick only appears once price moves a full brick size, so the last brick can be dated earlier than this"
+                            className="px-2 py-1 rounded-md text-[11px] font-medium text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800/60"
+                        >
+                            Data as of {formatShortDate(bars[bars.length - 1].time)}
+                        </span>
+                    )}
                     {chartType === 'renko' && renko.brickSize > 0 && (
                         <span
                             title="Renko brick size (ATR-14 based)"
