@@ -717,7 +717,13 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
         && screenerRows.length === 0
         && !metadata?.disambiguation?.ambiguous
         && !hasHorizonQuestion(content || '')
-        && !(isStreaming && !isEffectivelyDone)
+        // Deliberately NOT gated on streaming. It was, to stop the typewriter
+        // running inside a card that animated in around it — but that made the
+        // answer render as bare prose for the whole stream and then SNAP into the
+        // card once complete, which reads as the UI changing under the user. The
+        // structured layouts (Quick/Analyst) render their shell from the first
+        // token for exactly this reason; the shell is now consistent with them.
+        // The card is static chrome, so nothing animates while text fills it.
         && String(content || '').trim().length > 0;
 
     // Cards below the text should be hidden while streaming and fade in after.
