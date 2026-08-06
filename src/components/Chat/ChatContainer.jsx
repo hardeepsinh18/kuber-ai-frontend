@@ -739,24 +739,54 @@ const _MODE_LABEL = { snap: 'Quick', analyst: 'Analyst' };
 const ModeSwitchPrompt = ({ query, mode, onRun, onClose }) => {
     const label = _MODE_LABEL[mode] || mode;
     return (
-        <div className="absolute bottom-full left-0 right-0 mb-2 px-4 sm:px-6 md:px-8 z-30 pointer-events-none">
+        <div className="absolute bottom-full left-0 right-0 mb-3 px-4 sm:px-6 md:px-8 z-30 pointer-events-none">
             <div className="max-w-4xl mx-auto flex justify-center sm:justify-start">
-                <div className="pointer-events-auto w-full max-w-sm rounded-2xl border bg-white border-zinc-200 dark:bg-[#1b1a18] dark:border-zinc-700 shadow-xl">
-                    <div className="flex items-start justify-between gap-2 px-3.5 pt-3">
-                        <p className="text-[11.5px] font-semibold text-zinc-600 dark:text-zinc-300">
-                            Switched to <span className="text-zinc-900 dark:text-white font-bold">{label}</span> — run your last question, or type a new one below.
+                <div className="pointer-events-auto w-full max-w-[22rem] rounded-2xl border bg-white border-zinc-200
+                                dark:bg-[#181613] dark:border-zinc-800 shadow-xl p-3 space-y-2.5"
+                     style={{ animation: 'slideUpFade 0.3s cubic-bezier(0.22,1,0.36,1) both' }}>
+
+                    {/* Header. The close button is a real 24px hit target on its own
+                        row-end rather than a bare glyph crowding the text. */}
+                    <div className="flex items-start justify-between gap-3">
+                        <p className="text-[11.5px] leading-snug font-medium text-zinc-600 dark:text-zinc-400 min-w-0">
+                            Switched to{' '}
+                            <span className="font-bold text-zinc-900 dark:text-[#FDD405]">{label}</span>
                         </p>
                         <button onClick={onClose} aria-label="Dismiss"
-                            className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 text-[13px] leading-none flex-shrink-0 mt-0.5">✕</button>
+                            className="-m-1 p-1 rounded-md flex-shrink-0 text-zinc-400 transition-colors
+                                       hover:text-zinc-700 hover:bg-black/5
+                                       dark:hover:text-zinc-200 dark:hover:bg-white/10">
+                            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                                <path d="M1 1l10 10M11 1L1 11" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+                            </svg>
+                        </button>
                     </div>
+
+                    {/* Action — full width, uniform inset, same inner-card treatment as
+                        the answer surfaces. */}
                     <button onClick={onRun}
-                        className="m-3 mt-2 w-[calc(100%-1.5rem)] flex items-center gap-2.5 text-left px-3 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 hover:border-[#FDD405] hover:bg-amber-50/60 dark:hover:bg-white/[0.04] transition-colors group">
-                        <span className="w-4 h-4 rounded-full border-2 border-zinc-300 dark:border-zinc-600 group-hover:border-[#FDD405] flex-shrink-0" />
-                        <span className="min-w-0">
-                            <span className="block text-[12px] font-semibold text-zinc-900 dark:text-white">Run my last question</span>
-                            <span className="block text-[11px] text-zinc-500 dark:text-zinc-400 truncate">“{query}”</span>
+                        className="w-full flex items-center gap-3 text-left px-3 py-2.5 rounded-xl border
+                                   border-zinc-200 bg-zinc-50 hover:border-[#FDD405] hover:bg-[#FDD405]/[0.06]
+                                   dark:border-zinc-800/80 dark:bg-[#0d0c0b] dark:hover:border-[#FDD405]
+                                   dark:hover:bg-[#FDD405]/[0.06] transition-colors group">
+                        <span className="w-4 h-4 rounded-full border-2 flex-shrink-0 transition-colors
+                                         border-zinc-300 group-hover:border-[#FDD405]
+                                         dark:border-zinc-600 dark:group-hover:border-[#FDD405]" />
+                        <span className="min-w-0 flex-1">
+                            <span className="block text-[12px] font-semibold text-zinc-900 dark:text-white">
+                                Run my last question
+                            </span>
+                            <span className="block text-[11px] text-zinc-500 dark:text-zinc-400 truncate mt-0.5">
+                                “{query}”
+                            </span>
                         </span>
                     </button>
+
+                    {/* Moved out of the header: it explains the alternative, which is a
+                        hint about the input below, not part of the title. */}
+                    <p className="text-[10.5px] leading-snug text-zinc-400 dark:text-zinc-500 px-0.5">
+                        Or just type a new question below.
+                    </p>
                 </div>
             </div>
         </div>
