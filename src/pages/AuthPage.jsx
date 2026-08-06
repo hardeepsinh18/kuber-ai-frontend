@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import KuberLogo from '../components/KuberLogo';
@@ -35,6 +36,24 @@ const GoogleIcon = () => (
     </svg>
 );
 
+// Absolutely-positioned eye/eye-off toggle sitting inside a password input's
+// wrapper (which must be `position: relative`). tabIndex -1 so Tab skips
+// straight from the password field to the next control.
+const PasswordToggle = ({ show, onToggle, subtleColor }) => (
+    <button
+        type="button"
+        onClick={onToggle}
+        tabIndex={-1}
+        aria-label={show ? 'Hide password' : 'Show password'}
+        style={{
+            position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+            background: 'none', border: 'none', padding: 4, cursor: 'pointer',
+            display: 'flex', color: subtleColor,
+        }}>
+        {show ? <EyeOff size={16} /> : <Eye size={16} />}
+    </button>
+);
+
 export default function AuthPage() {
     const navigate = useNavigate();
     const { signInWithEmail, signUpWithEmail, confirmSignUpCode, resendConfirmationCode, forgotPassword, confirmForgotPassword, signInWithGoogle, isAuthenticated, supabaseConfigured } = useAuth();
@@ -56,6 +75,9 @@ export default function AuthPage() {
     const [resetCode, setResetCode] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmNewPassword, setConfirmNewPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
     // CONF-D-011 (DPDP): marketing consent must be OPT-IN. This defaulted to true,
     // so every signup pre-agreed to SMS/WhatsApp marketing without an affirmative
     // act — a pre-ticked box is not valid consent under the DPDP Act, and bundling
@@ -463,44 +485,50 @@ export default function AuthPage() {
                                 <label className="block text-[11px] font-semibold uppercase tracking-widest mb-2" style={{ color: labelColor }}>
                                     New password
                                 </label>
-                                <input
-                                    type="password"
-                                    value={newPassword}
-                                    onChange={e => { setNewPassword(e.target.value); setError(''); }}
-                                    placeholder="••••••••"
-                                    autoComplete="new-password"
-                                    minLength={8}
-                                    style={{
-                                        width: '100%', padding: '11px 14px', boxSizing: 'border-box',
-                                        background: inputBg,
-                                        border: '1px solid rgba(253,212,5,0.20)',
-                                        borderRadius: 10, color: inputColor, fontSize: 14, outline: 'none',
-                                    }}
-                                    onFocus={e => { e.target.style.borderColor = 'rgba(253,212,5,0.60)'; e.target.style.outline = '2px solid #fdd405'; e.target.style.outlineOffset = '2px'; }}
-                                    onBlur={e => { e.target.style.borderColor = 'rgba(253,212,5,0.20)'; e.target.style.outline = 'none'; }}
-                                />
+                                <div style={{ position: 'relative' }}>
+                                    <input
+                                        type={showNewPassword ? 'text' : 'password'}
+                                        value={newPassword}
+                                        onChange={e => { setNewPassword(e.target.value); setError(''); }}
+                                        placeholder="••••••••"
+                                        autoComplete="new-password"
+                                        minLength={8}
+                                        style={{
+                                            width: '100%', padding: '11px 40px 11px 14px', boxSizing: 'border-box',
+                                            background: inputBg,
+                                            border: '1px solid rgba(253,212,5,0.20)',
+                                            borderRadius: 10, color: inputColor, fontSize: 14, outline: 'none',
+                                        }}
+                                        onFocus={e => { e.target.style.borderColor = 'rgba(253,212,5,0.60)'; e.target.style.outline = '2px solid #fdd405'; e.target.style.outlineOffset = '2px'; }}
+                                        onBlur={e => { e.target.style.borderColor = 'rgba(253,212,5,0.20)'; e.target.style.outline = 'none'; }}
+                                    />
+                                    <PasswordToggle show={showNewPassword} onToggle={() => setShowNewPassword(v => !v)} subtleColor={labelColor} />
+                                </div>
                             </div>
 
                             <div>
                                 <label className="block text-[11px] font-semibold uppercase tracking-widest mb-2" style={{ color: labelColor }}>
                                     Confirm new password
                                 </label>
-                                <input
-                                    type="password"
-                                    value={confirmNewPassword}
-                                    onChange={e => { setConfirmNewPassword(e.target.value); setError(''); }}
-                                    placeholder="••••••••"
-                                    autoComplete="new-password"
-                                    minLength={8}
-                                    style={{
-                                        width: '100%', padding: '11px 14px', boxSizing: 'border-box',
-                                        background: inputBg,
-                                        border: '1px solid rgba(253,212,5,0.20)',
-                                        borderRadius: 10, color: inputColor, fontSize: 14, outline: 'none',
-                                    }}
-                                    onFocus={e => { e.target.style.borderColor = 'rgba(253,212,5,0.60)'; e.target.style.outline = '2px solid #fdd405'; e.target.style.outlineOffset = '2px'; }}
-                                    onBlur={e => { e.target.style.borderColor = 'rgba(253,212,5,0.20)'; e.target.style.outline = 'none'; }}
-                                />
+                                <div style={{ position: 'relative' }}>
+                                    <input
+                                        type={showConfirmNewPassword ? 'text' : 'password'}
+                                        value={confirmNewPassword}
+                                        onChange={e => { setConfirmNewPassword(e.target.value); setError(''); }}
+                                        placeholder="••••••••"
+                                        autoComplete="new-password"
+                                        minLength={8}
+                                        style={{
+                                            width: '100%', padding: '11px 40px 11px 14px', boxSizing: 'border-box',
+                                            background: inputBg,
+                                            border: '1px solid rgba(253,212,5,0.20)',
+                                            borderRadius: 10, color: inputColor, fontSize: 14, outline: 'none',
+                                        }}
+                                        onFocus={e => { e.target.style.borderColor = 'rgba(253,212,5,0.60)'; e.target.style.outline = '2px solid #fdd405'; e.target.style.outlineOffset = '2px'; }}
+                                        onBlur={e => { e.target.style.borderColor = 'rgba(253,212,5,0.20)'; e.target.style.outline = 'none'; }}
+                                    />
+                                    <PasswordToggle show={showConfirmNewPassword} onToggle={() => setShowConfirmNewPassword(v => !v)} subtleColor={labelColor} />
+                                </div>
                             </div>
 
                             {error && (
@@ -601,22 +629,25 @@ export default function AuthPage() {
                                     </button>
                                 )}
                             </div>
-                            <input
-                                type="password"
-                                value={password}
-                                onChange={e => { setPassword(e.target.value); setError(''); }}
-                                placeholder="••••••••"
-                                autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-                                minLength={mode === 'signup' ? 8 : undefined}
-                                style={{
-                                    width: '100%', padding: '11px 14px', boxSizing: 'border-box',
-                                    background: inputBg,
-                                    border: '1px solid rgba(253,212,5,0.20)',
-                                    borderRadius: 10, color: inputColor, fontSize: 14, outline: 'none',
-                                }}
-                                onFocus={e => { e.target.style.borderColor = 'rgba(253,212,5,0.60)'; e.target.style.outline = '2px solid #fdd405'; e.target.style.outlineOffset = '2px'; }}
-                                onBlur={e => { e.target.style.borderColor = 'rgba(253,212,5,0.20)'; e.target.style.outline = 'none'; }}
-                            />
+                            <div style={{ position: 'relative' }}>
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    value={password}
+                                    onChange={e => { setPassword(e.target.value); setError(''); }}
+                                    placeholder="••••••••"
+                                    autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                                    minLength={mode === 'signup' ? 8 : undefined}
+                                    style={{
+                                        width: '100%', padding: '11px 40px 11px 14px', boxSizing: 'border-box',
+                                        background: inputBg,
+                                        border: '1px solid rgba(253,212,5,0.20)',
+                                        borderRadius: 10, color: inputColor, fontSize: 14, outline: 'none',
+                                    }}
+                                    onFocus={e => { e.target.style.borderColor = 'rgba(253,212,5,0.60)'; e.target.style.outline = '2px solid #fdd405'; e.target.style.outlineOffset = '2px'; }}
+                                    onBlur={e => { e.target.style.borderColor = 'rgba(253,212,5,0.20)'; e.target.style.outline = 'none'; }}
+                                />
+                                <PasswordToggle show={showPassword} onToggle={() => setShowPassword(v => !v)} subtleColor={labelColor} />
+                            </div>
                         </div>
 
                         {error && (
