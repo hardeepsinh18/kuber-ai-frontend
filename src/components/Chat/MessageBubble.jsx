@@ -750,7 +750,17 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
     // duplicate from the prose above. Client-authored error/notice bubbles
     // ("Something went wrong", "Request timed out") are not analysis and never
     // carry the disclaimer.
-    const showDisclaimer = !isUser && isEffectivelyDone && !isError;
+    // Clarifying questions are not analysis, so they must not carry an investment
+    // disclaimer. "Are you looking at TATAELXSI for short term or long term?" and
+    // the "which company did you mean" picker both ask the user something and
+    // present NO view on any stock — a SEBI-advice notice under a one-line question
+    // is noise, and it dilutes the disclaimer where it genuinely matters.
+    // Both states are already detected above for the layout gates; reused here so
+    // there is one definition of "this message is a question, not an answer".
+    // Client-authored notices ("Request timed out") are already covered: the caller
+    // passes isError={msg.isError || msg.isClientNotice}.
+    const isClarifyingQuestion = hasHorizonQuestion(content || '') || _isDisambig;
+    const showDisclaimer = !isUser && isEffectivelyDone && !isError && !isClarifyingQuestion;
     const strippedText = !isUser ? stripResponseChrome(rawText) : rawText;
     // K-002: verdict answers keep their full narrative — only the four single-aspect
     // intents get the opening-paragraph filter
