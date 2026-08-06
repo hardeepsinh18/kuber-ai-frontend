@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, cleanup, act } from '@testing-library/react';
-import ThinkingPaths from './ThinkingPaths';
+import ThinkingPaths, { PHASE_PHRASES, AMBIENT_PHRASES } from './ThinkingPaths';
 import { ThemeProvider } from '../../context/ThemeContext';
 
 afterEach(cleanup);
@@ -97,25 +97,35 @@ describe('ThinkingPaths', () => {
             liveSteps: [{ id: 1, phase: 'start', kind: 'documents', text: 'Searching company filings' }],
         });
 
-        // "Digging through filings" is a claim about the pipeline, so it may only
-        // appear while the document search is genuinely open.
-        expect(screen.getByText('Digging through filings')).toBeTruthy();
+        // Phrases naming a source may only show while that work is genuinely open.
+        // Which of the phase's variants is picked rotates, so accept any of them.
+        expect(PHASE_PHRASES.documents.some(p => screen.queryByText(p))).toBe(true);
     });
 
-    it('falls back to a non-specific phrase before any step lands', () => {
+    it('falls back to a posture, never a source, before any step lands', () => {
         renderPanel({ isThinking: true });
 
-        // The gap before the first step is filled by a posture, never by a claim
-        // about a source we have not touched.
-        const ambient = [
-            'Hunting for signals', 'Connecting the dots', 'Separating signal from noise',
-            'Looking beneath the numbers', 'Reading between the lines', 'Finding opportunities',
-            'Weighing risks', 'Building investment thesis', 'Measuring conviction',
-            'Stress-testing assumptions',
-        ];
-        expect(ambient.some(p => screen.queryByText(p))).toBe(true);
-        for (const sourceClaim of ['Digging through filings', 'Searching for catalysts', 'Ranking opportunities']) {
-            expect(screen.queryByText(sourceClaim)).toBeNull();
+        expect(AMBIENT_PHRASES.some(p => screen.queryByText(p))).toBe(true);
+        const everySourceClaim = Object.values(PHASE_PHRASES).flat();
+        for (const claim of everySourceClaim) {
+            expect(screen.queryByText(claim)).toBeNull();
+        }
+    });
+
+    it('keeps source claims out of the ambient set', () => {
+        // The guard that matters as both lists grow: an ambient phrase can appear
+        // at any moment, including before a single byte has been fetched, so none
+        // of them may double as a claim about a source.
+        const everySourceClaim = new Set(Object.values(PHASE_PHRASES).flat());
+        for (const ambient of AMBIENT_PHRASES) {
+            expect(everySourceClaim.has(ambient)).toBe(false);
+        }
+    });
+
+    it('gives every phase more than one phrase so long steps keep moving', () => {
+        for (const [kind, pool] of Object.entries(PHASE_PHRASES)) {
+            expect(pool.length, `${kind} needs variants`).toBeGreaterThan(1);
+            expect(new Set(pool).size, `${kind} has duplicates`).toBe(pool.length);
         }
     });
 

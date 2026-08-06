@@ -27,37 +27,89 @@ const NO_STEPS = Object.freeze([]);
 
 // Header phrasing.
 //
-// A PHASE phrase is shown only while that kind of work is actually running, so
-// the header describes the pipeline rather than decorating it — "Digging through
-// filings" appears when, and only when, the document search is open.
-const PHASE_PHRASES = {
-    intent: 'Reading the question',
-    symbol: 'Identifying the company',
-    quote: 'Connecting market signals',
-    ohlcv: 'Reading the price action',
-    fundamentals: 'Validating evidence',
-    documents: 'Digging through filings',
-    news: 'Searching for catalysts',
-    screen: 'Ranking opportunities',
-    compose: 'Synthesizing research',
-    note: 'Checking what we already know',
+// PHASE phrases describe work that is genuinely open, so each names a real
+// source — "Digging through filings" appears when, and only when, the document
+// search is running. Several per phase, rotated, so a slow step (compose can run
+// ten seconds) doesn't sit on one word the whole time.
+export const PHASE_PHRASES = {
+    intent: [
+        'Reading the question',
+        'Working out what you’re really asking',
+        'Framing the problem',
+    ],
+    symbol: [
+        'Identifying the company',
+        'Pinning down the ticker',
+        'Matching it to a listed name',
+    ],
+    quote: [
+        'Connecting market signals',
+        'Taking the live pulse',
+        'Checking where it’s trading',
+    ],
+    ohlcv: [
+        'Reading the price action',
+        'Walking back through the charts',
+        'Tracing the trend',
+        'Studying the candles',
+    ],
+    fundamentals: [
+        'Validating evidence',
+        'Checking the balance sheet',
+        'Interrogating the ratios',
+        'Doing the boring maths',
+    ],
+    documents: [
+        'Digging through filings',
+        'Combing the disclosures',
+        'Scanning transcripts',
+        'Reading between the lines',
+    ],
+    news: [
+        'Searching for catalysts',
+        'Scanning the headlines',
+        'Looking for what moved it',
+    ],
+    screen: [
+        'Ranking opportunities',
+        'Sifting the universe',
+        'Filtering the field',
+        'Sorting the contenders',
+    ],
+    compose: [
+        'Synthesizing research',
+        'Building the investment thesis',
+        'Putting the pieces together',
+        'Measuring conviction',
+        'Writing it up',
+    ],
+    note: [
+        'Checking what we already know',
+        'Recalling earlier work',
+    ],
 };
 
 // AMBIENT phrases cover the gap before the first step lands and the pauses
-// between steps. They are deliberately non-specific: each describes a posture,
-// never a source. None of them may imply data we haven't touched — that is the
-// same rule the step list follows.
-const AMBIENT_PHRASES = [
+// between steps. Every one is a POSTURE, never a source: they may run at any
+// moment, so none of them may imply data we haven't touched. That is the same
+// rule the step list follows. A test enforces the separation.
+export const AMBIENT_PHRASES = [
     'Hunting for signals',
     'Connecting the dots',
     'Separating signal from noise',
     'Looking beneath the numbers',
-    'Reading between the lines',
     'Finding opportunities',
     'Weighing risks',
-    'Building investment thesis',
-    'Measuring conviction',
     'Stress-testing assumptions',
+    'Thinking in probabilities',
+    'Weighing bull against bear',
+    'Questioning the consensus',
+    'Following the money',
+    'Looking for the catch',
+    'Sanity-checking the story',
+    'Zooming out',
+    'Checking our own bias',
+    'Not getting carried away',
 ];
 
 const AMBIENT_ROTATE_MS = 2400;
@@ -120,15 +172,18 @@ const ThinkingPaths = ({
         return () => clearInterval(id);
     }, [isThinking]);
 
-    // The newest still-running step decides the phrase; otherwise we're between
-    // steps (or haven't had one yet) and the ambient rotation carries it.
-    let phraseTarget = AMBIENT_PHRASES[(ambientSeedRef.current + ambientTick) % AMBIENT_PHRASES.length];
+    // The newest still-running step picks the pool; otherwise we're between steps
+    // (or haven't had one yet) and the ambient set carries it. Either way the same
+    // tick advances the phrase, so long phases keep moving.
+    let pool = AMBIENT_PHRASES;
     for (let i = liveSteps.length - 1; i >= 0; i -= 1) {
         if (liveSteps[i].phase === 'start') {
-            phraseTarget = PHASE_PHRASES[liveSteps[i].kind] || phraseTarget;
+            const phasePool = PHASE_PHRASES[liveSteps[i].kind];
+            if (phasePool && phasePool.length) pool = phasePool;
             break;
         }
     }
+    const phraseTarget = pool[(ambientSeedRef.current + ambientTick) % pool.length];
 
     // Hold each phrase briefly. Some steps finish in milliseconds and without
     // this the header flickers through three words in one blink.
