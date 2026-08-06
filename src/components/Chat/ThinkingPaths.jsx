@@ -54,15 +54,18 @@ const ThinkingPaths = ({ steps = [], isThinking = true, className = '', processi
         return () => { revealTimeoutsRef.current.forEach(clearTimeout); revealTimeoutsRef.current = []; };
     }, [steps, isThinking]);
 
+    // The card header already reads "Analyzing", so no step may repeat that word —
+    // "Analyzing query..." under an "Analyzing" heading showed the same state
+    // twice, one line apart. Each step names the WORK instead.
     const defaultThinkingSteps = [
-        'Analyzing query...',
-        'Extracting stock symbols...',
+        'Reading your question...',
+        'Identifying the stocks involved...',
         'Fetching market data...',
-        'Running technical analysis...',
+        'Running technical checks...',
         'Calculating indicators...',
-        'Retrieving analyst views...',
+        'Reviewing analyst views...',
         'Compiling insights...',
-        'Finalizing response...',
+        'Finalising the answer...',
     ];
 
     const activeSteps = isThinking ? defaultThinkingSteps : steps;
@@ -83,9 +86,10 @@ const ThinkingPaths = ({ steps = [], isThinking = true, className = '', processi
                         {/* Header */}
                         <div className="flex items-center gap-2.5 px-4 py-2.5">
                             <Cpu size={13} style={{ color: isDark ? '#FDD405' : '#111', flexShrink: 0 }} />
-                            <span className="flex items-center gap-1.5 text-xs font-medium" style={{ color: isDark ? '#FDD405' : '#111' }}>
+                            <span className="flex items-center gap-1.5 text-xs font-medium flex-1 min-w-0"
+                                  style={{ color: isDark ? '#FDD405' : '#111' }}>
                                 Analyzing
-                                <span className="flex gap-[3px]">
+                                <span className="flex gap-[3px]" aria-hidden="true">
                                     {['-0.3s', '-0.15s', '0s'].map((delay, i) => (
                                         <span key={i} className="w-[5px] h-[5px] rounded-full animate-bounce"
                                             style={{ backgroundColor: '#FDD405', animationDelay: delay }} />

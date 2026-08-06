@@ -681,7 +681,9 @@ const generateThinkingSteps = (query, symbols = []) => {
     
     // Step 1: Query interpretation
     if (symbols.length > 0) {
-        steps.push(`Analyzing query for ${symbols.length} stock${symbols.length > 1 ? 's' : ''}: ${symbols.join(', ')}`);
+        // Not "Analyzing…" — the card header already says that, so the first step
+        // would echo it. Name the work instead.
+        steps.push(`Reading your question about ${symbols.join(', ')}`);
     } else {
         steps.push(`Understanding your question about market trends`);
     }
