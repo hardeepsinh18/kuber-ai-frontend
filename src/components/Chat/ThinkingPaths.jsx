@@ -25,6 +25,44 @@ const REVEAL_STAGGER_MS = 60;
 // thinking card renders without a `steps` prop, so this is a live path.
 const NO_STEPS = Object.freeze([]);
 
+// Header phrasing.
+//
+// A PHASE phrase is shown only while that kind of work is actually running, so
+// the header describes the pipeline rather than decorating it — "Digging through
+// filings" appears when, and only when, the document search is open.
+const PHASE_PHRASES = {
+    intent: 'Reading the question',
+    symbol: 'Identifying the company',
+    quote: 'Connecting market signals',
+    ohlcv: 'Reading the price action',
+    fundamentals: 'Validating evidence',
+    documents: 'Digging through filings',
+    news: 'Searching for catalysts',
+    screen: 'Ranking opportunities',
+    compose: 'Synthesizing research',
+    note: 'Checking what we already know',
+};
+
+// AMBIENT phrases cover the gap before the first step lands and the pauses
+// between steps. They are deliberately non-specific: each describes a posture,
+// never a source. None of them may imply data we haven't touched — that is the
+// same rule the step list follows.
+const AMBIENT_PHRASES = [
+    'Hunting for signals',
+    'Connecting the dots',
+    'Separating signal from noise',
+    'Looking beneath the numbers',
+    'Reading between the lines',
+    'Finding opportunities',
+    'Weighing risks',
+    'Building investment thesis',
+    'Measuring conviction',
+    'Stress-testing assumptions',
+];
+
+const AMBIENT_ROTATE_MS = 2400;
+const PHRASE_MIN_HOLD_MS = 800;   // stops fast steps strobing the header
+
 const ThinkingPaths = ({
     steps = NO_STEPS,
     liveSteps = NO_STEPS,
@@ -72,6 +110,40 @@ const ThinkingPaths = ({
         return () => { revealTimeoutsRef.current.forEach(clearTimeout); revealTimeoutsRef.current = []; };
     }, [steps, isThinking]);
 
+    // Rotate the ambient phrase, starting somewhere random so two queries in a
+    // row don't open with the same word.
+    const ambientSeedRef = useRef(Math.floor(Math.random() * AMBIENT_PHRASES.length));
+    const [ambientTick, setAmbientTick] = useState(0);
+    useEffect(() => {
+        if (!isThinking) return undefined;
+        const id = setInterval(() => setAmbientTick(t => t + 1), AMBIENT_ROTATE_MS);
+        return () => clearInterval(id);
+    }, [isThinking]);
+
+    // The newest still-running step decides the phrase; otherwise we're between
+    // steps (or haven't had one yet) and the ambient rotation carries it.
+    let phraseTarget = AMBIENT_PHRASES[(ambientSeedRef.current + ambientTick) % AMBIENT_PHRASES.length];
+    for (let i = liveSteps.length - 1; i >= 0; i -= 1) {
+        if (liveSteps[i].phase === 'start') {
+            phraseTarget = PHASE_PHRASES[liveSteps[i].kind] || phraseTarget;
+            break;
+        }
+    }
+
+    // Hold each phrase briefly. Some steps finish in milliseconds and without
+    // this the header flickers through three words in one blink.
+    const [phrase, setPhrase] = useState(phraseTarget);
+    const lastPhraseAtRef = useRef(0);
+    useEffect(() => {
+        if (phraseTarget === phrase) return undefined;
+        const wait = Math.max(0, PHRASE_MIN_HOLD_MS - (performance.now() - lastPhraseAtRef.current));
+        const id = setTimeout(() => {
+            setPhrase(phraseTarget);
+            lastPhraseAtRef.current = performance.now();
+        }, wait);
+        return () => clearTimeout(id);
+    }, [phraseTarget, phrase]);
+
     const displayTime = isThinking ? (elapsed / 1000).toFixed(1) : processingTime.toFixed(1);
 
     // Nothing verified to show — render nothing rather than a placeholder.
@@ -100,9 +172,11 @@ const ThinkingPaths = ({
                 .kb-dot-done { animation: kb-pop 260ms cubic-bezier(.16,1,.3,1); }
                 .kb-row { animation: kb-rise 200ms cubic-bezier(.16,1,.3,1) both; }
                 @keyframes kb-rise { from { opacity: 0; transform: translateY(4px) } to { opacity: 1; transform: none } }
+                .kb-phrase { animation: kb-swap 320ms cubic-bezier(.16,1,.3,1) both; }
+                @keyframes kb-swap { from { opacity: 0; transform: translateY(-3px) } to { opacity: 1; transform: none } }
                 @media (prefers-reduced-motion: reduce) {
                     .kb-live-text { animation: none; color: var(--kb-bright); background: none; -webkit-text-fill-color: currentColor; }
-                    .kb-dot-done, .kb-row { animation: none; }
+                    .kb-dot-done, .kb-row, .kb-phrase { animation: none; }
                 }
             `}</style>
 
@@ -116,8 +190,11 @@ const ThinkingPaths = ({
                         <Cpu size={13} style={{ color: accent, flexShrink: 0 }} />
                         <span className="flex items-center gap-1.5 text-xs font-medium flex-1 min-w-0"
                               style={{ color: accent }}>
-                            Analyzing
-                            <span className="flex gap-[3px]" aria-hidden="true">
+                            {/* Keyed so each new phrase re-mounts and plays the swap. */}
+                            <span key={phrase} className="kb-phrase truncate" aria-live="polite">
+                                {phrase}
+                            </span>
+                            <span className="flex gap-[3px] flex-shrink-0" aria-hidden="true">
                                 {['-0.3s', '-0.15s', '0s'].map((delay, i) => (
                                     <span key={i} className="w-[5px] h-[5px] rounded-full animate-bounce"
                                         style={{ backgroundColor: '#FDD405', animationDelay: delay }} />

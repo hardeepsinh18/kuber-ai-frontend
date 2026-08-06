@@ -91,12 +91,39 @@ describe('ThinkingPaths', () => {
         expect(screen.getByText('newest step')).toBeTruthy();
     });
 
+    it('names the phase that is actually running', () => {
+        renderPanel({
+            isThinking: true,
+            liveSteps: [{ id: 1, phase: 'start', kind: 'documents', text: 'Searching company filings' }],
+        });
+
+        // "Digging through filings" is a claim about the pipeline, so it may only
+        // appear while the document search is genuinely open.
+        expect(screen.getByText('Digging through filings')).toBeTruthy();
+    });
+
+    it('falls back to a non-specific phrase before any step lands', () => {
+        renderPanel({ isThinking: true });
+
+        // The gap before the first step is filled by a posture, never by a claim
+        // about a source we have not touched.
+        const ambient = [
+            'Hunting for signals', 'Connecting the dots', 'Separating signal from noise',
+            'Looking beneath the numbers', 'Reading between the lines', 'Finding opportunities',
+            'Weighing risks', 'Building investment thesis', 'Measuring conviction',
+            'Stress-testing assumptions',
+        ];
+        expect(ambient.some(p => screen.queryByText(p))).toBe(true);
+        for (const sourceClaim of ['Digging through filings', 'Searching for catalysts', 'Ranking opportunities']) {
+            expect(screen.queryByText(sourceClaim)).toBeNull();
+        }
+    });
+
     it('invents no steps while the request is in flight', () => {
         // The old build cycled eight hardcoded lines here ("Retrieving analyst
         // views…"), then replaced them with a different invented list on arrival.
         renderPanel({ steps: [], isThinking: true });
 
-        expect(screen.getByText('Analyzing')).toBeTruthy();
         for (const invented of [
             /Extracting stock symbols/i,
             /Running technical analysis/i,
