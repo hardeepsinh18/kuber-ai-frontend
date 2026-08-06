@@ -697,19 +697,14 @@ export function ChatHistoryProvider({ children }) {
     }, [accessToken, currentChatId]);
 
     const renameChat = useCallback((id, title) => {
-        // Renaming must NEVER re-sort the sidebar. It is a label change, not new
-        // activity: the list is ordered by updatedAt, so stamping it here yanked a
-        // chat from hours-old straight to "now" — rename something at the bottom
-        // and it jumped to the top. Deliberately NOT added to touchedChatsRef
-        // either, since that is the signal flushPersist uses to stamp updatedAt,
-        // and a later flush would have moved it just the same.
-        //
-        // Only renamedChatsRef is set, which protects the new title from being
-        // re-derived from the first message — a different concern from ordering.
+        // An explicit user action, so it counts as touching the chat — both for the
+        // updatedAt set below and for any later flush of the same chat.
+        touchedChatsRef.current.add(id);
+        // …and it must never be re-derived away by a later flush.
         renamedChatsRef.current.add(id);
         if (accessToken) chatsApi.updateChatTitle(id, title, accessToken).catch(() => {});
         setChatList((prev) => {
-            const next = prev.map((c) => (c.id === id ? { ...c, title } : c));
+            const next = prev.map((c) => (c.id === id ? { ...c, title, updatedAt: Date.now() } : c));
             chatStorage.saveChatList(next);
             return next;
         });
