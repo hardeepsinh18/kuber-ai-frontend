@@ -8,7 +8,6 @@ const ThinkingPaths = ({ steps = [], isThinking = true, className = '', processi
     const isDark = theme === 'dark';
     const [isExpanded, setIsExpanded] = useState(false);
     const [visibleSteps, setVisibleSteps] = useState([]);
-    const [currentStepIndex, setCurrentStepIndex] = useState(0);
     const [elapsed, setElapsed] = useState(0);
     const revealTimeoutsRef = useRef([]);
     const startTimeRef = useRef(null);
@@ -28,17 +27,6 @@ const ThinkingPaths = ({ steps = [], isThinking = true, className = '', processi
         return () => clearInterval(timerRef.current);
     }, [isThinking]);
 
-    // Step index advances while thinking
-    useEffect(() => {
-        if (isThinking && steps.length > 0) {
-            setCurrentStepIndex(0);
-            const interval = setInterval(() => {
-                setCurrentStepIndex(prev => prev < steps.length - 1 ? prev + 1 : prev);
-            }, 800);
-            return () => clearInterval(interval);
-        }
-    }, [isThinking, steps.length]);
-
     // Reveal completed steps one by one
     useEffect(() => {
         revealTimeoutsRef.current.forEach(clearTimeout);
@@ -54,22 +42,11 @@ const ThinkingPaths = ({ steps = [], isThinking = true, className = '', processi
         return () => { revealTimeoutsRef.current.forEach(clearTimeout); revealTimeoutsRef.current = []; };
     }, [steps, isThinking]);
 
-    // The card header already reads "Analyzing", so no step may repeat that word —
-    // "Analyzing query..." under an "Analyzing" heading showed the same state
-    // twice, one line apart. Each step names the WORK instead.
-    const defaultThinkingSteps = [
-        'Reading your question...',
-        'Identifying the stocks involved...',
-        'Fetching market data...',
-        'Running technical checks...',
-        'Calculating indicators...',
-        'Reviewing analyst views...',
-        'Compiling insights...',
-        'Finalising the answer...',
-    ];
-
-    const activeSteps = isThinking ? defaultThinkingSteps : steps;
-    const currentStep = isThinking ? activeSteps[currentStepIndex] : null;
+    // While the request is in flight we know the elapsed time and nothing else.
+    // This used to cycle eight hardcoded steps ("Reviewing analyst views...") on a
+    // timer, then swap them for a different invented list once the answer landed —
+    // so the card claimed work that may never have run. Steps are shown only after
+    // the backend reports, in `trace.steps`, what it actually did.
     const displayTime = isThinking ? (elapsed / 1000).toFixed(1) : processingTime.toFixed(1);
 
     if (!isThinking && steps.length === 0) return null;
@@ -100,14 +77,6 @@ const ThinkingPaths = ({ steps = [], isThinking = true, className = '', processi
                                 {displayTime}s
                             </span>
                         </div>
-                        {/* Current step */}
-                        {currentStep && (
-                            <div className="px-4 pb-3" style={{ borderTop: isDark ? '1px solid rgba(253,212,5,0.15)' : '1px solid rgba(253,212,5,0.3)' }}>
-                                <p className="pt-2.5 text-xs leading-relaxed" style={{ color: isDark ? 'rgba(253,212,5,0.65)' : '#444' }}>
-                                    {currentStep}
-                                </p>
-                            </div>
-                        )}
                     </div>
                 ) : (
                     /* ── Done state: theme-aware collapsible card ── */

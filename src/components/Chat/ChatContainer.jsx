@@ -672,58 +672,15 @@ export const extractStockSymbols = (query) => {
 };
 
 /**
- * Generate dynamic thinking steps based on user query
- * Creates contextual analysis steps that match the query intent
+ * Analysis steps are NOT generated here.
+ *
+ * They used to be: a keyword match on the user's query emitted canned lines
+ * ("Gathering expert market insights") that had no connection to what the
+ * backend actually did — a 1.7s SQL screen still claimed to have consulted
+ * analysts, and a chart request named the data vendor. Steps now arrive as
+ * `trace.steps`, recorded by the services that did the work. When the backend
+ * sends none, we render none.
  */
-const generateThinkingSteps = (query, symbols = []) => {
-    const steps = [];
-    const queryLower = query.toLowerCase();
-    
-    // Step 1: Query interpretation
-    if (symbols.length > 0) {
-        // Not "Analyzing…" — the card header already says that, so the first step
-        // would echo it. Name the work instead.
-        steps.push(`Reading your question about ${symbols.join(', ')}`);
-    } else {
-        steps.push(`Understanding your question about market trends`);
-    }
-    
-    // Step 2: Data fetching (dynamic based on query type)
-    if (queryLower.includes('chart') || queryLower.includes('graph') || queryLower.includes('intraday') || queryLower.includes('weekly')) {
-        steps.push(`Fetching OHLCV data from Fyers for chart rendering`);
-    } else if (symbols.length > 0) {
-        steps.push(`Fetching live market data and fundamentals`);
-    } else if (queryLower.includes('market') || queryLower.includes('index')) {
-        steps.push(`Retrieving index data and market sentiment`);
-    } else {
-        steps.push(`Gathering relevant market information`);
-    }
-    
-    // Step 3: Technical analysis
-    if (queryLower.includes('price') || queryLower.includes('target') || queryLower.includes('cross') || symbols.length > 0) {
-        steps.push(`Running technical analysis and calculating indicators`);
-    } else if (queryLower.includes('invest') || queryLower.includes('buy')) {
-        steps.push(`Evaluating investment fundamentals`);
-    } else {
-        steps.push(`Analyzing market patterns and trends`);
-    }
-    
-    // Step 4: Expert insights
-    if (symbols.length > 0) {
-        steps.push(`Compiling analyst recommendations and price targets`);
-    } else {
-        steps.push(`Gathering expert market insights`);
-    }
-    
-    // Step 5: Synthesis
-    if (queryLower.includes('possibility') || queryLower.includes('likelihood')) {
-        steps.push(`Calculating probability based on historical patterns`);
-    } else {
-        steps.push(`Preparing comprehensive analysis`);
-    }
-    
-    return steps;
-};
 
 
 const CHAT_MODES = [
@@ -1277,7 +1234,6 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             if (confidentSymbols.length === 1 && bareToken.toUpperCase() === confidentSymbols[0]) {
                 effectiveQuery = `analyze ${confidentSymbols[0]}`;
             }
-            const dynamicSteps = generateThinkingSteps(normalized, symbolsToSend);
 
             // Last 8 turns for conversation continuity, with each message CAPPED in length.
             // Analyst answers run ~2,500 words each; sending them in full made chat_history
@@ -1493,9 +1449,20 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 console.log('[Venty] Intent / confidence:', responseData?.intent, '/', responseData?.confidence);
             }
 
-            // Calculate processing time
+            // Steps the backend actually recorded while answering. Absent field or
+            // empty array means "no verified provenance" — show nothing rather than
+            // inventing a plausible-looking list.
+            const traceSteps = Array.isArray(responseData.trace?.steps)
+                ? responseData.trace.steps
+                : [];
+
+            // Server-side elapsed time when reported (excludes network + render, so
+            // it's the number we can actually defend); browser round-trip otherwise.
             const endTime = Date.now();
-            const timeTaken = (endTime - requestStartTime) / 1000; // in seconds
+            const serverMs = responseData.trace?.elapsed_ms;
+            const timeTaken = Number.isFinite(serverMs)
+                ? serverMs / 1000
+                : (endTime - requestStartTime) / 1000;
             if (!superseded) setProcessingTime(timeTaken);
 
             if (import.meta.env.DEV) {
@@ -1508,7 +1475,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             // NEWER, still-active request is currently showing.
             if (!superseded) {
                 setShowThinking(false);
-                setThinkingSteps(dynamicSteps);
+                setThinkingSteps(traceSteps);
             }
 
             const rawResponseText = responseData.content || responseData.answer || '';
@@ -1592,7 +1559,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 // The user's question, so a single-metric answer ("pe ratio of X")
                 // can target the asked metric instead of the reply's opening line.
                 query: normalized,
-                thinkingSteps: (responseData.retrieval_steps && responseData.retrieval_steps.length > 0) ? responseData.retrieval_steps : dynamicSteps,
+                thinkingSteps: traceSteps,
                 sourceDocuments: responseData.source_documents || [],
                 processingTime: timeTaken,
                 responseMode,
