@@ -3,6 +3,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { authConfigured, getIdToken } from '../lib/auth';
 import { getApiBase } from '../lib/apiBase';
 import { setStorageIdentity, clearAllLocalChats } from '../lib/chatStorage';
+import { markSigningOut } from '../lib/signOutRedirect';
 import {
   signIn as cognitoSignIn,
   signUp as cognitoSignUp,
@@ -252,6 +253,11 @@ export function AuthProvider({ children }) {
       setUser(null);
       return;
     }
+    // Written BEFORE handing off to Cognito: signOut() ends in a full-page
+    // redirect through the hosted-UI logout endpoint, which can begin before the
+    // promise resolves, so anything set afterwards may never be stored. Tells the
+    // next mount of App to skip the splash — the user is leaving, not arriving.
+    markSigningOut();
     await cognitoSignOut();
     clearAllLocalChats();
     setStorageIdentity(null);

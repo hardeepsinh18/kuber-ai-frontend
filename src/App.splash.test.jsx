@@ -27,6 +27,7 @@ import {
     hasSeenSplashThisSession,
     markSplashSeen,
 } from './App.jsx';
+import { markSigningOut, consumeSignOutRedirect } from './lib/signOutRedirect.js';
 
 // Resolved from this file's own module id rather than import.meta.url or
 // process.cwd(): under the jsdom environment import.meta.url is an http:// URL
@@ -50,14 +51,14 @@ describe('splash shows on every load', () => {
      * decisive line keeps that constraint while still failing if the session gate
      * is reintroduced — which assertions against the helpers alone did not.
      */
-    it('does not seed splashDone from session storage', () => {
+    it('does not seed splashDone from the seen-this-session gate', () => {
         const src = readAppSource();
-        const gate = src.match(/const \[splashDone, setSplashDone\] = useState\(([^)]*)\)/);
+        const gate = src.match(/const \[splashDone, setSplashDone\] = useState\(([^;]*?)\);/);
 
         expect(gate, 'the splashDone useState declaration should exist in App.jsx').not.toBeNull();
-        // `useState(false)` → always renders the splash. Seeding it from
-        // hasSeenSplashThisSession is exactly the behaviour that was reverted.
-        expect(gate[1].trim()).toBe('false');
+        // Seeding from hasSeenSplashThisSession is the reverted behaviour: it makes
+        // ordinary reloads skip the splash. The sign-out exemption below is a
+        // different, one-shot thing and is allowed.
         expect(gate[1]).not.toContain('hasSeenSplash');
     });
 
@@ -66,6 +67,94 @@ describe('splash shows on every load', () => {
         const src = readAppSource();
         // The render is gated on splashDone alone — no storage read in the JSX.
         expect(src).toContain('{!splashDone && <SplashScreen');
+    });
+});
+
+/**
+ * Signing out is the one load that must NOT replay the splash.
+ *
+ * Cognito OAuth is configured with redirectSignOut = window.location.origin, so
+ * Amplify's signOut() ends in a full-page redirect through the hosted-UI logout
+ * endpoint and back to "/". That is a fresh mount, so the splash played — and
+ * because the landing route is "/" and the user is now signed out, AuthGate
+ * immediately sent them to /login. The user saw: login → splash → login.
+ *
+ * The splash-on-every-load product decision stands; this exempts only the single
+ * load that follows a sign-out.
+ */
+describe('sign-out redirect suppresses the splash', () => {
+    beforeEach(() => {
+        try { sessionStorage.clear(); } catch { /* ignore */ }
+    });
+
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('reports false on an ordinary load', () => {
+        expect(consumeSignOutRedirect()).toBe(false);
+    });
+
+    it('reports true on the load right after a sign-out', () => {
+        markSigningOut();
+        expect(consumeSignOutRedirect()).toBe(true);
+    });
+
+    it('is one-shot, so a later manual reload still gets the splash', () => {
+        markSigningOut();
+        expect(consumeSignOutRedirect()).toBe(true);
+        expect(consumeSignOutRedirect()).toBe(false);
+    });
+
+    it('seeds splashDone from the sign-out marker', () => {
+        const src = readAppSource();
+        const gate = src.match(/const \[splashDone, setSplashDone\] = useState\(([^;]*?)\);/);
+        expect(gate[1]).toContain('consumeSignOutRedirect');
+    });
+
+    it('marks the sign-out before handing off to Cognito, not after', () => {
+        // The redirect can begin before signOut() resolves, so a marker written
+        // afterwards would never make it to sessionStorage.
+        const src = readFileSync(
+            resolve(import.meta.dirname, 'context/AuthContext.jsx'), 'utf8',
+        );
+        expect(src).toContain('markSigningOut');
+        expect(src.indexOf('markSigningOut')).toBeLessThan(src.indexOf('await cognitoSignOut()'));
+    });
+
+    it('does not mark a sign-out that cannot redirect', () => {
+        // The unconfigured/demo path returns without a page load. Marking there
+        // would leave a stale flag that eats the splash on the next real reload.
+        const src = readFileSync(
+            resolve(import.meta.dirname, 'context/AuthContext.jsx'), 'utf8',
+        );
+        // Scope to signOut itself — `if (!authConfigured)` guards several other
+        // functions in this file, so searching from its first occurrence would
+        // span most of the module.
+        const signOutStart = src.indexOf('const signOut = async () => {');
+        expect(signOutStart, 'signOut should exist in AuthContext').toBeGreaterThan(-1);
+        const demoBranch = src.slice(
+            signOutStart,
+            src.indexOf('markSigningOut', signOutStart),
+        );
+        expect(demoBranch).toContain('if (!authConfigured)');
+        // The early return for the unconfigured path must come first, so the
+        // marker is unreachable when no redirect will happen.
+        expect(demoBranch).toContain('return;');
+    });
+
+    it('returns false rather than throwing when storage reads throw', () => {
+        vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+            throw new Error('SecurityError: storage disabled');
+        });
+        expect(consumeSignOutRedirect()).toBe(false);
+    });
+
+    it('does not crash when storage writes throw', () => {
+        vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+            throw new Error('QuotaExceededError');
+        });
+        expect(() => markSigningOut()).not.toThrow();
     });
 });
 

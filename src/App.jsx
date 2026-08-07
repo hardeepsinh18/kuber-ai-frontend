@@ -14,6 +14,7 @@ import { AdminGuard } from './components/Admin/AdminGuard';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import PreviewPage from './pages/PreviewPage';
 import LegalPage from './pages/LegalPage';
+import { consumeSignOutRedirect } from './lib/signOutRedirect';
 
 function AppContent() {
   const navigate = useNavigate();
@@ -123,10 +124,13 @@ export function markSplashSeen() {
   }
 }
 
+
 function App() {
-  // Always starts false, so the splash renders on every load. Deliberately NOT
-  // seeded from hasSeenSplashThisSession() — that is what made reloads skip it.
-  const [splashDone, setSplashDone] = useState(false);
+  // Starts false, so the splash renders on every load. Deliberately NOT seeded
+  // from hasSeenSplashThisSession() — that is what made reloads skip it. The one
+  // exemption is the load that follows a sign-out (see consumeSignOutRedirect),
+  // where the user is on their way out and about to be sent to /login.
+  const [splashDone, setSplashDone] = useState(consumeSignOutRedirect);
   const handleSplashDone = useCallback(() => {
     // Still recorded so anything else that wants "has the user seen it this
     // session" keeps working, and so restoring the gate is a one-line change.
