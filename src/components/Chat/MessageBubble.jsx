@@ -72,6 +72,21 @@ const stripResponseChrome = (text) => {
     // On a financial surface that reads like broken data rather than absent data,
     // so the line is removed entirely; a levels line that DOES carry figures is
     // untouched (the digit lookahead below is what distinguishes them).
+    // Remove EMPTY level slots individually — "Entry ₹732.7 | Stop ₹, | Target ₹,"
+    // has one real value and two blanks, so the whole-line rule below (which
+    // requires NO digits anywhere) correctly leaves it alone and the blanks
+    // rendered. Matching per slot keeps the figure that exists and drops only the
+    // ones the model left unfilled.
+    //
+    // The negative lookahead for a digit is what makes this safe: a slot with a
+    // number can never match, so real levels cannot be deleted.
+    out = out.replace(
+        /(?:[⚡🛑🎯]\s*)?(?:\*\*)?\b(?:entry|stop(?:[\s-]*loss)?|sl|target|tgt)\b(?:\*\*)?\s*:?\s*(?:rs\.?|₹)?\s*(?![\d])[,;]?\s*(?:\||$)/gimu,
+        ''
+    );
+    // Tidy the separator left behind when a trailing slot was removed.
+    out = out.replace(/^([ \t]*(?:[⚡🛑🎯]\s*)?[^\n]*?)\s*\|\s*$/gimu, '$1');
+
     // Matches a line made up ONLY of level labels, currency marks, emoji and
     // punctuation, with a negative lookahead for any digit on that line. Framing
     // it as "no numbers anywhere on the line" rather than "each slot is empty"

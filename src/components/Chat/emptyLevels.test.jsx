@@ -46,6 +46,28 @@ describe('empty entry/stop/target lines are removed', () => {
         expect(body()).not.toMatch(/Entry.*₹\s*\|/);
     });
 
+
+    it('drops only the EMPTY slots when one carries a real value', () => {
+        // The reported case: entry has a figure, stop and target do not. The
+        // whole-line rule cannot catch this (the line has digits), so the blanks
+        // rendered next to a genuine number — which is the most misleading form
+        // of it.
+        renderBubble(
+            'Both banks have bearish MACD signals.\n\n'
+            + '⚡ Entry ₹732.7 | 🛑 Stop ₹, | 🎯 Target ₹,'
+        );
+        expect(body()).toContain('732.7');          // the real value survives
+        expect(body()).not.toMatch(/Stop\s*₹\s*,/);
+        expect(body()).not.toMatch(/Target\s*₹\s*,/);
+    });
+
+    it('drops a trailing empty slot without eating the one before it', () => {
+        renderBubble('Setup.\n\n⚡ Entry ₹818 | 🛑 Stop ₹802 | 🎯 Target ₹,');
+        expect(body()).toContain('818');
+        expect(body()).toContain('802');
+        expect(body()).not.toMatch(/Target\s*₹\s*,/);
+    });
+
     it('keeps the surrounding analysis intact', () => {
         renderBubble(
             'ICICI Bank shows bearish momentum.\n\n'
