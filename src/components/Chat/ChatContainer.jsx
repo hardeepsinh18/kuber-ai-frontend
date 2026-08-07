@@ -782,8 +782,11 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
     const [startTime, setStartTime] = useState(null); // Track request start time
     const [processingTime, setProcessingTime] = useState(0); // Track processing time
     const [showScrollButton, setShowScrollButton] = useState(false); // Show scroll-to-bottom button
+    // Analyst is the default. The storage key is versioned (…_v2) so users who
+    // had 'snap' saved under the old key land on Analyst too, and their choice
+    // still persists from then on.
     const [responseMode, setResponseModeState] = useState(
-        () => localStorage.getItem('kuberai_mode') || 'snap'
+        () => localStorage.getItem('kuberai_mode_v2') || 'analyst'
     );
     const [lastQuery, setLastQuery] = useState('');                  // last question fired (for the mode-switch prompt)
     const [modeSwitchPrompt, setModeSwitchPrompt] = useState(null);  // { query, mode } | null — shown after a mode flip
@@ -800,7 +803,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
     });
 
     const setResponseMode = (mode) => {
-        localStorage.setItem('kuberai_mode', mode);
+        localStorage.setItem('kuberai_mode_v2', mode);
         // Mode actually changed and there's a prior question → offer to re-run it.
         if (mode !== responseMode && lastQuery.trim()) {
             setModeSwitchPrompt({ query: lastQuery, mode });

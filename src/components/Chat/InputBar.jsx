@@ -17,8 +17,8 @@ const QUERIES = [
 ];
 
 const MODES = [
-    { key: 'snap', label: 'Quick' },
     { key: 'analyst', label: 'Analyst' },
+    { key: 'snap', label: 'Quick' },
 ];
 
 const MODE_LABEL = { snap: 'Quick', analyst: 'Analyst' };
