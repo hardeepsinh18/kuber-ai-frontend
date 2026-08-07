@@ -205,26 +205,33 @@ const StartScreen = ({ onStartChat, onScannerResult, responseMode, setResponseMo
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.18 + i * 0.04, duration: 0.30 }}
                                 onClick={() => onStartChat(q, 'stock')}
-                                className="group h-full flex flex-col text-left p-3 rounded-xl
+                                className="group h-full text-left rounded-xl
+                                           flex items-center gap-2.5 px-3 py-2.5
+                                           sm:flex-col sm:items-stretch sm:gap-0 sm:p-3
                                            border border-zinc-200 bg-zinc-50/60
                                            dark:border-zinc-800/80 dark:bg-[#0d0c0b]
                                            hover:border-[#FDD405]/60 hover:bg-[#FDD405]/[0.05]
                                            dark:hover:border-[#FDD405]/50 dark:hover:bg-[#FDD405]/[0.05]
                                            transition-colors duration-150">
-                                <span className="flex items-center gap-1.5">
-                                    <Icon size={11} className="flex-shrink-0 text-zinc-400
+                                {/* Icon chip carries the category on mobile, where the
+                                    text tag is hidden — the row would otherwise lose its
+                                    scanning cue entirely. */}
+                                <span className="flex items-center gap-1.5 flex-shrink-0">
+                                    <Icon size={13} className="flex-shrink-0 text-zinc-400
                                                                dark:text-zinc-500
                                                                group-hover:text-[#FDD405]
                                                                dark:group-hover:text-[#FDD405]
-                                                               transition-colors" />
-                                    <span className="text-[9px] font-extrabold uppercase tracking-[0.14em]
+                                                               transition-colors sm:w-[11px] sm:h-[11px]" />
+                                    <span className="hidden sm:inline text-[9px] font-extrabold uppercase
+                                                     tracking-[0.14em]
                                                      text-zinc-500 dark:text-zinc-500
                                                      group-hover:text-zinc-700 dark:group-hover:text-[#FDD405]
                                                      transition-colors">
                                         {tag}
                                     </span>
                                 </span>
-                                <span className="block mt-1.5 text-[12.5px] leading-snug font-medium
+                                <span className="block min-w-0 text-[12.5px] leading-snug font-medium
+                                                 sm:mt-1.5
                                                  text-zinc-700 dark:text-zinc-300
                                                  group-hover:text-zinc-900 dark:group-hover:text-white
                                                  transition-colors">
