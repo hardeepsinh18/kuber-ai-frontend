@@ -323,7 +323,25 @@ export function ChatHistoryProvider({ children }) {
                     const sentThrough = messages.length;
                     syncedMessageCountRef.current = sentThrough;
                     chatsApi.appendMessages(chatId, newOnes, accessToken)
-                        .catch((err) => {
+                        .catch(async (err) => {
+                            // The chat exists only on this device: createChat was
+                            // unreachable when it started, so the client fell back to a
+                            // locally minted id the server has never seen. Every append
+                            // then 404s. Create the thread under that same id — the id
+                            // the URL and the local cache already use — and retry once.
+                            if (err?.name === 'MissingChatError') {
+                                try {
+                                    await chatsApi.createChat(accessToken, title, chatId);
+                                    await chatsApi.appendMessages(chatId, newOnes, accessToken);
+                                    return;   // healed; counter stays advanced
+                                } catch (healErr) {
+                                    err = healErr;
+                                }
+                            }
+                            // Roll back so the next flush retries these messages rather
+                            // than treating them as stored. localStorage is the only
+                            // other copy and it is evictable, so "give up quietly" here
+                            // is how answers went missing.
                             syncedMessageCountRef.current = Math.min(
                                 syncedMessageCountRef.current,
                                 start

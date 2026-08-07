@@ -64,16 +64,37 @@ export async function getChat(id, accessToken) {
   return { id: data.id ?? id, title: data.title ?? 'Chat', updatedAt: data.updated_at ?? data.updatedAt ?? Date.now(), messages };
 }
 
-export async function createChat(accessToken, title = 'New chat') {
+/**
+ * Create a chat thread. Pass `id` to create it under an id the client already
+ * holds — used to heal a chat that only ever existed locally (see
+ * MissingChatError below). Idempotent server-side for an id you already own.
+ */
+export async function createChat(accessToken, title = 'New chat', id = undefined) {
   const res = await fetch(chatsUrl(), {
     method: 'POST',
     headers: getHeaders(accessToken),
-    body: JSON.stringify({ title }),
+    body: JSON.stringify(id ? { title, id } : { title }),
   });
   if (res.status === 404 || res.status === 501) return null;
   if (!res.ok) throw new Error(await res.text().catch(() => `${res.status}`));
   const data = await safeJson(res);
   return data?.id ?? data?.chat_id ?? null;
+}
+
+/**
+ * The server has no thread with this id — the chat exists only on this device.
+ *
+ * Distinct from "the endpoint isn't deployed" (501), which is the graceful-null
+ * case this module was originally written around. Conflating the two is what
+ * lost history: a 404 resolved as success, so the caller marked the messages
+ * synced and never retried them, and the only surviving copy was localStorage.
+ */
+export class MissingChatError extends Error {
+  constructor(id) {
+    super(`Chat ${id} does not exist on the server`);
+    this.name = 'MissingChatError';
+    this.chatId = id;
+  }
 }
 
 // Chrome/Firefox reject any keepalive request once the combined in-flight
@@ -111,7 +132,11 @@ export async function appendMessages(id, messages, accessToken) {
     body,
     keepalive: keepaliveIfSmall(body),
   });
-  if (res.status === 404 || res.status === 501) return null;
+  // 404 here means THIS CHAT is unknown to the server, which is recoverable and
+  // must not read as success — returning null let the caller advance its synced
+  // counter, permanently marking messages as stored that never were.
+  if (res.status === 404) throw new MissingChatError(id);
+  if (res.status === 501) return null;   // endpoint genuinely not deployed
   if (!res.ok) throw new Error(await res.text().catch(() => ` ${res.status}`));
   return true;
 }
