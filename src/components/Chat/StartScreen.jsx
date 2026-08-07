@@ -63,15 +63,18 @@ const StartScreen = ({ onStartChat, onScannerResult, responseMode, setResponseMo
     return (
         <>
         <div className="flex flex-col h-full w-full overflow-hidden">
-            <div className="flex-1 flex flex-col items-center justify-center overflow-y-auto py-8 gap-6">
+            <div className="flex-1 flex flex-col items-center justify-start overflow-y-auto
+                            py-6 sm:py-8 gap-5 sm:gap-6">
+                <div className="w-full flex flex-col items-center gap-5 sm:gap-6 my-auto">
 
                 {/* Headline + Input card — narrower container */}
                 <div className="w-full max-w-[660px] px-4 sm:px-6">
 
                     {/* Headline */}
                     <motion.h1 {...fadeUp(0)}
-                        className="text-center font-bold tracking-[-0.025em] leading-[1.18] mb-8"
-                        style={{ fontSize: 'clamp(1.4rem, 2.8vw, 2.6rem)' }}>
+                        className="text-center font-bold tracking-[-0.025em] leading-[1.2]
+                                   mb-6 sm:mb-8 px-2 sm:px-0"
+                        style={{ fontSize: 'clamp(1.15rem, 2.8vw, 2.6rem)' }}>
                         <span className="text-zinc-900 dark:text-white">Got a question about markets</span><br />
                         <span className="text-zinc-500 dark:text-zinc-400">or stocks?</span>
                     </motion.h1>
@@ -231,6 +234,7 @@ const StartScreen = ({ onStartChat, onScannerResult, responseMode, setResponseMo
                         ))}
                     </div>
                 </motion.div>
+                </div>
 
             </div>
         </div>
