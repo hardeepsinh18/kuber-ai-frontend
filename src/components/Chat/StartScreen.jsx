@@ -1,19 +1,24 @@
 import { useState, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
-import { ScanLine, Rocket } from 'lucide-react';
+import { ScanLine, Rocket, BarChart3, TrendingUp, LineChart, GitCompareArrows,
+         Trophy, Coins } from 'lucide-react';
 import ScannerPanel from './ScannerPanel';
 import IpoPanel from './IpoPanel';
 import CompanySuggest from './CompanySuggest';
 import { useCompanySuggest } from '../../hooks/useCompanySuggest';
 
+// The same six starters, each tagged with the KIND of question it is. Tag +
+// icon turn a flat wall of similar-looking sentences into a scannable menu:
+// the eye lands on "Fundamentals" / "Compare" / "Screener" first and only then
+// reads the sentence. Query strings are unchanged — this is presentation.
 const QUERIES = [
-    'Show me TCS fundamentals and valuation',
-    'Is Reliance a good buy right now?',
-    'Show Nifty 50 chart for last 6 months',
-    'Compare HDFC Bank vs ICICI Bank on financials',
-    'Which mid-cap stocks have best ROE on NSE?',
-    'Top PSU stocks by dividend yield',
+    { tag: 'Fundamentals', Icon: BarChart3,        q: 'Show me TCS fundamentals and valuation' },
+    { tag: 'Verdict',      Icon: TrendingUp,       q: 'Is Reliance a good buy right now?' },
+    { tag: 'Chart',        Icon: LineChart,        q: 'Show Nifty 50 chart for last 6 months' },
+    { tag: 'Compare',      Icon: GitCompareArrows, q: 'Compare HDFC Bank vs ICICI Bank on financials' },
+    { tag: 'Screener',     Icon: Trophy,           q: 'Which mid-cap stocks have best ROE on NSE?' },
+    { tag: 'Dividends',    Icon: Coins,            q: 'Top PSU stocks by dividend yield' },
 ];
 
 const MODES = [
@@ -178,26 +183,50 @@ const StartScreen = ({ onStartChat, onScannerResult, responseMode, setResponseMo
                     </motion.div>
                 </div>
 
-                {/* Suggestion pills — wider container so 3 fit per row */}
+                {/* Starter cards. A uniform grid instead of centre-aligned pills of six
+                    different widths, which left both edges ragged and read as a wall of
+                    similar sentences. Cards share the answer-card surface, so the start
+                    screen and the answers look like one product.
+                    1 column on phones, 2 from sm, 3 from lg — the sentences are long
+                    enough that 3 columns only stop wrapping on a wide screen. */}
                 <motion.div {...fadeUp(0.14)}
                     className="w-full max-w-[900px] px-4 sm:px-6">
-                    <div className="flex flex-wrap gap-2.5 justify-center">
-                        {QUERIES.map((q, i) => (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-2.5">
+                        {/* eslint-disable-next-line no-unused-vars -- Icon IS used below
+                            as <Icon />; the rule does not track JSX component usage from
+                            a destructured binding (same false positive as `motion` here). */}
+                        {QUERIES.map(({ tag, Icon, q }, i) => (
                             <motion.button
                                 key={q}
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
+                                initial={{ opacity: 0, y: 8 }}
+                                animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.18 + i * 0.04, duration: 0.30 }}
                                 onClick={() => onStartChat(q, 'stock')}
-                                className="px-5 py-2.5 rounded-2xl text-[12.5px] font-medium
-                                           text-zinc-700 dark:text-zinc-400
-                                           bg-transparent
-                                           border border-zinc-300 dark:border-zinc-700/70
-                                           hover:text-zinc-900 dark:hover:text-zinc-200
-                                           hover:border-[#FDD405]/60 dark:hover:border-[#FDD405]/50
-                                           hover:bg-amber-50/40 dark:hover:bg-amber-950/15
-                                           transition-all duration-150 whitespace-nowrap">
-                                {q}
+                                className="group h-full flex flex-col text-left p-3 rounded-xl
+                                           border border-zinc-200 bg-zinc-50/60
+                                           dark:border-zinc-800/80 dark:bg-[#0d0c0b]
+                                           hover:border-[#FDD405]/60 hover:bg-[#FDD405]/[0.05]
+                                           dark:hover:border-[#FDD405]/50 dark:hover:bg-[#FDD405]/[0.05]
+                                           transition-colors duration-150">
+                                <span className="flex items-center gap-1.5">
+                                    <Icon size={11} className="flex-shrink-0 text-zinc-400
+                                                               dark:text-zinc-500
+                                                               group-hover:text-[#FDD405]
+                                                               dark:group-hover:text-[#FDD405]
+                                                               transition-colors" />
+                                    <span className="text-[9px] font-extrabold uppercase tracking-[0.14em]
+                                                     text-zinc-500 dark:text-zinc-500
+                                                     group-hover:text-zinc-700 dark:group-hover:text-[#FDD405]
+                                                     transition-colors">
+                                        {tag}
+                                    </span>
+                                </span>
+                                <span className="block mt-1.5 text-[12.5px] leading-snug font-medium
+                                                 text-zinc-700 dark:text-zinc-300
+                                                 group-hover:text-zinc-900 dark:group-hover:text-white
+                                                 transition-colors">
+                                    {q}
+                                </span>
                             </motion.button>
                         ))}
                     </div>
