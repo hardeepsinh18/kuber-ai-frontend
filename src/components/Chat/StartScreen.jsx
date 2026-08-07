@@ -13,12 +13,12 @@ import { useCompanySuggest } from '../../hooks/useCompanySuggest';
 // the eye lands on "Fundamentals" / "Compare" / "Screener" first and only then
 // reads the sentence. Query strings are unchanged — this is presentation.
 const QUERIES = [
-    { tag: 'Fundamentals', Icon: BarChart3,        q: 'Show me TCS fundamentals and valuation' },
-    { tag: 'Verdict',      Icon: TrendingUp,       q: 'Is Reliance a good buy right now?' },
-    { tag: 'Chart',        Icon: LineChart,        q: 'Show Nifty 50 chart for last 6 months' },
-    { tag: 'Compare',      Icon: GitCompareArrows, q: 'Compare HDFC Bank vs ICICI Bank on financials' },
-    { tag: 'Screener',     Icon: Trophy,           q: 'Which mid-cap stocks have best ROE on NSE?' },
-    { tag: 'Dividends',    Icon: Coins,            q: 'Top PSU stocks by dividend yield' },
+    { tag: 'Fundamentals', Icon: BarChart3,        q: 'Show me TCS fundamentals and valuation',      short: 'TCS fundamentals & valuation' },
+    { tag: 'Verdict',      Icon: TrendingUp,       q: 'Is Reliance a good buy right now?',            short: 'Is Reliance a good buy?' },
+    { tag: 'Chart',        Icon: LineChart,        q: 'Show Nifty 50 chart for last 6 months',        short: 'Nifty 50 chart, 6 months' },
+    { tag: 'Compare',      Icon: GitCompareArrows, q: 'Compare HDFC Bank vs ICICI Bank on financials', short: 'HDFC Bank vs ICICI Bank' },
+    { tag: 'Screener',     Icon: Trophy,           q: 'Which mid-cap stocks have best ROE on NSE?',   short: 'Best mid-cap ROE on NSE' },
+    { tag: 'Dividends',    Icon: Coins,            q: 'Top PSU stocks by dividend yield',             short: 'Top PSU dividend yields' },
 ];
 
 const MODES = [
@@ -198,7 +198,7 @@ const StartScreen = ({ onStartChat, onScannerResult, responseMode, setResponseMo
                         {/* eslint-disable-next-line no-unused-vars -- Icon IS used below
                             as <Icon />; the rule does not track JSX component usage from
                             a destructured binding (same false positive as `motion` here). */}
-                        {QUERIES.map(({ tag, Icon, q }, i) => (
+                        {QUERIES.map(({ tag, Icon, q, short }, i) => (
                             <motion.button
                                 key={q}
                                 initial={{ opacity: 0, y: 8 }}
@@ -230,12 +230,24 @@ const StartScreen = ({ onStartChat, onScannerResult, responseMode, setResponseMo
                                         {tag}
                                     </span>
                                 </span>
+                                {/* truncate on mobile only. Two of the six questions wrap
+                                    to a second line at 360-375px, which made those cards
+                                    56px against the others' 39px — the uneven look in the
+                                    report. One line each keeps the column symmetrical; the
+                                    full text is still sent on tap, and from sm: up there is
+                                    width to wrap normally. */}
                                 <span className="block min-w-0 text-[12.5px] leading-snug font-medium
                                                  sm:mt-1.5
                                                  text-zinc-700 dark:text-zinc-300
                                                  group-hover:text-zinc-900 dark:group-hover:text-white
                                                  transition-colors">
-                                    {q}
+                                    {/* Short label on a phone so every row is ONE line and the
+                                        six cards share a height — two of the full sentences wrap
+                                        at 360-375px, which is the uneven look being fixed. The
+                                        full sentence is still what gets SENT on tap; only the
+                                        label differs. */}
+                                    <span className="sm:hidden">{short}</span>
+                                    <span className="hidden sm:inline">{q}</span>
                                 </span>
                             </motion.button>
                         ))}
