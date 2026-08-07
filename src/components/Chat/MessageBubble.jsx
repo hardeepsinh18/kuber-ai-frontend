@@ -66,6 +66,23 @@ const stripResponseChrome = (text) => {
     // emoji, and any "Key … Levels" wording ("Key Levels", "Key Price Levels"),
     // cutting to the next section boundary so following sections are kept.
     out = out.replace(/\n*#{1,4}\s*[^\n]*Key[^\n]*Levels[^\n]*[\s\S]*?(?=\n#{1,4}\s|\n---|\n━|$)/gi, '');
+    // Drop an entry/stop/target line whose NUMBERS are missing. The model
+    // sometimes emits the template with empty slots — "⚡ Entry ₹, | 🛑 Stop ₹, |
+    // 🎯 Target ₹," — which rendered verbatim as bare currency symbols and commas.
+    // On a financial surface that reads like broken data rather than absent data,
+    // so the line is removed entirely; a levels line that DOES carry figures is
+    // untouched (the digit lookahead below is what distinguishes them).
+    // Matches a line made up ONLY of level labels, currency marks, emoji and
+    // punctuation, with a negative lookahead for any digit on that line. Framing
+    // it as "no numbers anywhere on the line" rather than "each slot is empty"
+    // is what keeps it safe: a partially filled line still has a digit, so it
+    // survives, and real levels can never be deleted by this rule.
+    out = out.replace(
+        /^[ \t]*(?![^\n]*\d)(?:[⚡🛑🎯*_|,.\s-]|rs\.?|₹|entry|stop(?:[\s-]*loss)?|target)+$/gimu,
+        ''
+    );
+    out = out.replace(/\n{3,}/g, '\n\n');
+
     // Strip disclaimer from text — rendered separately as a styled box at the bottom
     out = out.replace(/\*?\*?Disclaimer:?\*?\*?[^\n]*((\n[^\n]+)*)/gi, '');
     return out.trim();
