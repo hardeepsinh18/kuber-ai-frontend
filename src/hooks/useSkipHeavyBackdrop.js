@@ -3,23 +3,32 @@ import { useEffect, useState } from 'react';
 /**
  * QA-C-005: decide whether to skip the ~7 MB background video entirely.
  *
- * `bg-dark.mp4` is 6.8 MB and `bg-light.mp4` is 5.7 MB. That is a purely decorative
- * backdrop, so on a metered or narrow connection it is bandwidth the user pays for and
- * gets nothing back from. Two cases are skipped on top of the reduced-motion skip that
- * QA-C-004 already added:
+ * `bg-dark.mp4` is 6.8 MB and `bg-light.mp4` is 5.7 MB — a purely decorative backdrop,
+ * so on a metered connection it is bandwidth the user pays for and gets nothing back
+ * from.
  *
- *   1. Narrow viewports. A 6.8 MB backdrop behind a 375px-wide phone screen is never
- *      justified — the video is `object-fit: cover` at 40-60% opacity, so on a small
- *      screen almost none of the detail being paid for is even visible.
- *   2. `navigator.connection.saveData` — the user has explicitly asked the browser to
- *      conserve data. Honouring that is the entire point of the flag.
+ * The skip is now driven ONLY by explicit user signals:
+ *
+ *   1. `navigator.connection.saveData` — the user has told the browser to conserve
+ *      data. Honouring that is the entire point of the flag.
+ *   2. (In the callers) prefers-reduced-motion, for the same reason.
+ *
+ * The viewport-width rule was REMOVED (product decision, 2026-08-07): the backdrop is
+ * part of the brand impression and was wanted on phones too. Screen size is a guess
+ * about what someone wants; saveData is them saying it. Guessing "this is a phone so
+ * they must not want it" made the product look different on mobile for a cost the user
+ * never actually declined.
+ *
+ * If the mobile payload becomes a problem, the fix is a smaller mobile encode served by
+ * the caller — not silently removing the backdrop, which is what this used to do.
  *
  * Deliberately NOT a media query inside CSS: the goal is to never START the download,
  * and a `<video>` element that exists in the DOM has already begun fetching. The decision
  * has to happen before render, which is why this is a hook and not a stylesheet rule.
  *
- * SSR-safe and defensive: `navigator.connection` is not in Safari or Firefox, and
- * `matchMedia` is absent in some test environments, so both are feature-detected.
+ * SSR-safe and defensive: `navigator.connection` is not in Safari or Firefox, so it is
+ * feature-detected. `minWidth` is retained in the signature for callers that pass it,
+ * but is no longer consulted.
  */
 export default function useSkipHeavyBackdrop(minWidth = 768) {
     const [skip, setSkip] = useState(() => evaluate(minWidth));
@@ -59,17 +68,13 @@ export default function useSkipHeavyBackdrop(minWidth = 768) {
     return skip;
 }
 
+// eslint-disable-next-line no-unused-vars -- kept for call-site compatibility
 function evaluate(minWidth) {
     if (typeof window === 'undefined') return true; // SSR: skip rather than ship 7 MB
     try {
-        if (navigator?.connection?.saveData === true) return true;
-        const width = window.innerWidth
-            || document?.documentElement?.clientWidth
-            || 0;
-        // width 0 means we genuinely could not measure — do not skip on a bad read,
-        // or a measurement quirk would silently remove the backdrop for everyone.
-        if (width > 0 && width < minWidth) return true;
-        return false;
+        // saveData is the only skip signal now — see the note above on why viewport
+        // width is not one.
+        return navigator?.connection?.saveData === true;
     } catch {
         return false;
     }

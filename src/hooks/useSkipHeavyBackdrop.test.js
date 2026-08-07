@@ -31,10 +31,20 @@ afterEach(() => {
 });
 
 describe('useSkipHeavyBackdrop', () => {
-    it('skips the download on a narrow (phone) viewport', () => {
+    // The backdrop is part of the brand impression and is wanted on phones too
+    // (product decision, 2026-08-07). Screen size is a GUESS about what someone
+    // wants; saveData is them saying it. These pin that only the explicit signal
+    // suppresses the video.
+    it('keeps the backdrop on a narrow (phone) viewport', () => {
         setWidth(375);
         const { result } = renderHook(() => useSkipHeavyBackdrop());
-        expect(result.current).toBe(true);
+        expect(result.current).toBe(false);
+    });
+
+    it('keeps the backdrop on the smallest common phone', () => {
+        setWidth(320);
+        const { result } = renderHook(() => useSkipHeavyBackdrop());
+        expect(result.current).toBe(false);
     });
 
     it('keeps the backdrop on a desktop viewport', () => {
@@ -63,18 +73,22 @@ describe('useSkipHeavyBackdrop', () => {
         expect(result.current).toBe(false);
     });
 
-    it('honours a custom breakpoint', () => {
-        setWidth(800);
+    it('ignores the breakpoint argument entirely', () => {
+        // Still accepted for call-site compatibility, but no width suppresses the
+        // backdrop any more — including one far above the viewport.
+        setWidth(375);
+        const narrow = renderHook(() => useSkipHeavyBackdrop(1024));
+        expect(narrow.result.current).toBe(false);
         const wide = renderHook(() => useSkipHeavyBackdrop(768));
         expect(wide.result.current).toBe(false);
-        const narrow = renderHook(() => useSkipHeavyBackdrop(1024));
-        expect(narrow.result.current).toBe(true);
     });
 
-    it('treats the breakpoint as exclusive at the boundary', () => {
-        setWidth(768);
-        const { result } = renderHook(() => useSkipHeavyBackdrop(768));
-        expect(result.current).toBe(false);
+    it('still honours saveData on a phone-sized viewport', () => {
+        // The one case that must keep working after the width rule was dropped.
+        setWidth(375);
+        setConnection({ saveData: true });
+        const { result } = renderHook(() => useSkipHeavyBackdrop());
+        expect(result.current).toBe(true);
     });
 
     it('does not skip when the width cannot be measured', () => {
