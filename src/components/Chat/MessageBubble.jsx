@@ -114,6 +114,28 @@ const stripResponseChrome = (text) => {
     }).join('\n');
     out = out.replace(/\n{3,}/g, '\n\n');
 
+    // Strip emoji from model prose. The answer surfaces carry their own visual
+    // language — brand yellow, MiniLabels, icon components — and a stray emoji
+    // the model decided to prepend ("\u{1F4B0} Top Dividend-Yield Stocks") reads as
+    // decoration the product did not choose. It also renders at a different size
+    // and baseline to the heading it sits in.
+    //
+    // Applied to the TEXT only. Icons rendered by our own components (lucide,
+    // the Rocket in IPO Corner, the verdict icons) are JSX and never pass through
+    // here, so they are unaffected.
+    //
+    // Deliberately NOT stripping \u2192 \u2191 \u2193 \u2022 \u20b9 \u00b1 \u2248: arrows and the rupee sign carry
+    // MEANING in a financial answer (\"\u20b91,450 \u2192 \u20b91,620\", \"\u2191 12%\"), and removing them
+    // would damage the content rather than tidy it.
+    out = out.replace(
+        /[\u{1F300}-\u{1FAFF}\u{1F000}-\u{1F2FF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}]/gu,
+        ''
+    );
+    out = out.replace(/[\u{FE0F}\u{20E3}]/gu, '');
+    // Tidy the space an emoji left behind at the start of a line or heading.
+    out = out.replace(/^([ \t]*#{1,6}[ \t]*)[ \t]+/gm, '$1');
+    out = out.replace(/^[ \t]+$/gm, '');
+
     // Strip disclaimer from text — rendered separately as a styled box at the bottom
     out = out.replace(/\*?\*?Disclaimer:?\*?\*?[^\n]*((\n[^\n]+)*)/gi, '');
     return out.trim();
