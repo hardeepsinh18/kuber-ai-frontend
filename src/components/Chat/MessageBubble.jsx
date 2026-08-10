@@ -142,6 +142,14 @@ const stripResponseChrome = (text) => {
     out = out.replace(/([^\s])[ \t]{2,}(?=\S)/g, '$1 ');
     out = out.replace(/^[ \t]+$/gm, '');
 
+    // Last resort on heading markers: if a line still begins with # after the
+    // normalisation above, the parser would render it as a heading — fine — but a
+    // MALFORMED one (hashes with nothing after them, or hashes mid-line) shows the
+    // raw "##" to the user. Drop bare marker-only lines and any trailing hashes,
+    // so a stray marker can never reach the screen as literal text.
+    out = out.replace(/^[ \t]*#{1,6}[ \t]*$/gm, '');
+    out = out.replace(/^([ \t]*#{1,6}[ \t]+.*?)[ \t]*#+[ \t]*$/gm, '$1');
+
     // Strip disclaimer from text — rendered separately as a styled box at the bottom
     out = out.replace(/\*?\*?Disclaimer:?\*?\*?[^\n]*((\n[^\n]+)*)/gi, '');
     return out.trim();
@@ -1253,23 +1261,29 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                                         </code>
                                     );
                                 },
+                                /* Headings render as plain emphasised lines rather than
+                                   document-style display type. The answer already sits in a
+                                   card with its own ANSWER label, so 24-26px chapter titles
+                                   and 32px gaps made one reply read like a multi-section
+                                   document. Kept as real h1-h4 elements for structure and
+                                   screen readers — only the SIZE and spacing change. */
                                 h1: ({ children }) => (
-                                    <h1 className="text-[24px] sm:text-[26px] font-semibold mt-0 mb-5 first:mt-0 text-zinc-900 dark:text-zinc-100 leading-[1.3] tracking-tight">
+                                    <h1 className="text-[14px] font-bold mt-4 mb-1.5 first:mt-0 text-zinc-900 dark:text-white leading-snug">
                                         {children}
                                     </h1>
                                 ),
                                 h2: ({ children }) => (
-                                    <h2 className="text-[20px] sm:text-[21px] font-semibold mt-8 mb-4 first:mt-0 text-zinc-900 dark:text-zinc-100 leading-[1.3] tracking-tight">
+                                    <h2 className="text-[13.5px] font-bold mt-4 mb-1.5 first:mt-0 text-zinc-900 dark:text-white leading-snug">
                                         {children}
                                     </h2>
                                 ),
                                 h3: ({ children }) => (
-                                    <h3 className="text-[17px] sm:text-[18px] font-semibold mt-6 mb-3 first:mt-0 text-zinc-800 dark:text-zinc-200 leading-[1.4]">
+                                    <h3 className="text-[13px] font-bold mt-3.5 mb-1 first:mt-0 text-zinc-800 dark:text-zinc-100 leading-snug">
                                         {children}
                                     </h3>
                                 ),
                                 h4: ({ children }) => (
-                                    <h4 className="text-[16px] font-medium mt-5 mb-2.5 text-zinc-700 dark:text-zinc-300 leading-[1.4]">
+                                    <h4 className="text-[12.5px] font-semibold mt-3 mb-1 first:mt-0 text-zinc-700 dark:text-zinc-200 leading-snug">
                                         {children}
                                     </h4>
                                 ),
