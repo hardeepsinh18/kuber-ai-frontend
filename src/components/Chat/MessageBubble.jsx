@@ -132,8 +132,14 @@ const stripResponseChrome = (text) => {
         ''
     );
     out = out.replace(/[\u{FE0F}\u{20E3}]/gu, '');
-    // Tidy the space an emoji left behind at the start of a line or heading.
-    out = out.replace(/^([ \t]*#{1,6}[ \t]*)[ \t]+/gm, '$1');
+    // Normalise the space after a heading's # markers. Removing an emoji can leave
+    // either a double space ("##  Top") or none at all ("##💰Top" -> "##Top"), and
+    // markdown needs EXACTLY one space there — without it the line stops being a
+    // heading and renders as literal "##Top …" text, which is what the previous
+    // collapse-only rule caused.
+    out = out.replace(/^([ \t]*#{1,6})[ \t]*(?=\S)/gm, '$1 ');
+    // Collapse a double space left mid-line where an emoji was removed.
+    out = out.replace(/([^\s])[ \t]{2,}(?=\S)/g, '$1 ');
     out = out.replace(/^[ \t]+$/gm, '');
 
     // Strip disclaimer from text — rendered separately as a styled box at the bottom

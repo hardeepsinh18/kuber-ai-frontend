@@ -50,6 +50,32 @@ describe('emoji are stripped from answer prose', () => {
         expect(body()).toContain('Momentum');
         expect(body()).not.toMatch(/#\s{2,}Momentum/);
     });
+
+    it('still renders as a HEADING after the emoji is removed', () => {
+        // Regression: an earlier tidy-up collapsed the space after the # markers,
+        // so "## 💰 Top" became "##Top". Markdown needs exactly one space there —
+        // without it the line stops being a heading and renders as literal
+        // "##Top …" text. Assert the element, not just the text.
+        const { container } = renderBubble('## 💰 Top Dividend-Yield Stocks (NSE)');
+        const h2 = container.querySelector('h2');
+        expect(h2, 'the line must still be a heading element').not.toBeNull();
+        expect(h2.textContent).toBe('Top Dividend-Yield Stocks (NSE)');
+        expect(body()).not.toContain('##');
+    });
+
+    it('renders a heading when the emoji is flush against the hashes', () => {
+        // "##💰Top" — no space on either side, the worst case for the strip.
+        const { container } = renderBubble('##💰Top Dividend-Yield Stocks (NSE)');
+        expect(container.querySelector('h2')).not.toBeNull();
+        expect(body()).not.toContain('##');
+    });
+
+    it('leaves an already-clean heading untouched', () => {
+        const { container } = renderBubble('### Deep heading');
+        const h3 = container.querySelector('h3');
+        expect(h3).not.toBeNull();
+        expect(h3.textContent).toBe('Deep heading');
+    });
 });
 
 describe('meaningful symbols are NOT stripped', () => {
