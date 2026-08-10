@@ -54,6 +54,27 @@ const isTickerLike = (s) => /^[A-Z0-9]{2,6}$/.test(String(s).trim());
 // Strip markdown images, phantom chart sections, and inline "Ask me" (duplicated by follow-up buttons)
 const DISCLAIMER_TEXT = 'This is a multi-factor analysis for education only, not investment advice. Past performance does not guarantee future returns. Consider your risk profile and consult a SEBI-registered advisor before investing.';
 
+// A markdown table row — including the "|---|---|" delimiter row that holds the
+// table together. The levels cleanup below must never touch these lines.
+const IS_TABLE_ROW = /^\s*\|/;
+
+// A levels line the model left completely unfilled: "⚡ Entry ₹, | 🛑 Stop ₹, |
+// 🎯 Target ₹,". Framed as "no numbers anywhere on the line" rather than "each
+// slot is empty", so a partially filled line still carries a digit and survives —
+// real levels can never be deleted by this rule.
+//
+// The second lookahead requires an actual level WORD on the line. Without it the
+// body is pure punctuation, which matches any punctuation-only line — "---",
+// "***" and the "|---|---|" table delimiter all qualified and were deleted.
+const EMPTY_LEVELS_LINE =
+    /^[ \t]*(?![^\n]*\d)(?=[^\n]*\b(?:entry|stop|target)\b)(?:[⚡🛑🎯*_|,.\s-]|rs\.?|₹|entry|stop(?:[\s-]*loss)?|target)+$/iu;
+
+// One unfilled slot inside an otherwise-populated levels line, so the figure that
+// exists survives and only the blanks go. The negative lookahead for a digit is
+// what makes it safe: a slot carrying a number can never match.
+const EMPTY_LEVEL_SLOT =
+    /(?:[⚡🛑🎯]\s*)?(?:\*\*)?\b(?:entry|stop(?:[\s-]*loss)?|sl|target|tgt)\b(?:\*\*)?\s*:?\s*(?:rs\.?|₹)?\s*(?![\d])[,;]?\s*(?:\||$)/gimu;
+
 const stripResponseChrome = (text) => {
     if (!text || typeof text !== 'string') return text;
     let out = text.replace(/!\[[^\]]*\]\([^)]+\)/g, '');
@@ -66,36 +87,31 @@ const stripResponseChrome = (text) => {
     // emoji, and any "Key … Levels" wording ("Key Levels", "Key Price Levels"),
     // cutting to the next section boundary so following sections are kept.
     out = out.replace(/\n*#{1,4}\s*[^\n]*Key[^\n]*Levels[^\n]*[\s\S]*?(?=\n#{1,4}\s|\n---|\n━|$)/gi, '');
-    // Drop an entry/stop/target line whose NUMBERS are missing. The model
-    // sometimes emits the template with empty slots — "⚡ Entry ₹, | 🛑 Stop ₹, |
-    // 🎯 Target ₹," — which rendered verbatim as bare currency symbols and commas.
-    // On a financial surface that reads like broken data rather than absent data,
-    // so the line is removed entirely; a levels line that DOES carry figures is
-    // untouched (the digit lookahead below is what distinguishes them).
-    // Remove EMPTY level slots individually — "Entry ₹732.7 | Stop ₹, | Target ₹,"
-    // has one real value and two blanks, so the whole-line rule below (which
-    // requires NO digits anywhere) correctly leaves it alone and the blanks
-    // rendered. Matching per slot keeps the figure that exists and drops only the
-    // ones the model left unfilled.
+    // Clean up entry/stop/target lines the model left unfilled. It sometimes emits
+    // the template with empty slots — "⚡ Entry ₹, | 🛑 Stop ₹, | 🎯 Target ₹," —
+    // which rendered verbatim as bare currency symbols and commas. On a financial
+    // surface that reads like BROKEN data rather than absent data.
     //
-    // The negative lookahead for a digit is what makes this safe: a slot with a
-    // number can never match, so real levels cannot be deleted.
-    out = out.replace(
-        /(?:[⚡🛑🎯]\s*)?(?:\*\*)?\b(?:entry|stop(?:[\s-]*loss)?|sl|target|tgt)\b(?:\*\*)?\s*:?\s*(?:rs\.?|₹)?\s*(?![\d])[,;]?\s*(?:\||$)/gimu,
-        ''
-    );
-    // Tidy the separator left behind when a trailing slot was removed.
-    out = out.replace(/^([ \t]*(?:[⚡🛑🎯]\s*)?[^\n]*?)\s*\|\s*$/gimu, '$1');
-
-    // Matches a line made up ONLY of level labels, currency marks, emoji and
-    // punctuation, with a negative lookahead for any digit on that line. Framing
-    // it as "no numbers anywhere on the line" rather than "each slot is empty"
-    // is what keeps it safe: a partially filled line still has a digit, so it
-    // survives, and real levels can never be deleted by this rule.
-    out = out.replace(
-        /^[ \t]*(?![^\n]*\d)(?:[⚡🛑🎯*_|,.\s-]|rs\.?|₹|entry|stop(?:[\s-]*loss)?|target)+$/gimu,
-        ''
-    );
+    // This walks line by line and skips markdown table rows outright. Running it
+    // over the whole document is what silently destroyed every table in the app:
+    // a GFM table is held together by its delimiter row ("|---|---|"), which is
+    // pure punctuation with no digits and so was indistinguishable from an empty
+    // levels line. With the delimiter gone the table degraded into a paragraph of
+    // pipes — "Top PSU stocks by dividend yield" came out as one run-on line.
+    // A table row is never an inline levels line, so leaving those lines alone
+    // costs nothing and removes the whole class of collateral damage.
+    out = out.split('\n').map((line) => {
+        if (IS_TABLE_ROW.test(line)) return line;
+        // Every slot blank → the whole line goes.
+        if (EMPTY_LEVELS_LINE.test(line)) return '';
+        // Otherwise drop only the blank slots, so a real figure standing next to
+        // them survives: "Entry ₹732.7 | Stop ₹, | Target ₹," → "Entry ₹732.7".
+        const cleaned = line.replace(EMPTY_LEVEL_SLOT, '');
+        if (cleaned === line) return line;
+        // Tidy a separator stranded by a removed trailing slot. Scoped to lines we
+        // actually changed, so prose that merely ends in "|" is left alone.
+        return cleaned.replace(/\s*\|\s*$/, '').trimEnd();
+    }).join('\n');
     out = out.replace(/\n{3,}/g, '\n\n');
 
     // Strip disclaimer from text — rendered separately as a styled box at the bottom

@@ -111,5 +111,75 @@ describe('real levels are never removed', () => {
         renderBubble('| Level | Value |\n|---|---|\n| Entry | ₹8,650 |\n| Target | ₹9,100 |');
         expect(body()).toContain('8,650');
         expect(body()).toContain('9,100');
+        // Asserting the VALUES survive is not enough — that passes even when the
+        // table has collapsed into a paragraph of pipes. The label cells and the
+        // table element itself are what actually prove the structure survived.
+        expect(document.querySelector('table')).not.toBeNull();
+        expect(body()).toContain('Entry');
+        expect(body()).toContain('Target');
+    });
+});
+
+/**
+ * The levels cleanup above must never reach a markdown table. A GFM table is
+ * held together by its delimiter row ("|---|---|"), which is pure punctuation
+ * with no digits — exactly the shape the "empty levels line" rule was written to
+ * delete. Deleting it silently downgrades every table in every answer into a
+ * paragraph of pipe characters, which is how "Top PSU stocks by dividend yield"
+ * rendered as one run-on line of text instead of a table.
+ */
+describe('markdown tables survive the levels cleanup', () => {
+    const table = [
+        '## Top Dividend-Yield Stocks (NSE)',
+        '',
+        '| # | Company | Div Yield | P/E | Mkt Cap |',
+        '|---|---------|-----------|-----|---------|',
+        '| 1 | **VEDL** | 12.20% | 9.9x | Rs 109,041 Cr |',
+        '| 2 | **ONGC** | 5.11% | 6.9x | Rs 301,172 Cr |',
+    ].join('\n');
+
+    it('renders a screening answer as a real table, not a paragraph of pipes', () => {
+        renderBubble(table);
+        const el = document.querySelector('table');
+        expect(el).not.toBeNull();
+        // Header cells come through as <th>, so the column names are structure,
+        // not prose.
+        const headers = [...document.querySelectorAll('th')].map(th => th.textContent.trim());
+        expect(headers).toEqual(['#', 'Company', 'Div Yield', 'P/E', 'Mkt Cap']);
+        expect(document.querySelectorAll('tbody tr')).toHaveLength(2);
+    });
+
+    it('leaves no raw pipe characters in the rendered text', () => {
+        renderBubble(table);
+        expect(body()).not.toContain('|');
+    });
+
+    it('keeps a label cell that happens to be a level word', () => {
+        // "Entry"/"Target" as a table LABEL is a cell, not an inline levels slot.
+        renderBubble('| Level | Value |\n|---|---|\n| Entry | ₹8,650 |');
+        const cells = [...document.querySelectorAll('td')].map(td => td.textContent.trim());
+        expect(cells).toEqual(['Entry', '₹8,650']);
+    });
+
+    it('keeps a horizontal rule', () => {
+        // "---" is also pure punctuation with no digits.
+        renderBubble('First section.\n\n---\n\nSecond section.');
+        expect(document.querySelector('hr')).not.toBeNull();
+    });
+
+    it('keeps the intro prose above a table as prose', () => {
+        // The second reported answer ("Which mid-cap stocks have best ROE") leads
+        // with a paragraph and then tabulates — both halves have to survive.
+        renderBubble(
+            '## Mid-cap Stocks on NSE with Highest ROE\n\n'
+            + 'VEDL leads the pack with an ROE of 38.2 percent.\n\n'
+            + '| Stock | Price | ROE |\n'
+            + '|-------|-------|-----|\n'
+            + '| VEDL | Rs 277.80 | 38.2% |\n'
+            + '| HDFCAMC | Rs 2,549.90 | 32.9% |'
+        );
+        expect(body()).toContain('VEDL leads the pack');
+        expect(document.querySelectorAll('tbody tr')).toHaveLength(2);
+        expect(body()).not.toContain('|');
     });
 });
