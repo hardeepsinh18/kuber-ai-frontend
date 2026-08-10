@@ -68,6 +68,22 @@ describe('empty entry/stop/target lines are removed', () => {
         expect(body()).not.toMatch(/Target\s*₹\s*,/);
     });
 
+
+    it('drops the colon-separated form', () => {
+        // "Entry: RS, | Stop: RS," - the allowed-character class omitted the colon,
+        // so this variant survived every other rule and rendered.
+        renderBubble('Analysis text.\n\nEntry: ₹, | Stop: ₹, | Target: ₹,');
+        expect(body()).toContain('Analysis text.');
+        expect(body()).not.toMatch(/Entry:?\s*₹\s*,/);
+        expect(body()).not.toMatch(/Target:?\s*₹\s*,/);
+    });
+
+    it('keeps a colon-separated line that HAS figures', () => {
+        renderBubble('Setup.\n\nEntry: ₹1,450 | Target: ₹1,620');
+        expect(body()).toContain('1,450');
+        expect(body()).toContain('1,620');
+    });
+
     it('keeps the surrounding analysis intact', () => {
         renderBubble(
             'ICICI Bank shows bearish momentum.\n\n'
