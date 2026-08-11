@@ -131,16 +131,43 @@ const PEGradientBar = ({ pe, sectorPe, symbol }) => {
     );
 };
 
+/* Sign-aware prefix for a delta/growth figure. Hardcoding "+" rendered a
+ * negative CAGR as "+-8.3%" and presented a contracting business as growing,
+ * so every badge that shows a change routes through here. Uses the true minus
+ * sign (U+2212) rather than a hyphen so it aligns with tabular figures. */
+const signed = (v, suffix = '') => {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return null;
+    return `${n < 0 ? '−' : '+'}${fmtNum(Math.abs(n))}${suffix}`;
+};
+
 /* ─── ROE "Money engine" ─────────────────────────────────────────────────── */
 // The ₹100 → ₹X illustration and the "+X% PER YEAR" caption both read the SAME
 // formatted value as the card's footer (fmtPct), so the visual can never disagree
 // with the headline number the way Math.round did (51.80% rendering as ₹52 / +52%).
 const ROEViz = ({ roe }) => {
-    const profit = fmtNum(roe);
+    // A NEGATIVE ROE is a loss, and the card used to render it as a gain: the "+"
+    // was a hardcoded literal (so -1.56 read "+-1.56%"), the arrow was always
+    // green and pointing up, and the figure was always emerald and labelled
+    // PROFIT. On a financial surface that inverts the meaning of the number.
+    const n = Number(roe);
+    const isLoss = Number.isFinite(n) && n < 0;
+    // Magnitude for display — the sign is carried by the +/- prefix and the
+    // LOSS/PROFIT label, so "₹-1.56" would double up on it.
+    const magnitude = fmtNum(Math.abs(n));
+    const sign = isLoss ? '−' : '+';
+    const accent = isLoss ? '#ef4444' : '#22c55e';
+    const valueClass = isLoss
+        ? 'text-rose-600 dark:text-rose-400'
+        : 'text-emerald-600 dark:text-emerald-400';
+    const labelClass = isLoss
+        ? 'text-rose-600 dark:text-rose-500'
+        : 'text-emerald-600 dark:text-emerald-500';
+
     return (
         <div className="w-full">
             <p className="text-[9px] text-zinc-500 uppercase tracking-wide text-center mb-2">
-                Every ₹100 Invested Earns
+                Every ₹100 Invested {isLoss ? 'Loses' : 'Earns'}
             </p>
             {/* Three columns on one baseline: same number size, same caption size.
                 min-w-0 + a shrinkable gap so the row fits a narrow tile instead of
@@ -153,16 +180,22 @@ const ROEViz = ({ roe }) => {
                 </div>
                 <div className="flex flex-col items-center text-center">
                     <span className="h-6 flex items-center">
-                        <svg width="44" height="10" viewBox="0 0 44 10">
-                            <line x1="0" y1="5" x2="36" y2="5" stroke="#22c55e" strokeWidth="2" />
-                            <polygon points="34,1 44,5 34,9" fill="#22c55e" />
+                        {/* Arrow points DOWN and turns red on a loss, so the visual
+                            agrees with the number instead of contradicting it. */}
+                        <svg width="44" height="10" viewBox="0 0 44 10" aria-hidden="true">
+                            <line x1={isLoss ? 8 : 0} y1="5" x2={isLoss ? 44 : 36} y2="5" stroke={accent} strokeWidth="2" />
+                            <polygon points={isLoss ? '10,1 0,5 10,9' : '34,1 44,5 34,9'} fill={accent} />
                         </svg>
                     </span>
-                    <span className="text-[9px] text-zinc-500 mt-1 whitespace-nowrap">+{profit}% PER YEAR</span>
+                    <span className="text-[9px] text-zinc-500 mt-1 whitespace-nowrap">{sign}{magnitude}% PER YEAR</span>
                 </div>
                 <div className="flex flex-col items-center text-center">
-                    <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400 leading-none h-6 flex items-center">₹{profit}</span>
-                    <span className="text-[9px] text-emerald-600 dark:text-emerald-500 mt-1 whitespace-nowrap">PROFIT</span>
+                    <span className={`text-lg font-bold leading-none h-6 flex items-center ${valueClass}`}>
+                        {isLoss ? '−' : ''}₹{magnitude}
+                    </span>
+                    <span className={`text-[9px] mt-1 whitespace-nowrap ${labelClass}`}>
+                        {isLoss ? 'LOSS' : 'PROFIT'}
+                    </span>
                 </div>
             </div>
         </div>
@@ -620,7 +653,7 @@ const FiveYearScoreCard = ({ fund }) => {
                 <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-3 bg-zinc-50 dark:bg-[#0d0c0b]">
                     {hist.revenue_cr?.length > 0 && (
                         <MetricCard title="Revenue" subtitle="TOP LINE · ₹ CR"
-                            badge={hist.revenue_cagr ? `+${hist.revenue_cagr}% CAGR` : null}
+                            badge={hist.revenue_cagr != null ? signed(hist.revenue_cagr, '% CAGR') : null}
                             bottomLabel={first(hist.revenue_cr) ? `From ${fmtCr(first(hist.revenue_cr))} (${years[0]})` : null}
                             bottomValue={fmtCr(last(hist.revenue_cr))}>
                             <MiniBar data={hist.revenue_cr} color="#FDD405" years={years} />
@@ -628,7 +661,7 @@ const FiveYearScoreCard = ({ fund }) => {
                     )}
                     {hist.net_profit_cr?.length > 0 && (
                         <MetricCard title="Net Profit" subtitle="BOTTOM LINE · ₹ CR"
-                            badge={hist.profit_cagr ? `+${hist.profit_cagr}% CAGR` : null}
+                            badge={hist.profit_cagr != null ? signed(hist.profit_cagr, '% CAGR') : null}
                             bottomLabel={first(hist.net_profit_cr) ? `From ${fmtCr(first(hist.net_profit_cr))} (${years[0]})` : null}
                             bottomValue={fmtCr(last(hist.net_profit_cr))}>
                             <MiniBar data={hist.net_profit_cr} color="#22c55e" years={years} />
@@ -636,7 +669,7 @@ const FiveYearScoreCard = ({ fund }) => {
                     )}
                     {hist.eps?.length > 0 && (
                         <MetricCard title="EPS" subtitle="EARNINGS PER SHARE · ₹"
-                            badge={hist.eps_cagr ? `+${hist.eps_cagr}% CAGR` : null}
+                            badge={hist.eps_cagr != null ? signed(hist.eps_cagr, '% CAGR') : null}
                             bottomLabel={first(hist.eps) != null ? `From ₹${first(hist.eps)} (${years[0]})` : null}
                             bottomValue={last(hist.eps) != null ? `₹${last(hist.eps)}` : null}>
                             <MiniLine data={hist.eps} color="#22c55e" years={years} />
@@ -647,7 +680,7 @@ const FiveYearScoreCard = ({ fund }) => {
                             badge={hist.roce_label ?? null}
                             bottomLabel={first(hist.roce_pct) != null ? `${fmtPct(first(hist.roce_pct))} → ${fmtPct(last(hist.roce_pct))}` : null}
                             bottomValue={first(hist.roce_pct) != null && last(hist.roce_pct) != null
-                                ? `+${fmtNum(last(hist.roce_pct) - first(hist.roce_pct))} pts` : null}>
+                                ? signed(last(hist.roce_pct) - first(hist.roce_pct), ' pts') : null}>
                             <MiniLine data={hist.roce_pct} color="#22c55e" years={years} />
                         </MetricCard>
                     )}
