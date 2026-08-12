@@ -3,6 +3,7 @@ import {
     Briefcase, FileText, Coins, Mic, Users, Gavel, Newspaper,
     TrendingUp, ShieldCheck, Building2, ArrowUpRight, Activity,
 } from 'lucide-react';
+import { fmtDate } from './answerKit';
 
 /**
  * Recent Developments — material company events (categorized exchange announcements
@@ -22,15 +23,6 @@ const CAT_ICON = {
     'Management Change': Users, 'Board Change': Users, 'Appointment': Users,
     'Order Win': TrendingUp, 'Credit Rating': ShieldCheck, 'Investor Meet': Building2,
     'Board Meeting': Gavel, 'Press Release': Newspaper, 'Compliance': ShieldCheck,
-};
-
-const fmtDate = (d) => {
-    if (!d) return '';
-    try {
-        const dt = new Date(d);
-        if (isNaN(dt)) return '';
-        return dt.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' });
-    } catch { return ''; }
 };
 
 const RecentDevelopments = ({ data }) => {

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FolderOpen, BookText, Mic2, BarChart3, Megaphone, FileText, ChevronUp, ChevronDown } from 'lucide-react';
+import { fmtDate } from './answerKit';
 
 const TYPE_ICON = {
     annual_report: BookText,
@@ -21,15 +22,6 @@ const TYPE_ICON = {
  */
 
 const ACCENT = '#FDD405';
-
-const fmtDate = (d) => {
-    if (!d) return null;
-    try {
-        const dt = new Date(d);
-        if (isNaN(dt)) return null;
-        return dt.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' });
-    } catch { return null; }
-};
 
 // Announcements rarely have a clean quarter — prefer the date; else the period; else a clipped title.
 const itemLabel = (type, item) => {

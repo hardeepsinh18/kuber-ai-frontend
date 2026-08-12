@@ -7,6 +7,7 @@ import ScannerPanel from './ScannerPanel';
 import IpoPanel from './IpoPanel';
 import CompanySuggest from './CompanySuggest';
 import { useCompanySuggest } from '../../hooks/useCompanySuggest';
+import { INNER_CARD_DARK } from './answerKit';
 
 // The same six starters, each tagged with the KIND of question it is. Tag +
 // icon turn a flat wall of similar-looking sentences into a scannable menu:
@@ -205,14 +206,14 @@ const StartScreen = ({ onStartChat, onScannerResult, responseMode, setResponseMo
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.18 + i * 0.04, duration: 0.30 }}
                                 onClick={() => onStartChat(q, 'stock')}
-                                className="group h-full text-left rounded-xl
+                                className={`group h-full text-left rounded-xl
                                            flex items-center gap-2.5 px-3 py-2.5
                                            sm:flex-col sm:items-stretch sm:gap-0 sm:p-3
                                            border border-zinc-200 bg-zinc-50/60
-                                           dark:border-zinc-800/80 dark:bg-[#0d0c0b]
+                                           dark:border-zinc-800/80 dark:bg-[${INNER_CARD_DARK}]
                                            hover:border-[#FDD405]/60 hover:bg-[#FDD405]/[0.05]
                                            dark:hover:border-[#FDD405]/50 dark:hover:bg-[#FDD405]/[0.05]
-                                           transition-colors duration-150">
+                                           transition-colors duration-150`}>
                                 {/* Icon chip carries the category on mobile, where the
                                     text tag is hidden — the row would otherwise lose its
                                     scanning cue entirely. */}

@@ -10,6 +10,7 @@ import { ChevronDown, ChevronUp, X, TrendingUp, TrendingDown, Minus } from 'luci
 import { clsx } from 'clsx';
 import PatternAnnotationLayer from './PatternAnnotationLayer';
 import { fmtNum, fmtPct, fmtMultiple, fmtRatio } from '../../utils/metricFormat';
+import { INNER_CARD_DARK } from './answerKit';
 
 /* ─── label classifiers ──────────────────────────────────────────────────── */
 // Backend RATING_LABEL: {5:"Exceptional", 4:"Strong", 3:"Average", 2:"Weak", 1:"Poor"}
@@ -44,7 +45,7 @@ const RatingBadge = ({ label, className }) => {
 /* ─── Metric card shell ──────────────────────────────────────────────────── */
 const MetricCard = ({ title, subtitle, badge, children, bottomLabel, bottomValue, className }) => (
     <div className={clsx(
-        'bg-zinc-50 dark:bg-[#0d0c0b] rounded-xl border border-zinc-200 dark:border-zinc-800/80 p-3 flex flex-col',
+        `bg-zinc-50 dark:bg-[${INNER_CARD_DARK}] rounded-xl border border-zinc-200 dark:border-zinc-800/80 p-3 flex flex-col`,
         className
     )}>
         {/* flex-wrap so a long uppercase subtitle drops the badge to its own line
@@ -457,7 +458,7 @@ const FinancialScoreCard = ({ fund, symbol, flat = false }) => {
     if (!hasCards) return null;
 
     return (
-        <div className={flat ? 'mt-4' : 'mt-4 border border-zinc-200 dark:border-zinc-800/80 rounded-xl overflow-hidden bg-white dark:bg-[#0d0c0b]'}>
+        <div className={flat ? 'mt-4' : `mt-4 border border-zinc-200 dark:border-zinc-800/80 rounded-xl overflow-hidden bg-white dark:bg-[${INNER_CARD_DARK}]`}>
             {!flat && (
                 <button
                     onClick={() => setOpen(o => !o)}
@@ -469,7 +470,7 @@ const FinancialScoreCard = ({ fund, symbol, flat = false }) => {
                 </button>
             )}
             {(flat || open) && (
-                <div className={flat ? '' : 'p-3 space-y-3 bg-zinc-50 dark:bg-[#0d0c0b]'}>
+                <div className={flat ? '' : `p-3 space-y-3 bg-zinc-50 dark:bg-[${INNER_CARD_DARK}]`}>
                     {/* Score banner, same design language as the Technical Score Card */}
                     {!flat && finScore != null && (
                         <div className="flex items-center justify-between p-3 rounded-xl"
@@ -604,7 +605,7 @@ const FiveYearScoreCard = ({ fund }) => {
     if (!hasAny) return null;
 
     return (
-        <div className="mt-4 border border-zinc-200 dark:border-zinc-800/80 rounded-xl overflow-hidden bg-white dark:bg-[#0d0c0b]">
+        <div className={`mt-4 border border-zinc-200 dark:border-zinc-800/80 rounded-xl overflow-hidden bg-white dark:bg-[${INNER_CARD_DARK}]`}>
             <button
                 onClick={() => setOpen(o => !o)}
                 className="w-full flex items-center justify-between px-4 py-3 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-left"
@@ -617,7 +618,7 @@ const FiveYearScoreCard = ({ fund }) => {
                 // sm:, not xs: — same reasoning as the metric grid above: these use the
                 // same card shell (uppercase subtitle + badge) around a 5-year bar
                 // chart, which is unreadable at the ~165px an xs two-column gives.
-                <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-3 bg-zinc-50 dark:bg-[#0d0c0b]">
+                <div className={`p-3 grid grid-cols-1 sm:grid-cols-2 gap-3 bg-zinc-50 dark:bg-[${INNER_CARD_DARK}]`}>
                     {hist.revenue_cr?.length > 0 && (
                         <MetricCard title="Revenue" subtitle="TOP LINE · ₹ CR"
                             badge={hist.revenue_cagr ? `+${hist.revenue_cagr}% CAGR` : null}
@@ -1220,7 +1221,7 @@ export const PatternDetectionSection = ({ patternSummary, chartData = null }) =>
 
     return (
         <>
-            <div className="mt-4 border border-zinc-200 dark:border-zinc-800/80 rounded-xl overflow-hidden bg-white dark:bg-[#0d0c0b]">
+            <div className={`mt-4 border border-zinc-200 dark:border-zinc-800/80 rounded-xl overflow-hidden bg-white dark:bg-[${INNER_CARD_DARK}]`}>
                 <button
                     onClick={() => setOpen(o => !o)}
                     className="w-full flex items-center justify-between px-4 py-3 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-left"
@@ -1231,7 +1232,7 @@ export const PatternDetectionSection = ({ patternSummary, chartData = null }) =>
                 </button>
 
                 {open && (
-                    <div className="p-4 bg-zinc-50 dark:bg-[#0d0c0b]">
+                    <div className={`p-4 bg-zinc-50 dark:bg-[${INNER_CARD_DARK}]`}>
                         {summary && (
                             <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed mb-4">{summary}</p>
                         )}
@@ -1703,7 +1704,7 @@ const TechnicalScoreCard = ({ tech }) => {
             </button>
 
             {open && (
-                <div className="p-4 bg-zinc-50 dark:bg-[#0d0c0b] space-y-3">
+                <div className={`p-4 bg-zinc-50 dark:bg-[${INNER_CARD_DARK}] space-y-3`}>
 
                     {/* Score banner */}
                     <div className="flex items-center justify-between p-3 rounded-xl"

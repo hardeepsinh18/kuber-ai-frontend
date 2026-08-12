@@ -6,7 +6,7 @@ import { useStreamingText } from '../../hooks/useStreamingText';
 import {
     BRAND, fmtINR, InlineMd, Card, MiniLabel, CollapsibleSection, INNER_CARD,
     CompanyCard, VerdictBand, MarketStatsCard, buildMarketStats, hasVerdict, stripAiDashes,
-    VentyScorePanel, getScores, CollapsibleScorecard, MetricCell,
+    VentyScorePanel, getScores, CollapsibleScorecard, MetricCell, fmtDate, INNER_CARD_DARK,
 } from './answerKit';
 import {
     FinancialScoreCard as FinancialDetailCard,
@@ -257,7 +257,7 @@ const PatternSection = ({ patternSummary, chartData, symbolLabel, indicatorsTabl
             {cells.length > 0 && (
                 <div className={clsx('grid gap-3 mt-3', cells.length >= 4 ? 'sm:grid-cols-2' : cells.length === 3 ? 'sm:grid-cols-3' : cells.length === 2 ? 'sm:grid-cols-2' : 'grid-cols-1')}>
                     {cells.map(({ label, text }) => (
-                        <div key={label} className="rounded-xl border border-zinc-200 dark:border-zinc-800/80 bg-zinc-50 dark:bg-[#0d0c0b] px-3 py-2.5">
+                        <div key={label} className={`rounded-xl border border-zinc-200 dark:border-zinc-800/80 bg-zinc-50 dark:bg-[${INNER_CARD_DARK}] px-3 py-2.5`}>
                             <MiniLabel className="mb-1">{label}</MiniLabel>
                             <p className="text-[11.5px] leading-snug text-zinc-700 dark:text-zinc-200">{text}</p>
                         </div>
@@ -295,7 +295,7 @@ const SignalBreakdown = ({ signals }) => {
                     const st = SIGNAL_STYLE[s.status] || SIGNAL_STYLE.NEUTRAL;
                     return (
                         <div key={s.key}
-                             className="flex items-start gap-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800/80 bg-zinc-50 dark:bg-[#0d0c0b] px-3 py-2">
+                             className={`flex items-start gap-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800/80 bg-zinc-50 dark:bg-[${INNER_CARD_DARK}] px-3 py-2`}>
                             <span className="mt-[4px] w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: st.dot }} />
                             <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-2">
@@ -465,7 +465,7 @@ const FundamentalScorecard = ({ fund, score, symbolLabel }) => {
 const SentimentBlock = ({ label, badge = null, defaultOpen = true, children }) => {
     const [open, setOpen] = React.useState(defaultOpen);
     return (
-        <div className="mt-3 rounded-xl border border-zinc-200 dark:border-zinc-800/80 bg-zinc-50 dark:bg-[#0d0c0b] px-3.5 py-3">
+        <div className={`mt-3 rounded-xl border border-zinc-200 dark:border-zinc-800/80 bg-zinc-50 dark:bg-[${INNER_CARD_DARK}] px-3.5 py-3`}>
             <button onClick={() => setOpen(o => !o)}
                     className="w-full flex items-center justify-between gap-2 text-left"
                     aria-expanded={open}>
@@ -668,18 +668,10 @@ const FILING_ICON = {
     quarterly_results: FileText,
 };
 
-const fmtFilingDate = (d) => {
-    if (!d) return null;
-    try {
-        const dt = new Date(d);
-        return isNaN(dt) ? null : dt.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' });
-    } catch { return null; }
-};
-
 // Announcements rarely have a clean quarter — prefer the date; else the period; else a clipped title.
 const filingChipLabel = (type, item) => {
-    if (type === 'announcement') return fmtFilingDate(item.date) || item.period || (item.title || '').slice(0, 22);
-    return item.period || fmtFilingDate(item.date) || (item.title || '').slice(0, 22);
+    if (type === 'announcement') return fmtDate(item.date) || item.period || (item.title || '').slice(0, 22);
+    return item.period || fmtDate(item.date) || (item.title || '').slice(0, 22);
 };
 
 // Risk-chip severity. High/low keep the intuitive red/green; medium uses a

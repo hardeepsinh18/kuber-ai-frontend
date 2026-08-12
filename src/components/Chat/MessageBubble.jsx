@@ -17,7 +17,7 @@ import ComparisonAnswer from './ComparisonAnswer';
 import ScreenerAnswer from './ScreenerAnswer';
 import GeneralAnswer from './GeneralAnswer';
 import { parseScreenerRows, screenerProse } from './screenerRows';
-import { IndicatorsTable, stripAiDashes } from './answerKit';
+import { IndicatorsTable, stripAiDashes, fmtVol } from './answerKit';
 
 const normalizeSymbol = (s) => {
     const raw = String(s || "").trim();
@@ -924,13 +924,6 @@ const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, 
                     {/* ── Price header (at-a-glance) ──────────────────── */}
                     {showAtAGlance && metadata?.at_a_glance && (metadata.at_a_glance.price != null || metadata.at_a_glance.change_percent != null) && (() => {
                         const aag = metadata.at_a_glance;
-                        const fmtVol = (v) => {
-                            if (!v || v <= 0) return null;
-                            if (v >= 1e7) return `${(v / 1e7).toFixed(1)}Cr`;
-                            if (v >= 1e5) return `${(v / 1e5).toFixed(1)}L`;
-                            if (v >= 1000) return `${(v / 1000).toFixed(1)}K`;
-                            return String(v);
-                        };
                         const fmtMcap = (v) => {
                             if (!v || v <= 0) return null;
                             const cr = v / 1e7; // raw INR → crore

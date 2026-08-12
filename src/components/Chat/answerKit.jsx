@@ -28,6 +28,17 @@ export const fmtVol = (v) => {
     return String(v);
 };
 
+// en-IN day/short-month/2-digit-year date formatter — "12 Aug '26". Shared by
+// CompanyFilings, RecentDevelopments and AnalystAnswer's filing-chip label.
+export const fmtDate = (d) => {
+    if (!d) return null;
+    try {
+        const dt = new Date(d);
+        if (isNaN(dt)) return null;
+        return dt.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' });
+    } catch { return null; }
+};
+
 /* Strip the "AI-written" dash tells from model prose: em dashes (—) and
  * word-to-word en dashes become a comma, so the copy reads like a person wrote
  * it. Deliberately conservative — it never touches:

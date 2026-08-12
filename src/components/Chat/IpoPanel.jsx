@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { X, Rocket, RefreshCw } from 'lucide-react';
 import { getApiBase } from '../../lib/apiBase';
+import { INNER_CARD_DARK } from './answerKit';
 
 const API_BASE = getApiBase();
 const IPO_ENDPOINT = `${API_BASE}/api/v1/market/ipos`;
@@ -45,12 +46,12 @@ const SubscriptionPill = ({ times }) => {
 };
 
 const IpoRow = ({ ipo, tab }) => (
-    <div className="flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl border
+    <div className={`flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl border
                     border-zinc-200 bg-zinc-50
-                    dark:border-zinc-800/80 dark:bg-[#0d0c0b]
+                    dark:border-zinc-800/80 dark:bg-[${INNER_CARD_DARK}]
                     hover:border-[#FDD405]/60 hover:bg-[#FDD405]/[0.04]
                     dark:hover:border-[#FDD405]/50 dark:hover:bg-[#FDD405]/[0.04]
-                    transition-colors">
+                    transition-colors`}>
         <div className="min-w-0">
             <div className="flex items-center gap-2">
                 <p className="text-[13px] font-bold text-zinc-900 dark:text-white truncate">
@@ -147,7 +148,7 @@ const IpoPanel = ({ onClose }) => {
                     </div>
 
                     <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                        <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-zinc-100 dark:bg-[#0d0c0b] flex-1 sm:flex-none">
+                        <div className={`flex items-center gap-0.5 p-0.5 rounded-lg bg-zinc-100 dark:bg-[${INNER_CARD_DARK}] flex-1 sm:flex-none`}>
                             {TABS.map(({ key, label }) => (
                                 <button
                                     key={key}

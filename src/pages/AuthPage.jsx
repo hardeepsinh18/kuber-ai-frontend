@@ -27,6 +27,16 @@ function postSubscribe(email) {
     }
 }
 
+const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+// Matches the Cognito user pool's password policy: 8+ chars, upper, lower, number, symbol.
+const validatePassword = (password) =>
+    password.length >= 8 &&
+    /[A-Z]/.test(password) &&
+    /[a-z]/.test(password) &&
+    /[0-9]/.test(password) &&
+    /[^A-Za-z0-9]/.test(password);
+
 const GoogleIcon = () => (
     <svg width="18" height="18" viewBox="0 0 24 24">
         <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -105,16 +115,9 @@ export default function AuthPage() {
     const handleContinue = async (e) => {
         e.preventDefault();
         if (!email.trim()) { setError('Please enter your email address'); return; }
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError('Please enter a valid email'); return; }
+        if (!isValidEmail(email.trim())) { setError('Please enter a valid email'); return; }
         if (!password) { setError('Please enter your password'); return; }
-        // Matches the Cognito user pool's password policy: 8+ chars, upper, lower, number, symbol.
-        if (mode === 'signup' && (
-            password.length < 8 ||
-            !/[A-Z]/.test(password) ||
-            !/[a-z]/.test(password) ||
-            !/[0-9]/.test(password) ||
-            !/[^A-Za-z0-9]/.test(password)
-        )) {
+        if (mode === 'signup' && !validatePassword(password)) {
             setError('Password must be 8+ characters with an uppercase letter, lowercase letter, number, and symbol.');
             return;
         }
@@ -169,7 +172,7 @@ export default function AuthPage() {
     const handleForgotSubmit = async (e) => {
         e.preventDefault();
         if (!email.trim()) { setError('Please enter your email address'); return; }
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError('Please enter a valid email'); return; }
+        if (!isValidEmail(email.trim())) { setError('Please enter a valid email'); return; }
         setError(''); setInfo(''); setLoading(true);
         try {
             await forgotPassword(email.trim());
@@ -183,14 +186,7 @@ export default function AuthPage() {
     const handleResetSubmit = async (e) => {
         e.preventDefault();
         if (!resetCode.trim()) { setError('Please enter the reset code'); return; }
-        // Matches the Cognito user pool's password policy: 8+ chars, upper, lower, number, symbol.
-        if (
-            newPassword.length < 8 ||
-            !/[A-Z]/.test(newPassword) ||
-            !/[a-z]/.test(newPassword) ||
-            !/[0-9]/.test(newPassword) ||
-            !/[^A-Za-z0-9]/.test(newPassword)
-        ) {
+        if (!validatePassword(newPassword)) {
             setError('Password must be 8+ characters with an uppercase letter, lowercase letter, number, and symbol.');
             return;
         }
