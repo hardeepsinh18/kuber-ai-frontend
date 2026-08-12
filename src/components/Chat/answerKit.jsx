@@ -104,15 +104,6 @@ export const MiniLabel = ({ children, className }) => (
     </p>
 );
 
-/* Full-width yellow section banner — "VENTY SCORE", "PATTERN DETECTION" */
-export const SectionBanner = ({ children }) => (
-    <div className="rounded-xl px-4 py-2.5" style={{ backgroundColor: BRAND }}>
-        <span className="text-[13px] font-black uppercase tracking-[0.15em] text-black">
-            {children}
-        </span>
-    </div>
-);
-
 /* Collapsible section card — one unified, theme-coloured card whose title lives
  * inside it with a dropdown chevron (no yellow banner, no second card). Used for
  * "Pattern Detection" and "Venty Score" so both read as a single dropdown card
@@ -174,7 +165,7 @@ export const ScoreRing = ({ score, size = 88, stroke = 9, color }) => {
 export const scoreColor = (s) => (s >= 70 ? '#22c55e' : s >= 50 ? BRAND : '#ef4444');
 
 /* ─── verdict helpers ────────────────────────────────────────────────────── */
-export const deriveVerdict = (text) => {
+const deriveVerdict = (text) => {
     let raw = String(text || '').toLowerCase();
     if (!raw) return null;
     // Negated calls must not trigger the verdict word they contain —
@@ -251,7 +242,7 @@ export const extractLevelsFromText = (text, refPrice = null) => {
 /* Generic price-level scan: every ₹/Rs amount near the live price mentioned in
    the text ("bounce above ₹162", "if ₹145 breaks"). The nearest one below the
    price reads as the downside level, the nearest above as the upside level. */
-export const extractNearbyLevels = (text, price) => {
+const extractNearbyLevels = (text, price) => {
     if (price == null) return { below: null, above: null };
     const re = /(?:rs\.?|₹)\s*([\d,]+(?:\.\d+)?)/gi;
     let below = null, above = null, m;
@@ -589,56 +580,6 @@ export const getScores = (scoreCard, managementSentiment) => {
     };
 };
 
-export const ScoreGrid = ({ scoreCard, managementSentiment }) => {
-    const { overall, technical, fundamental, sentimental } = getScores(scoreCard, managementSentiment);
-    const subScores = [
-        { key: 'TECHNICAL', score: technical, desc: 'Price, momentum, volume' },
-        { key: 'FUNDAMENTAL', score: fundamental, desc: 'Financial health, valuation' },
-        { key: 'SENTIMENTAL', score: sentimental, desc: 'News, filings, mood' },
-    ].filter(s => s.score != null);
-    if (overall == null && subScores.length === 0) return null;
-
-    // Data coverage can legitimately be partial (e.g. technical/sentiment pipelines
-    // have no rows yet for a given symbol) — say so instead of implying full
-    // three-lens coverage when only one or two lenses actually contributed.
-    const overallDesc = subScores.length >= 3
-        ? "The stock's combined Venty Score across all three lenses."
-        : subScores.length === 0
-            ? "Score based on limited data — technical and sentiment analysis aren't available for this stock yet."
-            : `Based on ${subScores.map(s => s.key.charAt(0) + s.key.slice(1).toLowerCase()).join(' + ')} only — the other lens${subScores.length === 1 ? 'es aren\'t' : ' isn\'t'} available for this stock yet.`;
-
-    return (
-        <div className={clsx('grid gap-3 grid-cols-1',
-            subScores.length > 0 ? 'sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr]' : '')}>
-            {overall != null && (
-                <Card className="p-4 flex items-center gap-4 sm:col-span-2 lg:col-span-1 !border-[#FDD405]/70 dark:!border-[#FDD405]/50">
-                    <div className="flex-shrink-0">
-                        <ScoreRing score={overall} size={92} color={BRAND} />
-                    </div>
-                    <div className="min-w-0">
-                        <p className="text-[15px] font-bold text-zinc-900 dark:text-white leading-tight">
-                            Overall Health
-                        </p>
-                        <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 leading-snug">
-                            {overallDesc}
-                        </p>
-                    </div>
-                </Card>
-            )}
-            {subScores.map(({ key, score, desc }) => (
-                <Card key={key} className="p-4 flex flex-col items-center text-center">
-                    <ScoreRing score={score} size={76} stroke={8} color={scoreColor(score)} />
-                    <span className="mt-2.5 px-2 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wider text-black"
-                          style={{ backgroundColor: scoreColor(score) }}>
-                        {key}
-                    </span>
-                    <span className="mt-1.5 text-[10px] text-zinc-500 dark:text-zinc-400 leading-tight">{desc}</span>
-                </Card>
-            ))}
-        </div>
-    );
-};
-
 /* ─── VENTY AI SCORE PANEL — Quick-mode score section ────────────────────────
  * Reference layout: header bar ("Venty AI Score and Recommendation for X"),
  * top row = Overall Health arc gauge + Overview bullets, bottom row = one card
@@ -646,7 +587,7 @@ export const ScoreGrid = ({ scoreCard, managementSentiment }) => {
  * commentary behind that lens. Quick mode only — Analyst keeps ScoreGrid. */
 
 /* 270° arc gauge — score % in the middle, gap at the bottom */
-export const ArcGauge = ({ score, size = 116, stroke = 11, color, showPct = true }) => {
+const ArcGauge = ({ score, size = 116, stroke = 11, color, showPct = true }) => {
     const s = Math.min(100, Math.max(0, Math.round(score)));
     const r = (size - stroke) / 2 - 2;
     const c = size / 2;
@@ -800,7 +741,7 @@ export const VentyScorePanel = ({ scoreCard, managementSentiment, companyName = 
 };
 
 /* ─── Scorecard section header — icon circle + title + score/label ───────── */
-export const ScorecardHeader = ({ icon: Icon, title, score, label }) => (
+const ScorecardHeader = ({ icon: Icon, title, score, label }) => (
     <div className="flex items-center gap-3">
         {Icon && (
             <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
