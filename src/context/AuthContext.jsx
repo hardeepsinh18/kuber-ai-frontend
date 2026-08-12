@@ -267,8 +267,6 @@ export function AuthProvider({ children }) {
 
   const value = {
     user,
-    // Back-compat shape: some code reads session?.access_token.
-    session: idToken ? { access_token: idToken } : null,
     loading,
     isAuthenticated: !!user,
     // The Cognito ID token — attached to /api as Authorization: Bearer and validated

@@ -23,7 +23,7 @@
 const CHAT_LIST_BASE = 'stockhug_chat_list';
 const CHAT_PREFIX = 'stockhug_chat_';
 const PENDING_DELETES_BASE = 'stockhug_pending_deletes';
-// No artificial caps — server (Supabase) is the permanent store;
+// No artificial caps — the server (RDS, via lib/chatsApi.js) is the permanent store;
 // localStorage is a fast local cache, not the authoritative limit.
 const MAX_MESSAGES_PER_CHAT = 2000; // guard only against single-chat runaway
 
