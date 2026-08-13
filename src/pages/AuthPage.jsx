@@ -64,6 +64,79 @@ const PasswordToggle = ({ show, onToggle, subtleColor }) => (
     </button>
 );
 
+// Shared text input used across every AuthPage form mode (signin/signup, confirm,
+// forgot, reset) — same box styles + focus/blur ring on all of them. `letterSpaced`
+// covers the two numeric-code fields (confirm/reset). `toggle` (an optional
+// { show, onToggle } pair) covers the three password fields: it swaps the input
+// type, pads right to clear the eye icon, and renders <PasswordToggle>.
+const FormInput = ({
+    type = 'text', inputMode, value, onChange, placeholder, autoComplete,
+    autoFocus, minLength, letterSpaced, inputBg, inputColor, labelColor, toggle,
+}) => {
+    const input = (
+        <input
+            type={toggle ? (toggle.show ? 'text' : 'password') : type}
+            inputMode={inputMode}
+            value={value}
+            onChange={onChange}
+            placeholder={placeholder}
+            autoComplete={autoComplete}
+            autoFocus={autoFocus}
+            minLength={minLength}
+            style={{
+                width: '100%', padding: toggle ? '11px 40px 11px 14px' : '11px 14px', boxSizing: 'border-box',
+                background: inputBg,
+                border: '1px solid rgba(253,212,5,0.20)',
+                borderRadius: 10, color: inputColor, fontSize: 14, outline: 'none',
+                ...(letterSpaced ? { letterSpacing: 2 } : null),
+            }}
+            onFocus={e => { e.target.style.borderColor = 'rgba(253,212,5,0.60)'; e.target.style.outline = '2px solid #fdd405'; e.target.style.outlineOffset = '2px'; }}
+            onBlur={e => { e.target.style.borderColor = 'rgba(253,212,5,0.20)'; e.target.style.outline = 'none'; }}
+        />
+    );
+    if (!toggle) return input;
+    return (
+        <div style={{ position: 'relative' }}>
+            {input}
+            <PasswordToggle show={toggle.show} onToggle={toggle.onToggle} subtleColor={labelColor} />
+        </div>
+    );
+};
+
+// Shared error/info message pair — every form mode shows the same styled <p> for
+// `error`, and the same styled <p> for `info` (only when there's no error).
+const AuthAlerts = ({ error, info }) => (
+    <>
+        {error && (
+            <p style={{ fontSize: 12, color: '#f87171', background: 'rgba(127,29,29,0.15)', border: '1px solid rgba(153,27,27,0.3)', borderRadius: 8, padding: '8px 12px' }}>
+                {error}
+            </p>
+        )}
+        {info && !error && (
+            <p style={{ fontSize: 12, color: '#4ade80', background: 'rgba(20,83,45,0.15)', border: '1px solid rgba(22,101,52,0.3)', borderRadius: 8, padding: '8px 12px' }}>
+                {info}
+            </p>
+        )}
+    </>
+);
+
+// Shared gradient submit button (spinner while loading) used by all 4 forms —
+// only the label text differs between them.
+const SubmitButton = ({ loading, label }) => (
+    <button type="submit" disabled={loading}
+        style={{
+            width: '100%', padding: '13px', background: '#FDD405',
+            border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700,
+            color: '#111', cursor: loading ? 'not-allowed' : 'pointer',
+            opacity: loading ? 0.6 : 1,
+            boxShadow: '0 4px 20px rgba(253,212,5,0.28)',
+        }}>
+        {loading
+            ? <span style={{ display: 'inline-block', width: 16, height: 16, border: '2px solid rgba(0,0,0,0.2)', borderTopColor: '#000', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+            : label}
+    </button>
+);
+
 export default function AuthPage() {
     const navigate = useNavigate();
     const { signInWithEmail, signUpWithEmail, confirmSignUpCode, resendConfirmationCode, forgotPassword, confirmForgotPassword, signInWithGoogle, isAuthenticated, supabaseConfigured } = useAuth();
@@ -337,7 +410,7 @@ export default function AuthPage() {
                                 <label className="block text-[11px] font-semibold uppercase tracking-widest mb-2" style={{ color: labelColor }}>
                                     Confirmation code
                                 </label>
-                                <input
+                                <FormInput
                                     type="text"
                                     inputMode="numeric"
                                     value={confirmCode}
@@ -345,40 +418,15 @@ export default function AuthPage() {
                                     placeholder="123456"
                                     autoComplete="one-time-code"
                                     autoFocus
-                                    style={{
-                                        width: '100%', padding: '11px 14px', boxSizing: 'border-box',
-                                        background: inputBg,
-                                        border: '1px solid rgba(253,212,5,0.20)',
-                                        borderRadius: 10, color: inputColor, fontSize: 14, outline: 'none', letterSpacing: 2,
-                                    }}
-                                    onFocus={e => { e.target.style.borderColor = 'rgba(253,212,5,0.60)'; e.target.style.outline = '2px solid #fdd405'; e.target.style.outlineOffset = '2px'; }}
-                                    onBlur={e => { e.target.style.borderColor = 'rgba(253,212,5,0.20)'; e.target.style.outline = 'none'; }}
+                                    letterSpaced
+                                    inputBg={inputBg}
+                                    inputColor={inputColor}
                                 />
                             </div>
 
-                            {error && (
-                                <p style={{ fontSize: 12, color: '#f87171', background: 'rgba(127,29,29,0.15)', border: '1px solid rgba(153,27,27,0.3)', borderRadius: 8, padding: '8px 12px' }}>
-                                    {error}
-                                </p>
-                            )}
-                            {info && !error && (
-                                <p style={{ fontSize: 12, color: '#4ade80', background: 'rgba(20,83,45,0.15)', border: '1px solid rgba(22,101,52,0.3)', borderRadius: 8, padding: '8px 12px' }}>
-                                    {info}
-                                </p>
-                            )}
+                            <AuthAlerts error={error} info={info} />
 
-                            <button type="submit" disabled={loading}
-                                style={{
-                                    width: '100%', padding: '13px', background: '#FDD405',
-                                    border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700,
-                                    color: '#111', cursor: loading ? 'not-allowed' : 'pointer',
-                                    opacity: loading ? 0.6 : 1,
-                                    boxShadow: '0 4px 20px rgba(253,212,5,0.28)',
-                                }}>
-                                {loading
-                                    ? <span style={{ display: 'inline-block', width: 16, height: 16, border: '2px solid rgba(0,0,0,0.2)', borderTopColor: '#000', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-                                    : 'Confirm →'}
-                            </button>
+                            <SubmitButton loading={loading} label="Confirm →" />
 
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
                                 <button type="button" onClick={() => switchMode('signup')} disabled={loading}
@@ -401,47 +449,21 @@ export default function AuthPage() {
                                 <label className="block text-[11px] font-semibold uppercase tracking-widest mb-2" style={{ color: labelColor }}>
                                     Email address
                                 </label>
-                                <input
+                                <FormInput
                                     type="email"
                                     value={email}
                                     onChange={e => { setEmail(e.target.value); setError(''); }}
                                     placeholder="you@example.com"
                                     autoComplete="email"
                                     autoFocus
-                                    style={{
-                                        width: '100%', padding: '11px 14px', boxSizing: 'border-box',
-                                        background: inputBg,
-                                        border: '1px solid rgba(253,212,5,0.20)',
-                                        borderRadius: 10, color: inputColor, fontSize: 14, outline: 'none',
-                                    }}
-                                    onFocus={e => { e.target.style.borderColor = 'rgba(253,212,5,0.60)'; e.target.style.outline = '2px solid #fdd405'; e.target.style.outlineOffset = '2px'; }}
-                                    onBlur={e => { e.target.style.borderColor = 'rgba(253,212,5,0.20)'; e.target.style.outline = 'none'; }}
+                                    inputBg={inputBg}
+                                    inputColor={inputColor}
                                 />
                             </div>
 
-                            {error && (
-                                <p style={{ fontSize: 12, color: '#f87171', background: 'rgba(127,29,29,0.15)', border: '1px solid rgba(153,27,27,0.3)', borderRadius: 8, padding: '8px 12px' }}>
-                                    {error}
-                                </p>
-                            )}
-                            {info && !error && (
-                                <p style={{ fontSize: 12, color: '#4ade80', background: 'rgba(20,83,45,0.15)', border: '1px solid rgba(22,101,52,0.3)', borderRadius: 8, padding: '8px 12px' }}>
-                                    {info}
-                                </p>
-                            )}
+                            <AuthAlerts error={error} info={info} />
 
-                            <button type="submit" disabled={loading}
-                                style={{
-                                    width: '100%', padding: '13px', background: '#FDD405',
-                                    border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700,
-                                    color: '#111', cursor: loading ? 'not-allowed' : 'pointer',
-                                    opacity: loading ? 0.6 : 1,
-                                    boxShadow: '0 4px 20px rgba(253,212,5,0.28)',
-                                }}>
-                                {loading
-                                    ? <span style={{ display: 'inline-block', width: 16, height: 16, border: '2px solid rgba(0,0,0,0.2)', borderTopColor: '#000', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-                                    : 'Send reset code →'}
-                            </button>
+                            <SubmitButton loading={loading} label="Send reset code →" />
 
                             <button type="button" onClick={() => switchMode('signin')} disabled={loading}
                                 style={{ background: 'none', border: 'none', color: textSub, fontSize: 12, cursor: 'pointer', padding: 0, alignSelf: 'flex-start' }}>
@@ -458,7 +480,7 @@ export default function AuthPage() {
                                 <label className="block text-[11px] font-semibold uppercase tracking-widest mb-2" style={{ color: labelColor }}>
                                     Reset code
                                 </label>
-                                <input
+                                <FormInput
                                     type="text"
                                     inputMode="numeric"
                                     value={resetCode}
@@ -466,14 +488,9 @@ export default function AuthPage() {
                                     placeholder="123456"
                                     autoComplete="one-time-code"
                                     autoFocus
-                                    style={{
-                                        width: '100%', padding: '11px 14px', boxSizing: 'border-box',
-                                        background: inputBg,
-                                        border: '1px solid rgba(253,212,5,0.20)',
-                                        borderRadius: 10, color: inputColor, fontSize: 14, outline: 'none', letterSpacing: 2,
-                                    }}
-                                    onFocus={e => { e.target.style.borderColor = 'rgba(253,212,5,0.60)'; e.target.style.outline = '2px solid #fdd405'; e.target.style.outlineOffset = '2px'; }}
-                                    onBlur={e => { e.target.style.borderColor = 'rgba(253,212,5,0.20)'; e.target.style.outline = 'none'; }}
+                                    letterSpaced
+                                    inputBg={inputBg}
+                                    inputColor={inputColor}
                                 />
                             </div>
 
@@ -481,75 +498,39 @@ export default function AuthPage() {
                                 <label className="block text-[11px] font-semibold uppercase tracking-widest mb-2" style={{ color: labelColor }}>
                                     New password
                                 </label>
-                                <div style={{ position: 'relative' }}>
-                                    <input
-                                        type={showNewPassword ? 'text' : 'password'}
-                                        value={newPassword}
-                                        onChange={e => { setNewPassword(e.target.value); setError(''); }}
-                                        placeholder="••••••••"
-                                        autoComplete="new-password"
-                                        minLength={8}
-                                        style={{
-                                            width: '100%', padding: '11px 40px 11px 14px', boxSizing: 'border-box',
-                                            background: inputBg,
-                                            border: '1px solid rgba(253,212,5,0.20)',
-                                            borderRadius: 10, color: inputColor, fontSize: 14, outline: 'none',
-                                        }}
-                                        onFocus={e => { e.target.style.borderColor = 'rgba(253,212,5,0.60)'; e.target.style.outline = '2px solid #fdd405'; e.target.style.outlineOffset = '2px'; }}
-                                        onBlur={e => { e.target.style.borderColor = 'rgba(253,212,5,0.20)'; e.target.style.outline = 'none'; }}
-                                    />
-                                    <PasswordToggle show={showNewPassword} onToggle={() => setShowNewPassword(v => !v)} subtleColor={labelColor} />
-                                </div>
+                                <FormInput
+                                    value={newPassword}
+                                    onChange={e => { setNewPassword(e.target.value); setError(''); }}
+                                    placeholder="••••••••"
+                                    autoComplete="new-password"
+                                    minLength={8}
+                                    inputBg={inputBg}
+                                    inputColor={inputColor}
+                                    labelColor={labelColor}
+                                    toggle={{ show: showNewPassword, onToggle: () => setShowNewPassword(v => !v) }}
+                                />
                             </div>
 
                             <div>
                                 <label className="block text-[11px] font-semibold uppercase tracking-widest mb-2" style={{ color: labelColor }}>
                                     Confirm new password
                                 </label>
-                                <div style={{ position: 'relative' }}>
-                                    <input
-                                        type={showConfirmNewPassword ? 'text' : 'password'}
-                                        value={confirmNewPassword}
-                                        onChange={e => { setConfirmNewPassword(e.target.value); setError(''); }}
-                                        placeholder="••••••••"
-                                        autoComplete="new-password"
-                                        minLength={8}
-                                        style={{
-                                            width: '100%', padding: '11px 40px 11px 14px', boxSizing: 'border-box',
-                                            background: inputBg,
-                                            border: '1px solid rgba(253,212,5,0.20)',
-                                            borderRadius: 10, color: inputColor, fontSize: 14, outline: 'none',
-                                        }}
-                                        onFocus={e => { e.target.style.borderColor = 'rgba(253,212,5,0.60)'; e.target.style.outline = '2px solid #fdd405'; e.target.style.outlineOffset = '2px'; }}
-                                        onBlur={e => { e.target.style.borderColor = 'rgba(253,212,5,0.20)'; e.target.style.outline = 'none'; }}
-                                    />
-                                    <PasswordToggle show={showConfirmNewPassword} onToggle={() => setShowConfirmNewPassword(v => !v)} subtleColor={labelColor} />
-                                </div>
+                                <FormInput
+                                    value={confirmNewPassword}
+                                    onChange={e => { setConfirmNewPassword(e.target.value); setError(''); }}
+                                    placeholder="••••••••"
+                                    autoComplete="new-password"
+                                    minLength={8}
+                                    inputBg={inputBg}
+                                    inputColor={inputColor}
+                                    labelColor={labelColor}
+                                    toggle={{ show: showConfirmNewPassword, onToggle: () => setShowConfirmNewPassword(v => !v) }}
+                                />
                             </div>
 
-                            {error && (
-                                <p style={{ fontSize: 12, color: '#f87171', background: 'rgba(127,29,29,0.15)', border: '1px solid rgba(153,27,27,0.3)', borderRadius: 8, padding: '8px 12px' }}>
-                                    {error}
-                                </p>
-                            )}
-                            {info && !error && (
-                                <p style={{ fontSize: 12, color: '#4ade80', background: 'rgba(20,83,45,0.15)', border: '1px solid rgba(22,101,52,0.3)', borderRadius: 8, padding: '8px 12px' }}>
-                                    {info}
-                                </p>
-                            )}
+                            <AuthAlerts error={error} info={info} />
 
-                            <button type="submit" disabled={loading}
-                                style={{
-                                    width: '100%', padding: '13px', background: '#FDD405',
-                                    border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700,
-                                    color: '#111', cursor: loading ? 'not-allowed' : 'pointer',
-                                    opacity: loading ? 0.6 : 1,
-                                    boxShadow: '0 4px 20px rgba(253,212,5,0.28)',
-                                }}>
-                                {loading
-                                    ? <span style={{ display: 'inline-block', width: 16, height: 16, border: '2px solid rgba(0,0,0,0.2)', borderTopColor: '#000', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-                                    : 'Reset password →'}
-                            </button>
+                            <SubmitButton loading={loading} label="Reset password →" />
 
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
                                 <button type="button" onClick={() => switchMode('signin')} disabled={loading}
@@ -571,20 +552,14 @@ export default function AuthPage() {
                                 <label className="block text-[11px] font-semibold uppercase tracking-widest mb-2" style={{ color: labelColor }}>
                                     Full name
                                 </label>
-                                <input
+                                <FormInput
                                     type="text"
                                     value={fullName}
                                     onChange={e => { setFullName(e.target.value); setError(''); }}
                                     placeholder="Name"
                                     autoComplete="name"
-                                    style={{
-                                        width: '100%', padding: '11px 14px', boxSizing: 'border-box',
-                                        background: inputBg,
-                                        border: '1px solid rgba(253,212,5,0.20)',
-                                        borderRadius: 10, color: inputColor, fontSize: 14, outline: 'none',
-                                    }}
-                                    onFocus={e => { e.target.style.borderColor = 'rgba(253,212,5,0.60)'; e.target.style.outline = '2px solid #fdd405'; e.target.style.outlineOffset = '2px'; }}
-                                    onBlur={e => { e.target.style.borderColor = 'rgba(253,212,5,0.20)'; e.target.style.outline = 'none'; }}
+                                    inputBg={inputBg}
+                                    inputColor={inputColor}
                                 />
                             </div>
                         )}
@@ -594,21 +569,15 @@ export default function AuthPage() {
                             <label className="block text-[11px] font-semibold uppercase tracking-widest mb-2" style={{ color: labelColor }}>
                                 Email address
                             </label>
-                            <input
+                            <FormInput
                                 type="email"
                                 value={email}
                                 onChange={e => { setEmail(e.target.value); setError(''); }}
                                 placeholder="you@example.com"
                                 autoComplete="email"
                                 autoFocus
-                                style={{
-                                    width: '100%', padding: '11px 14px', boxSizing: 'border-box',
-                                    background: inputBg,
-                                    border: '1px solid rgba(253,212,5,0.20)',
-                                    borderRadius: 10, color: inputColor, fontSize: 14, outline: 'none',
-                                }}
-                                onFocus={e => { e.target.style.borderColor = 'rgba(253,212,5,0.60)'; e.target.style.outline = '2px solid #fdd405'; e.target.style.outlineOffset = '2px'; }}
-                                onBlur={e => { e.target.style.borderColor = 'rgba(253,212,5,0.20)'; e.target.style.outline = 'none'; }}
+                                inputBg={inputBg}
+                                inputColor={inputColor}
                             />
                         </div>
 
@@ -625,51 +594,23 @@ export default function AuthPage() {
                                     </button>
                                 )}
                             </div>
-                            <div style={{ position: 'relative' }}>
-                                <input
-                                    type={showPassword ? 'text' : 'password'}
-                                    value={password}
-                                    onChange={e => { setPassword(e.target.value); setError(''); }}
-                                    placeholder="••••••••"
-                                    autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-                                    minLength={mode === 'signup' ? 8 : undefined}
-                                    style={{
-                                        width: '100%', padding: '11px 40px 11px 14px', boxSizing: 'border-box',
-                                        background: inputBg,
-                                        border: '1px solid rgba(253,212,5,0.20)',
-                                        borderRadius: 10, color: inputColor, fontSize: 14, outline: 'none',
-                                    }}
-                                    onFocus={e => { e.target.style.borderColor = 'rgba(253,212,5,0.60)'; e.target.style.outline = '2px solid #fdd405'; e.target.style.outlineOffset = '2px'; }}
-                                    onBlur={e => { e.target.style.borderColor = 'rgba(253,212,5,0.20)'; e.target.style.outline = 'none'; }}
-                                />
-                                <PasswordToggle show={showPassword} onToggle={() => setShowPassword(v => !v)} subtleColor={labelColor} />
-                            </div>
+                            <FormInput
+                                value={password}
+                                onChange={e => { setPassword(e.target.value); setError(''); }}
+                                placeholder="••••••••"
+                                autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                                minLength={mode === 'signup' ? 8 : undefined}
+                                inputBg={inputBg}
+                                inputColor={inputColor}
+                                labelColor={labelColor}
+                                toggle={{ show: showPassword, onToggle: () => setShowPassword(v => !v) }}
+                            />
                         </div>
 
-                        {error && (
-                            <p style={{ fontSize: 12, color: '#f87171', background: 'rgba(127,29,29,0.15)', border: '1px solid rgba(153,27,27,0.3)', borderRadius: 8, padding: '8px 12px' }}>
-                                {error}
-                            </p>
-                        )}
-                        {info && !error && (
-                            <p style={{ fontSize: 12, color: '#4ade80', background: 'rgba(20,83,45,0.15)', border: '1px solid rgba(22,101,52,0.3)', borderRadius: 8, padding: '8px 12px' }}>
-                                {info}
-                            </p>
-                        )}
+                        <AuthAlerts error={error} info={info} />
 
                         {/* Continue */}
-                        <button type="submit" disabled={loading}
-                            style={{
-                                width: '100%', padding: '13px', background: '#FDD405',
-                                border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700,
-                                color: '#111', cursor: loading ? 'not-allowed' : 'pointer',
-                                opacity: loading ? 0.6 : 1,
-                                boxShadow: '0 4px 20px rgba(253,212,5,0.28)',
-                            }}>
-                            {loading
-                                ? <span style={{ display: 'inline-block', width: 16, height: 16, border: '2px solid rgba(0,0,0,0.2)', borderTopColor: '#000', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-                                : (mode === 'signup' ? 'Create account →' : 'Continue →')}
-                        </button>
+                        <SubmitButton loading={loading} label={mode === 'signup' ? 'Create account →' : 'Continue →'} />
 
                         {/* Divider */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
