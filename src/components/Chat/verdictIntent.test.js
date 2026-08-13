@@ -10,8 +10,9 @@
  * worse than missing a typo, since it would answer a screener question with a
  * buy/sell verdict.
  *
- * These test the regex pair as written in ChatContainer, kept in sync by reading
- * it from the source rather than being retyped here.
+ * These test the regex pair as written in extractQueryIntent (lib/queryIntent.js,
+ * used by ChatContainer), kept in sync by reading it from the source rather than
+ * being retyped here.
  */
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
@@ -19,9 +20,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const src = fs.readFileSync(path.resolve(here, 'ChatContainer.jsx'), 'utf8');
+const src = fs.readFileSync(path.resolve(here, '../../lib/queryIntent.js'), 'utf8');
 
-// Pull the live patterns out of the component so this cannot drift from it.
+// Pull the live patterns out of the source module so this cannot drift from it.
 const modal = src.match(/const MODAL = '([^']+)'/)?.[1];
 const verb = src.match(/const VERB = '([^']+)'/)?.[1];
 
