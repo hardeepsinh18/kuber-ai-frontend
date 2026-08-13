@@ -45,6 +45,231 @@ function _toServerMessage(m) {
     };
 }
 
+// ---- flushPersist helpers --------------------------------------------------
+// Split out so each sub-step (title derivation, localStorage write with
+// eviction fallback, sidebar list update, server sync) can be read on its
+// own. Same order, same logic — see flushPersist below for how they compose.
+
+// A user-set name wins over the derived one. Checked against the persisted
+// list too, not just this session's ref, so the rename also survives a
+// reload (the ref is empty on a fresh page load, but the stored title is
+// not).
+function _deriveFlushTitle(chatId, messages, renamedChatsRef) {
+    const derived = chatStorage.getTitleFromMessages(messages);
+    const storedTitle = chatStorage.getChatList().find((c) => c.id === chatId)?.title;
+    const wasRenamed = renamedChatsRef.current.has(chatId)
+        || (storedTitle && storedTitle !== derived && storedTitle !== 'New chat');
+    return wasRenamed && storedTitle ? storedTitle : derived;
+}
+
+function _persistMessagesLocally(chatId, messages) {
+    try {
+        // Keep chartData in localStorage so the chart (and its pattern overlay)
+        // survives a refresh / chat switch directly — no backend round-trip needed.
+        chatStorage.saveChatMessages(chatId, messages);
+    } catch {
+        // Over quota with chartData included — retry WITHOUT it (stripped). Those
+        // charts are still on the server (metadata._chartData) and get restored by
+        // loadChat()'s backend hydration, so nothing is lost.
+        try {
+            const stripped = messages.map(({ chartData: _cd, ...rest }) => rest);
+            chatStorage.saveChatMessages(chatId, stripped);
+        } catch {
+            // still over quota — messages are safely on the server, no pruning
+        }
+    }
+}
+
+// Updates the sidebar's in-memory + persisted chat list for this flush, and
+// reports whether the title actually changed (used by the server sync step
+// below to decide whether a title PATCH is needed).
+function _syncChatListEntry(chatId, title, userTouched, setChatList) {
+    // Read BEFORE setChatList writes the new list. Deliberately not captured
+    // inside the state updater: React does not guarantee the updater runs
+    // synchronously, and a deferred one would leave this false and silently
+    // stop syncing genuine title changes. chatStorage is the same list the
+    // updater persists, so it is an equivalent view with no timing coupling.
+    const knownTitle = chatStorage.getChatList().find((c) => c.id === chatId)?.title;
+    const titleChanged = !knownTitle || (title && title !== knownTitle);
+    setChatList((prev) => {
+        const next = prev.map((c) =>
+            c.id === chatId
+                ? { ...c, title, ...(userTouched ? { updatedAt: Date.now() } : {}) }
+                : c
+        );
+        const found = next.some((c) => c.id === chatId);
+        if (!found) next.unshift({ id: chatId, title, updatedAt: Date.now() });
+        chatStorage.saveChatList(next);
+        return next;
+    });
+    return titleChanged;
+}
+
+// Appends any not-yet-synced messages to the server (with create-then-retry
+// healing for a chat that only ever existed locally) and PATCHes the title
+// when it actually changed. Mutates syncedMessageCountRef.current — callers
+// must pass the same ref flushPersist itself reads.
+function _syncFlushToServer(chatId, messages, accessToken, title, hasNewMessages, titleChanged, syncedMessageCountRef) {
+    const start = syncedMessageCountRef.current;
+    // K-042/K-105: persist the structured cards + display mode so a chat
+    // rehydrated from the server (other device / cleared localStorage) renders
+    // the same rich answer, not bare text. chartData is stripped from
+    // localStorage (quota) but the server (jsonb) can hold it. _isError/
+    // _isClientNotice keep error bubbles OUT of chat_history after a reload —
+    // without them a stored "⚠️ Something went wrong" comes back
+    // indistinguishable from a real assistant turn. _topicReset (K-056) must
+    // survive a reload, or the stale stock leaks back in.
+    const newOnes = messages.slice(start).map(_toServerMessage);
+    if (newOnes.length > 0) {
+        // Reserve the counter BEFORE the request, not in .then().
+        // A POST routinely outlives the 400ms debounce, so run 2
+        // used to read the still-unadvanced start and re-send the
+        // messages run 1 was already sending (server ends up with
+        // m0,m1,m0,m1,m2). Roll back on failure so they retry.
+        const sentThrough = messages.length;
+        syncedMessageCountRef.current = sentThrough;
+        chatsApi.appendMessages(chatId, newOnes, accessToken)
+            .catch(async (err) => {
+                // The chat exists only on this device: createChat was
+                // unreachable when it started, so the client fell back to a
+                // locally minted id the server has never seen. Every append
+                // then 404s. Create the thread under that same id — the id
+                // the URL and the local cache already use — and retry once.
+                if (err?.name === 'MissingChatError') {
+                    try {
+                        await chatsApi.createChat(accessToken, title, chatId);
+                        await chatsApi.appendMessages(chatId, newOnes, accessToken);
+                        return;   // healed; counter stays advanced
+                    } catch (healErr) {
+                        err = healErr;
+                    }
+                }
+                // Roll back so the next flush retries these messages rather
+                // than treating them as stored. localStorage is the only
+                // other copy and it is evictable, so "give up quietly" here
+                // is how answers went missing.
+                syncedMessageCountRef.current = Math.min(
+                    syncedMessageCountRef.current,
+                    start
+                );
+                console.warn('Chat sync to backend failed (messages safe in localStorage):', err?.message);
+            });
+    }
+    // Only PATCH when something actually changed. This used to fire on
+    // EVERY flush — including one caused purely by opening a chat, since
+    // hydrating it changes `messages` and schedules the debounce. The
+    // backend touches updated_at on that PATCH, so merely reading a chat
+    // made the server report it as the most recently updated: the next
+    // list refresh pulled that fresh timestamp back and the chat jumped
+    // to the top of the sidebar showing "now", even for a chat from
+    // yesterday. Guarding the local updatedAt alone was not enough,
+    // because the server value overrides it on refresh.
+    if (hasNewMessages || titleChanged) {
+        chatsApi.updateChatTitle(chatId, title, accessToken).catch(() => {});
+    }
+}
+
+// ---- loadChat helpers ------------------------------------------------------
+// Split out so each sub-step (local hydration, server-message parsing,
+// local/server index-merge, re-caching) can be read on its own. Same order,
+// same logic — see loadChat below for how they compose.
+
+function _hydrateLocalMessages(id) {
+    const rawLocalMsgs = chatStorage.getChatMessages(id);
+    return rawLocalMsgs
+        .filter(m => m != null && m.role)
+        .map(m => ({
+            ...m,
+            id: m.id ?? (crypto.randomUUID?.() ?? `msg_${Date.now()}_${Math.random().toString(36).slice(2)}`),
+            content: typeof m.content === 'string' ? m.content : String(m.content ?? ''),
+        }));
+}
+
+// Mirror of _toServerMessage above — keep the two in sync, or a rehydrated
+// chat renders differently from a live one.
+function _fromServerMessage(m) {
+    return {
+        id: m.id ?? (crypto.randomUUID?.() ?? `msg_${Date.now()}_${Math.random()}`),
+        role: m.role === 'assistant' ? 'ai' : (m.role ?? 'user'),
+        content: m.content ?? '',
+        thinkingSteps: m.metadata?._thinkingSteps ?? undefined,
+        newsHeadlines: m.metadata?._newsHeadlines ?? undefined,
+        suggestedFollowUps: m.metadata?._suggestedFollowUps ?? undefined,
+        processingTime: m.metadata?._processingTime ?? undefined,
+        signal: m.metadata?._signal ?? undefined,
+        chartData: m.metadata?._chartData ?? undefined,
+        // K-042/K-105: restore structured cards + display mode
+        scoreCard: m.metadata?._scoreCard ?? undefined,
+        indicatorsTable: m.metadata?._indicatorsTable ?? undefined,
+        patternSummary: m.metadata?._patternSummary ?? undefined,
+        technicalSummary: m.metadata?._technicalSummary ?? undefined,
+        managementSentiment: m.metadata?._managementSentiment ?? undefined,
+        annualReportIntelligence: m.metadata?._annualReportIntelligence ?? undefined,
+        companyFilings: m.metadata?._companyFilings ?? undefined,
+        recentDevelopments: m.metadata?._recentDevelopments ?? undefined,
+        aiTake: m.metadata?._aiTake ?? undefined,
+        queryIntent: m.metadata?._queryIntent ?? undefined,
+        query: m.metadata?._query ?? undefined,
+        responseMode: m.metadata?._responseMode ?? undefined,
+        // Mirror of the persist whitelist — keep these in sync, or a
+        // rehydrated chat renders differently from a live one.
+        sourceDocuments: m.metadata?._sourceDocuments ?? undefined,
+        isError: m.metadata?._isError ?? undefined,
+        isClientNotice: m.metadata?._isClientNotice ?? undefined,
+        failedQuery: m.metadata?._failedQuery ?? undefined,
+        isScannerResult: m.metadata?._isScannerResult ?? undefined,
+        _topicReset: m.metadata?._topicReset ?? undefined,
+        metadata: m.metadata ?? undefined,
+    };
+}
+
+// Merge by index: fill chartData (stripped from localStorage) + the pattern
+// overlay into the already-shown local messages, without clobbering any
+// local-only message. Backend appends are order-preserving, so index
+// alignment holds.
+function _mergeLocalAndServerMessages(prev, msgs) {
+    // Walk the LONGER of the two arrays. Mapping over the local copy alone
+    // silently dropped every server message past its end: localStorage is
+    // lossy (it evicts under quota pressure, and a persist landing
+    // mid-stream can store the question before the assistant turn exists),
+    // so a chat cached with only the question re-opened with the answer
+    // missing even though the server still had it. Taking the longer array
+    // also protects the other direction — a local-only message the server
+    // has not stored yet is still kept.
+    const len = Math.max(prev.length, msgs.length);
+    const merged = [];
+    for (let i = 0; i < len; i += 1) {
+        const pm = prev[i];
+        const sm = msgs[i];
+        if (!pm) { merged.push(sm); continue; }   // server-only → adopt it
+        if (!sm) { merged.push(pm); continue; }   // local-only → keep it
+        merged.push({
+            ...pm,
+            chartData: pm.chartData ?? sm.chartData,
+            patternSummary: pm.patternSummary ?? sm.patternSummary,
+        });
+    }
+    return merged;
+}
+
+// Re-cache server messages to localStorage after a chat with no local copy
+// was hydrated from the server. Strips the OHLCV blob from BOTH places
+// before writing: the top-level `chartData` strip elsewhere misses
+// `metadata._chartData`, which the server round-trip re-embeds — so a
+// rehydrated chat wrote the full blob to localStorage anyway and blew the
+// quota.
+function _cacheServerMessagesLocally(id, msgs) {
+    try {
+        chatStorage.saveChatMessages(id, msgs.map(({ chartData: _cd, metadata, ...rest }) => {
+            if (!metadata || !('_chartData' in metadata)) return { ...rest, metadata };
+            const { _chartData: _mcd, ...metaRest } = metadata;
+            return { ...rest, metadata: metaRest };
+        }));
+    } catch (e) {
+        console.warn('loadChat: could not cache chat locally:', e?.message);
+    }
+}
+
 export function ChatHistoryProvider({ children }) {
     const { accessToken, supabaseConfigured, loading: authLoading } = useAuth();
     const [chatList, setChatList] = useState([]);
@@ -261,106 +486,11 @@ export function ChatHistoryProvider({ children }) {
         const userTouched = opts?.userTouched === true || touchedChatsRef.current.has(chatId);
         const hasNewMessages = messages.length > syncedMessageCountRef.current;
         if (hasMessages) {
-            // A user-set name wins over the derived one. Checked against the
-            // persisted list too, not just this session's ref, so the rename also
-            // survives a reload (the ref is empty on a fresh page load, but the
-            // stored title is not).
-            const derived = chatStorage.getTitleFromMessages(messages);
-            const storedTitle = chatStorage.getChatList().find((c) => c.id === chatId)?.title;
-            const wasRenamed = renamedChatsRef.current.has(chatId)
-                || (storedTitle && storedTitle !== derived && storedTitle !== 'New chat');
-            const title = wasRenamed && storedTitle ? storedTitle : derived;
-            try {
-                // Keep chartData in localStorage so the chart (and its pattern overlay)
-                // survives a refresh / chat switch directly — no backend round-trip needed.
-                chatStorage.saveChatMessages(chatId, messages);
-            } catch {
-                // Over quota with chartData included — retry WITHOUT it (stripped). Those
-                // charts are still on the server (metadata._chartData) and get restored by
-                // loadChat()'s backend hydration, so nothing is lost.
-                try {
-                    const stripped = messages.map(({ chartData: _cd, ...rest }) => rest);
-                    chatStorage.saveChatMessages(chatId, stripped);
-                } catch {
-                    // still over quota — messages are safely on the server, no pruning
-                }
-            }
-            // Read BEFORE setChatList writes the new list. Deliberately not captured
-            // inside the state updater: React does not guarantee the updater runs
-            // synchronously, and a deferred one would leave this false and silently
-            // stop syncing genuine title changes. chatStorage is the same list the
-            // updater persists, so it is an equivalent view with no timing coupling.
-            const knownTitle = chatStorage.getChatList().find((c) => c.id === chatId)?.title;
-            const titleChanged = !knownTitle || (title && title !== knownTitle);
-            setChatList((prev) => {
-                const next = prev.map((c) =>
-                    c.id === chatId
-                        ? { ...c, title, ...(userTouched ? { updatedAt: Date.now() } : {}) }
-                        : c
-                );
-                const found = next.some((c) => c.id === chatId);
-                if (!found) next.unshift({ id: chatId, title, updatedAt: Date.now() });
-                chatStorage.saveChatList(next);
-                return next;
-            });
+            const title = _deriveFlushTitle(chatId, messages, renamedChatsRef);
+            _persistMessagesLocally(chatId, messages);
+            const titleChanged = _syncChatListEntry(chatId, title, userTouched, setChatList);
             if (accessToken) {
-                const start = syncedMessageCountRef.current;
-                // K-042/K-105: persist the structured cards + display mode so a chat
-                // rehydrated from the server (other device / cleared localStorage) renders
-                // the same rich answer, not bare text. chartData is stripped from
-                // localStorage (quota) but the server (jsonb) can hold it. _isError/
-                // _isClientNotice keep error bubbles OUT of chat_history after a reload —
-                // without them a stored "⚠️ Something went wrong" comes back
-                // indistinguishable from a real assistant turn. _topicReset (K-056) must
-                // survive a reload, or the stale stock leaks back in.
-                const newOnes = messages.slice(start).map(_toServerMessage);
-                if (newOnes.length > 0) {
-                    // Reserve the counter BEFORE the request, not in .then().
-                    // A POST routinely outlives the 400ms debounce, so run 2
-                    // used to read the still-unadvanced start and re-send the
-                    // messages run 1 was already sending (server ends up with
-                    // m0,m1,m0,m1,m2). Roll back on failure so they retry.
-                    const sentThrough = messages.length;
-                    syncedMessageCountRef.current = sentThrough;
-                    chatsApi.appendMessages(chatId, newOnes, accessToken)
-                        .catch(async (err) => {
-                            // The chat exists only on this device: createChat was
-                            // unreachable when it started, so the client fell back to a
-                            // locally minted id the server has never seen. Every append
-                            // then 404s. Create the thread under that same id — the id
-                            // the URL and the local cache already use — and retry once.
-                            if (err?.name === 'MissingChatError') {
-                                try {
-                                    await chatsApi.createChat(accessToken, title, chatId);
-                                    await chatsApi.appendMessages(chatId, newOnes, accessToken);
-                                    return;   // healed; counter stays advanced
-                                } catch (healErr) {
-                                    err = healErr;
-                                }
-                            }
-                            // Roll back so the next flush retries these messages rather
-                            // than treating them as stored. localStorage is the only
-                            // other copy and it is evictable, so "give up quietly" here
-                            // is how answers went missing.
-                            syncedMessageCountRef.current = Math.min(
-                                syncedMessageCountRef.current,
-                                start
-                            );
-                            console.warn('Chat sync to backend failed (messages safe in localStorage):', err?.message);
-                        });
-                }
-                // Only PATCH when something actually changed. This used to fire on
-                // EVERY flush — including one caused purely by opening a chat, since
-                // hydrating it changes `messages` and schedules the debounce. The
-                // backend touches updated_at on that PATCH, so merely reading a chat
-                // made the server report it as the most recently updated: the next
-                // list refresh pulled that fresh timestamp back and the chat jumped
-                // to the top of the sidebar showing "now", even for a chat from
-                // yesterday. Guarding the local updatedAt alone was not enough,
-                // because the server value overrides it on refresh.
-                if (hasNewMessages || titleChanged) {
-                    chatsApi.updateChatTitle(chatId, title, accessToken).catch(() => {});
-                }
+                _syncFlushToServer(chatId, messages, accessToken, title, hasNewMessages, titleChanged, syncedMessageCountRef);
             }
         }
     }, []);
@@ -554,19 +684,12 @@ export function ChatHistoryProvider({ children }) {
         setCurrentChatId(id);
         setChatLoadError(null);
         syncedMessageCountRef.current = 0;
-        const rawLocalMsgs = chatStorage.getChatMessages(id);
-        const localMsgs = rawLocalMsgs
-            .filter(m => m != null && m.role)
-            .map(m => ({
-                ...m,
-                id: m.id ?? (crypto.randomUUID?.() ?? `msg_${Date.now()}_${Math.random().toString(36).slice(2)}`),
-                content: typeof m.content === 'string' ? m.content : String(m.content ?? ''),
-            }));
         // Show the localStorage copy immediately (instant open). It has every field EXCEPT
         // chartData, which is stripped to stay under the localStorage quota (see persist above).
         // So ALWAYS hydrate from the backend below (it holds _chartData) and merge it in — the
         // old early-return skipped that fetch, so the chart + its pattern overlay disappeared on
         // every refresh / chat switch.
+        const localMsgs = _hydrateLocalMessages(id);
         const hasLocal = localMsgs.length > 0;
         setMessages(hasLocal ? localMsgs : []);
         if (hasLocal) syncedMessageCountRef.current = localMsgs.length;
@@ -579,69 +702,13 @@ export function ChatHistoryProvider({ children }) {
                 // A's key, corrupting A.
                 if (currentChatIdRef.current !== id) return;
                 if (data && data.messages && data.messages.length > 0) {
-                    const msgs = data.messages.map((m) => ({
-                        id: m.id ?? (crypto.randomUUID?.() ?? `msg_${Date.now()}_${Math.random()}`),
-                        role: m.role === 'assistant' ? 'ai' : (m.role ?? 'user'),
-                        content: m.content ?? '',
-                        thinkingSteps: m.metadata?._thinkingSteps ?? undefined,
-                        newsHeadlines: m.metadata?._newsHeadlines ?? undefined,
-                        suggestedFollowUps: m.metadata?._suggestedFollowUps ?? undefined,
-                        processingTime: m.metadata?._processingTime ?? undefined,
-                        signal: m.metadata?._signal ?? undefined,
-                        chartData: m.metadata?._chartData ?? undefined,
-                        // K-042/K-105: restore structured cards + display mode
-                        scoreCard: m.metadata?._scoreCard ?? undefined,
-                        indicatorsTable: m.metadata?._indicatorsTable ?? undefined,
-                        patternSummary: m.metadata?._patternSummary ?? undefined,
-                        technicalSummary: m.metadata?._technicalSummary ?? undefined,
-                        managementSentiment: m.metadata?._managementSentiment ?? undefined,
-                        annualReportIntelligence: m.metadata?._annualReportIntelligence ?? undefined,
-                        companyFilings: m.metadata?._companyFilings ?? undefined,
-                        recentDevelopments: m.metadata?._recentDevelopments ?? undefined,
-                        aiTake: m.metadata?._aiTake ?? undefined,
-                        queryIntent: m.metadata?._queryIntent ?? undefined,
-                        query: m.metadata?._query ?? undefined,
-                        responseMode: m.metadata?._responseMode ?? undefined,
-                        // Mirror of the persist whitelist — keep these in sync, or a
-                        // rehydrated chat renders differently from a live one.
-                        sourceDocuments: m.metadata?._sourceDocuments ?? undefined,
-                        isError: m.metadata?._isError ?? undefined,
-                        isClientNotice: m.metadata?._isClientNotice ?? undefined,
-                        failedQuery: m.metadata?._failedQuery ?? undefined,
-                        isScannerResult: m.metadata?._isScannerResult ?? undefined,
-                        _topicReset: m.metadata?._topicReset ?? undefined,
-                        metadata: m.metadata ?? undefined,
-                    }));
+                    const msgs = data.messages.map(_fromServerMessage);
                     if (hasLocal) {
                         // Merge by index: fill chartData (stripped from localStorage) + the
                         // pattern overlay into the already-shown messages, without clobbering
                         // any local-only message. Backend appends are order-preserving, so index
                         // alignment holds.
-                        //
-                        // Walk the LONGER of the two arrays. Mapping over the local copy alone
-                        // silently dropped every server message past its end: localStorage is
-                        // lossy (it evicts under quota pressure, and a persist landing
-                        // mid-stream can store the question before the assistant turn exists),
-                        // so a chat cached with only the question re-opened with the answer
-                        // missing even though the server still had it. Taking the longer array
-                        // also protects the other direction — a local-only message the server
-                        // has not stored yet is still kept.
-                        setMessages(prev => {
-                            const len = Math.max(prev.length, msgs.length);
-                            const merged = [];
-                            for (let i = 0; i < len; i += 1) {
-                                const pm = prev[i];
-                                const sm = msgs[i];
-                                if (!pm) { merged.push(sm); continue; }   // server-only → adopt it
-                                if (!sm) { merged.push(pm); continue; }   // local-only → keep it
-                                merged.push({
-                                    ...pm,
-                                    chartData: pm.chartData ?? sm.chartData,
-                                    patternSummary: pm.patternSummary ?? sm.patternSummary,
-                                });
-                            }
-                            return merged;
-                        });
+                        setMessages(prev => _mergeLocalAndServerMessages(prev, msgs));
                         // Everything up to the server's length came FROM the server, so
                         // count it as already synced. Without this the ref kept the
                         // shorter LOCAL count while the merge grew `messages` to the
@@ -660,20 +727,7 @@ export function ChatHistoryProvider({ children }) {
                     } else {
                         setMessages(msgs);
                         syncedMessageCountRef.current = msgs.length;
-                        // Strip the OHLCV blob from BOTH places before writing to
-                        // localStorage. The top-level `chartData` strip elsewhere
-                        // misses `metadata._chartData`, which the server round-trip
-                        // re-embeds — so a rehydrated chat wrote the full blob to
-                        // localStorage anyway and blew the quota.
-                        try {
-                            chatStorage.saveChatMessages(id, msgs.map(({ chartData: _cd, metadata, ...rest }) => {
-                                if (!metadata || !('_chartData' in metadata)) return { ...rest, metadata };
-                                const { _chartData: _mcd, ...metaRest } = metadata;
-                                return { ...rest, metadata: metaRest };
-                            }));
-                        } catch (e) {
-                            console.warn('loadChat: could not cache chat locally:', e?.message);
-                        }
+                        _cacheServerMessagesLocally(id, msgs);
                     }
                 }
                 setChatLoadError(null);
