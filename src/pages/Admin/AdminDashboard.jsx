@@ -1,32 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { clsx } from 'clsx';
 import {
     Users, Activity, Clock, AlertTriangle, BarChart3,
     MessageSquare, Search, ChevronLeft, ChevronRight,
     RefreshCw, TrendingUp, Zap, Database, X
 } from 'lucide-react';
-import { getApiOrigin } from '../../lib/apiBase';
-import { getIdToken } from '../../lib/auth';
-
-// QA-C-001: use the ORIGIN-resolving accessor, not getApiBase(). The latter is ''
-// for the same-origin deployment, and `new URL('/api/v1/...')` with no origin
-// throws — which made every panel below fail to load in UAT.
-const API_BASE = getApiOrigin();
-const API_PREFIX = '/api/v1';
-
-// SEC-004/SEC-C-002: authenticate admin calls with the signed-in admin's own
-// Cognito ID token (verified server-side against the ADMIN_EMAILS allowlist by
-// require_admin) — NOT a shared secret baked into the JS bundle. The page only
-// renders behind AdminGuard, so a token is always available here.
-const adminFetch = async (path, params = {}) => {
-    const url = new URL(`${API_BASE}${API_PREFIX}${path}`);
-    Object.entries(params).forEach(([k, v]) => v != null && url.searchParams.set(k, v));
-    const token = await getIdToken();
-    const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    const r = await fetch(url.toString(), { headers });
-    if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
-    return r.json();
-};
+import useAdminFetch, { adminFetch } from '../../hooks/useAdminFetch';
 
 const fmt = (n) => (n == null ? '—' : Number(n).toLocaleString('en-IN'));
 const fmtMs = (ms) => ms == null ? '—' : ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${ms}ms`;
@@ -58,17 +37,7 @@ const StatCard = ({ icon: Icon, label, value, sub, color = 'indigo' }) => {
 
 // ── Overview Tab ─────────────────────────────────────────────────────────────
 const OverviewTab = () => {
-    const [data, setData] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [err, setErr] = useState(null);
-
-    const load = useCallback(() => {
-        setLoading(true);
-        adminFetch('/admin/dashboard/overview')
-            .then(setData).catch(e => setErr(e.message)).finally(() => setLoading(false));
-    }, []);
-
-    useEffect(() => { load(); }, [load]);
+    const { data, loading, err, load } = useAdminFetch('/admin/dashboard/overview');
 
     if (loading) return <Spinner />;
     if (err) return <ErrorBox msg={err} onRetry={load} />;
@@ -141,20 +110,11 @@ const OverviewTab = () => {
 
 // ── Users Tab ────────────────────────────────────────────────────────────────
 const UsersTab = ({ onViewChat }) => {
-    const [data, setData] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [err, setErr] = useState(null);
     const [search, setSearch] = useState('');
     const [offset, setOffset] = useState(0);
     const LIMIT = 20;
 
-    const load = useCallback(() => {
-        setLoading(true);
-        adminFetch('/admin/dashboard/users', { limit: LIMIT, offset, search: search || null })
-            .then(setData).catch(e => setErr(e.message)).finally(() => setLoading(false));
-    }, [offset, search]);
-
-    useEffect(() => { load(); }, [load]);
+    const { data, loading, err, load } = useAdminFetch('/admin/dashboard/users', { limit: LIMIT, offset, search: search || null });
 
     const handleSearch = (e) => { e.preventDefault(); setOffset(0); load(); };
 
@@ -228,21 +188,12 @@ const UsersTab = ({ onViewChat }) => {
 
 // ── Query Logs Tab ───────────────────────────────────────────────────────────
 const QueryLogsTab = () => {
-    const [data, setData] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [err, setErr] = useState(null);
     const [search, setSearch] = useState('');
     const [intent, setIntent] = useState('');
     const [offset, setOffset] = useState(0);
     const LIMIT = 30;
 
-    const load = useCallback(() => {
-        setLoading(true);
-        adminFetch('/admin/dashboard/queries', { limit: LIMIT, offset, search: search || null, intent: intent || null })
-            .then(setData).catch(e => setErr(e.message)).finally(() => setLoading(false));
-    }, [offset, search, intent]);
-
-    useEffect(() => { load(); }, [load]);
+    const { data, loading, err, load } = useAdminFetch('/admin/dashboard/queries', { limit: LIMIT, offset, search: search || null, intent: intent || null });
 
     const intentColor = (i) => {
         if (!i) return 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500';
@@ -336,6 +287,10 @@ const ChatHistoryTab = ({ selectedUser, onClearUser }) => {
         }
     }, [selectedUser]);
 
+    // Deliberately NOT using useAdminFetch here: it fetches a dynamic path segment
+    // (not query params), is gated on a truthy userId (no fetch — and no loading
+    // spinner — until one is entered/selected), and starts `loading` at false
+    // rather than true. Forcing it into the shared hook would change behavior.
     useEffect(() => {
         if (!userId) return;
         setLoading(true);
@@ -414,18 +369,9 @@ const ChatHistoryTab = ({ selectedUser, onClearUser }) => {
 
 // ── API Stats Tab ────────────────────────────────────────────────────────────
 const ApiStatsTab = () => {
-    const [data, setData] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [err, setErr] = useState(null);
     const [days, setDays] = useState(7);
 
-    const load = useCallback(() => {
-        setLoading(true);
-        adminFetch('/admin/dashboard/api-stats', { days })
-            .then(setData).catch(e => setErr(e.message)).finally(() => setLoading(false));
-    }, [days]);
-
-    useEffect(() => { load(); }, [load]);
+    const { data, loading, err, load } = useAdminFetch('/admin/dashboard/api-stats', { days });
 
     return (
         <div className="space-y-6">
