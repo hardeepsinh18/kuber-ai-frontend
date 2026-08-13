@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { X, Rocket, RefreshCw } from 'lucide-react';
+import { Rocket, RefreshCw } from 'lucide-react';
 import { getApiBase } from '../../lib/apiBase';
 import { INNER_CARD_DARK } from './answerKit';
+import SlideUpModal from './SlideUpModal';
 
 const API_BASE = getApiBase();
 const IPO_ENDPOINT = `${API_BASE}/api/v1/market/ipos`;
@@ -119,61 +120,41 @@ const IpoPanel = ({ onClose }) => {
     const rows = data?.[tab] || [];
 
     return (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm px-2 sm:px-4 pb-4 sm:pb-0">
-            <div
-                ref={panelRef}
-                className="relative w-full max-w-2xl max-h-[85dvh] sm:max-h-[78vh] flex flex-col rounded-2xl border shadow-2xl overflow-hidden
-                           bg-white border-zinc-200
-                           dark:bg-[#181613] dark:border-[#FDD405]/20"
-            >
-                {/* Header — stacks on mobile (title row, then tab row); inline on sm+ */}
-                <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-5 py-3 sm:py-4 border-b border-zinc-200 dark:border-zinc-800/80 flex-shrink-0">
-                    <div className="flex items-center justify-between gap-2 min-w-0">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                            <Rocket size={17} style={{ color: '#FDD405' }} className="flex-shrink-0" />
-                            <div className="min-w-0">
-                                <h2 className="text-[15px] font-bold text-zinc-900 dark:text-white">IPO Corner</h2>
-                                <p className="text-[12px] text-zinc-400 dark:text-zinc-500 mt-0.5">
-                                    NSE main-board & SME issues · live from the exchange
-                                </p>
-                            </div>
-                        </div>
-                        <button
-                            onClick={onClose}
-                            aria-label="Close"
-                            className="sm:hidden w-8 h-8 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:text-zinc-200 dark:hover:bg-zinc-800 transition-colors flex-shrink-0"
-                        >
-                            <X size={16} />
-                        </button>
-                    </div>
-
-                    <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                        <div className={`flex items-center gap-0.5 p-0.5 rounded-lg bg-zinc-100 dark:bg-[${INNER_CARD_DARK}] flex-1 sm:flex-none`}>
-                            {TABS.map(({ key, label }) => (
-                                <button
-                                    key={key}
-                                    onClick={() => setTab(key)}
-                                    className={`flex-1 sm:flex-none px-2.5 sm:px-3 py-1.5 sm:py-1 rounded-md text-[11px] font-semibold whitespace-nowrap transition-all duration-200 select-none
-                                        ${tab === key
-                                            ? 'text-zinc-900 shadow-sm'
-                                            : 'text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300'}`}
-                                    style={tab === key ? { backgroundColor: '#FDD405' } : {}}
-                                >
-                                    {label}
-                                    {data?.[key]?.length ? ` (${data[key].length})` : ''}
-                                </button>
-                            ))}
-                        </div>
-
-                        <button
-                            onClick={onClose}
-                            aria-label="Close"
-                            className="hidden sm:flex w-7 h-7 items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:text-zinc-200 dark:hover:bg-zinc-800 transition-colors"
-                        >
-                            <X size={15} />
-                        </button>
+        <SlideUpModal
+            panelRef={panelRef}
+            darkPanelClass="dark:bg-[#181613] dark:border-[#FDD405]/20"
+            headerBorderClass="border-zinc-200 dark:border-zinc-800/80"
+            onClose={onClose}
+            titleBlock={
+                <div className="flex items-center gap-2.5 min-w-0">
+                    <Rocket size={17} style={{ color: '#FDD405' }} className="flex-shrink-0" />
+                    <div className="min-w-0">
+                        <h2 className="text-[15px] font-bold text-zinc-900 dark:text-white">IPO Corner</h2>
+                        <p className="text-[12px] text-zinc-400 dark:text-zinc-500 mt-0.5">
+                            NSE main-board & SME issues · live from the exchange
+                        </p>
                     </div>
                 </div>
+            }
+            tabGroup={
+                <div className={`flex items-center gap-0.5 p-0.5 rounded-lg bg-zinc-100 dark:bg-[${INNER_CARD_DARK}] flex-1 sm:flex-none`}>
+                    {TABS.map(({ key, label }) => (
+                        <button
+                            key={key}
+                            onClick={() => setTab(key)}
+                            className={`flex-1 sm:flex-none px-2.5 sm:px-3 py-1.5 sm:py-1 rounded-md text-[11px] font-semibold whitespace-nowrap transition-all duration-200 select-none
+                                ${tab === key
+                                    ? 'text-zinc-900 shadow-sm'
+                                    : 'text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300'}`}
+                            style={tab === key ? { backgroundColor: '#FDD405' } : {}}
+                        >
+                            {label}
+                            {data?.[key]?.length ? ` (${data[key].length})` : ''}
+                        </button>
+                    ))}
+                </div>
+            }
+        >
 
                 {/* Body */}
                 <div className="flex-1 overflow-y-auto px-4 py-4">
@@ -225,8 +206,7 @@ const IpoPanel = ({ onClose }) => {
                         Source: NSE · refreshed through the trading day · verify on nseindia.com before applying
                     </p>
                 </div>
-            </div>
-        </div>
+        </SlideUpModal>
     );
 };
 
