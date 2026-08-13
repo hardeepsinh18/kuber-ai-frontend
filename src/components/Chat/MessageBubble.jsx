@@ -590,7 +590,50 @@ const FollowUpChips = ({ chips, onClick }) => (
 const GeneralAnswerShell = ({ active, children }) =>
     active ? <GeneralAnswer>{children}</GeneralAnswer> : <>{children}</>;
 
-const MessageBubble = ({ role, content, isStreaming = false, isLoading = false, isScannerResult = false, isError = false, chartData = null, metadata = {}, signal = null, patternSummary = null, technicalSummary = null, indicatorsTable = null, scoreCard = null, managementSentiment = null, annualReportIntelligence = null, companyFilings = null, recentDevelopments = null, aiTake = null, suggestedFollowUps = null, newsHeadlines = null, queryIntent = 'full', query = null, onFollowUpClick = null, onStreamingDone = null, messageId = null, onFeedback = null, responseMode = null }) => {
+const MessageBubble = (props) => {
+    // Accepts EITHER a bundled `message` object (the modern call shape, used by
+    // ChatContainer.jsx) OR the original 16 individual content/message-derived
+    // props spread directly (the shape every test file and PreviewPage.jsx still
+    // use) -- `src` reads from whichever was actually provided, so nothing below
+    // this block changes regardless of which shape the caller used. This exists
+    // to fix the ORIGINAL complaint (ChatContainer.jsx hand-threading 16+ fields
+    // one by one) without having to touch the compliance-critical disclaimer/
+    // clarify regression tests, which is a separate, higher-stakes migration.
+    const {
+        message,
+        isStreaming = false, isLoading = false, isScannerResult = false, isError = false,
+        onFollowUpClick = null, onStreamingDone = null, messageId = null, onFeedback = null, responseMode = null,
+    } = props;
+    const src = message || props;
+    const role = src.role;
+    const rawContent = src.content;
+    // `let`, not `const`: downstream code (the disambiguation-stripping
+    // React.useMemo below) reassigns `content` to processed text -- it was a
+    // reassignable function parameter in the original signature, and this has
+    // to stay reassignable to match.
+    let content = typeof rawContent === 'string' ? rawContent : String(rawContent ?? '');
+    const chartData = src.chartData ?? null;
+    const metadata = src.metadata ?? {};
+    const signal = src.signal ?? null;
+    const patternSummary = src.patternSummary ?? null;
+    const technicalSummary = src.technicalSummary ?? null;
+    const indicatorsTable = src.indicatorsTable ?? null;
+    const scoreCard = src.scoreCard ?? null;
+    const managementSentiment = src.managementSentiment ?? null;
+    const annualReportIntelligence = src.annualReportIntelligence ?? null;
+    const companyFilings = src.companyFilings ?? null;
+    const recentDevelopments = src.recentDevelopments ?? null;
+    const aiTake = src.aiTake ?? null;
+    const suggestedFollowUps = src.suggestedFollowUps ?? null;
+    const newsHeadlines = src.newsHeadlines ?? null;
+    // These two use `||`, not `??`, deliberately -- ChatContainer.jsx's old call
+    // site applied `msg.queryIntent || 'full'` / `msg.query || null` (falls back
+    // on ANY falsy value, not just null/undefined), so matching that exactly
+    // rather than switching to `??` here, which would change behavior for an
+    // empty-string value.
+    const queryIntent = src.queryIntent || 'full';
+    const query = src.query || null;
+
     const isUser = role === 'user';
 
     // Group-disambiguation replies ("HDFC" → HDFC Bank / AMC / Life) carry the full

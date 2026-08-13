@@ -1153,28 +1153,11 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                             )}
 
                             <MessageBubble
-                                role={msg.role}
-                                content={typeof msg.content === 'string' ? msg.content : String(msg.content ?? '')}
+                                message={msg}
                                 isScannerResult={msg.isScannerResult || false}
                                 isError={!!(msg.isError || msg.isClientNotice)}
                                 isStreaming={msg.id === streamingMessageId}
                                 isLoading={isLoading}
-                                chartData={msg.chartData}
-                                metadata={msg.metadata}
-                                signal={msg.signal}
-                                patternSummary={msg.patternSummary}
-                                technicalSummary={msg.technicalSummary}
-                                indicatorsTable={msg.indicatorsTable}
-                                scoreCard={msg.scoreCard}
-                                managementSentiment={msg.managementSentiment}
-                                annualReportIntelligence={msg.annualReportIntelligence}
-                                companyFilings={msg.companyFilings}
-                                recentDevelopments={msg.recentDevelopments}
-                                aiTake={msg.aiTake}
-                                suggestedFollowUps={msg.suggestedFollowUps}
-                                newsHeadlines={msg.newsHeadlines}
-                                queryIntent={msg.queryIntent || 'full'}
-                                query={msg.query || null}
                                 onFollowUpClick={(text) => handleSend(text)}
                                 onStreamingDone={msg.id === streamingMessageId ? handleStreamingDone : undefined}
                                 messageId={msg.role === 'ai' ? msg.id : null}
