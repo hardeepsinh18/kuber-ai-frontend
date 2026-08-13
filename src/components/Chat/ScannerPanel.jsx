@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { TrendingUp, BarChart2, CandlestickChart, BookOpen, Check } from 'lucide-react';
 import { getApiBase } from '../../lib/apiBase';
-import { getScannerSignal } from '../../lib/scannerSignal';
+import { formatResults } from '../../lib/formatScanResults';
 import { useAuth } from '../../context/AuthContext';
 import SlideUpModal from './SlideUpModal';
 
@@ -96,17 +96,6 @@ const SCANNER_EMOJI = {
     'Growth Pick':               '🌱',
     'Quality Pick':              '⭐',
 };
-
-function formatResults(name, scannerNames, results, universe, seconds) {
-    if (results.length === 0) {
-        return `**${name}** found no matching stocks in ${universe} today (scanned in ${seconds}s).`;
-    }
-    const rows = results.map((r, i) => {
-        const sig = getScannerSignal(scannerNames, r);
-        return `${i + 1}. **${r.Symbol}**${sig ? ` ${sig.label}` : ''}`;
-    }).join('\n');
-    return [`## ${name} — ${results.length} stocks found`, `_${universe} · scanned in ${seconds}s_`, '', rows].join('\n');
-}
 
 const POLL_INTERVAL = 4000;
 const MAX_WAIT_MS   = 180_000;
