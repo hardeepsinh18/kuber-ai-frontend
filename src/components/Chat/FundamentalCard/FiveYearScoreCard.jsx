@@ -5,6 +5,16 @@ import { INNER_CARD_DARK } from '../answerKit';
 import { MetricCard } from './MetricCard';
 import { MiniBar, MiniLine } from './MiniCharts';
 
+/* Sign-aware prefix for a delta/growth figure. Hardcoding "+" rendered a
+ * negative CAGR as "+-8.3%" and presented a contracting business as growing,
+ * so every badge that shows a change routes through here. Uses the true minus
+ * sign (U+2212) rather than a hyphen so it aligns with tabular figures. */
+const signed = (v, suffix = '') => {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return null;
+    return `${n < 0 ? '−' : '+'}${fmtNum(Math.abs(n))}${suffix}`;
+};
+
 /* ─── 5 YEAR FINANCIAL SCORE CARD ───────────────────────────────────────── */
 export const FiveYearScoreCard = ({ fund }) => {
     const [open, setOpen] = React.useState(false);
@@ -48,7 +58,7 @@ export const FiveYearScoreCard = ({ fund }) => {
                 <div className={`p-3 grid grid-cols-1 sm:grid-cols-2 gap-3 bg-zinc-50 dark:bg-[${INNER_CARD_DARK}]`}>
                     {hist.revenue_cr?.length > 0 && (
                         <MetricCard title="Revenue" subtitle="TOP LINE · ₹ CR"
-                            badge={hist.revenue_cagr ? `+${hist.revenue_cagr}% CAGR` : null}
+                            badge={hist.revenue_cagr != null ? signed(hist.revenue_cagr, '% CAGR') : null}
                             bottomLabel={first(hist.revenue_cr) ? `From ${fmtCr(first(hist.revenue_cr))} (${years[0]})` : null}
                             bottomValue={fmtCr(last(hist.revenue_cr))}>
                             <MiniBar data={hist.revenue_cr} color="#FDD405" years={years} />
@@ -56,7 +66,7 @@ export const FiveYearScoreCard = ({ fund }) => {
                     )}
                     {hist.net_profit_cr?.length > 0 && (
                         <MetricCard title="Net Profit" subtitle="BOTTOM LINE · ₹ CR"
-                            badge={hist.profit_cagr ? `+${hist.profit_cagr}% CAGR` : null}
+                            badge={hist.profit_cagr != null ? signed(hist.profit_cagr, '% CAGR') : null}
                             bottomLabel={first(hist.net_profit_cr) ? `From ${fmtCr(first(hist.net_profit_cr))} (${years[0]})` : null}
                             bottomValue={fmtCr(last(hist.net_profit_cr))}>
                             <MiniBar data={hist.net_profit_cr} color="#22c55e" years={years} />
@@ -64,7 +74,7 @@ export const FiveYearScoreCard = ({ fund }) => {
                     )}
                     {hist.eps?.length > 0 && (
                         <MetricCard title="EPS" subtitle="EARNINGS PER SHARE · ₹"
-                            badge={hist.eps_cagr ? `+${hist.eps_cagr}% CAGR` : null}
+                            badge={hist.eps_cagr != null ? signed(hist.eps_cagr, '% CAGR') : null}
                             bottomLabel={first(hist.eps) != null ? `From ₹${first(hist.eps)} (${years[0]})` : null}
                             bottomValue={last(hist.eps) != null ? `₹${last(hist.eps)}` : null}>
                             <MiniLine data={hist.eps} color="#22c55e" years={years} />
@@ -75,7 +85,7 @@ export const FiveYearScoreCard = ({ fund }) => {
                             badge={hist.roce_label ?? null}
                             bottomLabel={first(hist.roce_pct) != null ? `${fmtPct(first(hist.roce_pct))} → ${fmtPct(last(hist.roce_pct))}` : null}
                             bottomValue={first(hist.roce_pct) != null && last(hist.roce_pct) != null
-                                ? `+${fmtNum(last(hist.roce_pct) - first(hist.roce_pct))} pts` : null}>
+                                ? signed(last(hist.roce_pct) - first(hist.roce_pct), ' pts') : null}>
                             <MiniLine data={hist.roce_pct} color="#22c55e" years={years} />
                         </MetricCard>
                     )}

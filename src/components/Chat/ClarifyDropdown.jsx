@@ -45,12 +45,13 @@ export default function ClarifyDropdown({
         <div
             role="listbox"
             aria-label={title}
-            className="absolute left-0 right-0 bottom-full mb-2 z-50
+            className="absolute left-0 right-0 bottom-full mb-1.5 z-50
                        overflow-hidden rounded-xl
-                       border border-zinc-200 dark:border-[#FDD405]/25
-                       bg-white dark:bg-[#181613]
-                       shadow-xl shadow-black/10 dark:shadow-black/50
+                       border border-zinc-200 dark:border-[#FDD405]/40
+                       bg-white dark:bg-[#141310]
+                       shadow-lg shadow-black/10 dark:shadow-black/40
                        animate-in fade-in slide-in-from-bottom-1 duration-200"
+            style={{ boxShadow: '0 0 20px rgba(253,212,5,0.10), 0 8px 24px rgba(0,0,0,0.35)' }}
         >
             <div className="flex items-center justify-between gap-3 px-3 pt-2.5 pb-1.5">
                 <span className="text-[9px] font-extrabold uppercase tracking-[0.16em] truncate
@@ -114,29 +115,6 @@ export default function ClarifyDropdown({
 
             </div>
 
-            <div className="flex items-center justify-center gap-1.5 px-3 py-1.5
-                            border-t border-zinc-200/70 dark:border-white/[0.06]
-                            text-[10px] text-zinc-400 dark:text-zinc-600">
-                <span>Press</span>
-                <kbd className="px-1 rounded bg-zinc-200/70 text-zinc-500
-                                dark:bg-white/[0.06] dark:text-zinc-400">1</kbd>
-                {shown.length > 1 && (
-                    <>
-                        <span>–</span>
-                        <kbd className="px-1 rounded bg-zinc-200/70 text-zinc-500
-                                        dark:bg-white/[0.06] dark:text-zinc-400">{shown.length}</kbd>
-                    </>
-                )}
-                <span>to select</span>
-                {onDismiss && (
-                    <>
-                        <span>·</span>
-                        <kbd className="px-1 rounded bg-zinc-200/70 text-zinc-500
-                                        dark:bg-white/[0.06] dark:text-zinc-400">Esc</kbd>
-                        <span>to dismiss</span>
-                    </>
-                )}
-            </div>
         </div>
     );
 }
