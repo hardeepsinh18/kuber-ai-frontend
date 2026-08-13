@@ -14,8 +14,20 @@ import remarkGfm from 'remark-gfm';
 export const BRAND = '#FDD405';
 
 /* ─── formatters ─────────────────────────────────────────────────────────── */
-export const fmtINR = (n, digits = 0) =>
-    n != null ? `₹${Number(n).toLocaleString('en-IN', { maximumFractionDigits: digits })}` : null;
+// Abbreviates to Cr/L above ₹1L (was PortfolioOverlay's local fmtINR — now the
+// one shared implementation). `digits` still controls precision below ₹1L
+// (callers like the live-price display pass 2 for paise); the abbreviated
+// Cr/L branches always show 2 decimals, matching the prior PortfolioOverlay
+// behaviour. Returns '—' for a missing value (PortfolioOverlay relied on this
+// placeholder in unguarded table cells; existing answerKit call sites all
+// guard with `!= null` first, so this never surfaces there).
+export const fmtINR = (n, digits = 0) => {
+    if (n == null) return '—';
+    const num = Number(n);
+    if (num >= 1e7) return `₹${(num / 1e7).toFixed(2)}Cr`;
+    if (num >= 1e5) return `₹${(num / 1e5).toFixed(2)}L`;
+    return `₹${num.toLocaleString('en-IN', { maximumFractionDigits: digits })}`;
+};
 
 export const fmtNum = (n) =>
     n != null ? Number(n).toLocaleString('en-IN', { maximumFractionDigits: 0 }) : null;
@@ -151,29 +163,57 @@ export const CollapsibleSection = ({ title, children, defaultOpen = true, classN
     );
 };
 
-/* ─── donut score ring ───────────────────────────────────────────────────── */
-export const ScoreRing = ({ score, size = 88, stroke = 9, color }) => {
+export const scoreColor = (s) => (s >= 70 ? '#22c55e' : s >= 50 ? BRAND : '#ef4444');
+
+/* ─── donut score ring ───────────────────────────────────────────────────── *
+ * Single shared ring, consolidating the two prior copies (answerKit's static
+ * labelled ring and PortfolioOverlay's animated, unlabelled one):
+ *   - `animate` (default off) replays the fill from 0 on mount via a
+ *     double-RAF + CSS transition — PortfolioOverlay's health-score ring
+ *     wants this; static call sites paint the final value immediately.
+ *   - `showLabel` (default on) draws the "score" + "/100" text inside the
+ *     ring. PortfolioOverlay overlays its own text on top instead, so it
+ *     turns this off (keeping both would double-render the number).
+ *   - `color` defaults to the shared scoreColor() 70/50 scale when the
+ *     caller doesn't pass one explicitly. */
+export const ScoreRing = ({ score, size = 88, stroke = 9, color, animate = false, showLabel = true }) => {
     const s = Math.min(100, Math.max(0, Math.round(score)));
+    const ringColor = color ?? scoreColor(s);
+    const [animScore, setAnimScore] = React.useState(animate ? 0 : s);
+
+    React.useEffect(() => {
+        if (!animate) { setAnimScore(s); return undefined; }
+        // Double RAF: first ensures 0 is painted, second triggers the CSS transition
+        let raf1, raf2;
+        raf1 = requestAnimationFrame(() => {
+            raf2 = requestAnimationFrame(() => setAnimScore(s));
+        });
+        return () => { cancelAnimationFrame(raf1); cancelAnimationFrame(raf2); };
+    }, [animate, s]);
+
     const r = (size - stroke) / 2 - 2;
     const c = size / 2;
     const circ = 2 * Math.PI * r;
-    const filled = (s / 100) * circ;
+    const filled = (animScore / 100) * circ;
     return (
         <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} role="img" aria-label={`Score ${s} out of 100`}>
             <circle cx={c} cy={c} r={r} fill="none" strokeWidth={stroke}
                     className="stroke-zinc-200 dark:stroke-white/10" />
-            <circle cx={c} cy={c} r={r} fill="none" stroke={color} strokeWidth={stroke}
+            <circle cx={c} cy={c} r={r} fill="none" stroke={ringColor} strokeWidth={stroke}
                     strokeDasharray={`${filled} ${circ}`} strokeLinecap="round"
-                    transform={`rotate(-90 ${c} ${c})`} />
-            <text x={c} y={c - 2} textAnchor="middle" fontSize={size * 0.26} fontWeight="800"
-                  fontFamily="Montserrat,sans-serif" className="fill-zinc-900 dark:fill-white">{s}</text>
-            <text x={c} y={c + size * 0.16} textAnchor="middle" fontSize={size * 0.1}
-                  fontFamily="Montserrat,sans-serif" className="fill-zinc-400 dark:fill-white/40">/100</text>
+                    transform={`rotate(-90 ${c} ${c})`}
+                    style={animate ? { transition: 'stroke-dasharray 1s cubic-bezier(0.34,1.56,0.64,1)' } : undefined} />
+            {showLabel && (
+                <>
+                    <text x={c} y={c - 2} textAnchor="middle" fontSize={size * 0.26} fontWeight="800"
+                          fontFamily="Montserrat,sans-serif" className="fill-zinc-900 dark:fill-white">{s}</text>
+                    <text x={c} y={c + size * 0.16} textAnchor="middle" fontSize={size * 0.1}
+                          fontFamily="Montserrat,sans-serif" className="fill-zinc-400 dark:fill-white/40">/100</text>
+                </>
+            )}
         </svg>
     );
 };
-
-export const scoreColor = (s) => (s >= 70 ? '#22c55e' : s >= 50 ? BRAND : '#ef4444');
 
 /* ─── verdict helpers ────────────────────────────────────────────────────── */
 const deriveVerdict = (text) => {

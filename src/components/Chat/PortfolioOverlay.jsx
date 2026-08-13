@@ -6,6 +6,7 @@ import {
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import { getIdToken } from '../../lib/auth'
 import { getApiBase } from '../../lib/apiBase'
+import { fmtINR, scoreColor, ScoreRing } from './answerKit'
 
 // Same-origin relative /api/* (behind CloudFront/ALB). The portfolio engine is mounted on
 // the main backend, so every portfolio call goes through /api/v1/portfolio/*.
@@ -27,19 +28,10 @@ async function getAuthHeader() {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-function fmtINR(n) {
-  if (n == null) return '—'
-  if (n >= 1e7) return `₹${(n / 1e7).toFixed(2)}Cr`
-  if (n >= 1e5) return `₹${(n / 1e5).toFixed(2)}L`
-  return `₹${Math.round(n).toLocaleString('en-IN')}`
-}
-
-function scoreColor(s) {
-  if (s >= 80) return '#22c55e'
-  if (s >= 60) return '#f59e0b'
-  return '#ef4444'
-}
+// fmtINR and scoreColor now live in answerKit.jsx (shared, single implementation —
+// see the imports above). Note: scoreColor's green/amber/red thresholds are 70/50
+// there (previously 80/60 here), so some scores that used to render amber will
+// now render green.
 
 const CLASS_BADGE = {
   'Elite Compounder':  'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
@@ -58,35 +50,10 @@ const RATING_DOT = {
 const PIE_COLORS = ['#FDD405','#22c55e','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899','#14b8a6','#f97316']
 
 // ── Score Ring ────────────────────────────────────────────────────────────────
-
-function ScoreRing({ score, size = 130, strokeWidth = 10 }) {
-  const [animScore, setAnimScore] = useState(0)
-  useEffect(() => {
-    // Double RAF: first ensures 0 is painted, second triggers the CSS transition
-    let raf1, raf2
-    raf1 = requestAnimationFrame(() => {
-      raf2 = requestAnimationFrame(() => setAnimScore(score))
-    })
-    return () => { cancelAnimationFrame(raf1); cancelAnimationFrame(raf2) }
-  }, [score])
-
-  const r = (size - strokeWidth) / 2
-  const circ = 2 * Math.PI * r
-  const dash = (animScore / 100) * circ
-  const color = scoreColor(score)
-
-  return (
-    <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
-      <circle cx={size/2} cy={size/2} r={r} fill="none"
-        stroke="currentColor" strokeWidth={strokeWidth}
-        className="text-zinc-200 dark:text-white/8" />
-      <circle cx={size/2} cy={size/2} r={r} fill="none"
-        stroke={color} strokeWidth={strokeWidth}
-        strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"
-        style={{ transition: 'stroke-dasharray 1s cubic-bezier(0.34,1.56,0.64,1)' }} />
-    </svg>
-  )
-}
+// ScoreRing now lives in answerKit.jsx (shared, single implementation — see the
+// imports above). This call site passes size/stroke to match its old 130/10
+// footprint, `animate` for the old fill-from-0 behaviour, and `showLabel={false}`
+// since this overlay draws its own number/label on top of the ring.
 
 // ── Score Chip ────────────────────────────────────────────────────────────────
 
@@ -909,7 +876,7 @@ function Results({ data }) {
 
         {/* Ring */}
         <div className="relative flex-shrink-0">
-          <ScoreRing score={Math.round(health_score)} />
+          <ScoreRing score={Math.round(health_score)} size={130} stroke={10} animate showLabel={false} />
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span className="text-3xl font-black text-zinc-900 dark:text-white leading-none">
               {Math.round(health_score)}
