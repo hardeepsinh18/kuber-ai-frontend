@@ -282,16 +282,21 @@ const _longLevelCells = (lv) => {
         cells.push({ label: '3Y Target', value: `${fmtINR(lv.target_3yr, 2)}${lv.upside_3yr ? ` (${lv.upside_3yr})` : ''}` });
     return cells;
 };
-// Verdict → text colour (green = buy, amber = cautious, grey = wait, red = avoid).
+// Verdict → text colour (green = strong buy, amber = buy, grey = wait, red = avoid).
 const _verdictTone = (v) => ({
+    // Research-team ladder: 0-30 AVOID · 31-60 WAIT / HOLD · 61-75 BUY · 76-100 STRONG BUY
     'STRONG BUY':        'text-emerald-500 dark:text-emerald-400',
-    'CAUTIOUS BUY':      'text-street-yellow-ink dark:text-[#FDD405]',
-    'WAIT / ACCUMULATE': 'text-zinc-600 dark:text-zinc-300',
+    'BUY':               'text-street-yellow-ink dark:text-[#FDD405]',
+    'WAIT / HOLD':       'text-zinc-600 dark:text-zinc-300',
     'AVOID':             'text-red-500 dark:text-red-400',
     // QA-001 / QA-002: states the verdict engine emits when it refuses to recommend —
     // missing technical coverage, or a projection that came back below today's price.
     'INSUFFICIENT DATA': 'text-zinc-500 dark:text-zinc-400',
     'AVOID / WAIT':      'text-red-500 dark:text-red-400',
+    // Retired rung names. Chat history is persisted with the verdict string that was
+    // live when the answer was written, so old messages still render these.
+    'CAUTIOUS BUY':      'text-street-yellow-ink dark:text-[#FDD405]',
+    'WAIT / ACCUMULATE': 'text-zinc-600 dark:text-zinc-300',
 }[v] || 'text-zinc-600 dark:text-zinc-300');
 
 const HorizonRow = ({ tenor, v, cells }) => {
