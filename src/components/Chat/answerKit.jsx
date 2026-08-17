@@ -510,7 +510,10 @@ const ArcGauge = ({ score, size = 116, stroke = 11, color, showPct = true }) => 
     );
 };
 
-const overallLabel = (s) => (s >= 70 ? 'Strong' : s >= 50 ? 'Neutral' : 'Weak');
+// Fallback only — the backend sends `overall.label` on its own bands (the verdict
+// ladder's), so the word under the donut cannot contradict the rung beside it. These
+// thresholds match that ladder for older messages that predate the field.
+const overallLabel = (s) => (s >= 76 ? 'Strong' : s >= 61 ? 'Moderate' : s >= 31 ? 'Weak' : 'Poor');
 
 /* value/threshold/label triple → [value, threshold, label] */
 const _ratioTriple = (v) => {
@@ -562,7 +565,8 @@ const PanelTitle = ({ children }) => (
 
 export const VentyScorePanel = ({ scoreCard, managementSentiment, companyName = '', overviewBullets = [] }) => {
     const [open, setOpen] = React.useState(true);
-    const { overall, technical, fundamental, sentimental } = getScores(scoreCard, managementSentiment);
+    const { overall, overallLabel: overallLabelFromEngine, overallWeights, overallBasis,
+            technical, fundamental, sentimental } = getScores(scoreCard, managementSentiment);
 
     const lenses = [
         { key: 'Technical', score: technical, bullets: (Array.isArray(scoreCard?.technical?.commentary) ? scoreCard.technical.commentary : []).slice(0, 4) },
@@ -599,14 +603,26 @@ export const VentyScorePanel = ({ scoreCard, managementSentiment, companyName = 
                                         <ArcGauge score={overall} size={112} color={scoreColor(overall)} />
                                         <span className="-mt-4 px-2.5 py-0.5 rounded-md text-[10px] font-extrabold text-black"
                                               style={{ backgroundColor: scoreColor(overall) }}>
-                                            {overallLabel(overall)}
+                                            {overallLabelFromEngine || overallLabel(overall)}
                                         </span>
                                     </div>
                                     <div className="min-w-0">
                                         <PanelTitle>Overall Health</PanelTitle>
                                         <p className="mt-1 text-[11.5px] text-zinc-500 dark:text-zinc-400 leading-snug">
-                                            The stock's combined Venty AI Score across all three lenses.
+                                            {overallBasis === 'short'
+                                                ? "The stock's Venty AI Score weighted for a short-term call."
+                                                : overallBasis === 'long'
+                                                ? "The stock's Venty AI Score weighted for a long-term hold."
+                                                : "The stock's combined Venty AI Score across all three lenses."}
                                         </p>
+                                        {/* The weighting is the whole reason the same stock scores
+                                            differently short vs long — show it, or the number looks
+                                            arbitrary next to the three lens scores below. */}
+                                        {overallWeights && (
+                                            <p className="mt-1 text-[10.5px] font-medium text-zinc-400 dark:text-zinc-500 leading-snug">
+                                                {overallWeights}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                             )}
