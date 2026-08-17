@@ -108,7 +108,6 @@ export const AMBIENT_PHRASES = [
     'Checking for red flags',
     'Sanity-checking the story',
     'Zooming out',
-    'Checking our own bias',
     'Not getting carried away',
 ];
 
