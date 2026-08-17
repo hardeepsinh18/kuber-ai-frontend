@@ -56,7 +56,7 @@ export const PHASE_PHRASES = {
     fundamentals: [
         'Validating evidence',
         'Checking the balance sheet',
-        'Interrogating the ratios',
+        'Making sense of the ratios',
         'Doing the boring maths',
     ],
     documents: [
@@ -78,14 +78,14 @@ export const PHASE_PHRASES = {
     ],
     compose: [
         'Synthesizing research',
-        'Building the investment thesis',
+        'Building the case',
         'Putting the pieces together',
-        'Measuring conviction',
+        'Gauging how confident we are',
         'Writing it up',
     ],
     note: [
         'Checking what we already know',
-        'Recalling earlier work',
+        'Remembering what we discussed',
     ],
 };
 
@@ -100,12 +100,12 @@ export const AMBIENT_PHRASES = [
     'Looking beneath the numbers',
     'Finding opportunities',
     'Weighing risks',
-    'Stress-testing assumptions',
+    'Double-checking our assumptions',
     'Thinking in probabilities',
-    'Weighing bull against bear',
+    'Weighing the upside against the risk',
     'Questioning the consensus',
-    'Following the money',
-    'Looking for the catch',
+    'Tracing where it leads',
+    'Checking for red flags',
     'Sanity-checking the story',
     'Zooming out',
     'Checking our own bias',
