@@ -119,7 +119,21 @@ export default function LegalPage({ doc = 'terms' }) {
     const border = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
 
     return (
-        <div style={{ minHeight: '100vh', backgroundColor: bg, color: text, padding: '32px 20px' }}>
+        // #root is a fixed-height (100dvh) column flex container built for the chat
+        // shell, which scrolls internally. This page is a long document that scrolls
+        // the window instead, and as a flex item it was capped at the container's
+        // height: the background box stopped at exactly one viewport while the text
+        // kept flowing past it, onto the transparent body's white canvas. In dark
+        // theme that left near-white text on white — invisible. flex:'1 0 auto' lets
+        // the box grow to its content so the background covers every line.
+        <div style={{
+            flex: '1 0 auto',
+            minHeight: '100vh',
+            width: '100%',
+            backgroundColor: bg,
+            color: text,
+            padding: '32px 20px',
+        }}>
             <div style={{ maxWidth: 720, margin: '0 auto' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
                     <KuberLogo size={30} variant={isDark ? 'mark' : 'mark-light'} />
