@@ -1,13 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { LogOut, FileText, TrendingUp, ExternalLink, X } from 'lucide-react';
+import { LogOut, FileText, TrendingUp, ExternalLink, X, ChevronUp } from 'lucide-react';
 // import PrivacyControls from './PrivacyControls'; // CONF-D-003: DPDP export/erasure
 // controls were mounted here, then pulled back out at the user's request. The
 // endpoints and component are untouched — re-add the import and the block below
 // (where PrivacyControls used to sit, between the theme row and the Privacy/Terms
 // link) to restore.
 
-const MENU_WIDTH = 256; // w-64
+// Matches the sidebar's own expanded width (Sidebar.jsx: md:w-[220px]) so the
+// menu reads as part of that column rather than a wider panel overhanging it.
+const MENU_WIDTH = 220;
 
 /**
  * Click-to-open account menu (name/avatar trigger), replacing the sidebar's
@@ -89,7 +91,14 @@ export default function ProfileMenu({
                 <button
                     ref={triggerRef}
                     onClick={handleToggle}
-                    className="w-full flex items-center gap-2.5 px-1 py-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors"
+                    // A bare name + avatar row gave no sign it opened anything: the
+                    // only affordance was a hover tint, invisible until you were
+                    // already on it (and absent entirely on touch). The chevron is a
+                    // persistent cue, and it rotates to point at the open menu.
+                    className={`w-full flex items-center gap-2.5 px-1.5 py-1.5 rounded-lg
+                                cursor-pointer transition-colors
+                                hover:bg-zinc-200/70 dark:hover:bg-white/[0.07]
+                                ${open ? 'bg-zinc-200/70 dark:bg-white/[0.07]' : ''}`}
                     aria-haspopup="menu"
                     aria-expanded={open}
                 >
@@ -106,6 +115,12 @@ export default function ProfileMenu({
                             <span className="text-[10px] text-zinc-700 dark:text-[#FDD405] font-medium">Free Plan</span>
                         </div>
                     </div>
+                    <ChevronUp
+                        size={14}
+                        aria-hidden="true"
+                        className={`flex-shrink-0 text-zinc-500 dark:text-zinc-400 transition-transform duration-200
+                                    ${open ? 'rotate-0' : 'rotate-180'}`}
+                    />
                 </button>
             ) : (
                 <button
@@ -132,11 +147,18 @@ export default function ProfileMenu({
                         left: pos.left,
                         width: MENU_WIDTH,
                         zIndex: 99999,
-                        boxShadow: '0 0 20px rgba(253,212,5,0.10), 0 8px 24px rgba(0,0,0,0.35)',
+                        boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
                     }}
+                    // Surface tokens copied from the sidebar container itself
+                    // (Sidebar.jsx: bg-[#E8E5DC]/border-zinc-300/80, dark
+                    // bg-[#1a1a1a]/border-zinc-700/50). It previously used an amber
+                    // border and an amber glow, which no other sidebar surface does —
+                    // brand yellow is for actions (New chat, avatar), not container
+                    // chrome, so the menu read as a foreign panel sitting on top of
+                    // the rail instead of an extension of it.
                     className="overflow-hidden rounded-xl
-                               border border-zinc-200 dark:border-[#FDD405]/40
-                               bg-white dark:bg-[#141310]
+                               border border-zinc-300/80 dark:border-zinc-700/50
+                               bg-[#E8E5DC] dark:bg-[#1a1a1a]
                                shadow-lg shadow-black/10 dark:shadow-black/40
                                animate-in fade-in slide-in-from-bottom-1 duration-150"
                 >
@@ -173,16 +195,18 @@ export default function ProfileMenu({
 
                     <button
                         onClick={handlePrivacyClick}
-                        className="w-full flex items-center gap-2 px-3.5 py-2.5 text-[12px] text-zinc-600 dark:text-zinc-300
+                        className="w-full flex items-center gap-2 px-3 py-2.5 text-[12px] text-zinc-600 dark:text-zinc-300
                                    hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors border-b border-zinc-200/70 dark:border-zinc-800/60"
                     >
                         <FileText size={13} className="flex-shrink-0" />
-                        Privacy Policy & Terms of Use
+                        {/* nowrap: at the sidebar-matched 220px width this is the
+                            longest row in the menu and wrapped to two lines. */}
+                        <span className="whitespace-nowrap">Privacy Policy &amp; Terms of Use</span>
                     </button>
 
                     <button
                         onClick={handleSignOutClick}
-                        className="w-full flex items-center gap-2 px-3.5 py-2.5 text-[12px] text-red-600 dark:text-red-400
+                        className="w-full flex items-center gap-2 px-3 py-2.5 text-[12px] text-red-600 dark:text-red-400
                                    hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
                     >
                         <LogOut size={13} className="flex-shrink-0" />
