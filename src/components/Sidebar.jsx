@@ -405,18 +405,27 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, onPortfolioClick, showLog
                             </button>
                         )}
 
-                        {/* iOS toggle — same as expanded footer */}
-                        <button
-                            onClick={toggleTheme}
-                            title={theme === 'light' ? 'Switch to dark' : 'Switch to light'}
-                            className="relative w-10 h-[22px] rounded-full overflow-hidden transition-colors duration-200 flex-shrink-0"
-                            style={{ backgroundColor: theme === 'light' ? '#FDD405' : '#52525b' }}
-                        >
-                            <span
-                                className="absolute top-[3px] left-0 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200"
-                                style={{ transform: `translateX(${theme === 'dark' ? '3px' : '21px'})` }}
-                            />
-                        </button>
+                        {/* Theme toggle — only when there is no ProfileMenu to hold it.
+                            Signed in, the account menu below already carries a Theme row
+                            (both variants), so rendering this too put a second, duplicate
+                            control in the strip. It also read as a stray wide pill among
+                            otherwise square icon buttons once the sidebar was collapsed.
+                            Mirrors the expanded footer, which shows a standalone toggle
+                            only for the signed-out/guest case. */}
+                        {!(supabaseConfigured && isAuthenticated && user) && (
+                            <button
+                                onClick={toggleTheme}
+                                title={theme === 'light' ? 'Switch to dark' : 'Switch to light'}
+                                aria-label="Toggle theme"
+                                className="relative w-10 h-[22px] rounded-full overflow-hidden transition-colors duration-200 flex-shrink-0"
+                                style={{ backgroundColor: theme === 'light' ? '#FDD405' : '#52525b' }}
+                            >
+                                <span
+                                    className="absolute top-[3px] left-0 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200"
+                                    style={{ transform: `translateX(${theme === 'dark' ? '3px' : '21px'})` }}
+                                />
+                            </button>
+                        )}
 
                         {/* User avatar */}
                         {supabaseConfigured ? (
