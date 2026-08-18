@@ -138,6 +138,25 @@ const stripResponseChrome = (text) => {
     // heading and renders as literal "##Top …" text, which is what the previous
     // collapse-only rule caused.
     out = out.replace(/^([ \t]*#{1,6})[ \t]*(?=\S)/gm, '$1 ');
+    // Same problem, same cause, for emphasis markers. Removing a leading emoji from
+    // "**\u{1F7E2} Open now**" leaves "** Open now**", and markdown allows NO space
+    // between ** and the text it emphasises — so the line stops being bold and the
+    // asterisks render literally ("** Open now**" in the IPO Corner).
+    //
+    // Scoped to a COMPLETE span on one line rather than to the markers individually:
+    // a naive "close the gap after **" also eats the ordinary space that follows a
+    // bold word ("Revenue **grew** 12%" -> "**grew**12%") and mangles arithmetic
+    // like "5 ** 2". Matching opener + body + closer together only rewrites runs
+    // that were already meant to be bold.
+    // Scoped to a marker that OPENS A LINE, which is the only shape the emoji strip
+    // can produce ("**\u{1F7E2} Open now**" is always its own line). Matching markers
+    // anywhere is not safe: a general rule pairs the CLOSING ** of one span with the
+    // opening ** of the next, so "**bold** and **more**" collapses to
+    // "**bold**and**more**", and table cells like "| **68.9×** | **0.7×** |" lose the
+    // spaces around the pipes. Anchoring to ^ leaves all of those untouched.
+    out = out.replace(/^([ \t]*)(\*\*|__)[ \t]+(?=\S)/gm, '$1$2');
+    // ...and the matching closer at end of line, so the span stays balanced.
+    out = out.replace(/(\S)[ \t]+(\*\*|__)[ \t]*$/gm, '$1$2');
     // Collapse a double space left mid-line where an emoji was removed.
     out = out.replace(/([^\s])[ \t]{2,}(?=\S)/g, '$1 ');
     out = out.replace(/^[ \t]+$/gm, '');

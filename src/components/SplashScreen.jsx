@@ -50,7 +50,7 @@ const SplashScreen = ({ onDone }) => {
                 pointerEvents: fading ? 'none' : 'auto',
             }}
         >
-            <KuberLogo size={size} variant={isDark ? 'full' : 'full-light'} alt="Venty — say Venty to the market" />
+            <KuberLogo size={size} variant={isDark ? 'full' : 'full-light'} alt="VentyAI — say Venty to the market" />
         </div>
     );
 };

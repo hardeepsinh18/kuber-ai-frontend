@@ -88,7 +88,7 @@ export const deriveVerdict = (text) => {
 /* Does this answer actually carry a verdict (a BUY/SELL/HOLD call)? Mirrors the
  * render conditions of VerdictBand so the "Why this verdict" heading only shows
  * when a verdict really rendered — otherwise the answer is informational and the
- * heading reads "Venty says" instead. */
+ * heading reads "VentyAI says" instead. */
 export const hasVerdict = ({ verdict, verdictIntent, signal, verdictText, content } = {}) => {
     if (verdict && (verdict.SHORT || verdict.LONG)) return true;   // deterministic engine verdict
     if (verdictIntent === false) return false;                     // backend: not an investment question
@@ -168,14 +168,21 @@ export const extractNearbyLevels = (text, price) => {
 export const MAIN_CARD_DARK = '#181613';
 export const INNER_CARD_DARK = '#0d0c0b';
 
-/* ─── VENTY SCORE helpers ─────────────────────────────────────────────────── */
+/* ─── VENTYAI SCORE helpers ─────────────────────────────────────────────────── */
 export const getScores = (scoreCard, managementSentiment) => {
     const comp = scoreCard?.overall?.components || {};
+    // `overall.score` is the horizon-weighted blend the VentyAI Verdict is read from
+    // (short 65/30/5, long 30/65/5, no horizon 47.5/47.5/5), so its label and the
+    // weights that produced it come from the backend rather than being re-derived
+    // here against thresholds tuned for the old equal-weight mean.
     // Fundamental engine emits a genuine 0-100 score (v3 floors at 20; v4 can go
     // to 0). Do NOT rescale — the old "≤10 → ×10" guard mis-rendered low v4
     // scores (e.g. 5 → 50). See fundamental_engine.py.
     return {
         overall: scoreCard?.overall?.score ?? null,
+        overallLabel: scoreCard?.overall?.label ?? null,
+        overallWeights: scoreCard?.overall?.weights ?? null,
+        overallBasis: scoreCard?.overall?.basis ?? null,
         technical: comp.technical ?? scoreCard?.technical?.score ?? null,
         fundamental: comp.financial ?? scoreCard?.fundamental?.score ?? null,
         sentimental: comp.management ?? managementSentiment?.tone_score ?? null,

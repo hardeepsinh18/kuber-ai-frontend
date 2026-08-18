@@ -17,11 +17,11 @@ import { fmtNum, fmtPct, fmtMultiple, fmtRatio } from '../../utils/metricFormat'
 /**
  * AnalystAnswer — "one tap deeper" layout for Analyst mode.
  * Same stock, same verdict, now with the full working behind it:
- *   1. Company card + KUBER VERDICT band (same as Quick)
+ *   1. Company card + VENTYAI VERDICT band (same as Quick)
  *   2. WHY THIS VERDICT card (+ expandable full analysis)
  *   3. Chart + Today's Market Stats
  *   4. PATTERN DETECTION — candle chart with overlays + pattern/volume/bias cells
- *   5. VENTY SCORE — same donut row as Quick
+ *   5. VENTYAI SCORE — same donut row as Quick
  *   6. Technical Scorecard — key indicators grid + commentary
  *   7. Fundamental Scorecard — health report grid + pros and cons
  *   8. Sentimental Scorecard — annual report intel, announcements, filings
@@ -83,7 +83,7 @@ export const proseComponents = {
 };
 
 /* ─── WHY THIS VERDICT ───────────────────────────────────────────────────── */
-// The prose Venty types out. Kept as its own helper because AnalystAnswer needs the
+// The prose VentyAI types out. Kept as its own helper because AnalystAnswer needs the
 // same string to drive the typewriter that WhyThisVerdict renders.
 const verdictSummary = (verdictText, content, signal) =>
     verdictText
@@ -852,7 +852,7 @@ const AnalystAnswer = ({
         || scores.fundamental != null || scores.sentimental != null;
 
     // A real BUY/SELL/HOLD verdict present? Drives the summary heading:
-    // "Why this verdict" when yes, "Venty says" for informational answers.
+    // "Why this verdict" when yes, "VentyAI says" for informational answers.
     const verdictExists = hasVerdict({
         verdict: scoreCard?.verdict, verdictIntent: scoreCard?.verdict_intent,
         signal, verdictText, content,
@@ -874,7 +874,7 @@ const AnalystAnswer = ({
             || (Array.isArray(signal?.why) && signal.why.length ? signal.why.join(' ') : null))
         : verdictSummary(verdictText, content, signal);
 
-    // Overview bullets for the Venty Score panel (same "Key Takeaway" idea as Quick):
+    // Overview bullets for the VentyAI Score panel (same "Key Takeaway" idea as Quick):
     // signal reasons → aiTake bullets → content bullets, de-duped, max 4.
     const overviewBullets = (() => {
         const out = [];
@@ -926,7 +926,7 @@ const AnalystAnswer = ({
                 )}
 
                 <WhyThisVerdict summary={answerText}
-                                label={sections.directAnswer ? 'Answer' : (verdictExists ? 'Why this verdict' : 'Venty says')}
+                                label={sections.directAnswer ? 'Answer' : (verdictExists ? 'Why this verdict' : 'VentyAI says')}
                                 typedSummary={animate ? displayedText : null} caret={animate} raised />
 
                 {((sections.chart && chart) || (sections.marketStats && stats.length > 0)) && (

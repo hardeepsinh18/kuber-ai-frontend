@@ -11,9 +11,9 @@ import { answerSections, firstParagraph, metricAnswer } from './answerSections';
  * QuickAnswer — the "instant read" layout for Quick (snap) mode.
  * Verdict, live chart, overall score and reasoning, all on one screen:
  *   1. Company card (name · NSE:SYM · price · day change)
- *   2. Yellow KUBER VERDICT band (BUY/SELL/HOLD + Entry / Stop Loss / Target)
+ *   2. Yellow VENTYAI VERDICT band (BUY/SELL/HOLD + Entry / Stop Loss / Target)
  *   3. Chart card (Area default) + Today's Market Stats side card
- *   4. VENTY AI SCORE panel — header bar, Overall Health gauge + Overview
+ *   4. VENTYAI SCORE panel — header bar, Overall Health gauge + Overview
  *      bullets, then Technical/Fundamental/Sentimental cards with commentary
  *   5. Recent News
  * Every section renders only when its data exists.
@@ -125,7 +125,7 @@ const QuickAnswer = ({
                 )}
             </div>
 
-            {/* ── VENTY AI SCORE — reference panel layout (holistic intents only) ── */}
+            {/* ── VENTYAI SCORE — reference panel layout (holistic intents only) ── */}
             {/* Key Takeaway bullets now live inside the panel as "Overview" */}
             {sections.scoreGrid && (hasScores || takeaways.length > 0) && (
                 <VentyScorePanel

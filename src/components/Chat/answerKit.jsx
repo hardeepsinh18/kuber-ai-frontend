@@ -78,7 +78,7 @@ export const MiniLabel = ({ children, className }) => (
 
 /* Collapsible section card — one unified, theme-coloured card whose title lives
  * inside it with a dropdown chevron (no yellow banner, no second card). Used for
- * "Pattern Detection" and "Venty Score" so both read as a single dropdown card
+ * "Pattern Detection" and "VentyAI Score" so both read as a single dropdown card
  * that follows the light/dark theme. `defaultOpen` starts expanded. */
 export const CollapsibleSection = ({ title, children, defaultOpen = true, className }) => {
     const [open, setOpen] = React.useState(defaultOpen);
@@ -254,7 +254,7 @@ export const CompanyCard = ({ metadata = {}, symbolLabel = '', flush = false, ra
     );
 };
 
-/* ─── KUBER VERDICT band — BUY/SELL/HOLD + Entry / Stop Loss / Target ────── */
+/* ─── VENTYAI VERDICT band — BUY/SELL/HOLD + Entry / Stop Loss / Target ────── */
 /* ── Deterministic verdict band (reads score_card.verdict from the engine) ────
    Single source of truth for BOTH horizons — the card can no longer disagree
    with the prose, and levels come from the engine (real ATR/swing) or are
@@ -282,16 +282,21 @@ const _longLevelCells = (lv) => {
         cells.push({ label: '3Y Target', value: `${fmtINR(lv.target_3yr, 2)}${lv.upside_3yr ? ` (${lv.upside_3yr})` : ''}` });
     return cells;
 };
-// Verdict → text colour (green = buy, amber = cautious, grey = wait, red = avoid).
+// Verdict → text colour (green = strong buy, amber = buy, grey = wait, red = avoid).
 const _verdictTone = (v) => ({
+    // Research-team ladder: 0-30 AVOID · 31-60 WAIT / HOLD · 61-75 BUY · 76-100 STRONG BUY
     'STRONG BUY':        'text-emerald-500 dark:text-emerald-400',
-    'CAUTIOUS BUY':      'text-street-yellow-ink dark:text-[#FDD405]',
-    'WAIT / ACCUMULATE': 'text-zinc-600 dark:text-zinc-300',
+    'BUY':               'text-street-yellow-ink dark:text-[#FDD405]',
+    'WAIT / HOLD':       'text-zinc-600 dark:text-zinc-300',
     'AVOID':             'text-red-500 dark:text-red-400',
     // QA-001 / QA-002: states the verdict engine emits when it refuses to recommend —
     // missing technical coverage, or a projection that came back below today's price.
     'INSUFFICIENT DATA': 'text-zinc-500 dark:text-zinc-400',
     'AVOID / WAIT':      'text-red-500 dark:text-red-400',
+    // Retired rung names. Chat history is persisted with the verdict string that was
+    // live when the answer was written, so old messages still render these.
+    'CAUTIOUS BUY':      'text-street-yellow-ink dark:text-[#FDD405]',
+    'WAIT / ACCUMULATE': 'text-zinc-600 dark:text-zinc-300',
 }[v] || 'text-zinc-600 dark:text-zinc-300');
 
 const HorizonRow = ({ tenor, v, cells }) => {
@@ -333,7 +338,7 @@ const DeterministicVerdictBand = ({ verdict, flush = false, raised = false }) =>
         <div className={clsx('relative overflow-hidden', chrome)}>
             <div className="flex items-center gap-1.5 px-4 pt-3 pb-1.5">
                 <span className="w-4 h-[3px] rounded-full" style={{ backgroundColor: BRAND }} />
-                <p className="text-[9px] font-extrabold uppercase tracking-[0.25em] text-zinc-900 dark:text-[#FDD405]">Venty Verdict</p>
+                <p className="text-[9px] font-extrabold uppercase tracking-[0.25em] text-zinc-900 dark:text-[#FDD405]">VentyAI Verdict</p>
             </div>
             {sh && <HorizonRow tenor="Short-Term · ≤1yr" v={sh} cells={_shortLevelCells(sh.levels)} />}
             {sh && lg && <div className="h-px bg-zinc-200 dark:bg-zinc-800" />}
@@ -343,7 +348,7 @@ const DeterministicVerdictBand = ({ verdict, flush = false, raised = false }) =>
 };
 
 export const VerdictBand = ({ verdict, verdictIntent, signal, verdictText, content, aiTake, price, patternSummary = null, flush = false, raised = false }) => {
-    // Preferred: the deterministic Venty Verdict engine (score_card.verdict).
+    // Preferred: the deterministic VentyAI Verdict engine (score_card.verdict).
     if (verdict && (verdict.SHORT || verdict.LONG)) {
         return <DeterministicVerdictBand verdict={verdict} flush={flush} raised={raised} />;
     }
@@ -422,7 +427,7 @@ export const VerdictBand = ({ verdict, verdictIntent, signal, verdictText, conte
                 levels.length === 3 ? 'grid-cols-2 sm:grid-cols-4' : levels.length === 2 ? 'grid-cols-3' : levels.length === 1 ? 'grid-cols-2' : 'grid-cols-1')}>
                 <div className="px-4 py-3">
                     <p className="text-[9px] font-extrabold uppercase tracking-[0.2em] text-black/60 mb-1">
-                        Venty Verdict
+                        VentyAI Verdict
                     </p>
                     <p className="text-[26px] font-black text-black leading-none">{rec}</p>
                 </div>
@@ -469,11 +474,11 @@ export const MarketStatsCard = ({ stats, flush = false, raised = false }) => {
     );
 };
 
-/* ─── VENTY SCORE — overall donut + technical/fundamental/sentimental ───
+/* ─── VENTYAI SCORE — overall donut + technical/fundamental/sentimental ───
  * getScores now lives in answerKitCore.js (imported + re-exported above). */
 
-/* ─── VENTY AI SCORE PANEL — Quick-mode score section ────────────────────────
- * Reference layout: header bar ("Venty AI Score and Recommendation for X"),
+/* ─── VENTYAI SCORE PANEL — Quick-mode score section ────────────────────────
+ * Reference layout: header bar ("VentyAI Score and Recommendation for X"),
  * top row = Overall Health arc gauge + Overview bullets, bottom row = one card
  * per lens (Technical / Fundamental / Sentimental) with its gauge and the real
  * commentary behind that lens. Quick mode only — Analyst keeps ScoreGrid. */
@@ -505,7 +510,10 @@ const ArcGauge = ({ score, size = 116, stroke = 11, color, showPct = true }) => 
     );
 };
 
-const overallLabel = (s) => (s >= 70 ? 'Strong' : s >= 50 ? 'Neutral' : 'Weak');
+// Fallback only — the backend sends `overall.label` on its own bands (the verdict
+// ladder's), so the word under the donut cannot contradict the rung beside it. These
+// thresholds match that ladder for older messages that predate the field.
+const overallLabel = (s) => (s >= 76 ? 'Strong' : s >= 61 ? 'Moderate' : s >= 31 ? 'Weak' : 'Poor');
 
 /* value/threshold/label triple → [value, threshold, label] */
 const _ratioTriple = (v) => {
@@ -557,7 +565,8 @@ const PanelTitle = ({ children }) => (
 
 export const VentyScorePanel = ({ scoreCard, managementSentiment, companyName = '', overviewBullets = [] }) => {
     const [open, setOpen] = React.useState(true);
-    const { overall, technical, fundamental, sentimental } = getScores(scoreCard, managementSentiment);
+    const { overall, overallLabel: overallLabelFromEngine, overallWeights, overallBasis,
+            technical, fundamental, sentimental } = getScores(scoreCard, managementSentiment);
 
     const lenses = [
         { key: 'Technical', score: technical, bullets: (Array.isArray(scoreCard?.technical?.commentary) ? scoreCard.technical.commentary : []).slice(0, 4) },
@@ -575,7 +584,7 @@ export const VentyScorePanel = ({ scoreCard, managementSentiment, companyName = 
                     className="w-full flex items-center justify-between gap-2 px-4 py-3 text-left
                                hover:bg-black/[0.02] dark:hover:bg-white/[0.03] transition-colors">
                 <span className="text-[15px] font-bold text-zinc-900 dark:text-white truncate">
-                    Venty AI Score and Recommendation{companyName ? ` for ${companyName}` : ''}
+                    VentyAI Score and Recommendation{companyName ? ` for ${companyName}` : ''}
                 </span>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"
                      className={clsx('flex-shrink-0 text-zinc-400 dark:text-zinc-500 transition-transform duration-200', open && 'rotate-180')}>
@@ -594,14 +603,26 @@ export const VentyScorePanel = ({ scoreCard, managementSentiment, companyName = 
                                         <ArcGauge score={overall} size={112} color={scoreColor(overall)} />
                                         <span className="-mt-4 px-2.5 py-0.5 rounded-md text-[10px] font-extrabold text-black"
                                               style={{ backgroundColor: scoreColor(overall) }}>
-                                            {overallLabel(overall)}
+                                            {overallLabelFromEngine || overallLabel(overall)}
                                         </span>
                                     </div>
                                     <div className="min-w-0">
                                         <PanelTitle>Overall Health</PanelTitle>
                                         <p className="mt-1 text-[11.5px] text-zinc-500 dark:text-zinc-400 leading-snug">
-                                            The stock's combined Venty AI Score across all three lenses.
+                                            {overallBasis === 'short'
+                                                ? "The stock's VentyAI Score weighted for a short-term call."
+                                                : overallBasis === 'long'
+                                                ? "The stock's VentyAI Score weighted for a long-term hold."
+                                                : "The stock's combined VentyAI Score across all three lenses."}
                                         </p>
+                                        {/* The weighting is the whole reason the same stock scores
+                                            differently short vs long — show it, or the number looks
+                                            arbitrary next to the three lens scores below. */}
+                                        {overallWeights && (
+                                            <p className="mt-1 text-[10.5px] font-medium text-zinc-400 dark:text-zinc-500 leading-snug">
+                                                {overallWeights}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                             )}

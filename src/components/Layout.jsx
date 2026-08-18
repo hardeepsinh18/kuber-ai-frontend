@@ -65,7 +65,7 @@ const Layout = ({ children, onNewThread, sidebarOpen, setSidebarOpen, showLogin,
 
                     <div className="flex-1 flex items-center justify-center gap-2 min-w-0 px-2">
                         <KuberLogo size={24} variant={isDark ? 'mark' : 'mark-light'} className="flex-shrink-0" />
-                        <KuberLogo size={13} variant={isDark ? 'wordmark' : 'wordmark-light'} alt="Venty" className="flex-shrink-0" />
+                        <KuberLogo size={13} variant={isDark ? 'wordmark' : 'wordmark-light'} alt="VentyAI" className="flex-shrink-0" />
                     </div>
 
                     <button
