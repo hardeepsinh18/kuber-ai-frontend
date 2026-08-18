@@ -322,13 +322,14 @@ export default function AuthPage() {
                         hit on a phone. inline-block + vertical padding grows the HIT AREA
                         to 24px without changing the type size or the visual layout. */}
                     By continuing you agree to our{' '}
-                    <a href="/terms" target="_blank" rel="noopener noreferrer"
+                    <a href="https://72street.ai/" target="_blank" rel="noopener noreferrer"
                        style={{ color: textSub, textDecoration: 'underline', cursor: 'pointer',
                                 display: 'inline-block', paddingBlock: 5 }}>Terms of Service</a>
                     {' '}and{' '}
-                    <a href="/privacy" target="_blank" rel="noopener noreferrer"
+                    <a href="https://72street.ai/" target="_blank" rel="noopener noreferrer"
                        style={{ color: textSub, textDecoration: 'underline', cursor: 'pointer',
                                 display: 'inline-block', paddingBlock: 5 }}>Privacy Policy</a>
+                    {' '}— visit 72street.ai for details
                 </p>
 
                 {/* Footer */}

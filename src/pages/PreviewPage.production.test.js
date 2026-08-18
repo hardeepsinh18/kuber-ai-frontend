@@ -40,8 +40,8 @@ describe('SEC-C-004: /preview must not ship to production', () => {
 
     it('no OTHER route shares the guard by accident', () => {
         // Guards the shape of the fix: the conditional must wrap only /preview, not
-        // swallow /login, /terms or /privacy, which must stay public.
-        for (const route of ['path="/login"', 'path="/terms"', 'path="/privacy"']) {
+        // swallow /login, which must stay public.
+        for (const route of ['path="/login"']) {
             const i = src.indexOf(route);
             expect(i, `${route} disappeared`).toBeGreaterThan(-1);
             const line = src.slice(src.lastIndexOf('\n', i) + 1, src.indexOf('\n', i));

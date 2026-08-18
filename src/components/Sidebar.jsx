@@ -3,14 +3,14 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import {
     Plus, MessageSquare,
     Sun, Moon, LogIn, Trash2, Search, Pencil, Check,
-    TrendingUp, BarChart2,
+    BarChart2,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useChatHistory } from '../context/ChatHistoryContext';
 import LoginModal from './Auth/LoginModal';
-// import PrivacyControls from './PrivacyControls'; // temporarily unmounted — see footer
+import ProfileMenu from './ProfileMenu';
 import KuberLogo from './KuberLogo';
 
 const relativeTime = (ts) => {
@@ -108,8 +108,6 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, onPortfolioClick, showLog
         if (e.key === 'Enter') { e.preventDefault(); commitRename(id); }
         if (e.key === 'Escape') { setEditingId(null); setEditingTitle(''); }
     };
-
-    const userInitials = (user?.user_metadata?.full_name || user?.email || 'G').slice(0, 2).toUpperCase();
 
     return (
         <>
@@ -322,51 +320,42 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, onPortfolioClick, showLog
                                 Portfolio
                             </button>
 
-                            {/* Theme toggle switch */}
-                            <div className="flex items-center justify-between px-1">
-                                <span className="text-[11px] text-zinc-500 dark:text-zinc-400">Theme</span>
-                                <button
-                                    onClick={toggleTheme}
-                                    className="relative w-10 h-[22px] rounded-full overflow-hidden transition-colors duration-200 flex-shrink-0"
-                                    style={{ backgroundColor: theme === 'light' ? '#FDD405' : '#52525b' }}
-                                    aria-label="Toggle theme"
-                                >
-                                    <span
-                                        className="absolute top-[3px] left-0 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200"
-                                        style={{ transform: `translateX(${theme === 'dark' ? '3px' : '21px'})` }}
-                                    />
-                                </button>
-                            </div>
-
-                            {/* Profile row — always visible */}
-                            <div className="flex items-center justify-between px-1">
-                                <div className="min-w-0 flex-1">
-                                    <p className="text-[12px] font-semibold text-zinc-800 dark:text-zinc-100 truncate leading-tight">
-                                        {isAuthenticated && user
-                                            ? (user.user_metadata?.full_name || user.email?.split('@')[0] || 'User')
-                                            : 'Guest'}
-                                    </p>
-                                    <div className="flex items-center gap-1 mt-0.5">
-                                        <TrendingUp size={8} className="text-zinc-700 dark:text-[#FDD405] flex-shrink-0" />
-                                        <span className="text-[10px] text-zinc-700 dark:text-[#FDD405] font-medium">Free Plan</span>
+                            {/* Account menu — theme, DPDP data controls, privacy/terms, sign out
+                                all live behind the name/avatar trigger (CONF-D-003: restores the
+                                DPDP access/erasure entry point that was parked pending this). */}
+                            {isAuthenticated && user ? (
+                                <ProfileMenu
+                                    user={user}
+                                    theme={theme}
+                                    toggleTheme={toggleTheme}
+                                    onSignOut={handleSignOut}
+                                    variant="expanded"
+                                />
+                            ) : (
+                                <>
+                                    <div className="flex items-center justify-between px-1">
+                                        <span className="text-[11px] text-zinc-500 dark:text-zinc-400">Theme</span>
+                                        <button
+                                            onClick={toggleTheme}
+                                            className="relative w-10 h-[22px] rounded-full overflow-hidden transition-colors duration-200 flex-shrink-0"
+                                            style={{ backgroundColor: theme === 'light' ? '#FDD405' : '#52525b' }}
+                                            aria-label="Toggle theme"
+                                        >
+                                            <span
+                                                className="absolute top-[3px] left-0 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200"
+                                                style={{ transform: `translateX(${theme === 'dark' ? '3px' : '21px'})` }}
+                                            />
+                                        </button>
                                     </div>
-                                </div>
-                                <button onClick={handleSignOut}
-                                    className="text-[10.5px] text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300 transition-colors flex-shrink-0 ml-2">
-                                    Sign out
-                                </button>
-                            </div>
-
-                            {/* CONF-D-003 (DPDP): access + erasure, reachable in-product.
-                                The endpoints existed; nothing called them, so the rights
-                                described on LegalPage could not actually be exercised.
-
-                                Temporarily hidden from the sidebar footer — these move
-                                under the settings button once that lands. The component
-                                and /privacy/* clients are untouched; re-mount to restore.
-                                NOTE: while hidden, DPDP access/erasure has no in-product
-                                entry point again, so this needs to be short-lived. */}
-                            {/* <PrivacyControls compact /> */}
+                                    <div className="flex items-center justify-between px-1">
+                                        <p className="text-[12px] font-semibold text-zinc-800 dark:text-zinc-100 truncate leading-tight">Guest</p>
+                                        <button onClick={() => navigate('/login')}
+                                            className="text-[10.5px] text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300 transition-colors flex-shrink-0 ml-2">
+                                            Sign in
+                                        </button>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -432,16 +421,13 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, onPortfolioClick, showLog
                         {/* User avatar */}
                         {supabaseConfigured ? (
                             isAuthenticated && user ? (
-                                <button
-                                    onClick={handleSignOut}
-                                    title="Sign out"
-                                    className="w-11 h-11 flex items-center justify-center rounded-full
-                                               text-zinc-900 text-[13px] font-bold
-                                               hover:brightness-110 transition-all"
-                                    style={{ backgroundColor: '#FDD405' }}
-                                >
-                                    {userInitials}
-                                </button>
+                                <ProfileMenu
+                                    user={user}
+                                    theme={theme}
+                                    toggleTheme={toggleTheme}
+                                    onSignOut={handleSignOut}
+                                    variant="collapsed"
+                                />
                             ) : (
                                 <button
                                     onClick={() => navigate('/login')}

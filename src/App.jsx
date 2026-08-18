@@ -13,7 +13,6 @@ import { ChatModeProvider } from './context/ChatModeContext';
 import { AdminGuard } from './components/Admin/AdminGuard';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import PreviewPage from './pages/PreviewPage';
-import LegalPage from './pages/LegalPage';
 import { consumeSignOutRedirect } from './lib/signOutRedirect';
 
 function AppContent() {
@@ -147,8 +146,6 @@ function App() {
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<AuthPage />} />
-              <Route path="/terms" element={<LegalPage doc="terms" />} />
-              <Route path="/privacy" element={<LegalPage doc="privacy" />} />
               {/* SEC-C-004: /preview is the internal visual test harness. It renders
                   FABRICATED analyst output against REAL NSE tickers (TCS, WIPRO,
                   HDFCBANK, ICICIBANK) with no "sample data" marking, and it was
