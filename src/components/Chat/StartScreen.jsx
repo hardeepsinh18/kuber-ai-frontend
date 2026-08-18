@@ -15,7 +15,7 @@ import { INNER_CARD_DARK } from './answerKit';
 // reads the sentence. Query strings are unchanged — this is presentation.
 const QUERIES = [
     { tag: 'Fundamentals', Icon: BarChart3,        q: 'Show me TCS fundamentals and valuation',      short: 'TCS fundamentals & valuation' },
-    { tag: 'Verdict',      Icon: TrendingUp,       q: 'Is Reliance a good buy right now?',            short: 'Is Reliance a good buy?' },
+    { tag: 'Verdict',      Icon: TrendingUp,       q: 'Should I buy Reliance?',                       short: 'Should I buy Reliance?' },
     { tag: 'Chart',        Icon: LineChart,        q: 'Show Nifty 50 chart for last 6 months',        short: 'Nifty 50 chart, 6 months' },
     { tag: 'Compare',      Icon: GitCompareArrows, q: 'Compare HDFC Bank vs ICICI Bank on financials', short: 'HDFC Bank vs ICICI Bank' },
     { tag: 'Screener',     Icon: Trophy,           q: 'Which mid-cap stocks have best ROE on NSE?',   short: 'Best mid-cap ROE on NSE' },

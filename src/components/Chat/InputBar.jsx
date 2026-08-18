@@ -9,7 +9,7 @@ import { useCompanySuggest } from '../../hooks/useCompanySuggest';
 
 const QUERIES = [
     'Show me TCS fundamentals and valuation',
-    'Is Reliance a good buy right now?',
+    'Should I buy Reliance?',
     'Show Nifty 50 chart for last 6 months',
     'Compare HDFC Bank vs ICICI Bank on financials',
     'Which mid-cap stocks have best ROE on NSE?',
