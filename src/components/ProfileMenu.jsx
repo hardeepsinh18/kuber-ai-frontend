@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { LogOut, FileText, TrendingUp } from 'lucide-react';
+import { LogOut, FileText, TrendingUp, ExternalLink, X } from 'lucide-react';
 // import PrivacyControls from './PrivacyControls'; // CONF-D-003: DPDP export/erasure
 // controls were mounted here, then pulled back out at the user's request. The
 // endpoints and component are untouched — re-add the import and the block below
@@ -27,6 +27,7 @@ export default function ProfileMenu({
     variant = 'expanded', // 'expanded' | 'collapsed'
 }) {
     const [open, setOpen] = useState(false);
+    const [showPrivacyNotice, setShowPrivacyNotice] = useState(false);
     const [pos, setPos] = useState({ bottom: 0, left: 0 });
     const wrapRef = useRef(null);
     const triggerRef = useRef(null);
@@ -57,6 +58,13 @@ export default function ProfileMenu({
         };
     }, [open]);
 
+    useEffect(() => {
+        if (!showPrivacyNotice) return undefined;
+        const handleKey = (e) => { if (e.key === 'Escape') setShowPrivacyNotice(false); };
+        document.addEventListener('keydown', handleKey);
+        return () => document.removeEventListener('keydown', handleKey);
+    }, [showPrivacyNotice]);
+
     const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
     const initials = (user?.user_metadata?.full_name || user?.email || 'U').slice(0, 2).toUpperCase();
 
@@ -68,6 +76,11 @@ export default function ProfileMenu({
     const handleSignOutClick = () => {
         setOpen(false);
         onSignOut();
+    };
+
+    const handlePrivacyClick = () => {
+        setOpen(false);
+        setShowPrivacyNotice(true);
     };
 
     return (
@@ -158,16 +171,14 @@ export default function ProfileMenu({
                         </button>
                     </div>
 
-                    <a
-                        href="https://72street.ai/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-3.5 py-2.5 text-[12px] text-zinc-600 dark:text-zinc-300
+                    <button
+                        onClick={handlePrivacyClick}
+                        className="w-full flex items-center gap-2 px-3.5 py-2.5 text-[12px] text-zinc-600 dark:text-zinc-300
                                    hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors border-b border-zinc-200/70 dark:border-zinc-800/60"
                     >
                         <FileText size={13} className="flex-shrink-0" />
                         Privacy Policy & Terms of Use
-                    </a>
+                    </button>
 
                     <button
                         onClick={handleSignOutClick}
@@ -177,6 +188,60 @@ export default function ProfileMenu({
                         <LogOut size={13} className="flex-shrink-0" />
                         Sign out
                     </button>
+                </div>,
+                document.body
+            )}
+
+            {showPrivacyNotice && createPortal(
+                <div
+                    className="fixed inset-0 z-[100000] flex items-center justify-center px-4"
+                    style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)' }}
+                >
+                    <div className="absolute inset-0" onClick={() => setShowPrivacyNotice(false)} />
+                    <div
+                        role="dialog"
+                        aria-modal="true"
+                        className="relative w-full max-w-sm rounded-2xl p-5
+                                   border border-zinc-200 dark:border-[#FDD405]/40
+                                   bg-white dark:bg-[#141310]
+                                   shadow-xl animate-in fade-in zoom-in-95 duration-150"
+                    >
+                        <button
+                            onClick={() => setShowPrivacyNotice(false)}
+                            aria-label="Close"
+                            className="absolute top-3 right-3 w-6 h-6 flex items-center justify-center rounded-md
+                                       text-zinc-400 hover:text-zinc-700 hover:bg-zinc-200/70
+                                       dark:text-zinc-500 dark:hover:text-zinc-200 dark:hover:bg-white/10 transition-colors"
+                        >
+                            <X size={14} />
+                        </button>
+
+                        <div className="w-10 h-10 flex items-center justify-center rounded-full mb-3
+                                        bg-zinc-100 dark:bg-white/5 text-zinc-500 dark:text-[#FDD405]">
+                            <FileText size={17} />
+                        </div>
+
+                        <h2 className="text-[14px] font-semibold text-zinc-900 dark:text-zinc-100 mb-1.5">
+                            Privacy Policy & Terms of Use
+                        </h2>
+                        <p className="text-[12.5px] leading-relaxed text-zinc-600 dark:text-zinc-400 mb-4">
+                            VentyAI is a product by 72 Street. For our full Privacy Policy and Terms of Use,
+                            please visit our website.
+                        </p>
+
+                        <a
+                            href="https://72street.ai/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => setShowPrivacyNotice(false)}
+                            className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl
+                                       text-[12.5px] font-semibold transition-all duration-200
+                                       bg-[#FDD405] text-zinc-900 hover:bg-[#e8c304]"
+                        >
+                            Visit 72street.ai
+                            <ExternalLink size={12} />
+                        </a>
+                    </div>
                 </div>,
                 document.body
             )}
