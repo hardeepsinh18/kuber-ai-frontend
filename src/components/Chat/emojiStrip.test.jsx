@@ -113,3 +113,62 @@ describe('meaningful symbols are NOT stripped', () => {
         expect(body()).toContain('·');
     });
 });
+
+/**
+ * Removing an emoji can leave the markdown behind it broken, which is worse than
+ * the emoji was: "**🟢 Open now**" becomes "** Open now**", and markdown allows
+ * NO space between ** and the text it emphasises — so the line stops being bold
+ * and the asterisks render literally in the IPO Corner.
+ *
+ * Same shape as the "##Top" heading bug: these assert the rendered ELEMENT, not
+ * just the text, because a text-only check passes while the markup is broken.
+ */
+describe('emphasis markers survive the emoji strip', () => {
+    it('renders "**🟢 Open now**" as bold, not literal asterisks (the reported case)', () => {
+        const { container } = renderBubble('**🟢 Open now**');
+        const strong = container.querySelector('strong');
+        expect(strong).not.toBeNull();
+        expect(strong.textContent.trim()).toBe('Open now');
+        expect(body()).not.toContain('**');
+    });
+
+    it('renders "**🔜 Upcoming**" as bold too', () => {
+        const { container } = renderBubble('**🔜 Upcoming**');
+        expect(container.querySelector('strong')).not.toBeNull();
+        expect(body()).not.toContain('**');
+    });
+
+    it('leaves a heading that never had an emoji alone', () => {
+        const { container } = renderBubble('**IPOs on NSE**');
+        expect(container.querySelector('strong').textContent.trim()).toBe('IPOs on NSE');
+    });
+
+    it('does not join two separate bold spans on one line', () => {
+        // A naive "close the gap after **" pairs the CLOSING marker of one span
+        // with the OPENING marker of the next: "**bold** and **more**" collapsed
+        // to "**bold**and**more**", losing the words between them.
+        renderBubble('**Open now** and **Upcoming**');
+        expect(body()).toContain('and');
+        expect(body()).not.toContain('**');
+    });
+
+    it('keeps the ordinary space after a mid-sentence bold word', () => {
+        renderBubble('Revenue **grew** 12% this year.');
+        expect(body()).toContain('grew');
+        expect(body()).toContain('12%');
+        expect(body()).not.toContain('grew12%');
+    });
+
+    it('leaves bold table cells and their padding intact', () => {
+        // The IPO table's "Subscribed" column is "**68.9×**" inside pipes; an
+        // over-broad rule ate the spaces around the pipe separators.
+        renderBubble('| Company | Subscribed |\n|---|---|\n| Credent | **68.9×** |');
+        expect(body()).toContain('68.9×');
+        expect(body()).not.toContain('**');
+    });
+
+    it('does not touch spaced asterisks that are not markdown', () => {
+        renderBubble('The formula is 5 ** 2 for exponentiation.');
+        expect(body()).toContain('5 ** 2');
+    });
+});
