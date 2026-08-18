@@ -9,7 +9,7 @@ class RootErrorBoundary extends React.Component {
     return { error }
   }
   componentDidCatch(error, info) {
-    if (import.meta.env.DEV) console.error('Venty root error:', error, info)
+    if (import.meta.env.DEV) console.error('VentyAI root error:', error, info)
   }
   render() {
     if (this.state.error) {
@@ -22,7 +22,7 @@ class RootErrorBoundary extends React.Component {
             <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
             <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8 }}>Something went wrong</h1>
             <p style={{ color: '#94a3b8', marginBottom: 24, fontSize: 14 }}>
-              Venty hit an unexpected error. Your chat history is safe in local storage.
+              VentyAI hit an unexpected error. Your chat history is safe in local storage.
             </p>
             <button
               onClick={() => window.location.reload()}

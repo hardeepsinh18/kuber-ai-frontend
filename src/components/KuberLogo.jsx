@@ -1,6 +1,6 @@
 /**
- * Venty brand logo (official mark from "Venty Logo 1 Final").
- * Venty is a product by 72 Street.
+ * VentyAI brand logo (official mark from "Venty Logo 1 Final").
+ * VentyAI is a product by 72 Street.
  *
  * `size` = rendered height in px (width scales to the asset's aspect ratio).
  * `variant`:
@@ -34,7 +34,7 @@ const ASSETS = {
     'wordmark-light': '/brand/venty-wordmark-light-v2.png',
 };
 
-const KuberLogo = ({ size = 36, variant = 'mark', className = '', alt = 'Venty' }) => (
+const KuberLogo = ({ size = 36, variant = 'mark', className = '', alt = 'VentyAI' }) => (
     <img
         src={ASSETS[variant] || ASSETS.mark}
         alt={alt}

@@ -31,7 +31,7 @@ export default function AdminDashboard() {
             <div className="bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 px-6 py-4">
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
                     <div>
-                        <h1 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">Venty Admin</h1>
+                        <h1 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">VentyAI Admin</h1>
                         <p className="text-xs text-zinc-400 mt-0.5">Internal dashboard · 72Street.ai</p>
                     </div>
                     <span className="px-2.5 py-1 text-xs font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-full">Live</span>

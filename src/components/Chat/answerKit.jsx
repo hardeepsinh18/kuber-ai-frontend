@@ -78,7 +78,7 @@ export const MiniLabel = ({ children, className }) => (
 
 /* Collapsible section card — one unified, theme-coloured card whose title lives
  * inside it with a dropdown chevron (no yellow banner, no second card). Used for
- * "Pattern Detection" and "Venty Score" so both read as a single dropdown card
+ * "Pattern Detection" and "VentyAI Score" so both read as a single dropdown card
  * that follows the light/dark theme. `defaultOpen` starts expanded. */
 export const CollapsibleSection = ({ title, children, defaultOpen = true, className }) => {
     const [open, setOpen] = React.useState(defaultOpen);
@@ -254,7 +254,7 @@ export const CompanyCard = ({ metadata = {}, symbolLabel = '', flush = false, ra
     );
 };
 
-/* ─── KUBER VERDICT band — BUY/SELL/HOLD + Entry / Stop Loss / Target ────── */
+/* ─── VENTYAI VERDICT band — BUY/SELL/HOLD + Entry / Stop Loss / Target ────── */
 /* ── Deterministic verdict band (reads score_card.verdict from the engine) ────
    Single source of truth for BOTH horizons — the card can no longer disagree
    with the prose, and levels come from the engine (real ATR/swing) or are
@@ -338,7 +338,7 @@ const DeterministicVerdictBand = ({ verdict, flush = false, raised = false }) =>
         <div className={clsx('relative overflow-hidden', chrome)}>
             <div className="flex items-center gap-1.5 px-4 pt-3 pb-1.5">
                 <span className="w-4 h-[3px] rounded-full" style={{ backgroundColor: BRAND }} />
-                <p className="text-[9px] font-extrabold uppercase tracking-[0.25em] text-zinc-900 dark:text-[#FDD405]">Venty Verdict</p>
+                <p className="text-[9px] font-extrabold uppercase tracking-[0.25em] text-zinc-900 dark:text-[#FDD405]">VentyAI Verdict</p>
             </div>
             {sh && <HorizonRow tenor="Short-Term · ≤1yr" v={sh} cells={_shortLevelCells(sh.levels)} />}
             {sh && lg && <div className="h-px bg-zinc-200 dark:bg-zinc-800" />}
@@ -348,7 +348,7 @@ const DeterministicVerdictBand = ({ verdict, flush = false, raised = false }) =>
 };
 
 export const VerdictBand = ({ verdict, verdictIntent, signal, verdictText, content, aiTake, price, patternSummary = null, flush = false, raised = false }) => {
-    // Preferred: the deterministic Venty Verdict engine (score_card.verdict).
+    // Preferred: the deterministic VentyAI Verdict engine (score_card.verdict).
     if (verdict && (verdict.SHORT || verdict.LONG)) {
         return <DeterministicVerdictBand verdict={verdict} flush={flush} raised={raised} />;
     }
@@ -427,7 +427,7 @@ export const VerdictBand = ({ verdict, verdictIntent, signal, verdictText, conte
                 levels.length === 3 ? 'grid-cols-2 sm:grid-cols-4' : levels.length === 2 ? 'grid-cols-3' : levels.length === 1 ? 'grid-cols-2' : 'grid-cols-1')}>
                 <div className="px-4 py-3">
                     <p className="text-[9px] font-extrabold uppercase tracking-[0.2em] text-black/60 mb-1">
-                        Venty Verdict
+                        VentyAI Verdict
                     </p>
                     <p className="text-[26px] font-black text-black leading-none">{rec}</p>
                 </div>
@@ -474,11 +474,11 @@ export const MarketStatsCard = ({ stats, flush = false, raised = false }) => {
     );
 };
 
-/* ─── VENTY SCORE — overall donut + technical/fundamental/sentimental ───
+/* ─── VENTYAI SCORE — overall donut + technical/fundamental/sentimental ───
  * getScores now lives in answerKitCore.js (imported + re-exported above). */
 
-/* ─── VENTY AI SCORE PANEL — Quick-mode score section ────────────────────────
- * Reference layout: header bar ("Venty AI Score and Recommendation for X"),
+/* ─── VENTYAI SCORE PANEL — Quick-mode score section ────────────────────────
+ * Reference layout: header bar ("VentyAI Score and Recommendation for X"),
  * top row = Overall Health arc gauge + Overview bullets, bottom row = one card
  * per lens (Technical / Fundamental / Sentimental) with its gauge and the real
  * commentary behind that lens. Quick mode only — Analyst keeps ScoreGrid. */
@@ -584,7 +584,7 @@ export const VentyScorePanel = ({ scoreCard, managementSentiment, companyName = 
                     className="w-full flex items-center justify-between gap-2 px-4 py-3 text-left
                                hover:bg-black/[0.02] dark:hover:bg-white/[0.03] transition-colors">
                 <span className="text-[15px] font-bold text-zinc-900 dark:text-white truncate">
-                    Venty AI Score and Recommendation{companyName ? ` for ${companyName}` : ''}
+                    VentyAI Score and Recommendation{companyName ? ` for ${companyName}` : ''}
                 </span>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"
                      className={clsx('flex-shrink-0 text-zinc-400 dark:text-zinc-500 transition-transform duration-200', open && 'rotate-180')}>
@@ -610,10 +610,10 @@ export const VentyScorePanel = ({ scoreCard, managementSentiment, companyName = 
                                         <PanelTitle>Overall Health</PanelTitle>
                                         <p className="mt-1 text-[11.5px] text-zinc-500 dark:text-zinc-400 leading-snug">
                                             {overallBasis === 'short'
-                                                ? "The stock's Venty AI Score weighted for a short-term call."
+                                                ? "The stock's VentyAI Score weighted for a short-term call."
                                                 : overallBasis === 'long'
-                                                ? "The stock's Venty AI Score weighted for a long-term hold."
-                                                : "The stock's combined Venty AI Score across all three lenses."}
+                                                ? "The stock's VentyAI Score weighted for a long-term hold."
+                                                : "The stock's combined VentyAI Score across all three lenses."}
                                         </p>
                                         {/* The weighting is the whole reason the same stock scores
                                             differently short vs long — show it, or the number looks

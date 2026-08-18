@@ -3,7 +3,7 @@ import { TechnicalScoreCard } from './TechnicalScoreCard';
 import { FinancialScoreCard } from './FinancialScoreCard';
 import { FiveYearScoreCard } from './FiveYearScoreCard';
 
-/* ─── Venty Score Banner ──────────────────────────────────────────────── */
+/* ─── VentyAI Score Banner ──────────────────────────────────────────────── */
 export const KuberScoreBanner = ({ horizon, tech, fund, ratingsSum, symbol }) => {
     const [showBreakdown, setShowBreakdown] = useState(false);
     if (!horizon) return null;
@@ -38,7 +38,7 @@ export const KuberScoreBanner = ({ horizon, tech, fund, ratingsSum, symbol }) =>
                 {/* Label row */}
                 <div className="flex items-center gap-2 mb-3">
                     <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 dark:text-zinc-500">
-                        Venty Score
+                        VentyAI Score
                     </span>
                     <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold"
                           style={{ background: `${scoreColor}18`, color: scoreColor }}>

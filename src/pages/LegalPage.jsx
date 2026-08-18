@@ -15,8 +15,8 @@ import KuberLogo from '../components/KuberLogo';
 const LAST_UPDATED = 'July 2026';
 
 const TERMS = [
-    ['What Venty is',
-        'Venty ("the Service"), by 72 Street, is an informational and educational tool for the ' +
+    ['What VentyAI is',
+        'VentyAI ("the Service"), by 72 Street, is an informational and educational tool for the ' +
         'Indian stock market (NSE/BSE). It provides market data, analysis, screening and general ' +
         'financial concepts.'],
     ['Not investment advice',
@@ -137,7 +137,7 @@ export default function LegalPage({ doc = 'terms' }) {
             <div style={{ maxWidth: 720, margin: '0 auto' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
                     <KuberLogo size={30} variant={isDark ? 'mark' : 'mark-light'} />
-                    <KuberLogo size={17} variant={isDark ? 'wordmark' : 'wordmark-light'} alt="Venty" />
+                    <KuberLogo size={17} variant={isDark ? 'wordmark' : 'wordmark-light'} alt="VentyAI" />
                 </div>
 
                 <h1 style={{ fontSize: 26, fontWeight: 800, color: heading, marginBottom: 4 }}>{title}</h1>

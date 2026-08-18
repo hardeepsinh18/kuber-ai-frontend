@@ -6,7 +6,7 @@ export function LoadingState({ fileName }) {
   const steps = [
     'Parsing holdings from Excel...',
     'Resolving NSE symbols...',
-    'Enriching from Venty database...',
+    'Enriching from VentyAI database...',
     'Computing fundamental scores...',
     'Generating AI commentary...',
   ]

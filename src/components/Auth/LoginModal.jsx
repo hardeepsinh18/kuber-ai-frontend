@@ -181,7 +181,7 @@ const LoginModal = ({ isOpen, onClose }) => {
                                     </div>
                                 </div>
                                 <div className="flex flex-col gap-1">
-                                    <KuberLogo size={15} variant={isDark ? 'wordmark' : 'wordmark-light'} alt="Venty" />
+                                    <KuberLogo size={15} variant={isDark ? 'wordmark' : 'wordmark-light'} alt="VentyAI" />
                                     <p className="text-[10px] text-zinc-400 dark:text-zinc-600 tracking-wide">by 72 Street</p>
                                 </div>
                             </div>

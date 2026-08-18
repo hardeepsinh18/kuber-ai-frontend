@@ -234,14 +234,14 @@ export default function AuthPage() {
                 <div className="flex items-center gap-3 mb-6">
                     <KuberLogo size={44} variant={isDark ? 'mark' : 'mark-light'} />
                     <div className="flex flex-col gap-1.5">
-                        <KuberLogo size={19} variant={isDark ? 'wordmark' : 'wordmark-light'} alt="Venty" />
+                        <KuberLogo size={19} variant={isDark ? 'wordmark' : 'wordmark-light'} alt="VentyAI" />
                         <p className="text-[10px] tracking-widest uppercase" style={{ color: labelColor }}>by 72 Street</p>
                     </div>
                 </div>
 
                 {/* Heading */}
                 <h1 className="text-[24px] font-bold text-center leading-snug mb-1" style={{ color: textMain }}>
-                    Hi! I'm <span style={{ color: '#FDD405' }}>Venty</span>
+                    Hi! I'm <span style={{ color: '#FDD405' }}>VentyAI</span>
                 </h1>
                 <p className="text-[13px] text-center mb-7" style={{ color: textSub }}>I bring clarity to market decisions.</p>
 

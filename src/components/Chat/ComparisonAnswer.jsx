@@ -13,7 +13,7 @@ import { proseComponents } from './AnalystAnswer';
  * analysis" while TCS-only scorecards filled the screen. Here the comparison
  * IS the answer:
  *   1. VS band — the tickers being compared
- *   2. KUBER VERDICT band — parsed from the "> **Winner: X** — reason" line
+ *   2. VENTYAI VERDICT band — parsed from the "> **Winner: X** — reason" line
  *   3. Full head-to-head markdown, expanded (scorecard tables, better/worse
  *      sections, final call — themed via AnalystAnswer's proseComponents)
  *   4. Charts per symbol when chart data is present
@@ -60,7 +60,7 @@ const ComparisonAnswer = ({ content, metadata = {}, chartData = null }) => {
             {/* ── Winner verdict band ────────────────────────────── */}
             {winner && (
                 <Card className="px-4 py-3.5 border-l-4 border-l-street-yellow-ink dark:border-l-[#FDD405]">
-                    <MiniLabel>Venty verdict</MiniLabel>
+                    <MiniLabel>VentyAI verdict</MiniLabel>
                     <div className="mt-1.5 flex items-start gap-2">
                         <Trophy size={16} strokeWidth={2.5} className="mt-[2px] flex-shrink-0 text-street-yellow-ink dark:text-[#FDD405]" />
                         <p className="text-[13.5px] leading-relaxed text-zinc-800 dark:text-zinc-100">

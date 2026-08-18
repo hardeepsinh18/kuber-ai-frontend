@@ -40,8 +40,8 @@ describe('AnalystAnswer intent narrowing', () => {
         expect(text).toContain('The P/E of Reliance is');
         // The full-wall sections are gone
         expect(container.querySelector('canvas')).toBeNull();      // no StockChart
-        expect(text).not.toContain('Venty AI Score');              // no overall score grid
-        expect(text).not.toContain('Kuber Verdict');               // no BUY/SELL verdict band
+        expect(text).not.toContain('VentyAI Score');              // no overall score grid
+        expect(text).not.toContain('VentyAI Verdict');               // no BUY/SELL verdict band
     });
 
     it("pe_ratio: answers the asked metric from scorecard data, not the opening line", () => {
@@ -66,6 +66,6 @@ describe('AnalystAnswer intent narrowing', () => {
         const { container } = renderAnswer({ ...baseProps, chartData: undefined, queryIntent: 'full' });
         const text = container.textContent;
         expect(text).toContain('Why this verdict');
-        expect(text).toContain('Venty AI Score');
+        expect(text).toContain('VentyAI Score');
     });
 });
