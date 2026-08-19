@@ -565,7 +565,7 @@ const PanelTitle = ({ children }) => (
 
 export const VentyScorePanel = ({ scoreCard, managementSentiment, companyName = '', overviewBullets = [] }) => {
     const [open, setOpen] = React.useState(true);
-    const { overall, overallLabel: overallLabelFromEngine, overallWeights, overallBasis,
+    const { overall, overallLabel: overallLabelFromEngine, overallBasis,
             technical, fundamental, sentimental } = getScores(scoreCard, managementSentiment);
 
     const lenses = [
@@ -615,14 +615,14 @@ export const VentyScorePanel = ({ scoreCard, managementSentiment, companyName = 
                                                 ? "The stock's VentyAI Score weighted for a long-term hold."
                                                 : "The stock's combined VentyAI Score across all three lenses."}
                                         </p>
-                                        {/* The weighting is the whole reason the same stock scores
-                                            differently short vs long — show it, or the number looks
-                                            arbitrary next to the three lens scores below. */}
-                                        {overallWeights && (
-                                            <p className="mt-1 text-[10.5px] font-medium text-zinc-400 dark:text-zinc-500 leading-snug">
-                                                {overallWeights}
-                                            </p>
-                                        )}
+                                        {/* The weighting breakdown ("48% Technical - 48%
+                                            Fundamental - 5% Sentiment") is NOT rendered: it is
+                                            internal scoring detail that crowded the card without
+                                            telling a user anything actionable, and the three lens
+                                            scores are already shown as their own sub-cards below.
+                                            `overallWeights` is still extracted in answerKitCore so
+                                            the value stays available to any future surface — this
+                                            is a display decision, not a data change. */}
                                     </div>
                                 </div>
                             )}
