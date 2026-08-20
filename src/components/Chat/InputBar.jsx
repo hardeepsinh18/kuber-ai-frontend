@@ -234,7 +234,7 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
                                 value={input}
                                 onChange={(e) => { setInput(e.target.value); autoResize(e.target); }}
                                 onKeyDown={handleKeyDown}
-                                placeholder="Ask VentyAI anything finance..."
+                                placeholder="Say Venty to ask anything finance..."
                                 disabled={isLoading}
                                 /* QA-C-010: bound the input to what the API actually
                                    accepts (ChatRequest.query max_length=2000). Without
