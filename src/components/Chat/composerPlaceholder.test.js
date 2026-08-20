@@ -1,8 +1,10 @@
 /**
  * The composer placeholder read "Ask VentyAI anything finance...". Changed to
- * "Say Venty to ask anything finance..." (2026-08-20, user request) — it leads
- * with the brand's spoken name and reads as an invitation to talk to Venty
- * rather than to operate a search box.
+ * "Say Venty to..." (2026-08-20, user request) — it leads with the brand's
+ * spoken name and reads as an invitation to talk to Venty rather than to
+ * operate a search box. The trailing "ask anything finance" was dropped: the
+ * trailing ellipsis already implies the sentence continues, and the shorter
+ * string leaves the composer uncluttered.
  *
  * The string lives in TWO components — the persistent composer (InputBar) and
  * the first-run start screen (StartScreen) — which are shown in the same
@@ -26,7 +28,7 @@ const startScreen = read('./StartScreen.jsx');
 
 const placeholderOf = (src) => src.match(/placeholder="([^"]+)"/)?.[1];
 
-const EXPECTED = 'Say Venty to ask anything finance...';
+const EXPECTED = 'Say Venty to...';
 
 describe('composer placeholder', () => {
     it('uses the new wording in the persistent composer', () => {
@@ -47,8 +49,9 @@ describe('composer placeholder', () => {
     });
 
     it('stays short enough to fit a 360px composer on one line', () => {
-        // Measured in a real browser at 360px: 334px used of 334px available.
-        // A longer string truncates mid-word on mobile, so pin the budget.
+        // The previous wording measured 334px of 334px available at 360px —
+        // exactly at the limit. This one is far shorter, but keep the budget so
+        // a future rewording cannot silently truncate mid-word on mobile.
         expect(EXPECTED.length).toBeLessThanOrEqual(40);
     });
 });
