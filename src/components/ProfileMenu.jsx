@@ -251,6 +251,8 @@ export default function ProfileMenu({
                         <p className="text-[12.5px] leading-relaxed text-zinc-600 dark:text-zinc-400 mb-4">
                             VentyAI is a product by 72 Street. For our full Privacy Policy and Terms of Use,
                             please visit our website.
+                            <br />
+                            You'll find them under the Policy & Terms of Use section on the website.
                         </p>
 
                         <a
