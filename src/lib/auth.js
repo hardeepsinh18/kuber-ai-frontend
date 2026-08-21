@@ -11,7 +11,7 @@ import { fetchAuthSession } from 'aws-amplify/auth';
 const region           = import.meta.env.VITE_COGNITO_REGION;
 const userPoolId       = import.meta.env.VITE_COGNITO_USER_POOL_ID;   // ap-south-1_VdpuGVS6b
 const userPoolClientId = import.meta.env.VITE_COGNITO_CLIENT_ID;      // app client id
-const oauthDomain      = import.meta.env.VITE_COGNITO_DOMAIN;         // kuberai-auth.auth.ap-south-1.amazoncognito.com
+const oauthDomain      = import.meta.env.VITE_COGNITO_DOMAIN;         // venty-auth.auth.ap-south-1.amazoncognito.com
 
 // True when Cognito is configured. Exported as `supabaseConfigured` alias too, since
 // existing components read that flag (now means simply "auth configured").
