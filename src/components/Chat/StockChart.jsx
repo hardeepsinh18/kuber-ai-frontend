@@ -37,6 +37,14 @@ const RANGES = [
     { label: '1Y', bars: 252 },
 ];
 
+// Maps the backend's requested `period` (chartData.period, e.g. from a CHART
+// card like "last 6 months") onto the matching range button's bar count, so
+// the chart opens on the period the user actually asked for.
+const PERIOD_TO_BARS = RANGES.reduce((acc, { label, bars }) => {
+    acc[label.toLowerCase()] = bars;
+    return acc;
+}, {});
+
 const TYPE_DEFS = {
     candle: { label: 'Candles', aria: 'Candlestick chart', Icon: ChartCandlestick },
     area: { label: 'Area', aria: 'Area chart', Icon: Activity },
@@ -55,7 +63,7 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
     const [expanded, setExpanded] = useState(false);
     const panelRef = useRef(null);
 
-    const { timeframe = 'daily', chart_metadata = {} } = chartData && !chartData.error ? chartData : {};
+    const { timeframe = 'daily', chart_metadata = {}, period: requestedPeriod = null } = chartData && !chartData.error ? chartData : {};
 
     const bars = useMemo(() => normalizeOhlc(chartData), [chartData]);
     const renko = useMemo(() => buildRenko(bars.map((b) => ({ ...b, date: b.time }))), [bars]);
@@ -114,7 +122,8 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
         return Math.min(bars.length, Math.max(40, Math.round(span * 1.35)));
     }, [patternAnn, bars]);
 
-    const range = userRange ?? ((chartType === 'candle' && autoFrameRange) || 66);
+    const requestedRange = requestedPeriod ? PERIOD_TO_BARS[String(requestedPeriod).toLowerCase()] : null;
+    const range = userRange ?? ((chartType === 'candle' && autoFrameRange) || requestedRange || 66);
 
     if (!chartData) return null;
     if (chartData.error) {

@@ -298,6 +298,7 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, onPortfolioClick, showLog
                             {(!supabaseConfigured || isAuthenticated) && (
                                 <button
                                     onClick={onNewThread}
+                                    data-testid="new-chat-button"
                                     className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl
                                                text-[11px] font-semibold transition-all duration-200
                                                bg-[#FDD405] text-zinc-900 hover:bg-[#e8c304] shadow-sm"
@@ -397,6 +398,7 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, onPortfolioClick, showLog
                             <button
                                 onClick={onNewThread}
                                 title="New chat"
+                                data-testid="new-chat-button"
                                 className="w-9 h-9 flex items-center justify-center rounded-xl
                                            bg-[#FDD405] text-zinc-900 hover:bg-[#e8c304]
                                            transition-all duration-200 shadow-sm"

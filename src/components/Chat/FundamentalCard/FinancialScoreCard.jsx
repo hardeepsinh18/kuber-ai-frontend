@@ -137,6 +137,16 @@ export const FinancialScoreCard = ({ fund, symbol, flat = false }) => {
                         </div>
                     )}
 
+                    {/* VENTY-6: ROE/ROCE/margin here can legitimately differ from the
+                        Scanner's numbers for the same stock — they're read from
+                        different snapshots. Labeling which one fed this card beats
+                        pretending there's one source of truth. */}
+                    {fund?.ratios_basis && (
+                        <p className="text-[10px] text-zinc-400 dark:text-zinc-500 -mt-1">
+                            Ratios: {fund.ratios_basis}
+                        </p>
+                    )}
+
                     {/* sm:, not xs: — at the 375px xs breakpoint two columns leave each
                         card ~165px, which is not enough for an uppercase subtitle
                         ("RETURN ON CAPITAL EMPLOYED") beside its rating badge, and the

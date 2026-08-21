@@ -97,6 +97,7 @@ const StartScreen = ({ onStartChat, onScannerResult, responseMode, setResponseMo
 
                                 <textarea
                                     ref={inputRef}
+                                    data-testid="composer-input"
                                     rows={2}
                                     value={input}
                                     onChange={e => { setInput(e.target.value); autoResize(e.target); }}
@@ -124,8 +125,13 @@ const StartScreen = ({ onStartChat, onScannerResult, responseMode, setResponseMo
                                                         key={mode.key}
                                                         type="button"
                                                         onClick={() => setResponseMode(mode.key)}
+                                                        data-testid={`mode-chip-${mode.key}`}
                                                         className={clsx(
-                                                            'px-2.5 sm:px-3 py-1 rounded-md text-[11px] font-semibold transition-all duration-200 select-none',
+                                                            // Invisible overlay grows the ~25px tap target toward 44px
+                                                            // without enlarging the visible pill (matches InputBar's
+                                                            // mode toggle — same component duplicated for the start screen).
+                                                            'relative px-2.5 sm:px-3 py-1 rounded-md text-[11px] font-semibold transition-all duration-200 select-none',
+                                                            "before:absolute before:-inset-y-1.5 before:inset-x-0 before:content-['']",
                                                             isActive
                                                                 ? 'text-zinc-900 shadow-sm'
                                                                 : 'text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300'
@@ -141,6 +147,7 @@ const StartScreen = ({ onStartChat, onScannerResult, responseMode, setResponseMo
                                             type="button"
                                             onClick={() => setScannerOpen(true)}
                                             title="Scanners"
+                                            data-testid="scanner-chip"
                                             className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg text-[11px] font-semibold flex-shrink-0
                                                        text-zinc-500 dark:text-zinc-400
                                                        hover:text-zinc-900 dark:hover:text-zinc-100
@@ -155,6 +162,7 @@ const StartScreen = ({ onStartChat, onScannerResult, responseMode, setResponseMo
                                             type="button"
                                             onClick={() => setIpoOpen(true)}
                                             title="IPOs"
+                                            data-testid="ipo-chip"
                                             className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg text-[11px] font-semibold flex-shrink-0
                                                        text-zinc-500 dark:text-zinc-400
                                                        hover:text-zinc-900 dark:hover:text-zinc-100
@@ -170,7 +178,11 @@ const StartScreen = ({ onStartChat, onScannerResult, responseMode, setResponseMo
                                         onClick={send}
                                         disabled={!input.trim()}
                                         aria-label="Send"
-                                        className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0
+                                        data-testid="send-button"
+                                        // relative + before: grows the 36x36 tap target to ~44x44 via an
+                                        // invisible overlay rather than enlarging the visible circle.
+                                        className="relative w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0
+                                                   before:absolute before:-inset-1 before:content-['']
                                                    bg-white dark:bg-[#111111]
                                                    disabled:opacity-20 disabled:cursor-not-allowed
                                                    hover:scale-105 active:scale-95 disabled:hover:scale-100
@@ -202,6 +214,7 @@ const StartScreen = ({ onStartChat, onScannerResult, responseMode, setResponseMo
                         {QUERIES.map(({ tag, Icon, q, short }, i) => (
                             <motion.button
                                 key={q}
+                                data-testid={`suggestion-card-${tag.toLowerCase()}`}
                                 initial={{ opacity: 0, y: 8 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.18 + i * 0.04, duration: 0.30 }}

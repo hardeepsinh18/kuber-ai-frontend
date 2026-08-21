@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 // Side-effect import runs Amplify.configure(); helpers below drive the session.
 import { authConfigured, getIdToken } from '../lib/auth';
 import { getApiBase } from '../lib/apiBase';
@@ -71,18 +71,33 @@ export function AuthProvider({ children }) {
   // after a real sign-in, instead of waiting for the first chat action to create
   // it lazily. Idempotent upsert server-side, so failures here are silent —
   // _ensure_app_user still runs on the first /chats call either way.
-  const syncUserToBackend = async () => {
-    try {
-      const session = await fetchAuthSession();
-      const token = session?.tokens?.idToken?.toString();
-      if (!token) return;
-      const fullName = session?.tokens?.idToken?.payload?.name || null;
-      await fetch(`${getApiBase()}/api/v1/auth/sync`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ full_name: fullName }),
-      });
-    } catch (_) { /* best-effort */ }
+  //
+  // VENTY-12: a single sign-in triggers this from two independent call sites —
+  // the Hub 'signedIn'/'signInWithRedirect' listener below, and the explicit
+  // await in signInWithEmail — which fired two POSTs per sign-in. syncInFlightRef
+  // collapses concurrent calls onto one in-flight request instead of trying to
+  // remove either call site (each is the only sync path for its own flow: Hub
+  // covers Google redirect, the explicit call covers email/password and needs to
+  // be awaited before signInWithEmail's caller navigates away).
+  const syncInFlightRef = useRef(null);
+  const syncUserToBackend = () => {
+    if (syncInFlightRef.current) return syncInFlightRef.current;
+    const run = (async () => {
+      try {
+        const session = await fetchAuthSession();
+        const token = session?.tokens?.idToken?.toString();
+        if (!token) return;
+        const fullName = session?.tokens?.idToken?.payload?.name || null;
+        await fetch(`${getApiBase()}/api/v1/auth/sync`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ full_name: fullName }),
+        });
+      } catch (_) { /* best-effort */ }
+    })();
+    syncInFlightRef.current = run;
+    run.finally(() => { syncInFlightRef.current = null; });
+    return run;
   };
 
   useEffect(() => {

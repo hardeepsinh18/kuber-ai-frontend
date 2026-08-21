@@ -230,6 +230,7 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
                         <div className="px-4 pt-3 pb-1">
                             <textarea
                                 ref={inputRef}
+                                data-testid="composer-input"
                                 rows={1}
                                 value={input}
                                 onChange={(e) => { setInput(e.target.value); autoResize(e.target); }}
@@ -259,8 +260,14 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
                                             const isActive = responseMode === mode.key;
                                             return (
                                                 <button key={mode.key} type="button" onClick={() => setResponseMode(mode.key)}
+                                                    data-testid={`mode-chip-${mode.key}`}
                                                     className={clsx(
-                                                        'px-2.5 sm:px-3 py-1 rounded-md text-[11px] font-semibold transition-all duration-200 select-none',
+                                                        // relative + before: grows the tap target to ~44px tall via an
+                                                        // invisible overlay, without enlarging the visible pill — a
+                                                        // miss-tap here silently swaps Analyst/Quick, so the ~25px
+                                                        // visual chip was too easy to miss on phones.
+                                                        'relative px-2.5 sm:px-3 py-1 rounded-md text-[11px] font-semibold transition-all duration-200 select-none',
+                                                        "before:absolute before:-inset-y-1.5 before:inset-x-0 before:content-['']",
                                                         isActive ? 'text-zinc-900 shadow-sm' : 'text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300'
                                                     )}
                                                     style={isActive ? { backgroundColor: '#FDD405' } : {}}>
@@ -276,6 +283,7 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
                                     type="button"
                                     onClick={() => setScannerOpen(true)}
                                     title="Scanners"
+                                    data-testid="scanner-chip"
                                     className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg text-[11px] font-semibold flex-shrink-0
                                                text-zinc-500 dark:text-zinc-400
                                                hover:text-zinc-900 dark:hover:text-zinc-100
@@ -292,6 +300,7 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
                                     type="button"
                                     onClick={() => setIpoOpen(true)}
                                     title="IPOs"
+                                    data-testid="ipo-chip"
                                     className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg text-[11px] font-semibold flex-shrink-0
                                                text-zinc-500 dark:text-zinc-400
                                                hover:text-zinc-900 dark:hover:text-zinc-100
@@ -318,8 +327,11 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
                                         <Square size={10} fill="currentColor" />
                                     </button>
                                 ) : (
-                                    <button onClick={handleSend} disabled={!input.trim()} aria-label="Send"
-                                        className="w-9 h-9 flex items-center justify-center rounded-full
+                                    <button onClick={handleSend} disabled={!input.trim()} aria-label="Send" data-testid="send-button"
+                                        // relative + before: grows the 36x36 tap target to ~44x44 via an
+                                        // invisible overlay rather than enlarging the visible circle.
+                                        className="relative w-9 h-9 flex items-center justify-center rounded-full
+                                                   before:absolute before:-inset-1 before:content-['']
                                                    bg-white dark:bg-[#111111]
                                                    transition-all duration-200 active:scale-95
                                                    disabled:opacity-25 disabled:cursor-not-allowed

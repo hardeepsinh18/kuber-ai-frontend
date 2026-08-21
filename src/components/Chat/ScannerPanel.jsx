@@ -290,12 +290,17 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
 
                 const universe_ = allResults[0]?.universe || universe;
                 const dur       = allResults[0]?.duration_seconds || 0;
+                // VENTY-6: fundamental scanners read a cached snapshot the chat's own
+                // fundamentals card doesn't always use — surface that so the same
+                // stock's ROE et al. reading differently on the two surfaces doesn't
+                // look like a bug.
+                const ratiosBasis = allResults[0]?.ratios_basis || null;
 
                 const label = names.length === 1
                     ? names[0]
                     : `${names.join(' + ')}`;
 
-                const msg = formatResults(label, names, intersected, universe_, dur);
+                const msg = formatResults(label, names, intersected, universe_, dur, ratiosBasis);
                 setScanning(false);
                 setScanDone({ count: intersected.length, msg });
                 setSelected(new Set());
@@ -550,6 +555,7 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                             </button>
                             <button
                                 onClick={handleRunScan}
+                                data-testid="scanner-run-button"
                                 className="flex-shrink-0 px-4 py-2 rounded-xl text-[12px] font-bold text-zinc-900 transition-all hover:opacity-90 active:scale-95"
                                 style={{ backgroundColor: '#FDD405' }}
                             >

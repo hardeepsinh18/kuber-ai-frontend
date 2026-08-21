@@ -88,6 +88,14 @@ export default function ClarifyDropdown({
                     // onMouseDown, not onClick: fires before the textarea blurs, so the
                     // dropdown cannot close out from under the click.
                     onMouseDown={(e) => { e.preventDefault(); if (!disabled) onPick(opt.value); }}
+                    // Keyboard activation (Tab + Enter/Space) doesn't go through
+                    // onMouseDown at all, so it needs its own handler.
+                    onKeyDown={(e) => {
+                        if ((e.key === 'Enter' || e.key === ' ') && !disabled) {
+                            e.preventDefault();
+                            onPick(opt.value);
+                        }
+                    }}
                     className="group flex items-center gap-2.5 w-full text-left px-3 py-2
                                border-t border-zinc-200/70 dark:border-white/[0.06]
                                hover:bg-[#FDD405]/[0.07] dark:hover:bg-[#FDD405]/[0.07]

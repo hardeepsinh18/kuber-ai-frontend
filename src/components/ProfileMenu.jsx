@@ -91,6 +91,7 @@ export default function ProfileMenu({
                 <button
                     ref={triggerRef}
                     onClick={handleToggle}
+                    data-testid="account-menu-trigger"
                     // A bare name + avatar row gave no sign it opened anything: the
                     // only affordance was a hover tint, invisible until you were
                     // already on it (and absent entirely on touch). The chevron is a
@@ -127,6 +128,7 @@ export default function ProfileMenu({
                     ref={triggerRef}
                     onClick={handleToggle}
                     title="Account"
+                    data-testid="account-menu-trigger"
                     aria-haspopup="menu"
                     aria-expanded={open}
                     className="w-11 h-11 flex items-center justify-center rounded-full
