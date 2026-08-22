@@ -771,7 +771,15 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                             ? 'Session expired. Please sign in again.'
                             : 'Please sign in to use Venty.';
                     } else if (response.status === 429) {
-                        msg = 'Too many requests. Please wait a moment and try again.';
+                        // VENTY-9: /chat's 429 body nests its message one level deeper
+                        // than the other error shapes here -- detail is the whole
+                        // {error, message, retry_after, remaining_daily} object, not a
+                        // string -- so the generic fallback below was always shown even
+                        // though the backend already distinguishes "you're sending too
+                        // fast" from "you're out of free-plan questions for today" with
+                        // its own specific, actionable copy (see credit_control.py).
+                        msg = (detail && typeof detail === 'object' && detail.message)
+                            || 'Too many requests. Please wait a moment and try again.';
                     } else if (response.status === 404) {
                         msg = detail || 'The requested resource was not found. Please try again.';
                     } else if (response.status >= 500) {
@@ -1000,8 +1008,13 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             // Sanitize error message — never expose raw internal errors to users
             let userErrorMsg = "Something went wrong. Please try again.";
             if (err.message) {
-                // Already-mapped HTTP errors (from the !response.ok block above) are safe to show
-                const safe = /session expired|too many requests|not found|server encountered|request failed|timed out/i.test(err.message);
+                // Already-mapped HTTP errors (from the !response.ok block above) are safe to show.
+                // VENTY-9: "free plan"/"firing faster" cover the backend's own credit-limit
+                // copy (DAILY_LIMIT_MESSAGE / BURST_LIMIT_MESSAGE) surfaced above -- without
+                // them this allowlist discarded that specific, actionable message and fell
+                // through to the generic "Something went wrong" even though the 429 branch
+                // above had already extracted the real one.
+                const safe = /session expired|too many requests|not found|server encountered|request failed|timed out|free plan|firing faster/i.test(err.message);
                 if (safe) userErrorMsg = err.message;
                 else if (/network|fetch|failed to fetch|load failed|networkerror/i.test(err.message)) {
                     userErrorMsg = "Network error — check your connection and try again.";
