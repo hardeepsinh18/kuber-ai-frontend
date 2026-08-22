@@ -52,10 +52,49 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
         if (!input && inputRef.current) inputRef.current.style.height = 'auto';
     }, [input]);
 
+    // Tracked because the native beforeinput event below has no shiftKey of its
+    // own (InputEvent doesn't carry modifier state) -- without this, the
+    // fallback can't tell a real Shift+Enter newline apart from a plain Enter,
+    // since a browser-inserted newline from EITHER one is the same
+    // "insertLineBreak" inputType. Desktop only; mobile keyboards never hold a
+    // physical Shift during Enter, so this stays false there and every
+    // Enter/Go press is treated as send, matching every other mobile chat app.
+    const shiftHeldRef = useRef(false);
+
     const handleKeyDown = (e) => {
+        if (e.key === 'Shift') shiftHeldRef.current = true;
         if (suggest.onKeyDown(e)) return;
         if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
     };
+
+    const handleKeyUp = (e) => {
+        if (e.key === 'Shift') shiftHeldRef.current = false;
+    };
+
+    // VENTY-4 fallback: some Android soft keyboards (Gboard in particular) don't
+    // dispatch a keydown with key === 'Enter' for the Enter/Go key, so
+    // handleKeyDown above never fires -- Enter does nothing, on keyboards where
+    // a physical Enter key works fine. Those keyboards do still emit a native
+    // "beforeinput" event with inputType "insertLineBreak" for the same press,
+    // so that's the fallback signal -- but React's onBeforeInput prop does NOT
+    // reliably forward it (verified: React's beforeinput handling doesn't just
+    // proxy the native event), so this attaches a real DOM listener directly.
+    // On a normal keydown-driven Enter this never fires -- preventDefault() in
+    // handleKeyDown already cancels the browser's default action before a
+    // beforeinput for it would be dispatched -- so there's no double-send on
+    // keyboards where the primary path already works.
+    useEffect(() => {
+        const el = inputRef.current;
+        if (!el) return undefined;
+        const onBeforeInput = (e) => {
+            if (e.inputType === 'insertLineBreak' && !shiftHeldRef.current) {
+                e.preventDefault();
+                handleSend();
+            }
+        };
+        el.addEventListener('beforeinput', onBeforeInput);
+        return () => el.removeEventListener('beforeinput', onBeforeInput);
+    }, [handleSend]);
 
     const handleChipClick = (query) => {
         setInput(query);
@@ -235,6 +274,7 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
                                 value={input}
                                 onChange={(e) => { setInput(e.target.value); autoResize(e.target); }}
                                 onKeyDown={handleKeyDown}
+                                onKeyUp={handleKeyUp}
                                 placeholder="Say Venty to..."
                                 disabled={isLoading}
                                 /* QA-C-010: bound the input to what the API actually

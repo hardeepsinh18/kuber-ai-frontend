@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 import { ScanLine, Rocket, BarChart3, TrendingUp, LineChart, GitCompareArrows,
@@ -55,11 +55,33 @@ const StartScreen = ({ onStartChat, onScannerResult, responseMode, setResponseMo
         },
     });
 
-    const send = () => { if (input.trim()) onStartChat(input, 'stock'); };
+    const send = useCallback(() => { if (input.trim()) onStartChat(input, 'stock'); }, [input, onStartChat]);
+    // See InputBar.jsx's matching ref for why this is tracked manually: the
+    // native beforeinput event used below has no shiftKey of its own.
+    const shiftHeldRef = useRef(false);
     const onKey = (e) => {
+        if (e.key === 'Shift') shiftHeldRef.current = true;
         if (suggest.onKeyDown(e)) return;
         if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
     };
+    const onKeyUp = (e) => {
+        if (e.key === 'Shift') shiftHeldRef.current = false;
+    };
+    // VENTY-4 fallback: see InputBar.jsx's matching effect for the full
+    // explanation. React's onBeforeInput prop does not reliably forward the
+    // native beforeinput event (verified), so this uses a real DOM listener.
+    useEffect(() => {
+        const el = inputRef.current;
+        if (!el) return undefined;
+        const onBeforeInput = (e) => {
+            if (e.inputType === 'insertLineBreak' && !shiftHeldRef.current) {
+                e.preventDefault();
+                send();
+            }
+        };
+        el.addEventListener('beforeinput', onBeforeInput);
+        return () => el.removeEventListener('beforeinput', onBeforeInput);
+    }, [send]);
 
     return (
         <>
@@ -102,6 +124,7 @@ const StartScreen = ({ onStartChat, onScannerResult, responseMode, setResponseMo
                                     value={input}
                                     onChange={e => { setInput(e.target.value); autoResize(e.target); }}
                                     onKeyDown={onKey}
+                                    onKeyUp={onKeyUp}
                                     placeholder="Say Venty to..."
                                     /* QA-C-010: match the API's own ceiling
                                        (ChatRequest.query max_length=2000). */
