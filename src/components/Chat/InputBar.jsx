@@ -284,7 +284,7 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
                                     onClick={() => setScannerOpen(true)}
                                     title="Scanners"
                                     data-testid="scanner-chip"
-                                    className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg text-[11px] font-semibold flex-shrink-0
+                                    className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 rounded-lg text-[11px] font-semibold flex-shrink-0
                                                text-zinc-500 dark:text-zinc-400
                                                hover:text-zinc-900 dark:hover:text-zinc-100
                                                border border-zinc-300/60 dark:border-zinc-700/60
@@ -292,6 +292,12 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
                                                hover:bg-amber-50/40 dark:hover:bg-amber-950/15
                                                transition-all duration-150">
                                     <ScanLine size={12} />
+                                    {/* VENTY-3: was `hidden sm:inline` -- an icon with no label at
+                                        all blended into the background and read as "not there"
+                                        during manual testing. A full "Scanners" label collided with
+                                        the Send button at 375px (measured), so mobile gets the short
+                                        form and >=sm gets the full word. */}
+                                    <span className="sm:hidden">Scan</span>
                                     <span className="hidden sm:inline">Scanners</span>
                                 </button>
 
@@ -301,7 +307,7 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
                                     onClick={() => setIpoOpen(true)}
                                     title="IPOs"
                                     data-testid="ipo-chip"
-                                    className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg text-[11px] font-semibold flex-shrink-0
+                                    className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 rounded-lg text-[11px] font-semibold flex-shrink-0
                                                text-zinc-500 dark:text-zinc-400
                                                hover:text-zinc-900 dark:hover:text-zinc-100
                                                border border-zinc-300/60 dark:border-zinc-700/60
@@ -309,7 +315,7 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
                                                hover:bg-amber-50/40 dark:hover:bg-amber-950/15
                                                transition-all duration-150">
                                     <Rocket size={12} />
-                                    <span className="hidden sm:inline">IPOs</span>
+                                    <span>IPOs</span>
                                 </button>
                             </div>
 

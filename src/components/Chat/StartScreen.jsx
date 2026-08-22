@@ -148,7 +148,7 @@ const StartScreen = ({ onStartChat, onScannerResult, responseMode, setResponseMo
                                             onClick={() => setScannerOpen(true)}
                                             title="Scanners"
                                             data-testid="scanner-chip"
-                                            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg text-[11px] font-semibold flex-shrink-0
+                                            className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 rounded-lg text-[11px] font-semibold flex-shrink-0
                                                        text-zinc-500 dark:text-zinc-400
                                                        hover:text-zinc-900 dark:hover:text-zinc-100
                                                        border border-zinc-300/60 dark:border-zinc-700/60
@@ -156,6 +156,9 @@ const StartScreen = ({ onStartChat, onScannerResult, responseMode, setResponseMo
                                                        hover:bg-amber-50/40 dark:hover:bg-amber-950/15
                                                        transition-all duration-150">
                                             <ScanLine size={12} />
+                                            {/* VENTY-3: see InputBar.jsx's matching button -- full
+                                                "Scanners" collided with Send at 375px (measured). */}
+                                            <span className="sm:hidden">Scan</span>
                                             <span className="hidden sm:inline">Scanners</span>
                                         </button>
                                         <button
@@ -163,7 +166,7 @@ const StartScreen = ({ onStartChat, onScannerResult, responseMode, setResponseMo
                                             onClick={() => setIpoOpen(true)}
                                             title="IPOs"
                                             data-testid="ipo-chip"
-                                            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg text-[11px] font-semibold flex-shrink-0
+                                            className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 rounded-lg text-[11px] font-semibold flex-shrink-0
                                                        text-zinc-500 dark:text-zinc-400
                                                        hover:text-zinc-900 dark:hover:text-zinc-100
                                                        border border-zinc-300/60 dark:border-zinc-700/60
@@ -171,7 +174,7 @@ const StartScreen = ({ onStartChat, onScannerResult, responseMode, setResponseMo
                                                        hover:bg-amber-50/40 dark:hover:bg-amber-950/15
                                                        transition-all duration-150">
                                             <Rocket size={12} />
-                                            <span className="hidden sm:inline">IPOs</span>
+                                            <span>IPOs</span>
                                         </button>
                                     </div>
                                     <button
