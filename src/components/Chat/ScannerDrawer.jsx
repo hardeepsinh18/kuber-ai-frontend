@@ -30,13 +30,23 @@ const ScannerDrawer = ({ data, onAnalyze, onClose, collapsed = false, onToggleCo
         return () => document.removeEventListener('keydown', handler);
     }, [onClose]);
 
-    // On mobile the drawer is a bottom sheet — lock the page behind it so scrolling
-    // the results list doesn't scroll the chat underneath.
+    // Lock the page behind the drawer so scrolling the results list doesn't scroll
+    // the chat underneath.
+    //
+    // overflowX is locked too, and at EVERY breakpoint — not just below 768px as
+    // before. The drawer is fixed-position and sits above the page, so any
+    // horizontal scrollbar the page itself has renders as a stray bar across the
+    // bottom of the sheet. On a narrow desktop window (>=768px, where the old
+    // guard bailed out early) that is exactly what showed under the footer.
     useEffect(() => {
-        if (typeof window === 'undefined' || window.innerWidth >= 768) return;
-        const prev = document.body.style.overflow;
+        if (typeof document === 'undefined') return undefined;
+        const { overflow: prevY, overflowX: prevX } = document.body.style;
         document.body.style.overflow = 'hidden';
-        return () => { document.body.style.overflow = prev; };
+        document.body.style.overflowX = 'hidden';
+        return () => {
+            document.body.style.overflow = prevY;
+            document.body.style.overflowX = prevX;
+        };
     }, []);
 
     const shellStyle = {
@@ -229,6 +239,7 @@ const ScannerDrawer = ({ data, onAnalyze, onClose, collapsed = false, onToggleCo
                                                                        border border-zinc-300 dark:border-zinc-700
                                                                        bg-zinc-100 dark:bg-white/[0.04]
                                                                        text-zinc-600 dark:text-zinc-300
+                                                                       group-hover:bg-[#FDD405] group-hover:border-[#FDD405] group-hover:text-black group-hover:font-semibold
                                                                        hover:bg-[#FDD405] hover:border-[#FDD405] hover:text-black hover:font-semibold
                                                                        focus-visible:bg-[#FDD405] focus-visible:border-[#FDD405] focus-visible:text-black focus-visible:font-semibold
                                                                        focus-visible:outline-none"

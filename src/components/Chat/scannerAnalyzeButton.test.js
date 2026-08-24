@@ -32,6 +32,31 @@ const analyzeBlock = (() => {
     return src.slice(at, src.indexOf('</button>', at));
 })();
 
+describe('the drawer does not leak a page scrollbar', () => {
+    it('locks both axes while open', () => {
+        // The drawer is fixed-position and sits above the page, so a horizontal
+        // page scrollbar renders as a stray bar across the bottom of the sheet.
+        expect(src).toContain("document.body.style.overflowX = 'hidden'");
+        expect(src).toContain("document.body.style.overflow = 'hidden'");
+    });
+
+    it('restores both axes on unmount', () => {
+        // Leaving overflow pinned would freeze the page after the drawer closes.
+        expect(src).toContain('document.body.style.overflow = prevY');
+        expect(src).toContain('document.body.style.overflowX = prevX');
+    });
+
+    it('applies at every breakpoint, not just mobile', () => {
+        // The old guard bailed out at >=768px, which is exactly where the
+        // reported stray scrollbar appeared (a narrow desktop window).
+        expect(src).not.toContain('window.innerWidth >= 768');
+    });
+
+    it('keeps the footer pinned rather than scrolling with the list', () => {
+        expect(src).toContain('px-4 py-3 flex-shrink-0');
+    });
+});
+
 describe('scanner Analyze button is always visible', () => {
     it('found the button', () => {
         expect(analyzeBlock.length).toBeGreaterThan(0);
@@ -66,6 +91,15 @@ describe('it is plain when idle and yellow only on hover', () => {
     it('fills with brand yellow on hover', () => {
         expect(analyzeBlock).toContain('hover:bg-[#FDD405]');
         expect(analyzeBlock).toContain('hover:text-black');
+    });
+
+    it('lights up when the ROW is hovered, not only the button', () => {
+        // The button is a small target at the far right of a wide row. Hovering
+        // the stock name should light its action, so group-hover: is what makes
+        // the whole row feel like one control (the <tr> carries `group`).
+        expect(analyzeBlock).toContain('group-hover:bg-[#FDD405]');
+        expect(analyzeBlock).toContain('group-hover:text-black');
+        expect(src).toContain('className="group"');
     });
 
     it('does the same on keyboard focus, not just pointer hover', () => {
