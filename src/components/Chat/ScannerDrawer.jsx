@@ -206,10 +206,26 @@ const ScannerDrawer = ({ data, onAnalyze, onClose, collapsed = false, onToggleCo
                                                     </td>
 
                                                     <td className="px-3 py-2.5 text-center">
+                                                        {/* Always visible, not hover-gated. It used to be
+                                                            md:opacity-0 + md:group-hover:opacity-100, so on desktop
+                                                            every row looked action-less until the pointer happened to
+                                                            land on it — the action was discoverable only by accident,
+                                                            and a list of ten rows showed one button at a time.
+
+                                                            Resting state is therefore a quiet outline rather than
+                                                            solid brand yellow: ten filled amber buttons would fight
+                                                            the signal badges for attention and turn the panel into a
+                                                            wall of yellow. Hover fills it in, so the row under the
+                                                            pointer is still the emphasised one. */}
                                                         <button
                                                             onClick={() => onAnalyze(sym)}
-                                                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-bold text-zinc-900 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-150"
-                                                            style={{ backgroundColor: '#FDD405' }}
+                                                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-bold
+                                                                       border transition-colors duration-150
+                                                                       border-[#FDD405]/50 text-zinc-700 dark:text-[#FDD405]
+                                                                       bg-transparent
+                                                                       hover:bg-[#FDD405] hover:border-[#FDD405] hover:text-zinc-900
+                                                                       focus-visible:bg-[#FDD405] focus-visible:border-[#FDD405] focus-visible:text-zinc-900
+                                                                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FDD405]/40"
                                                         >
                                                             Analyze <TrendingUp size={10} />
                                                         </button>
