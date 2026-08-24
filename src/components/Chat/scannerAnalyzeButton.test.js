@@ -9,9 +9,11 @@
  * emphasised. Idle is PLAIN (no border, muted text); brand yellow is reserved
  * for the row actually under the pointer.
  *
- * An earlier attempt gave every row an amber OUTLINE. That still read as ten
- * yellow controls stacked down the panel, so the border was dropped entirely
- * rather than merely softened.
+ * Two earlier attempts bracketed the answer. An amber OUTLINE on every row still
+ * read as ten yellow controls stacked down the panel; removing the container
+ * entirely made the label read as a caption rather than something clickable. The
+ * resting state is therefore a NEUTRAL button surface — zinc border plus a faint
+ * fill — which reads as a control without competing with the signal badges.
  *
  * Asserted against source: the drawer needs theme/router context and a live
  * scan payload to mount, and what is under test is the class contract.
@@ -47,15 +49,18 @@ describe('scanner Analyze button is always visible', () => {
 });
 
 describe('it is plain when idle and yellow only on hover', () => {
-    it('carries no border or fill at rest', () => {
-        // The whole point: ten rows of chrome is what made the panel look
-        // "too yellow". Idle must be text only.
-        expect(analyzeBlock).not.toContain('border-[#FDD405]');
-        // Unprefixed bg-[#FDD405] would paint every row yellow; the hover: and
-        // focus-visible: prefixed forms are exactly what we DO want, so match
-        // only a bare occurrence (not preceded by ':').
+    it('looks like a button at rest, in neutral zinc', () => {
+        // It must READ as clickable — bare text looked like a caption.
+        expect(analyzeBlock).toContain('border border-zinc-300 dark:border-zinc-700');
+        expect(analyzeBlock).toContain('bg-zinc-100 dark:bg-white/[0.04]');
+    });
+
+    it('uses no brand yellow at rest', () => {
+        // Ten amber rows is what made the panel look "too yellow". The hover:
+        // and focus-visible: prefixed forms are exactly what we DO want, so
+        // match only a bare (unprefixed) occurrence.
         expect(analyzeBlock).not.toMatch(/(?<!:)bg-\[#FDD405\]/);
-        expect(analyzeBlock).toContain('text-zinc-600 dark:text-zinc-400');
+        expect(analyzeBlock).not.toMatch(/(?<!:)border-\[#FDD405\]/);
     });
 
     it('fills with brand yellow on hover', () => {

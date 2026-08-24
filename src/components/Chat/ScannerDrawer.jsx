@@ -212,18 +212,25 @@ const ScannerDrawer = ({ data, onAnalyze, onClose, collapsed = false, onToggleCo
 
                                                             Styled to match the chart-type tabs in StockChart.jsx,
                                                             which solve the same problem: many peer controls where at
-                                                            most one is emphasised. Idle is plain — no border, muted
-                                                            text, neutral hover tint — and brand yellow is reserved
-                                                            for the row actually under the pointer. An amber OUTLINE
-                                                            on every row still read as ten yellow controls stacked
-                                                            down the panel. */}
+                                                            most one is emphasised. Brand yellow stays reserved for the
+                                                            row actually under the pointer.
+
+                                                            The resting state is a NEUTRAL button surface (zinc border +
+                                                            faint fill), not bare text: with no container at all the
+                                                            label read as a caption rather than something clickable. An
+                                                            AMBER outline was tried first and still made the panel look
+                                                            "too yellow" ten rows down, so the chrome is zinc — it
+                                                            reads as a button without competing with the signal
+                                                            badges. */}
                                                         <button
                                                             onClick={() => onAnalyze(sym)}
                                                             className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium
                                                                        transition-all
-                                                                       text-zinc-600 dark:text-zinc-400
-                                                                       hover:bg-[#FDD405] hover:text-black hover:font-semibold
-                                                                       focus-visible:bg-[#FDD405] focus-visible:text-black focus-visible:font-semibold
+                                                                       border border-zinc-300 dark:border-zinc-700
+                                                                       bg-zinc-100 dark:bg-white/[0.04]
+                                                                       text-zinc-600 dark:text-zinc-300
+                                                                       hover:bg-[#FDD405] hover:border-[#FDD405] hover:text-black hover:font-semibold
+                                                                       focus-visible:bg-[#FDD405] focus-visible:border-[#FDD405] focus-visible:text-black focus-visible:font-semibold
                                                                        focus-visible:outline-none"
                                                         >
                                                             Analyze <TrendingUp size={10} />
