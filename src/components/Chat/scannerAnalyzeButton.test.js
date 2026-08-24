@@ -32,6 +32,33 @@ const analyzeBlock = (() => {
     return src.slice(at, src.indexOf('</button>', at));
 })();
 
+describe('the results list never scrolls horizontally', () => {
+    it('pins overflow-x on the scroller', () => {
+        // Setting only overflow-y makes CSS promote the OTHER axis from
+        // `visible` to `auto`, so any row a few px too wide grew a horizontal
+        // scrollbar across the bottom of the list.
+        expect(src).toContain('overflow-y-auto overflow-x-hidden overscroll-contain');
+    });
+
+    it('truncates a long symbol instead of widening the row', () => {
+        // overflow-x-hidden alone would only HIDE the overflow — the Analyze
+        // button was measured clipped outside the drawer. The row has to fit.
+        expect(src).toContain('block truncate text-[13px] font-semibold');
+        expect(src).toContain('title={sym}');
+    });
+
+    it('gives Action a fixed width so the button cannot wrap', () => {
+        expect(src).toContain('w-[86px]');
+        expect(src).toContain('whitespace-nowrap');
+    });
+
+    it('does not use table-fixed', () => {
+        // table-fixed split the width equally and squeezed Action until
+        // "Analyze" wrapped onto two lines — worse than the scrollbar.
+        expect(src).not.toContain('table-fixed');
+    });
+});
+
 describe('the drawer does not leak a page scrollbar', () => {
     it('locks both axes while open', () => {
         // The drawer is fixed-position and sits above the page, so a horizontal

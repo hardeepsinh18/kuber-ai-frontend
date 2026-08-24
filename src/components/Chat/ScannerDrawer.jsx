@@ -167,8 +167,15 @@ const ScannerDrawer = ({ data, onAnalyze, onClose, collapsed = false, onToggleCo
                             </div>
                         </div>
 
-                        {/* Table — scroll stays inside the sheet (no chaining to the page) */}
-                        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
+                        {/* Table — scroll stays inside the sheet (no chaining to the page).
+                            overflow-x-hidden is explicit and load-bearing: setting only
+                            overflow-y makes CSS promote the OTHER axis from `visible` to
+                            `auto`, so any row even a few px too wide (a long symbol, a wide
+                            signal badge) grew a horizontal scrollbar across the bottom of
+                            the results list. Measured: a 315px row in the 300px drawer
+                            reproduced it exactly. The list only ever scrolls vertically, so
+                            there is nothing to lose by pinning X. */}
+                        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
                             {raw.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center h-full gap-3 px-6 text-center">
                                     <span className="text-4xl">🔍</span>
@@ -181,10 +188,10 @@ const ScannerDrawer = ({ data, onAnalyze, onClose, collapsed = false, onToggleCo
                                 <table className="w-full border-collapse">
                                     <thead>
                                         <tr style={{ backgroundColor: '#FDD405' }}>
-                                            <th className="text-left text-[11px] font-bold text-zinc-900 px-3 py-2.5 w-8">#</th>
+                                            <th className="text-left text-[11px] font-bold text-zinc-900 px-2 py-2.5 w-6">#</th>
                                             <th className="text-left text-[11px] font-bold text-zinc-900 px-2 py-2.5">Stock</th>
-                                            <th className="text-center text-[11px] font-bold text-zinc-900 px-2 py-2.5">Signal</th>
-                                            <th className="text-center text-[11px] font-bold text-zinc-900 px-3 py-2.5">Action</th>
+                                            <th className="text-center text-[11px] font-bold text-zinc-900 px-1 py-2.5">Signal</th>
+                                            <th className="text-center text-[11px] font-bold text-zinc-900 px-2 py-2.5 w-[86px]">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -199,13 +206,17 @@ const ScannerDrawer = ({ data, onAnalyze, onClose, collapsed = false, onToggleCo
                                                     onMouseEnter={e => e.currentTarget.style.background = isDark ? 'rgba(253,212,5,0.07)' : 'rgba(253,212,5,0.1)'}
                                                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                                                 >
-                                                    <td className="px-3 py-2.5 text-[11px] font-mono text-zinc-400 dark:text-zinc-600 w-8">{i + 1}</td>
+                                                    <td className="px-2 py-2.5 text-[11px] font-mono text-zinc-400 dark:text-zinc-600 w-6">{i + 1}</td>
 
-                                                    <td className="px-2 py-2.5">
-                                                        <span className="text-[13px] font-semibold text-zinc-900 dark:text-white">{sym}</span>
+                                                    <td className="px-2 py-2.5 min-w-0">
+                                                        {/* truncate, not overflow: a long symbol should shorten
+                                                            rather than widen the row (which is what grew the
+                                                            scrollbar). title keeps the full value reachable. */}
+                                                        <span className="block truncate text-[13px] font-semibold text-zinc-900 dark:text-white"
+                                                              title={sym}>{sym}</span>
                                                     </td>
 
-                                                    <td className="px-2 py-2.5 text-center">
+                                                    <td className="px-1 py-2.5 text-center">
                                                         {metric ? (
                                                             <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold ${METRIC_STYLES[metric.type]}`}>
                                                                 {metric.label}
@@ -215,7 +226,7 @@ const ScannerDrawer = ({ data, onAnalyze, onClose, collapsed = false, onToggleCo
                                                         )}
                                                     </td>
 
-                                                    <td className="px-3 py-2.5 text-center">
+                                                    <td className="px-2 py-2.5 text-center w-[86px]">
                                                         {/* Always visible, not hover-gated (it used to be
                                                             md:opacity-0 + md:group-hover:opacity-100, so only the
                                                             hovered row had a visible action).
@@ -234,7 +245,7 @@ const ScannerDrawer = ({ data, onAnalyze, onClose, collapsed = false, onToggleCo
                                                             badges. */}
                                                         <button
                                                             onClick={() => onAnalyze(sym)}
-                                                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium
+                                                            className="inline-flex items-center gap-1 whitespace-nowrap px-2 py-1 rounded-lg text-[11px] font-medium
                                                                        transition-all
                                                                        border border-zinc-300 dark:border-zinc-700
                                                                        bg-zinc-100 dark:bg-white/[0.04]
