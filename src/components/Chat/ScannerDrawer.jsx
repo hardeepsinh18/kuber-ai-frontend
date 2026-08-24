@@ -206,26 +206,25 @@ const ScannerDrawer = ({ data, onAnalyze, onClose, collapsed = false, onToggleCo
                                                     </td>
 
                                                     <td className="px-3 py-2.5 text-center">
-                                                        {/* Always visible, not hover-gated. It used to be
-                                                            md:opacity-0 + md:group-hover:opacity-100, so on desktop
-                                                            every row looked action-less until the pointer happened to
-                                                            land on it — the action was discoverable only by accident,
-                                                            and a list of ten rows showed one button at a time.
+                                                        {/* Always visible, not hover-gated (it used to be
+                                                            md:opacity-0 + md:group-hover:opacity-100, so only the
+                                                            hovered row had a visible action).
 
-                                                            Resting state is therefore a quiet outline rather than
-                                                            solid brand yellow: ten filled amber buttons would fight
-                                                            the signal badges for attention and turn the panel into a
-                                                            wall of yellow. Hover fills it in, so the row under the
-                                                            pointer is still the emphasised one. */}
+                                                            Styled to match the chart-type tabs in StockChart.jsx,
+                                                            which solve the same problem: many peer controls where at
+                                                            most one is emphasised. Idle is plain — no border, muted
+                                                            text, neutral hover tint — and brand yellow is reserved
+                                                            for the row actually under the pointer. An amber OUTLINE
+                                                            on every row still read as ten yellow controls stacked
+                                                            down the panel. */}
                                                         <button
                                                             onClick={() => onAnalyze(sym)}
-                                                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-bold
-                                                                       border transition-colors duration-150
-                                                                       border-[#FDD405]/50 text-zinc-700 dark:text-[#FDD405]
-                                                                       bg-transparent
-                                                                       hover:bg-[#FDD405] hover:border-[#FDD405] hover:text-zinc-900
-                                                                       focus-visible:bg-[#FDD405] focus-visible:border-[#FDD405] focus-visible:text-zinc-900
-                                                                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FDD405]/40"
+                                                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium
+                                                                       transition-all
+                                                                       text-zinc-600 dark:text-zinc-400
+                                                                       hover:bg-[#FDD405] hover:text-black hover:font-semibold
+                                                                       focus-visible:bg-[#FDD405] focus-visible:text-black focus-visible:font-semibold
+                                                                       focus-visible:outline-none"
                                                         >
                                                             Analyze <TrendingUp size={10} />
                                                         </button>
