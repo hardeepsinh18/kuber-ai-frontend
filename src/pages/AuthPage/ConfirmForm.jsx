@@ -9,6 +9,7 @@ export default function ConfirmForm({
         <form onSubmit={onSubmit} className="p-6 flex flex-col gap-4">
             <p style={{ fontSize: 13, color: textSub }}>
                 Enter the code we emailed to <span style={{ color: textMain, fontWeight: 600 }}>{email}</span>.
+                {' '}Don't see it? Check your spam/junk folder.
             </p>
 
             <div>
