@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { X, Mail, Lock, User, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
@@ -65,7 +66,8 @@ const Field = ({ label, icon: Icon, type: initialType, value, onChange, placehol
 };
 
 const LoginModal = ({ isOpen, onClose }) => {
-    const { signInWithEmail, signUpWithEmail, signInWithGoogle, supabaseConfigured } = useAuth();
+    const { signInWithEmail, signUpWithEmail, resendConfirmationCode, signInWithGoogle, supabaseConfigured } = useAuth();
+    const navigate = useNavigate();
     const { theme } = useTheme();
     const isDark = theme === 'dark';
     const [mode, setMode]         = useState('signin');
@@ -84,16 +86,53 @@ const LoginModal = ({ isOpen, onClose }) => {
 
     const switchMode = (m) => { setMode(m); setError(''); setSuccess(''); };
 
+    // This modal has no OTP-entry field of its own, so any path that needs a
+    // confirmation code hands off to the full /login page, which does.
+    const goToConfirm = () => {
+        onClose();
+        navigate(`/login?mode=confirm&email=${encodeURIComponent(email.trim())}`);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError(''); setSuccess(''); setLoading(true);
         try {
             if (mode === 'signin') {
-                await signInWithEmail(email, password);
-                onClose();
+                try {
+                    await signInWithEmail(email, password);
+                    onClose();
+                } catch (err) {
+                    if (err.code === 'CONFIRM_SIGN_UP') { goToConfirm(); return; }
+                    throw err;
+                }
             } else {
-                await signUpWithEmail(email, password, { full_name: fullName });
-                setSuccess('Check your email to confirm your account.');
+                try {
+                    const res = await signUpWithEmail(email, password, { full_name: fullName });
+                    if (res?.isSignUpComplete) {
+                        await signInWithEmail(email, password);
+                        onClose();
+                    } else {
+                        goToConfirm();
+                    }
+                } catch (err) {
+                    // Cognito throws this both for a fully-registered email and for one
+                    // that started signup but never entered the OTP — previously that
+                    // second case was a dead end (signup blocked as "exists", sign-in
+                    // blocked as "unconfirmed", and this modal had nowhere to send them).
+                    // Resend disambiguates: it only succeeds for an unconfirmed user.
+                    if (err.name === 'UsernameExistsException') {
+                        try {
+                            await resendConfirmationCode(email.trim());
+                            goToConfirm();
+                            return;
+                        } catch (_) {
+                            setError('An account with this email already exists. Please sign in instead.');
+                            setMode('signin');
+                            return;
+                        }
+                    }
+                    throw err;
+                }
             }
         } catch (err) {
             setError(err.message || 'Something went wrong');

@@ -177,7 +177,12 @@ export function AuthProvider({ children }) {
       // instead of silently leaving the caller with no session.
       const step = res?.nextStep?.signInStep;
       if (step === 'CONFIRM_SIGN_UP') {
-        throw new Error('Please confirm your email before signing in.');
+        // Tagged with .code (rather than making callers string-match the message)
+        // so the UI can route the user into the confirm-code screen instead of
+        // just displaying text with no way forward.
+        const e = new Error('Please confirm your email before signing in.');
+        e.code = 'CONFIRM_SIGN_UP';
+        throw e;
       }
       throw new Error(step ? `Additional step required: ${step}` : 'Sign-in did not complete. Please try again.');
     }

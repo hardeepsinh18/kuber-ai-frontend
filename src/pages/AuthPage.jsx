@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -14,6 +14,7 @@ import SignInUpForm from './AuthPage/SignInUpForm';
 
 export default function AuthPage() {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const { signInWithEmail, signUpWithEmail, confirmSignUpCode, resendConfirmationCode, forgotPassword, confirmForgotPassword, signInWithGoogle, isAuthenticated, supabaseConfigured } = useAuth();
     const { theme } = useTheme();
     const isDark = theme === 'dark';
@@ -55,6 +56,16 @@ export default function AuthPage() {
         if (isAuthenticated) navigate('/', { replace: true });
     }, [isAuthenticated, navigate]);
 
+    // Entry point for callers with no OTP UI of their own (the sidebar LoginModal)
+    // that need to hand an unconfirmed signup off to this page: /login?email=...&mode=confirm.
+    useEffect(() => {
+        const qpEmail = searchParams.get('email');
+        const qpMode = searchParams.get('mode');
+        if (qpEmail) setEmail(qpEmail);
+        if (qpMode === 'confirm') setMode('confirm');
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     const switchMode = (m) => {
         setMode(m); setError(''); setInfo('');
         setConfirmCode(''); setResetCode(''); setNewPassword(''); setConfirmNewPassword('');
@@ -74,23 +85,61 @@ export default function AuthPage() {
         if (updates) postSubscribe(email.trim());
         try {
             if (mode === 'signup') {
-                const res = await signUpWithEmail(email.trim(), password, { full_name: fullName.trim() });
-                if (res?.isSignUpComplete) {
-                    // Pool auto-confirms — no code step needed, go straight to session.
-                    await signInWithEmail(email.trim(), password);
-                    navigate('/', { replace: true });
-                } else {
-                    setMode('confirm');
-                    setInfo('We emailed you a confirmation code.');
+                try {
+                    const res = await signUpWithEmail(email.trim(), password, { full_name: fullName.trim() });
+                    if (res?.isSignUpComplete) {
+                        // Pool auto-confirms — no code step needed, go straight to session.
+                        await signInWithEmail(email.trim(), password);
+                        navigate('/', { replace: true });
+                    } else {
+                        setMode('confirm');
+                        setInfo('We emailed you a confirmation code.');
+                    }
+                } catch (err) {
+                    // Cognito throws this both for a fully-registered email AND for one
+                    // that started signup but never entered the OTP (back button, closed
+                    // tab, ...). Previously this just surfaced "already exists" with no
+                    // way forward, permanently stranding anyone in the second case —
+                    // signup was blocked (username taken) AND sign-in was blocked
+                    // (unconfirmed). Resend disambiguates: Cognito accepts it only for
+                    // an unconfirmed user, so success means "resume that signup" and
+                    // failure means "genuinely already confirmed, go sign in."
+                    if (err.name === 'UsernameExistsException') {
+                        try {
+                            await resendConfirmationCode(email.trim());
+                            setMode('confirm');
+                            setInfo("This email already started signing up — we've sent a new confirmation code.");
+                        } catch (_) {
+                            setError('An account with this email already exists. Please sign in instead.');
+                        }
+                    } else {
+                        setError(err.message || 'Something went wrong');
+                    }
                 }
             } else {
                 // QA-C-001: real Cognito email+password sign-in — no phone-as-password,
                 // no hardcoded 'demo1234' fallback.
-                await signInWithEmail(email.trim(), password);
-                navigate('/', { replace: true });
+                try {
+                    await signInWithEmail(email.trim(), password);
+                    navigate('/', { replace: true });
+                } catch (err) {
+                    if (err.code === 'CONFIRM_SIGN_UP') {
+                        // Same dead-end from the other side: sign-in correctly refuses an
+                        // unconfirmed account, but there was previously no path from here
+                        // back into the OTP screen. Auto-resend and drop them there.
+                        try {
+                            await resendConfirmationCode(email.trim());
+                            setMode('confirm');
+                            setInfo("Your email isn't confirmed yet — we've sent a new confirmation code.");
+                        } catch (_) {
+                            setMode('confirm');
+                            setInfo('Your email needs to be confirmed. Enter the code we sent, or resend it below.');
+                        }
+                    } else {
+                        setError(err.message || 'Something went wrong');
+                    }
+                }
             }
-        } catch (err) {
-            setError(err.message || 'Something went wrong');
         } finally { setLoading(false); }
     };
 
@@ -100,8 +149,19 @@ export default function AuthPage() {
         setError(''); setInfo(''); setLoading(true);
         try {
             await confirmSignUpCode(email.trim(), confirmCode.trim());
-            await signInWithEmail(email.trim(), password);
-            navigate('/', { replace: true });
+            // password may be empty here if this screen was reached directly (e.g. the
+            // sidebar LoginModal redirects here for its own signup/confirm dead-end
+            // without carrying a password). Fall back to the sign-in screen rather than
+            // letting a bad/blank password surface as a bogus "invalid code" error below.
+            if (password) {
+                try {
+                    await signInWithEmail(email.trim(), password);
+                    navigate('/', { replace: true });
+                    return;
+                } catch (_) { /* fall through to signin mode */ }
+            }
+            setMode('signin');
+            setInfo('Email confirmed — please sign in.');
         } catch (err) {
             setError(err.message || 'Invalid or expired code');
         } finally { setLoading(false); }
