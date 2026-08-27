@@ -251,14 +251,14 @@ export default function ProfileMenu({
                             Privacy Policy & Terms of Use
                         </h2>
                         <p className="text-[12.5px] leading-relaxed text-zinc-600 dark:text-zinc-400 mb-4">
-                            VentyAI is a product by 72 Street. For our full Privacy Policy and Terms of Use,
-                            please visit our website.
+                            VentyAI is a product by 72 Street. Our full Privacy Policy covers how we
+                            collect, use, and protect your data, including account and market information.
                             <br />
-                            You'll find them under the Policy & Terms of Use section on the website.
+                            Read it in full on our website before continuing to use VentyAI.
                         </p>
 
                         <a
-                            href="https://72street.ai/"
+                            href="https://www.72street.ai/privacy-policy"
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={() => setShowPrivacyNotice(false)}
@@ -266,7 +266,7 @@ export default function ProfileMenu({
                                        text-[12.5px] font-semibold transition-all duration-200
                                        bg-[#FDD405] text-zinc-900 hover:bg-[#e8c304]"
                         >
-                            Visit 72street.ai
+                            View Privacy Policy
                             <ExternalLink size={12} />
                         </a>
                     </div>
