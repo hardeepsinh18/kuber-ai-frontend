@@ -19,10 +19,17 @@
        preconnect is evaluated against connect-src, which never listed the font origins —
        that was the CSP violation blocking the switch from Report-Only to enforcing. With
        the stylesheet itself now gone, that whole class of violation is closed. -->
-  <!-- 72 Street brand mark (yellow vertical logo) -->
-  <link rel="icon" type="image/png" sizes="32x32" href="/brand/favicon-32.png" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/brand/favicon-192.png" />
-  <link rel="apple-touch-icon" href="/brand/favicon-180.png" />
+  <!-- VentyAI 3D mascot, transparent background.
+       NEW FILENAMES, not an overwrite: /brand/* is deployed with
+       "max-age=31536000,immutable" (see .github/workflows/deploy.yml), so a
+       browser that already cached favicon-32.png would keep serving the old
+       yellow-tile icon for up to a year. CloudFront gets invalidated on deploy
+       but that does nothing for a client-side cache. The -v2- names guarantee
+       every visitor fetches the new mark immediately; the old files stay in
+       place so any external reference to them does not 404. -->
+  <link rel="icon" type="image/png" sizes="32x32" href="/brand/favicon-v2-32.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/brand/favicon-v2-192.png" />
+  <link rel="apple-touch-icon" href="/brand/favicon-v2-180.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover" />
   <!-- QA-C-013: the PWA meta tags (mobile-web-app-capable, apple-mobile-web-app-*)
        were removed. They advertise a standalone installable app, but there is no web
