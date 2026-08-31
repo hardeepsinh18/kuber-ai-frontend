@@ -19,17 +19,22 @@
        preconnect is evaluated against connect-src, which never listed the font origins —
        that was the CSP violation blocking the switch from Report-Only to enforcing. With
        the stylesheet itself now gone, that whole class of violation is closed. -->
-  <!-- VentyAI 3D mascot, transparent background.
-       NEW FILENAMES, not an overwrite: /brand/* is deployed with
+  <!-- VentyAI mascot on a TRANSPARENT background — no tile.
+       Generated from venty-mark-v3.png, the app's own official mark, rather than
+       the "Black Yellow Mascot" render: that one is modelled with the head turned
+       (measured 0.90 left/right mass ratio) and its thin yellow ring carried too
+       little mass to read at 16px, which is why the first transparent attempt
+       looked invisible in a tab. This mark is near-symmetric and its frame is
+       thick enough to survive the downscale.
+
+       NEW FILENAMES, not an overwrite: /brand/* deploys with
        "max-age=31536000,immutable" (see .github/workflows/deploy.yml), so a
-       browser that already cached favicon-32.png would keep serving the old
-       yellow-tile icon for up to a year. CloudFront gets invalidated on deploy
-       but that does nothing for a client-side cache. The -v2- names guarantee
-       every visitor fetches the new mark immediately; the old files stay in
-       place so any external reference to them does not 404. -->
-  <link rel="icon" type="image/png" sizes="32x32" href="/brand/favicon-v2-32.png" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/brand/favicon-v2-192.png" />
-  <link rel="apple-touch-icon" href="/brand/favicon-v2-180.png" />
+       browser holding a previous favicon would keep serving it for up to a year.
+       The CloudFront invalidation does nothing for a client-side cache. Older
+       files stay in place so external references do not 404. -->
+  <link rel="icon" type="image/png" sizes="32x32" href="/brand/favicon-v3-32.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/brand/favicon-v3-192.png" />
+  <link rel="apple-touch-icon" href="/brand/favicon-v3-180.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover" />
   <!-- QA-C-013: the PWA meta tags (mobile-web-app-capable, apple-mobile-web-app-*)
        were removed. They advertise a standalone installable app, but there is no web
