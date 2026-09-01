@@ -62,6 +62,13 @@ export function AuthProvider({ children }) {
       setStorageIdentity(id);
       setUser({ id, email, groups, user_metadata: { full_name: fullName } });
     } catch {
+      // VNTY-005: this fires on the visibilitychange-triggered call below just
+      // as readily as a real sign-out — a tab regaining focus mid network-blip
+      // must not be torn down on the first failed fetchAuthSession(). Retry
+      // before conceding (see retryTokenRefresh, defined further down this
+      // component but already assigned by the time this can actually run).
+      const recovered = await retryTokenRefresh();
+      if (recovered) { await syncFromCognito(); return; }
       setStorageIdentity(null);
       setUser(null); setIdToken(null);
     }
@@ -100,6 +107,27 @@ export function AuthProvider({ children }) {
     return run;
   };
 
+  // VNTY-005: a transient network blip must not read as "signed out". Amplify's
+  // own background token-refresh timer fires 'tokenRefresh_failure' on a single
+  // failed attempt (a dropped request, laptop sleep/wake, a brief Wi-Fi drop) —
+  // there is no retry inside Amplify itself. Previously the FIRST such failure
+  // tore down the whole session (cookies cleared, redirected to /login) even
+  // though the underlying Cognito session was still valid seconds later. Retry
+  // with backoff before conceding the session is actually gone; returns true
+  // once a real session is recovered.
+  const retryTokenRefresh = async (attempts = 3, baseDelayMs = 800) => {
+    for (let i = 0; i < attempts; i++) {
+      try {
+        const session = await fetchAuthSession({ forceRefresh: true });
+        if (session?.tokens?.idToken) return true;
+      } catch (_) { /* transient — fall through to backoff and retry */ }
+      if (i < attempts - 1) {
+        await new Promise((r) => setTimeout(r, baseDelayMs * 2 ** i));
+      }
+    }
+    return false;
+  };
+
   useEffect(() => {
     if (!authConfigured) {
       // Demo mode — restore from localStorage (unchanged behavior when unconfigured)
@@ -129,8 +157,19 @@ export function AuthProvider({ children }) {
         case 'tokenRefresh':
           syncFromCognito();
           break;
-        case 'signedOut':
         case 'tokenRefresh_failure':
+          // Retry before treating this as a sign-out — see retryTokenRefresh above.
+          retryTokenRefresh().then((recovered) => {
+            if (recovered) { syncFromCognito(); return; }
+            // Retries exhausted: the session is genuinely gone (revoked or
+            // expired refresh token), not a network blip. Same teardown as
+            // signedOut, below.
+            clearAllLocalChats();
+            setStorageIdentity(null);
+            setUser(null); setIdToken(null);
+          });
+          break;
+        case 'signedOut':
         case 'signInWithRedirect_failure':
           // SEC-C-002: covers sign-out triggered outside our signOut() (another
           // tab, session expiry) — purge here too or the cache outlives the session.
@@ -151,6 +190,11 @@ export function AuthProvider({ children }) {
       unlisten();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
+    // Deliberately mount-only: this sets up the Hub/visibilitychange subscriptions
+    // ONCE. syncFromCognito is a plain (non-memoized) closure recreated every
+    // render, so listing it here would tear down and re-subscribe on every render
+    // instead of just on mount/unmount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const signInWithEmail = async (email, password) => {
@@ -273,16 +317,24 @@ export function AuthProvider({ children }) {
       setUser(null);
       return;
     }
-    // Written BEFORE handing off to Cognito: signOut() ends in a full-page
-    // redirect through the hosted-UI logout endpoint, which can begin before the
-    // promise resolves, so anything set afterwards may never be stored. Tells the
+    // VNTY-003/VNTY-009: this purge used to run AFTER `await cognitoSignOut()`,
+    // which is exactly the ordering markSigningOut() (below) was already written
+    // to avoid — for a session that originated from Google/hosted-UI,
+    // cognitoSignOut() ends in a full-page redirect to the hosted logout
+    // endpoint, which can begin navigating away before this function's
+    // continuation ever runs. That left the purge un-run for some sign-outs and
+    // not others ("some sign-outs clear the keys, others do not"), stranding a
+    // previous account's chats on the device — and, if the next sign-in landed
+    // before an identity was set, briefly readable as the no-identity fallback
+    // (see chatStorage.js, which no longer has one). Clear local state FIRST so
+    // it always runs regardless of what the redirect does afterward. Tells the
     // next mount of App to skip the splash — the user is leaving, not arriving.
     markSigningOut();
-    await cognitoSignOut();
     clearAllLocalChats();
     setStorageIdentity(null);
     setUser(null);
     setIdToken(null);
+    await cognitoSignOut();
   };
 
   const value = {

@@ -30,8 +30,17 @@ const MAX_MESSAGES_PER_CHAT = 2000; // guard only against single-chat runaway
 /**
  * SEC-C-002: cached chats are namespaced per signed-in identity, so one profile's
  * financial queries can never be read by the next person to sign in on a shared
- * device. The suffix is the Cognito `sub`; signed-out/guest use keeps the legacy
- * un-suffixed keys so existing local history survives this change.
+ * device. The suffix is the Cognito `sub`.
+ *
+ * VNTY-003: this used to fall back to a shared, un-suffixed key while no identity
+ * was set ("guest use"), on the theory that pre-migration local history should
+ * survive. That fallback has no live purpose — every chat-capable route is behind
+ * AuthGate, so there is no real signed-out chat session left to preserve — and it
+ * was the actual leak surface: a brief no-identity window (before a sign-in's
+ * identity resolves, or after a sign-out whose cleanup didn't run — see
+ * AuthContext.signOut) meant reads/writes landed on that ONE shared key, visible
+ * to whichever account's tab touched it next. Dropping it means "no identity" now
+ * means "nothing to read or write," not "read/write the shared bucket."
  *
  * Set once from AuthContext rather than threaded through every call site — the
  * module API is unchanged, so no consumer needs to know about namespacing.
@@ -43,7 +52,7 @@ export function setStorageIdentity(userSub) {
 }
 
 function ns(baseKey) {
-    return activeUserSub ? `${baseKey}::${activeUserSub}` : baseKey;
+    return activeUserSub ? `${baseKey}::${activeUserSub}` : null;
 }
 
 function getStorageKey(chatId) {
@@ -79,8 +88,10 @@ export function clearAllLocalChats() {
 }
 
 export function getChatList() {
+    const key = chatListKey();
+    if (!key) return [];
     try {
-        const raw = localStorage.getItem(chatListKey());
+        const raw = localStorage.getItem(key);
         if (!raw) return [];
         const list = JSON.parse(raw);
         return Array.isArray(list) ? list : [];
@@ -91,8 +102,10 @@ export function getChatList() {
 
 export function getChatMessages(chatId) {
     if (!chatId) return [];
+    const key = getStorageKey(chatId);
+    if (!key) return [];
     try {
-        const raw = localStorage.getItem(getStorageKey(chatId));
+        const raw = localStorage.getItem(key);
         if (!raw) return [];
         const messages = JSON.parse(raw);
         return Array.isArray(messages) ? messages.slice(-MAX_MESSAGES_PER_CHAT) : [];
@@ -102,8 +115,10 @@ export function getChatMessages(chatId) {
 }
 
 export function saveChatList(list) {
+    const key = chatListKey();
+    if (!key) return; // VNTY-003: no identity — nothing to write, not the shared key
     try {
-        localStorage.setItem(chatListKey(), JSON.stringify(list));
+        localStorage.setItem(key, JSON.stringify(list));
     } catch (e) {
         console.warn('chatStorage: saveChatList failed (quota) — list not updated locally:', e);
     }
@@ -162,8 +177,9 @@ function writeWithEviction(key, payload, protectedChatId) {
  */
 export function saveChatMessages(chatId, messages) {
     if (!chatId) return;
-    const trimmed = Array.isArray(messages) ? messages.slice(-MAX_MESSAGES_PER_CHAT) : [];
     const key = getStorageKey(chatId);
+    if (!key) return; // VNTY-003: no identity — nothing to write, not the shared key
+    const trimmed = Array.isArray(messages) ? messages.slice(-MAX_MESSAGES_PER_CHAT) : [];
     const payload = JSON.stringify(trimmed);
     if (!writeWithEviction(key, payload, chatId)) {
         throw new Error(`chatStorage: quota exhausted, could not persist chat ${chatId}`);
@@ -171,24 +187,30 @@ export function saveChatMessages(chatId, messages) {
 }
 
 export function getPendingDeletes() {
+    const key = pendingDeletesKey();
+    if (!key) return [];
     try {
-        const raw = localStorage.getItem(pendingDeletesKey());
+        const raw = localStorage.getItem(key);
         return raw ? JSON.parse(raw) : [];
     } catch { return []; }
 }
 
 export function addPendingDelete(id) {
+    const key = pendingDeletesKey();
+    if (!key) return;
     try {
         const list = getPendingDeletes();
         if (!list.includes(id)) list.push(id);
-        localStorage.setItem(pendingDeletesKey(), JSON.stringify(list));
+        localStorage.setItem(key, JSON.stringify(list));
     } catch {}
 }
 
 export function clearPendingDelete(id) {
+    const key = pendingDeletesKey();
+    if (!key) return;
     try {
         const list = getPendingDeletes().filter((d) => d !== id);
-        localStorage.setItem(pendingDeletesKey(), JSON.stringify(list));
+        localStorage.setItem(key, JSON.stringify(list));
     } catch {}
 }
 

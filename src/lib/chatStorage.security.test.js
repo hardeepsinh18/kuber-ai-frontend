@@ -1,6 +1,7 @@
 /**
- * Regression tests for SEC-C-002 (audit run 2026-07-26):
- * cached chats must be namespaced per identity and purged on sign-out.
+ * Regression tests for SEC-C-002 (audit run 2026-07-26) and VNTY-003/VNTY-009
+ * (QA report, 24-25 Aug 2026): cached chats must be namespaced per identity,
+ * purged on sign-out, and never fall back to a shared no-identity key.
  */
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
@@ -62,11 +63,25 @@ describe('SEC-C-002 per-identity namespacing', () => {
         expect(keys).not.toContain('stockhug_chat_c1');
     });
 
-    it('keeps legacy un-suffixed keys for guest use so existing history survives', () => {
+    it('VNTY-003: never reads or writes a shared key when no identity is set', () => {
         setStorageIdentity(null);
         saveChatList([{ id: 'c1', title: 't', updatedAt: 1 }]);
-        expect(Object.keys(localStorage)).toContain('stockhug_chat_list');
-        expect(getChatList()).toHaveLength(1);
+        saveChatMessages('c1', [{ role: 'user', content: 'no-identity write attempt' }]);
+        addPendingDelete('c9');
+
+        // Nothing landed anywhere — not the old bare key, not any key at all.
+        expect(Object.keys(localStorage)).toEqual([]);
+        expect(getChatList()).toEqual([]);
+        expect(getChatMessages('c1')).toEqual([]);
+        expect(getPendingDeletes()).toEqual([]);
+    });
+
+    it('VNTY-003: a no-identity read cannot see a previous identity\'s data', () => {
+        setStorageIdentity('user-alice-sub');
+        saveChatList([{ id: 'c1', title: 'alice', updatedAt: 1 }]);
+
+        setStorageIdentity(null);
+        expect(getChatList()).toEqual([]);
     });
 });
 
@@ -80,9 +95,6 @@ describe('SEC-C-002 sign-out purge', () => {
         setStorageIdentity('user-bob-sub');
         saveChatList([{ id: 'c2', title: 'bob', updatedAt: 1 }]);
         saveChatMessages('c2', [{ role: 'user', content: 'bob secret' }]);
-
-        setStorageIdentity(null);
-        saveChatList([{ id: 'c3', title: 'guest', updatedAt: 1 }]);
 
         clearAllLocalChats();
 

@@ -171,7 +171,47 @@ const stripResponseChrome = (text) => {
 
     // Strip disclaimer from text — rendered separately as a styled box at the bottom
     out = out.replace(/\*?\*?Disclaimer:?\*?\*?[^\n]*((\n[^\n]+)*)/gi, '');
+    out = stripLatex(out);
     return out.trim();
+};
+
+// VNTY-006: a concept explainer occasionally answers a ratio question with raw
+// LaTeX ("[ \text{P/E Ratio} = \frac{\text{Share Price}}{\text{EPS}} ]") instead
+// of prose. There is no LaTeX renderer in this app (ReactMarkdown + remark-gfm
+// only), so it rendered as literal backslash-and-brace markup on screen. This
+// converts the handful of LaTeX constructs a finance answer realistically
+// emits into plain text, rather than adding a KaTeX dependency for content
+// that should never have been LaTeX in the first place.
+//
+// Gated on actually containing a LaTeX command (\text, \frac, \times, …) — that
+// backslash-letter sequence never occurs in ordinary prose, so this cannot
+// misfire on legitimate text and is a no-op (one regex test) for every normal
+// answer.
+const stripLatex = (text) => {
+    const HAS_LATEX_CMD = /\\(?:text|frac|times|div|cdot|approx|pm)\b/;
+    if (!text || !HAS_LATEX_CMD.test(text)) return text;
+    let out = text;
+    // Real LaTeX delimiters FIRST, as literal 2-char sequences — \[ is removed
+    // entirely, unlike a bare "[" (see below), which is a bracket character.
+    out = out.replace(/\\\[/g, '').replace(/\\\]/g, '');
+    out = out.replace(/\\\(/g, '').replace(/\\\)/g, '');
+    out = out.replace(/\$\$?/g, '');
+    // Bare [ ... ] / ( ... ) wrapping a formula (model forgot the backslash on
+    // \[ \]) — only when the bracket opens directly onto a LaTeX command, so
+    // ordinary bracketed prose ("[source: NSE]") is never touched. Runs AFTER
+    // the real-delimiter pass above, or \[ ... \] would leave stray backslashes
+    // (this regex strips only the [ ] chars, not the \ that sat next to them).
+    out = out.replace(/\[\s*(\\[^[\]]+)\]/g, '$1');
+    out = out.replace(/\(\s*(\\[^()]+)\)/g, '$1');
+    // \text{...} is never nested, so this alone makes \frac{a}{b} below safe to
+    // match with simple (no-nested-brace) groups even when a/b originally held
+    // \text{...} themselves ("\frac{\text{Share Price}}{\text{EPS}}").
+    out = out.replace(/\\text\{([^{}]*)\}/g, '$1');
+    out = out.replace(/\\frac\{([^{}]*)\}\{([^{}]*)\}/g, '($1 / $2)');
+    out = out.replace(/\\times/g, '×').replace(/\\div/g, '÷')
+             .replace(/\\cdot/g, '·').replace(/\\approx/g, '≈')
+             .replace(/\\pm/g, '±');
+    return out.replace(/[ \t]{2,}/g, ' ');
 };
 
 // CONF-COPY-001: there is deliberately no hasDisclaimerText() gate any more. The

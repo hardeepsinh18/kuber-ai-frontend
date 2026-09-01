@@ -56,7 +56,14 @@ export async function getChats(accessToken) {
 
 export async function getChat(id, accessToken) {
   const res = await fetch(chatUrl(id), { method: 'GET', headers: getHeaders(accessToken) });
-  if (res.status === 404 || res.status === 501) return null;
+  // VNTY-004: 404 here is NOT the same as 501 (endpoint not deployed) — it means
+  // this specific thread doesn't exist for this caller (never created, someone
+  // else's, or a bad id), same distinction appendMessages already draws with
+  // MissingChatError. Treating it as a graceful null let the caller fall through
+  // to an empty message list with no error, so opening a dead link just rendered
+  // the blank start screen with nothing telling the user why.
+  if (res.status === 404) throw new MissingChatError(id);
+  if (res.status === 501) return null;
   if (!res.ok) throw new Error(await res.text().catch(() => `${res.status}`));
   const data = await safeJson(res);
   if (!data) return null;

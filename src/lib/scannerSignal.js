@@ -13,6 +13,28 @@ const fmtNum = (v, dp = 2) => {
     return String(parseFloat(n.toFixed(dp)));
 };
 
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+// VNTY-002: a technical/pattern scanner can match a signal on a candle several
+// trading days old (see engine.py's _scan_from_df lookback), so Close is not
+// always today's price — the row it came with clicking "Analyze" moments
+// later can show a materially different, live number. Scan_Date ("YYYY-MM-DD")
+// now tracks which candle Close actually came from; this renders a short
+// "· 20 Aug" suffix whenever that isn't today, so the gap is visible instead
+// of two silently-conflicting prices.
+function staleDateSuffix(scanDate) {
+    if (!scanDate || typeof scanDate !== 'string') return '';
+    const m = scanDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return '';
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    if (scanDate === todayStr) return '';
+    const day = parseInt(m[3], 10);
+    const month = MONTHS[parseInt(m[2], 10) - 1];
+    if (!month) return '';
+    return ` · ${day} ${month}`;
+}
+
 // scanner name → { col: primary result column, label, type }
 const FUNDAMENTAL_SIGNALS = {
     'Low P/E':        { col: 'PE',           make: v => `P/E ${v}`,    type: 'bull'    },
@@ -74,15 +96,16 @@ export function getScannerSignal(scannerNames, row) {
     }
 
     // 2. Non-fundamental scanners show the price
+    const staleSuffix = staleDateSuffix(row.Scan_Date);
     if (row['Chg_%'] != null) {
         const v = Number(row['Chg_%']);
         const close = fmtNum(row.Close);
         if (close != null) {
-            return { label: `₹${close} (${v >= 0 ? '+' : ''}${v}%)`, type: v >= 0 ? 'bull' : 'bear' };
+            return { label: `₹${close} (${v >= 0 ? '+' : ''}${v}%)${staleSuffix}`, type: v >= 0 ? 'bull' : 'bear' };
         }
     }
     const close = fmtNum(row.Close);
-    if (close != null) return { label: `₹${close}`, type: 'price' };
+    if (close != null) return { label: `₹${close}${staleSuffix}`, type: 'price' };
 
     // 3. Safety net — any recognizable metric
     for (const [col, make, type] of FALLBACKS) {

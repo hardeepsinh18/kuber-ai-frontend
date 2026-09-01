@@ -69,10 +69,18 @@ export default function AuthPage() {
     const switchMode = (m) => {
         setMode(m); setError(''); setInfo('');
         setConfirmCode(''); setResetCode(''); setNewPassword(''); setConfirmNewPassword('');
+        // VNTY-021: revealing the password then switching Sign in <-> Create account
+        // left it visible in plain text on the other tab — reset the reveal state
+        // on every mode change, not just when the password itself is cleared.
+        setShowPassword(false); setShowNewPassword(false); setShowConfirmNewPassword(false);
     };
 
     const handleContinue = async (e) => {
         e.preventDefault();
+        // VNTY-008: Full Name renders with the same mandatory styling as email/
+        // password on the signup form but was never actually validated — the
+        // field could be left empty and the form advanced straight past it.
+        if (mode === 'signup' && !fullName.trim()) { setError('Please enter your full name'); return; }
         if (!email.trim()) { setError('Please enter your email address'); return; }
         if (!isValidEmail(email.trim())) { setError('Please enter a valid email'); return; }
         if (!password) { setError('Please enter your password'); return; }
@@ -135,6 +143,13 @@ export default function AuthPage() {
                             setMode('confirm');
                             setInfo('Your email needs to be confirmed. Enter the code we sent, or resend it below.');
                         }
+                    } else if (/attempts exceeded/i.test(err.message || '')) {
+                        // VNTY-017: Cognito's raw lockout message ("Password attempts
+                        // exceeded") was passed straight through — no wait time, no way
+                        // out. Cognito's lockout backs off adaptively rather than a fixed
+                        // window, so a precise ETA would be a guess; point at the one real
+                        // way out available right now instead.
+                        setError("Too many failed attempts. Please wait a few minutes before trying again, or use ‘Forgot password?’ below to reset it now.");
                     } else {
                         setError(err.message || 'Something went wrong');
                     }

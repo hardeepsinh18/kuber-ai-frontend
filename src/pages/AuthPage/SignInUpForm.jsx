@@ -18,7 +18,12 @@ export default function SignInUpForm({
     const showRules = mode === 'signup' && (pwFocused || (password && !validatePassword(password)));
 
     return (
-        <form onSubmit={onSubmit} className="p-6 flex flex-col gap-4">
+        // VNTY-023: native browser validation (type="email") ran its own constraint
+        // check and blocked submission BEFORE onSubmit ever fired, so a malformed
+        // email fell through to the browser's own validation bubble instead of the
+        // same in-app error styling every other case here uses. noValidate hands
+        // format checking entirely to the isValidEmail check already in onSubmit.
+        <form onSubmit={onSubmit} noValidate className="p-6 flex flex-col gap-4">
 
             {/* Full name — signup only */}
             {mode === 'signup' && (
@@ -56,18 +61,10 @@ export default function SignInUpForm({
             </div>
 
             {/* Password */}
-            <div>
-                <div className="flex items-center justify-between mb-2">
-                    <label className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: labelColor }}>
-                        Password
-                    </label>
-                    {mode === 'signin' && (
-                        <button type="button" onClick={onForgot} disabled={loading}
-                            style={{ background: 'none', border: 'none', color: '#FDD405', fontSize: 11.5, fontWeight: 600, cursor: 'pointer', padding: 0 }}>
-                            Forgot password?
-                        </button>
-                    )}
-                </div>
+            <div style={{ position: 'relative' }}>
+                <label className="block text-[11px] font-semibold uppercase tracking-widest mb-2" style={{ color: labelColor }}>
+                    Password
+                </label>
                 <FormInput
                     value={password}
                     onChange={e => { setPassword(e.target.value); setError(''); }}
@@ -81,6 +78,21 @@ export default function SignInUpForm({
                     onBlur={() => setPwFocused(false)}
                     toggle={{ show: showPassword, onToggle: () => setShowPassword(v => !v) }}
                 />
+                {/* VNTY-020: this used to sit in the same row as the "Password" label,
+                    ABOVE the input in DOM order — so Tab went Email -> Forgot password ->
+                    Password, skipping the field the user was trying to reach. Placed AFTER
+                    the input in DOM (so it tabs correctly, right after Password) and
+                    absolutely positioned back into its original visual spot, top-right next
+                    to the label. */}
+                {mode === 'signin' && (
+                    <button type="button" onClick={onForgot} disabled={loading}
+                        style={{
+                            position: 'absolute', top: 0, right: 0,
+                            background: 'none', border: 'none', color: '#FDD405', fontSize: 11.5, fontWeight: 600, cursor: 'pointer', padding: 0,
+                        }}>
+                        Forgot password?
+                    </button>
+                )}
                 {/* Signup only. On sign-in the account already exists, so listing
                     the policy there would be noise — and worse, it would hint at
                     the composition of an existing password. */}
@@ -115,20 +127,32 @@ export default function SignInUpForm({
                 Continue with Google
             </button>
 
-            {/* Checkbox */}
-            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', userSelect: 'none' }}>
-                <div onClick={() => setUpdates(v => !v)} style={{
-                    width: 17, height: 17, borderRadius: 5, flexShrink: 0, marginTop: 2, cursor: 'pointer',
-                    background: updates ? '#FDD405' : 'transparent',
-                    border: updates ? 'none' : `1.5px solid ${isDark ? '#52525b' : '#a1a1aa'}`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                    {updates && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l3 3 5-6" stroke="#000" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                </div>
-                <span style={{ fontSize: 12, color: textSub, lineHeight: 1.6 }}>
-                    Get updates from 72 Street on SMS &amp; WhatsApp
-                </span>
-            </label>
+            {/* Checkbox — signup only (VNTY-024): marketing consent belongs where an
+                account is actually being created, not on Sign in where nothing is
+                being opted into. */}
+            {mode === 'signup' && (
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', userSelect: 'none' }}>
+                    {/* VNTY-014: a styled <div onClick> is invisible to the keyboard and
+                        gives the whole row no real toggle target — only the 17px square
+                        itself did anything, and Tab could never reach it. A real
+                        <input type="checkbox"> wrapped in this <label> restores both:
+                        clicking the label text toggles it (native behavior) and it's a
+                        normal Tab stop. accent-color keeps the brand colour without
+                        losing native checkbox semantics. */}
+                    <input
+                        type="checkbox"
+                        checked={updates}
+                        onChange={() => setUpdates(v => !v)}
+                        style={{
+                            width: 17, height: 17, flexShrink: 0, marginTop: 2, cursor: 'pointer',
+                            accentColor: '#FDD405',
+                        }}
+                    />
+                    <span style={{ fontSize: 12, color: textSub, lineHeight: 1.6 }}>
+                        Get updates from 72 Street on SMS &amp; WhatsApp
+                    </span>
+                </label>
+            )}
         </form>
     );
 }

@@ -59,7 +59,27 @@ function _deriveFlushTitle(chatId, messages, renamedChatsRef) {
     const storedTitle = chatStorage.getChatList().find((c) => c.id === chatId)?.title;
     const wasRenamed = renamedChatsRef.current.has(chatId)
         || (storedTitle && storedTitle !== derived && storedTitle !== 'New chat');
-    return wasRenamed && storedTitle ? storedTitle : derived;
+    if (wasRenamed && storedTitle) return storedTitle;
+
+    // VNTY-022: a suggestion card sends the SAME literal prompt text every time
+    // it's clicked, so titling from the first user message (as usual) makes two
+    // chats started from it — even on different days — collide verbatim (a
+    // 42-chat account carried only 38 distinct names). Only checked on first
+    // derivation: once assigned, the storedTitle branch above keeps a
+    // disambiguated title stable on every later flush, since it now differs
+    // from the bare re-derived text and reads as "renamed."
+    if (derived === 'New chat') return derived;
+    const usedTitles = new Set(
+        chatStorage.getChatList().filter((c) => c.id !== chatId).map((c) => c.title)
+    );
+    if (!usedTitles.has(derived)) return derived;
+
+    const dateSuffix = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+    let candidate = `${derived} · ${dateSuffix}`;
+    for (let n = 2; usedTitles.has(candidate); n += 1) {
+        candidate = `${derived} · ${dateSuffix} (${n})`;
+    }
+    return candidate;
 }
 
 function _persistMessagesLocally(chatId, messages) {
@@ -731,9 +751,24 @@ export function ChatHistoryProvider({ children }) {
                     }
                 }
                 setChatLoadError(null);
-            }).catch(() => {
+            }).catch((err) => {
                 if (currentChatIdRef.current !== id) return;
-                if (!hasLocal) setChatLoadError('Failed to load chat. Please try again.');
+                if (hasLocal) {
+                    // MissingChatError here just means this chat was never synced
+                    // (createChat was unreachable when it was made) — the local copy
+                    // IS the chat, and _syncFlushToServer already heals this id on the
+                    // next send. Nothing is actually wrong, so no error banner.
+                    return;
+                }
+                // VNTY-004: no local copy AND the server doesn't have it either —
+                // distinguish "this thread genuinely doesn't exist / isn't yours"
+                // (permanent — retrying won't help) from a transient fetch failure,
+                // instead of collapsing both into a silent blank screen.
+                setChatLoadError(
+                    err?.name === 'MissingChatError'
+                        ? "This conversation doesn't exist, or isn't yours."
+                        : 'Failed to load chat. Please try again.'
+                );
             }).finally(() => {
                 if (currentChatIdRef.current !== id) return;
                 setIsChatLoading(false);

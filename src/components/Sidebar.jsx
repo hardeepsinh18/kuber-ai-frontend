@@ -85,7 +85,10 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, onPortfolioClick, showLog
             setDeletingId(null);
         } else {
             setDeletingId(chatId);
-            setTimeout(() => setDeletingId(null), 3000);
+            // VNTY-010: 3s was tight for "notice the hint, then click again" —
+            // widened alongside making the armed state an explicit, always-visible
+            // "Delete?" label instead of a hover-gated icon recolor.
+            setTimeout(() => setDeletingId(null), 4000);
         }
     };
 
@@ -250,29 +253,60 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, onPortfolioClick, showLog
                                                                 </span>
                                                             )}
                                                         </button>
+                                                        {/* VNTY-019: opacity-0 with no md: prefix hid this on EVERY
+                                                            device with no hover (all touch devices, not just small
+                                                            screens), and title alone isn't reliably announced by
+                                                            screen readers — aria-label is. Same "hover-only on desktop,
+                                                            always visible below md:, focus-visible everywhere" pattern
+                                                            already used for the Scanner Analyze button. */}
                                                         <button
                                                             onClick={(e) => startEditing(e, chat)}
+                                                            aria-label="Rename chat"
                                                             className="p-1 rounded-md text-zinc-300 dark:text-zinc-700
                                                                        hover:text-amber-600 dark:hover:text-[#FDD405]
                                                                        hover:bg-amber-50 dark:hover:bg-amber-500/10
-                                                                       opacity-0 group-hover:opacity-100 transition-all"
+                                                                       opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100 transition-all"
                                                             title="Rename"
                                                         >
                                                             <Pencil size={10} />
                                                         </button>
                                                         {deleteChat && (
-                                                            <button
-                                                                onClick={(e) => handleDeleteClick(e, chat.id)}
-                                                                className={clsx(
-                                                                    'p-1 rounded-md transition-all opacity-0 group-hover:opacity-100',
-                                                                    deletingId === chat.id
-                                                                        ? 'text-red-500 bg-red-50 dark:bg-red-900/20 opacity-100'
-                                                                        : 'text-zinc-300 dark:text-zinc-700 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'
-                                                                )}
-                                                                title={deletingId === chat.id ? 'Confirm delete' : 'Delete'}
-                                                            >
-                                                                <Trash2 size={11} />
-                                                            </button>
+                                                            deletingId === chat.id ? (
+                                                                // VNTY-010: the armed state used to be JUST a tiny icon
+                                                                // recolor behind group-hover — easy to miss entirely (a
+                                                                // user who clicked once, didn't notice the hint, and
+                                                                // never clicked again reported "does nothing"), and it
+                                                                // could vanish mid-confirm if the pointer wasn't held
+                                                                // exactly over the row. An explicit "Delete?" label,
+                                                                // always visible regardless of hover, can't be missed
+                                                                // or lost between the two clicks.
+                                                                <button
+                                                                    onClick={(e) => handleDeleteClick(e, chat.id)}
+                                                                    className="flex-shrink-0 flex items-center gap-1 px-1.5 py-1 rounded-md
+                                                                               text-[10px] font-semibold
+                                                                               text-red-600 dark:text-red-400
+                                                                               bg-red-50 dark:bg-red-900/25
+                                                                               border border-red-200 dark:border-red-800/50
+                                                                               transition-all"
+                                                                    title="Confirm delete"
+                                                                >
+                                                                    <Trash2 size={11} />
+                                                                    Delete?
+                                                                </button>
+                                                            ) : (
+                                                                // VNTY-019: same fix as the rename button above.
+                                                                <button
+                                                                    onClick={(e) => handleDeleteClick(e, chat.id)}
+                                                                    aria-label="Delete chat"
+                                                                    className="p-1 rounded-md transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100
+                                                                               text-zinc-300 dark:text-zinc-700
+                                                                               hover:text-red-500 dark:hover:text-red-400
+                                                                               hover:bg-red-50 dark:hover:bg-red-900/20"
+                                                                    title="Delete"
+                                                                >
+                                                                    <Trash2 size={11} />
+                                                                </button>
+                                                            )
                                                         )}
                                                     </>
                                                 )}

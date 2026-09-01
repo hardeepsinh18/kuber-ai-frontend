@@ -5,8 +5,10 @@ export default function ForgotForm({
     email, setEmail, setError, error, info, loading,
     onSubmit, onBack, textSub, labelColor, inputBg, inputColor,
 }) {
+    // VNTY-023: same fix as SignInUpForm — hand email-format validation
+    // entirely to the in-app isValidEmail check in onSubmit.
     return (
-        <form onSubmit={onSubmit} className="p-6 flex flex-col gap-4">
+        <form onSubmit={onSubmit} noValidate className="p-6 flex flex-col gap-4">
             <p style={{ fontSize: 13, color: textSub }}>
                 Enter your account email and we'll send you a code to reset your password.
             </p>

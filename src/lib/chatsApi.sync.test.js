@@ -13,7 +13,7 @@
  *   404 — THIS chat is unknown to the server. Recoverable, and must be retried.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { appendMessages, createChat, MissingChatError } from './chatsApi.js';
+import { appendMessages, createChat, getChat, MissingChatError } from './chatsApi.js';
 
 const okJson = (body, status = 200) => ({
     ok: status >= 200 && status < 300,
@@ -56,6 +56,34 @@ describe('appendMessages failure signalling', () => {
         globalThis.fetch.mockResolvedValue(okJson({ appended: 2 }, 201));
 
         await expect(appendMessages('chat-1', [], 'tok')).resolves.toBe(true);
+    });
+});
+
+describe('getChat 404 signalling (VNTY-004)', () => {
+    beforeEach(() => { globalThis.fetch = vi.fn(); });
+    afterEach(() => { vi.restoreAllMocks(); });
+
+    it('throws MissingChatError on 404 instead of resolving null', async () => {
+        globalThis.fetch.mockResolvedValue(okJson({ detail: 'Chat not found.' }, 404));
+
+        await expect(getChat('missing-or-foreign-id', 'tok'))
+            .rejects.toBeInstanceOf(MissingChatError);
+    });
+
+    it('still degrades quietly when the endpoint is not deployed (501)', async () => {
+        globalThis.fetch.mockResolvedValue(okJson({}, 501));
+
+        await expect(getChat('chat-1', 'tok')).resolves.toBeNull();
+    });
+
+    it('resolves the chat on success', async () => {
+        globalThis.fetch.mockResolvedValue(okJson({
+            id: 'chat-1', title: 'TCS fundamentals', messages: [{ role: 'user', content: 'hi' }],
+        }, 200));
+
+        await expect(getChat('chat-1', 'tok')).resolves.toMatchObject({
+            id: 'chat-1', title: 'TCS fundamentals', messages: [{ role: 'user', content: 'hi' }],
+        });
     });
 });
 

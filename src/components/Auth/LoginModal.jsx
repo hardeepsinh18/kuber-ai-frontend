@@ -95,6 +95,9 @@ const LoginModal = ({ isOpen, onClose }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        // VNTY-008: same gap as AuthPage.jsx — Full name has no `required`
+        // attribute here either, so it silently advanced straight to signup.
+        if (mode === 'signup' && !fullName.trim()) { setError('Please enter your full name'); return; }
         setError(''); setSuccess(''); setLoading(true);
         try {
             if (mode === 'signin') {
