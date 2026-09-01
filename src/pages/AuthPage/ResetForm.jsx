@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { FormInput, AuthAlerts, SubmitButton, PasswordRules } from './shared';
+import { validatePassword } from './authHelpers';
 
 // 'reset' mode: enter the emailed reset code plus a new password.
 export default function ResetForm({
@@ -8,6 +10,10 @@ export default function ResetForm({
     setError, error, info, loading,
     onSubmit, onBack, onResend, textSub, textMain, labelColor, inputBg, inputColor,
 }) {
+    // Same reveal-on-focus behaviour as signup (see SignInUpForm).
+    const [pwFocused, setPwFocused] = useState(false);
+    const showRules = pwFocused || (newPassword && !validatePassword(newPassword));
+
     return (
         <form onSubmit={onSubmit} className="p-6 flex flex-col gap-4">
             <p style={{ fontSize: 13, color: textSub }}>
@@ -46,11 +52,13 @@ export default function ResetForm({
                     inputBg={inputBg}
                     inputColor={inputColor}
                     labelColor={labelColor}
+                    onFocus={() => setPwFocused(true)}
+                    onBlur={() => setPwFocused(false)}
                     toggle={{ show: showNewPassword, onToggle: () => setShowNewPassword(v => !v) }}
                 />
                 {/* Same policy is enforced on reset (AuthPage.jsx validates with
                     validatePassword here too), so the rules belong here as well. */}
-                <PasswordRules password={newPassword} subtleColor={labelColor} />
+                <PasswordRules password={newPassword} visible={!!showRules} subtleColor={labelColor} />
             </div>
 
             <div>

@@ -3,7 +3,10 @@
  * password, pressed "Create account", and only then learned it needed a symbol —
  * the rules lived solely in an error string shown AFTER a failed submit.
  *
- * PasswordRules renders the policy up front and ticks each rule as it is met.
+ * PasswordRules renders the policy and ticks each rule as it is met. It is
+ * revealed when the user REACHES the password field — an untouched signup form
+ * should not open with a wall of requirements — and stays while anything is
+ * unmet so tabbing away mid-entry does not hide the target.
  *
  * The important structural point: the checklist and validatePassword both read
  * PASSWORD_RULES, so the UI cannot promise a rule the validator does not enforce
@@ -54,6 +57,41 @@ describe('the password policy is visible before submitting', () => {
         // jest-dom matchers are not set up in this project, so assert the
         // attribute directly.
         expect(container.querySelector('ul').getAttribute('aria-label')).toBeTruthy();
+    });
+});
+
+describe('it appears only once the user is in the field', () => {
+    const wrapper = (container) =>
+        container.querySelector('ul[aria-label="Password requirements"]')
+            .closest('div[aria-hidden]');
+
+    it('is collapsed and hidden from assistive tech when not visible', () => {
+        const { container } = render(<PasswordRules password="" visible={false} />);
+        const w = wrapper(container);
+        expect(w.getAttribute('aria-hidden')).toBe('true');
+        expect(w.style.gridTemplateRows).toBe('0fr');
+    });
+
+    it('is expanded and exposed when visible', () => {
+        const { container } = render(<PasswordRules password="" visible={true} />);
+        const w = wrapper(container);
+        expect(w.getAttribute('aria-hidden')).toBe('false');
+        expect(w.style.gridTemplateRows).toBe('1fr');
+    });
+
+    it('defaults to visible so a caller that omits the prop still shows rules', () => {
+        const { container } = render(<PasswordRules password="" />);
+        expect(wrapper(container).getAttribute('aria-hidden')).toBe('false');
+    });
+
+    it('confirms success once every rule passes', () => {
+        const { container } = render(<PasswordRules password="Abcdef1!" visible />);
+        expect(container.textContent).toContain('meets all requirements');
+    });
+
+    it('does not claim success while a rule is unmet', () => {
+        const { container } = render(<PasswordRules password="Abcdef1" visible />);
+        expect(container.textContent).not.toContain('meets all requirements');
     });
 });
 

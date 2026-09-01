@@ -36,6 +36,7 @@ const PasswordToggle = ({ show, onToggle, subtleColor }) => (
 export const FormInput = ({
     type = 'text', inputMode, value, onChange, placeholder, autoComplete,
     autoFocus, minLength, letterSpaced, inputBg, inputColor, labelColor, toggle,
+    onFocus, onBlur,
 }) => {
     const input = (
         <input
@@ -54,8 +55,8 @@ export const FormInput = ({
                 borderRadius: 10, color: inputColor, fontSize: 14, outline: 'none',
                 ...(letterSpaced ? { letterSpacing: 2 } : null),
             }}
-            onFocus={e => { e.target.style.borderColor = 'rgba(253,212,5,0.60)'; e.target.style.outline = '2px solid #fdd405'; e.target.style.outlineOffset = '2px'; }}
-            onBlur={e => { e.target.style.borderColor = 'rgba(253,212,5,0.20)'; e.target.style.outline = 'none'; }}
+            onFocus={e => { e.target.style.borderColor = 'rgba(253,212,5,0.60)'; e.target.style.outline = '2px solid #fdd405'; e.target.style.outlineOffset = '2px'; onFocus?.(e); }}
+            onBlur={e => { e.target.style.borderColor = 'rgba(253,212,5,0.20)'; e.target.style.outline = 'none'; onBlur?.(e); }}
         />
     );
     if (!toggle) return input;
@@ -69,44 +70,86 @@ export const FormInput = ({
 
 // Shared error/info message pair — every form mode shows the same styled <p> for
 // `error`, and the same styled <p> for `info` (only when there's no error).
-// Live password-policy checklist shown under the password field on signup and
-// reset.
+// Password-policy checklist, shown once the user is IN the password field.
 //
-// The rules were previously invisible until AFTER a failed submit: a user typed
-// a password, pressed "Create account", and only then learned it needed a symbol.
-// Showing them up front turns a rejection into guidance.
+// Two things it fixes. The rules used to be invisible until AFTER a failed
+// submit, so a user only learned the policy by being rejected. And when first
+// surfaced they sat under the field permanently, which pushed the form taller
+// for everyone — including sign-in users who cannot act on them.
+//
+// So: revealed on focus, and kept visible while anything is still unmet even
+// after blur (leaving mid-way and losing the list is worse than a little extra
+// height). Once every rule passes and focus leaves, it collapses again.
 //
 // Rendered from PASSWORD_RULES (authHelpers) — the same list validatePassword
 // checks — so the checklist can never promise a rule the validator does not
 // enforce.
 //
-// Each row is aria-live so a screen reader announces a rule being satisfied, and
-// the state is carried by BOTH the icon and the colour, never colour alone.
-export const PasswordRules = ({ password = '', subtleColor = '#71717a' }) => (
-    <ul
-        style={{ listStyle: 'none', margin: '8px 0 0', padding: 0, display: 'grid', gap: 4 }}
-        aria-label="Password requirements"
-    >
-        {PASSWORD_RULES.map(({ id, label, test }) => {
-            const met = test(password);
-            return (
-                <li key={id}
-                    style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5,
-                             color: met ? '#4ade80' : subtleColor, transition: 'color 150ms' }}>
-                    {met
-                        ? <Check size={12} strokeWidth={3} aria-hidden="true" style={{ flexShrink: 0 }} />
-                        : <Circle size={9} strokeWidth={2.5} aria-hidden="true" style={{ flexShrink: 0 }} />}
-                    <span>{label}</span>
-                    {/* Text equivalent of the tick, for assistive tech only. */}
-                    <span style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden',
-                                   clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap' }}>
-                        {met ? ' met' : ' not met'}
-                    </span>
-                </li>
-            );
-        })}
-    </ul>
-);
+// Styling follows the auth card: brand yellow #FDD405 for the pending state
+// (the same accent the labels and submit button use) and #22c55e for met, which
+// is the app's positive colour everywhere else. State is carried by the icon AND
+// a visually-hidden text label, never by colour alone.
+export const PasswordRules = ({ password = '', visible = true, subtleColor = '#71717a' }) => {
+    const allMet = PASSWORD_RULES.every((r) => r.test(password));
+    return (
+        <div
+            style={{
+                display: 'grid',
+                // Animate on grid-template-rows so the reveal is a smooth open
+                // rather than the form snapping taller.
+                gridTemplateRows: visible ? '1fr' : '0fr',
+                opacity: visible ? 1 : 0,
+                transition: 'grid-template-rows 200ms ease, opacity 160ms ease',
+            }}
+            aria-hidden={!visible}
+        >
+            <div style={{ overflow: 'hidden' }}>
+                <ul
+                    style={{
+                        listStyle: 'none',
+                        margin: '8px 0 0',
+                        padding: '9px 11px',
+                        display: 'grid',
+                        gap: 5,
+                        borderRadius: 9,
+                        background: 'rgba(253,212,5,0.04)',
+                        border: '1px solid rgba(253,212,5,0.18)',
+                    }}
+                    aria-label="Password requirements"
+                >
+                    {PASSWORD_RULES.map(({ id, label, test }) => {
+                        const met = test(password);
+                        return (
+                            <li key={id}
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: 7, fontSize: 11.5,
+                                    color: met ? '#22c55e' : subtleColor,
+                                    transition: 'color 150ms',
+                                }}>
+                                {met
+                                    ? <Check size={12} strokeWidth={3} aria-hidden="true" style={{ flexShrink: 0 }} />
+                                    : <Circle size={9} strokeWidth={2.5} aria-hidden="true"
+                                              style={{ flexShrink: 0, color: 'rgba(253,212,5,0.55)' }} />}
+                                <span>{label}</span>
+                                <span style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden',
+                                               clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap' }}>
+                                    {met ? ' met' : ' not met'}
+                                </span>
+                            </li>
+                        );
+                    })}
+                    {allMet && (
+                        <li style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 11.5,
+                                     color: '#22c55e', fontWeight: 600, marginTop: 1 }}>
+                            <Check size={12} strokeWidth={3} aria-hidden="true" style={{ flexShrink: 0 }} />
+                            <span>Password meets all requirements</span>
+                        </li>
+                    )}
+                </ul>
+            </div>
+        </div>
+    );
+};
 
 export const AuthAlerts = ({ error, info }) => (
     <>

@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { FormInput, AuthAlerts, SubmitButton, GoogleIcon, PasswordRules } from './shared';
+import { validatePassword } from './authHelpers';
 
 // 'signin' / 'signup' mode: email + password, plus full name and the marketing
 // consent checkbox when signing up.
@@ -8,6 +10,13 @@ export default function SignInUpForm({
     updates, setUpdates, onSubmit, onForgot, onGoogle,
     textSub, labelColor, inputBg, inputColor, dividerBg, orColor, googleBg, isDark,
 }) {
+    // The checklist appears when the user reaches the field, not before — an
+    // untouched signup form should not open with a wall of requirements. It then
+    // STAYS while anything is unmet, so tabbing away mid-entry does not hide the
+    // thing being worked towards.
+    const [pwFocused, setPwFocused] = useState(false);
+    const showRules = mode === 'signup' && (pwFocused || (password && !validatePassword(password)));
+
     return (
         <form onSubmit={onSubmit} className="p-6 flex flex-col gap-4">
 
@@ -68,13 +77,15 @@ export default function SignInUpForm({
                     inputBg={inputBg}
                     inputColor={inputColor}
                     labelColor={labelColor}
+                    onFocus={() => setPwFocused(true)}
+                    onBlur={() => setPwFocused(false)}
                     toggle={{ show: showPassword, onToggle: () => setShowPassword(v => !v) }}
                 />
                 {/* Signup only. On sign-in the account already exists, so listing
                     the policy there would be noise — and worse, it would hint at
                     the composition of an existing password. */}
                 {mode === 'signup' && (
-                    <PasswordRules password={password} subtleColor={labelColor} />
+                    <PasswordRules password={password} visible={!!showRules} subtleColor={labelColor} />
                 )}
             </div>
 
