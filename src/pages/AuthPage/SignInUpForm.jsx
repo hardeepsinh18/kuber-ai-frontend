@@ -1,4 +1,4 @@
-import { FormInput, AuthAlerts, SubmitButton, GoogleIcon } from './shared';
+import { FormInput, AuthAlerts, SubmitButton, GoogleIcon, PasswordRules } from './shared';
 
 // 'signin' / 'signup' mode: email + password, plus full name and the marketing
 // consent checkbox when signing up.
@@ -70,6 +70,12 @@ export default function SignInUpForm({
                     labelColor={labelColor}
                     toggle={{ show: showPassword, onToggle: () => setShowPassword(v => !v) }}
                 />
+                {/* Signup only. On sign-in the account already exists, so listing
+                    the policy there would be noise — and worse, it would hint at
+                    the composition of an existing password. */}
+                {mode === 'signup' && (
+                    <PasswordRules password={password} subtleColor={labelColor} />
+                )}
             </div>
 
             <AuthAlerts error={error} info={info} />

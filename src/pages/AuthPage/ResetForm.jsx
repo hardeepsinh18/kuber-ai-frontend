@@ -1,4 +1,4 @@
-import { FormInput, AuthAlerts, SubmitButton } from './shared';
+import { FormInput, AuthAlerts, SubmitButton, PasswordRules } from './shared';
 
 // 'reset' mode: enter the emailed reset code plus a new password.
 export default function ResetForm({
@@ -48,6 +48,9 @@ export default function ResetForm({
                     labelColor={labelColor}
                     toggle={{ show: showNewPassword, onToggle: () => setShowNewPassword(v => !v) }}
                 />
+                {/* Same policy is enforced on reset (AuthPage.jsx validates with
+                    validatePassword here too), so the rules belong here as well. */}
+                <PasswordRules password={newPassword} subtleColor={labelColor} />
             </div>
 
             <div>

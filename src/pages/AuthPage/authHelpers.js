@@ -20,10 +20,17 @@ export function postSubscribe(email) {
 
 export const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-// Matches the Cognito user pool's password policy: 8+ chars, upper, lower, number, symbol.
+// The Cognito user pool's password policy, as ONE list that both the validator
+// and the on-screen checklist read. They were previously the same rules written
+// twice — once here and once in the error string — which is how a UI can end up
+// promising something the backend does not enforce (or vice versa).
+export const PASSWORD_RULES = [
+    { id: 'length', label: 'At least 8 characters', test: (p) => p.length >= 8 },
+    { id: 'upper',  label: 'One uppercase letter',  test: (p) => /[A-Z]/.test(p) },
+    { id: 'lower',  label: 'One lowercase letter',  test: (p) => /[a-z]/.test(p) },
+    { id: 'number', label: 'One number',            test: (p) => /[0-9]/.test(p) },
+    { id: 'symbol', label: 'One symbol (!@#$…)',    test: (p) => /[^A-Za-z0-9]/.test(p) },
+];
+
 export const validatePassword = (password) =>
-    password.length >= 8 &&
-    /[A-Z]/.test(password) &&
-    /[a-z]/.test(password) &&
-    /[0-9]/.test(password) &&
-    /[^A-Za-z0-9]/.test(password);
+    PASSWORD_RULES.every((r) => r.test(password || ''));

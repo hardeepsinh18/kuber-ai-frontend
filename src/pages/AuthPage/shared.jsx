@@ -1,4 +1,5 @@
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Check, Circle } from 'lucide-react';
+import { PASSWORD_RULES } from './authHelpers';
 
 export const GoogleIcon = () => (
     <svg width="18" height="18" viewBox="0 0 24 24">
@@ -68,6 +69,45 @@ export const FormInput = ({
 
 // Shared error/info message pair — every form mode shows the same styled <p> for
 // `error`, and the same styled <p> for `info` (only when there's no error).
+// Live password-policy checklist shown under the password field on signup and
+// reset.
+//
+// The rules were previously invisible until AFTER a failed submit: a user typed
+// a password, pressed "Create account", and only then learned it needed a symbol.
+// Showing them up front turns a rejection into guidance.
+//
+// Rendered from PASSWORD_RULES (authHelpers) — the same list validatePassword
+// checks — so the checklist can never promise a rule the validator does not
+// enforce.
+//
+// Each row is aria-live so a screen reader announces a rule being satisfied, and
+// the state is carried by BOTH the icon and the colour, never colour alone.
+export const PasswordRules = ({ password = '', subtleColor = '#71717a' }) => (
+    <ul
+        style={{ listStyle: 'none', margin: '8px 0 0', padding: 0, display: 'grid', gap: 4 }}
+        aria-label="Password requirements"
+    >
+        {PASSWORD_RULES.map(({ id, label, test }) => {
+            const met = test(password);
+            return (
+                <li key={id}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5,
+                             color: met ? '#4ade80' : subtleColor, transition: 'color 150ms' }}>
+                    {met
+                        ? <Check size={12} strokeWidth={3} aria-hidden="true" style={{ flexShrink: 0 }} />
+                        : <Circle size={9} strokeWidth={2.5} aria-hidden="true" style={{ flexShrink: 0 }} />}
+                    <span>{label}</span>
+                    {/* Text equivalent of the tick, for assistive tech only. */}
+                    <span style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden',
+                                   clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap' }}>
+                        {met ? ' met' : ' not met'}
+                    </span>
+                </li>
+            );
+        })}
+    </ul>
+);
+
 export const AuthAlerts = ({ error, info }) => (
     <>
         {error && (
