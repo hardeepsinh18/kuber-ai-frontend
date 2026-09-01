@@ -36,3 +36,23 @@ describe('getScannerSignal price fallback (VNTY-002)', () => {
         expect(getScannerSignal('Evening Star', row)).toEqual({ label: '₹685.4', type: 'price' });
     });
 });
+
+describe('getScannerSignal MACD Crossover fields (bug: was showing Close as "Signal")', () => {
+    it('shows MACD/Signal/Hist, not Close, for a bullish crossover row', () => {
+        // Real APARINDS row from app/scanners/engine.py, 2026-08-27.
+        const row = { Symbol: 'APARINDS', Close: 673.19, Scan_Date: '2026-08-27', MACD: 673.19, Signal: 646.44, Hist: 26.75 };
+        expect(getScannerSignal('MACD Bullish Crossover', row))
+            .toEqual({ label: 'MACD 673.19 · Signal 646.44 · Hist +26.75', type: 'bull' });
+    });
+
+    it('types as bear when Hist is negative', () => {
+        const row = { Symbol: 'FOO', Close: 100, MACD: 12.5, Signal: 14.1, Hist: -1.6 };
+        expect(getScannerSignal('MACD Bearish Crossover', row))
+            .toEqual({ label: 'MACD 12.5 · Signal 14.1 · Hist -1.6', type: 'bear' });
+    });
+
+    it('still falls back to price when MACD fields are absent', () => {
+        const row = { Close: 100 };
+        expect(getScannerSignal('MACD Bullish Crossover', row)).toEqual({ label: '₹100', type: 'price' });
+    });
+});

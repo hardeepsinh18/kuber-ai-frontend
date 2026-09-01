@@ -86,6 +86,23 @@ export function getScannerSignal(scannerNames, row) {
         return { label: `${row.Pattern}${dir ? ` · ${dir}` : ''}${arrow}${tier}`, type };
     }
 
+    // 0.5 MACD Bullish/Bearish Crossover scanners show the actual MACD line,
+    //     signal line, and histogram from app/scanners/engine.py — not price.
+    //     (row.Signal here is the MACD signal-line value; unrelated to this
+    //     function's own generic "price" fallback below, which is what a
+    //     shared column previously showed for these rows.)
+    if (names.some(n => /^MACD (Bullish|Bearish) Crossover$/.test((n?.trim?.() ?? n) || ''))
+        && row.MACD != null && row.Signal != null) {
+        const macd = fmtNum(row.MACD);
+        const sig = fmtNum(row.Signal);
+        const hist = fmtNum(row.Hist);
+        const histLabel = hist != null ? `${Number(hist) >= 0 ? '+' : ''}${hist}` : null;
+        const type = row.Hist != null ? (Number(row.Hist) >= 0 ? 'bull' : 'bear') : 'neutral';
+        const parts = [`MACD ${macd}`, `Signal ${sig}`];
+        if (histLabel != null) parts.push(`Hist ${histLabel}`);
+        return { label: parts.join(' · '), type };
+    }
+
     // 1. A selected fundamental scanner shows ITS metric
     for (const name of names) {
         const spec = FUNDAMENTAL_SIGNALS[name?.trim?.() ?? name];

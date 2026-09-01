@@ -190,7 +190,7 @@ const ScannerDrawer = ({ data, onAnalyze, onClose, collapsed = false, onToggleCo
                                         <tr style={{ backgroundColor: '#FDD405' }}>
                                             <th className="text-left text-[11px] font-bold text-zinc-900 px-2 py-2.5 w-6">#</th>
                                             <th className="text-left text-[11px] font-bold text-zinc-900 px-2 py-2.5">Stock</th>
-                                            <th className="text-center text-[11px] font-bold text-zinc-900 px-1 py-2.5">Signal</th>
+                                            <th className="text-center text-[11px] font-bold text-zinc-900 px-1 py-2.5">Triggered at</th>
                                             <th className="text-center text-[11px] font-bold text-zinc-900 px-2 py-2.5 w-[86px]">Action</th>
                                         </tr>
                                     </thead>
