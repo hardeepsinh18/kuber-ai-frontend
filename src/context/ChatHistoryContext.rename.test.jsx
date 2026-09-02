@@ -120,4 +120,52 @@ describe('renaming a chat', () => {
 
         await waitFor(() => expect(titleOf(ID)).toBe(FIRST_MSG));
     });
+
+    it('does not move the chat to the top of the sidebar', async () => {
+        // Renaming is a label change, not new activity. The sidebar sorts by
+        // updatedAt, so stamping it on rename yanked a chat from hours-old
+        // straight to "now" — the user renames something at the bottom of the
+        // list and it jumps to the top.
+        render(<ChatHistoryProvider><Probe /></ChatHistoryProvider>);
+
+        await act(async () => { api.loadChat(ID); });
+        await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+
+        await act(async () => { api.renameChat(ID, CUSTOM); });
+
+        const row = storedList.find((c) => c.id === ID);
+        expect(row?.title, 'the rename itself must still apply').toBe(CUSTOM);
+        expect(row?.updatedAt, 'renaming must not re-sort the chat').toBe(1000);
+    });
+
+    it('does not let a later flush bump it either', async () => {
+        // renameChat also marked the chat "touched", which is the signal
+        // flushPersist uses to stamp updatedAt — so even with the direct stamp
+        // removed, the next flush (open, hydrate, switch away) would move it.
+        render(<ChatHistoryProvider><Probe /></ChatHistoryProvider>);
+
+        await act(async () => { api.loadChat(ID); });
+        await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+        await act(async () => { api.renameChat(ID, CUSTOM); });
+        await act(async () => { await vi.advanceTimersByTimeAsync(900); });
+
+        const bumped = chatStorage.saveChatList.mock.calls
+            .flatMap(([list]) => list ?? [])
+            .filter((c) => c.id === ID)
+            .some((c) => (c.updatedAt ?? 0) > 1000);
+        expect(bumped, 'a flush after a rename must not re-sort it').toBe(false);
+    });
+
+    it('still derives a title for a chat the user never renamed', async () => {
+        // Guard against over-correcting: untitled chats must still get their
+        // first-message title, or the sidebar fills with "New chat".
+        storedList = [];
+        render(<ChatHistoryProvider><Probe /></ChatHistoryProvider>);
+
+        await act(async () => { api.loadChat(ID); });
+        await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+        await act(async () => { await vi.advanceTimersByTimeAsync(900); });
+
+        await waitFor(() => expect(titleOf(ID)).toBe(FIRST_MSG));
+    });
 });

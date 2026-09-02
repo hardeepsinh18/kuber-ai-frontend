@@ -840,14 +840,24 @@ export function ChatHistoryProvider({ children }) {
     }, [accessToken, currentChatId]);
 
     const renameChat = useCallback((id, title) => {
-        // An explicit user action, so it counts as touching the chat — both for the
-        // updatedAt set below and for any later flush of the same chat.
-        touchedChatsRef.current.add(id);
-        // …and it must never be re-derived away by a later flush.
+        // A rename is a LABEL change, not new activity, so it must not re-sort the
+        // sidebar. The list sorts by updatedAt, so stamping it here yanked a chat
+        // from hours ago straight to the top — the row visibly jumped out from
+        // under the user mid-edit, which on mobile reads as the list scrolling by
+        // itself.
+        //
+        // Two things had to go, not one: the direct updatedAt stamp below, AND
+        // adding the chat to touchedChatsRef — that ref is the signal flushPersist
+        // uses to stamp updatedAt, so leaving it in just moved the chat later
+        // instead (on the next open/hydrate/switch).
+        //
+        // renamedChatsRef is deliberately still set: it protects the new title
+        // from being re-derived from the first message, which is a separate
+        // concern from ordering and must not regress.
         renamedChatsRef.current.add(id);
         if (accessToken) chatsApi.updateChatTitle(id, title, accessToken).catch(() => {});
         setChatList((prev) => {
-            const next = prev.map((c) => (c.id === id ? { ...c, title, updatedAt: Date.now() } : c));
+            const next = prev.map((c) => (c.id === id ? { ...c, title } : c));
             chatStorage.saveChatList(next);
             return next;
         });
