@@ -30,7 +30,34 @@ describe('the row does not move when renaming starts', () => {
     });
 
     it('the edit view padding is the one that keeps the row height', () => {
-        expect(src).toContain('flex-1 flex items-center gap-1 px-1.5 py-1');
+        // py-1 (not py-0.5) is what preserves the height; the full class string
+        // is asserted in the footprint suite below.
+        expect(src).toMatch(/flex items-center gap-1\.5 md:gap-0\.5 px-1\.5 py-1/);
+    });
+});
+
+describe('the edit row keeps the same footprint as the row it replaces', () => {
+    it('lets the input shrink instead of widening the row', () => {
+        // Without min-w-0 a flex child refuses to shrink below its content, so
+        // the input pushed the row wider — measured 34px wider than the title it
+        // replaces, overshooting its right edge by 40px. That is the "extending"
+        // the user saw.
+        expect(src).toContain('flex-1 min-w-0 flex items-center gap-1.5 md:gap-0.5 px-1.5 py-1');
+        expect(src).toContain('flex-1 min-w-0 text-xs bg-white');
+    });
+
+    it('the confirm button matches the action buttons it stands in for', () => {
+        // Same p-2 md:p-1 as rename/delete, so the row keeps its height and its
+        // right edge lines up with every other row.
+        expect(src).toContain('p-2 md:p-1 rounded-md flex-shrink-0');
+    });
+
+    it('the confirm button is not shrunk away by the input', () => {
+        expect(src).toContain('flex-shrink-0 text-amber-600');
+    });
+
+    it('the confirm action has an accessible name', () => {
+        expect(src).toContain('aria-label="Save name"');
     });
 });
 

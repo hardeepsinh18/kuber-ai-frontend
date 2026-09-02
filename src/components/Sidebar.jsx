@@ -224,20 +224,27 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, onPortfolioClick, showLog
                                                            hover:bg-white/80 dark:hover:bg-white/[0.06]
                                                            transition-all duration-150">
                                                 {editingId === chat.id ? (
-                                                    /* py matches the non-editing row's px-1.5 py-1.5 so the
-                                                       row keeps its height when the rename opens — it used to
-                                                       shrink 3px and visibly jump under the finger. */
-                                                    <div className="flex-1 flex items-center gap-1 px-1.5 py-1">
+                                                    /* The edit view must occupy the SAME footprint as the row it
+                                                       replaces, or the list appears to stretch when rename opens.
+                                                       It previously dropped the rename+delete buttons and let the
+                                                       input expand into that space — measured 34px wider than the
+                                                       title it replaces, overshooting its right edge by 40px.
+                                                       min-w-0 lets the input shrink inside the flex row instead of
+                                                       pushing it wider, and the confirm button carries the same
+                                                       p-2 md:p-1 as the actions it stands in for so the row keeps
+                                                       its height and its right edge. */
+                                                    <div className="flex-1 min-w-0 flex items-center gap-1.5 md:gap-0.5 px-1.5 py-1">
                                                         <input
                                                             autoFocus
                                                             value={editingTitle}
                                                             onChange={e => setEditingTitle(e.target.value)}
                                                             onBlur={() => commitRename(chat.id)}
                                                             onKeyDown={e => handleRenameKeyDown(e, chat.id)}
-                                                            className="flex-1 text-xs bg-white dark:bg-zinc-900 border border-[#FDD405] rounded-md px-1.5 py-0.5 outline-none text-zinc-800 dark:text-zinc-200"
+                                                            className="flex-1 min-w-0 text-xs bg-white dark:bg-zinc-900 border border-[#FDD405] rounded-md px-1.5 py-0.5 outline-none text-zinc-800 dark:text-zinc-200"
                                                         />
                                                         <button onClick={() => commitRename(chat.id)}
-                                                            className="p-0.5 text-amber-600 dark:text-[#FDD405]">
+                                                            aria-label="Save name"
+                                                            className="p-2 md:p-1 rounded-md flex-shrink-0 text-amber-600 dark:text-[#FDD405]">
                                                             <Check size={11} />
                                                         </button>
                                                     </div>
