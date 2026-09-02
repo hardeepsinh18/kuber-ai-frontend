@@ -19,7 +19,7 @@ vi.mock('./AuthContext', () => ({
 
 import * as chatsApi from '../lib/chatsApi';
 import * as chatStorage from '../lib/chatStorage';
-import { ChatHistoryProvider, useChatHistory } from './ChatHistoryContext';
+import { stripLegacyDateSuffix, ChatHistoryProvider, useChatHistory } from './ChatHistoryContext';
 
 const CARD_PROMPT = 'Show Nifty 50 chart for last 6 months';
 
@@ -77,6 +77,32 @@ async function startChatFromCard(chatId) {
     });
     await act(async () => { await vi.advanceTimersByTimeAsync(900); });
 }
+
+describe('legacy dated titles are cleaned up', () => {
+    // Titles are PERSISTED, and _deriveFlushTitle treats any stored value that
+    // differs from the derived text as a deliberate rename — so chats already
+    // named "hi · 2 Sept" would keep that name forever even after the generator
+    // stopped producing dates.
+    it('strips the date the old code appended', () => {
+        expect(stripLegacyDateSuffix('hi · 2 Sept')).toBe('hi');
+        expect(stripLegacyDateSuffix('hi · 24 Aug')).toBe('hi');
+    });
+
+    it('keeps the counter when one was also present', () => {
+        expect(stripLegacyDateSuffix('hi · 2 Sept (2)')).toBe('hi (2)');
+    });
+
+    it('leaves ordinary titles completely alone', () => {
+        for (const t of ['Analyze BPCL', 'hi', 'New chat', 'Top PSU stocks by dividend yield']) {
+            expect(stripLegacyDateSuffix(t)).toBe(t);
+        }
+    });
+
+    it('handles a non-string safely', () => {
+        expect(stripLegacyDateSuffix(undefined)).toBe(undefined);
+        expect(stripLegacyDateSuffix(null)).toBe(null);
+    });
+});
 
 describe('suggestion-card chats get distinguishable titles', () => {
     it('titles the first chat from a card with the bare prompt text', async () => {

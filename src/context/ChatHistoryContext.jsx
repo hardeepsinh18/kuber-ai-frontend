@@ -54,9 +54,39 @@ function _toServerMessage(m) {
 // list too, not just this session's ref, so the rename also survives a
 // reload (the ref is empty on a fresh page load, but the stored title is
 // not).
+// Titles created before 93a8748 were disambiguated with a DATE ("hi · 2 Sept").
+// Those are already persisted, and _deriveFlushTitle's storedTitle branch treats
+// any stored value differing from the derived text as a deliberate rename — so a
+// dated title would survive forever even though nothing generates one any more.
+// This strips the suffix off legacy titles so they read as the user expects.
+//
+// Deliberately narrow: it only matches the exact shape the old code emitted —
+// " · <day> <Mon>" optionally followed by " (n)" — anchored to the END of the
+// string. A chat the user genuinely named "Budget · 2 Sept" would also match,
+// which is why the caller only rewrites when the stripped result still matches
+// the text derived from the chat's own first message.
+const LEGACY_DATE_SUFFIX =
+    / · \d{1,2} (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)(?: \(\d+\))?$/;
+
+export function stripLegacyDateSuffix(title) {
+    if (typeof title !== 'string') return title;
+    const m = title.match(LEGACY_DATE_SUFFIX);
+    if (!m) return title;
+    const counter = title.match(/ \((\d+)\)$/);
+    const base = title.slice(0, m.index);
+    return counter ? `${base} (${counter[1]})` : base;
+}
+
 function _deriveFlushTitle(chatId, messages, renamedChatsRef) {
     const derived = chatStorage.getTitleFromMessages(messages);
-    const storedTitle = chatStorage.getChatList().find((c) => c.id === chatId)?.title;
+    const rawStored = chatStorage.getChatList().find((c) => c.id === chatId)?.title;
+    // Drop a legacy date suffix, but only when what remains is the title this
+    // chat would derive anyway — so a real user rename that happens to end in a
+    // date is never rewritten.
+    const cleaned = stripLegacyDateSuffix(rawStored);
+    const storedTitle = (cleaned !== rawStored && cleaned.replace(/ \(\d+\)$/, '') === derived)
+        ? cleaned
+        : rawStored;
     const wasRenamed = renamedChatsRef.current.has(chatId)
         || (storedTitle && storedTitle !== derived && storedTitle !== 'New chat');
     if (wasRenamed && storedTitle) return storedTitle;
