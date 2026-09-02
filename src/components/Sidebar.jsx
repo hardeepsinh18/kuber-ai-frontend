@@ -217,11 +217,17 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, onPortfolioClick, showLog
                                     <div className="space-y-0.5" role="list">
                                         {filteredChats.map((chat) => (
                                             <div key={chat.id} role="listitem"
-                                                className="group flex items-center gap-0.5 w-full rounded-md
+                                                /* gap-1.5 on touch, gap-0.5 on desktop: with only 2px between
+                                                   the rename and delete targets a thumb regularly hit the wrong
+                                                   one, and the wrong one here is destructive. */
+                                                className="group flex items-center gap-1.5 md:gap-0.5 w-full rounded-md
                                                            hover:bg-white/80 dark:hover:bg-white/[0.06]
                                                            transition-all duration-150">
                                                 {editingId === chat.id ? (
-                                                    <div className="flex-1 flex items-center gap-1 px-1.5 py-0.5">
+                                                    /* py matches the non-editing row's px-1.5 py-1.5 so the
+                                                       row keeps its height when the rename opens — it used to
+                                                       shrink 3px and visibly jump under the finger. */
+                                                    <div className="flex-1 flex items-center gap-1 px-1.5 py-1">
                                                         <input
                                                             autoFocus
                                                             value={editingTitle}
@@ -262,7 +268,11 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, onPortfolioClick, showLog
                                                         <button
                                                             onClick={(e) => startEditing(e, chat)}
                                                             aria-label="Rename chat"
-                                                            className="p-1 rounded-md text-zinc-300 dark:text-zinc-700
+                                                            /* p-2 on touch (~34px box) vs p-1 on desktop: the icons
+                                                               were 18px squares 2px apart, so on a phone the rename
+                                                               and delete targets were effectively one blob and the
+                                                               wrong one got hit. Desktop keeps the compact spacing. */
+                                                            className="p-2 md:p-1 rounded-md text-zinc-300 dark:text-zinc-700
                                                                        hover:text-amber-600 dark:hover:text-[#FDD405]
                                                                        hover:bg-amber-50 dark:hover:bg-amber-500/10
                                                                        opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100 transition-all"
@@ -298,7 +308,7 @@ const Sidebar = ({ isOpen, toggleSidebar, onNewThread, onPortfolioClick, showLog
                                                                 <button
                                                                     onClick={(e) => handleDeleteClick(e, chat.id)}
                                                                     aria-label="Delete chat"
-                                                                    className="p-1 rounded-md transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100
+                                                                    className="p-2 md:p-1 rounded-md transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100
                                                                                text-zinc-300 dark:text-zinc-700
                                                                                hover:text-red-500 dark:hover:text-red-400
                                                                                hover:bg-red-50 dark:hover:bg-red-900/20"
