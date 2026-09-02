@@ -271,7 +271,7 @@ export default function ProfileMenu({
                                 <ExternalLink size={12} />
                             </a>
                             <a
-                                href="https://www.72street.ai/privacy-policy"
+                                href="https://www.72street.ai/legal#terms"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 onClick={() => setShowPrivacyNotice(false)}
