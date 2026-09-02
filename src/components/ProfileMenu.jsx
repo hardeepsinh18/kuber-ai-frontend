@@ -257,18 +257,34 @@ export default function ProfileMenu({
                             Read it in full on our website before continuing to use VentyAI.
                         </p>
 
-                        <a
-                            href="https://www.72street.ai/privacy-policy"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={() => setShowPrivacyNotice(false)}
-                            className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl
-                                       text-[12.5px] font-semibold transition-all duration-200
-                                       bg-[#FDD405] text-zinc-900 hover:bg-[#e8c304]"
-                        >
-                            View Privacy Policy
-                            <ExternalLink size={12} />
-                        </a>
+                        <div className="flex flex-col gap-2">
+                            <a
+                                href="https://www.72street.ai/privacy-policy"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={() => setShowPrivacyNotice(false)}
+                                className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl
+                                           text-[12.5px] font-semibold transition-all duration-200
+                                           bg-[#FDD405] text-zinc-900 hover:bg-[#e8c304]"
+                            >
+                                Privacy Policy
+                                <ExternalLink size={12} />
+                            </a>
+                            <a
+                                href="https://www.72street.ai/privacy-policy"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={() => setShowPrivacyNotice(false)}
+                                className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl
+                                           text-[12.5px] font-semibold transition-all duration-200
+                                           border border-zinc-300 dark:border-zinc-700
+                                           text-zinc-700 dark:text-zinc-200
+                                           hover:bg-zinc-100 dark:hover:bg-white/5"
+                            >
+                                Terms of Use
+                                <ExternalLink size={12} />
+                            </a>
+                        </div>
                     </div>
                 </div>,
                 document.body
