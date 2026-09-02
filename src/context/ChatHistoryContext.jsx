@@ -74,10 +74,16 @@ function _deriveFlushTitle(chatId, messages, renamedChatsRef) {
     );
     if (!usedTitles.has(derived)) return derived;
 
-    const dateSuffix = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
-    let candidate = `${derived} · ${dateSuffix}`;
-    for (let n = 2; usedTitles.has(candidate); n += 1) {
-        candidate = `${derived} · ${dateSuffix} (${n})`;
+    // Disambiguate with a plain counter, NOT the date. The date read as part of
+    // the question ("hi · 2 Sept" looks like the user asked something about a
+    // date), and it is also redundant — the sidebar already shows a relative
+    // timestamp on every row. A counter says exactly what it means: this is the
+    // 2nd chat with that name.
+    let n = 2;
+    let candidate = `${derived} (${n})`;
+    while (usedTitles.has(candidate)) {
+        n += 1;
+        candidate = `${derived} (${n})`;
     }
     return candidate;
 }

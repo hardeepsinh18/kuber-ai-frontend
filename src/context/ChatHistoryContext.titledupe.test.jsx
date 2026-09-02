@@ -96,6 +96,40 @@ describe('suggestion-card chats get distinguishable titles', () => {
         expect(titleOf('chat-a')).not.toBe(titleOf('chat-b'));
     });
 
+    it('numbers the duplicate instead of dating it', async () => {
+        // The suffix used to be the date ("hi · 2 Sept"), which read as part of
+        // the question itself — a chat called "hi" looked like it had asked
+        // something about a date. It was redundant too: every sidebar row
+        // already shows a relative timestamp.
+        render(<ChatHistoryProvider><Probe /></ChatHistoryProvider>);
+        await startChatFromCard('chat-a');
+        await startChatFromCard('chat-b');
+        expect(titleOf('chat-b')).toBe(`${CARD_PROMPT} (2)`);
+    });
+
+    it('never puts a date in a title', async () => {
+        render(<ChatHistoryProvider><Probe /></ChatHistoryProvider>);
+        await startChatFromCard('chat-a');
+        await startChatFromCard('chat-b');
+        await startChatFromCard('chat-c');
+        for (const id of ['chat-a', 'chat-b', 'chat-c']) {
+            // No month name, and no "·" separator that introduced one.
+            expect(titleOf(id)).not.toMatch(/Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec/);
+            expect(titleOf(id)).not.toContain('·');
+        }
+    });
+
+    it('keeps counting up for a third and fourth duplicate', async () => {
+        render(<ChatHistoryProvider><Probe /></ChatHistoryProvider>);
+        await startChatFromCard('chat-a');
+        await startChatFromCard('chat-b');
+        await startChatFromCard('chat-c');
+        expect(titleOf('chat-c')).toBe(`${CARD_PROMPT} (3)`);
+        // All three remain distinct — the point of disambiguating at all.
+        const all = ['chat-a', 'chat-b', 'chat-c'].map(titleOf);
+        expect(new Set(all).size).toBe(3);
+    });
+
     it('a disambiguated title stays stable across later flushes (does not re-suffix or revert)', async () => {
         render(<ChatHistoryProvider><Probe /></ChatHistoryProvider>);
         await startChatFromCard('chat-a');
