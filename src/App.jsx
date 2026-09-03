@@ -26,8 +26,26 @@ function AppContent() {
   const { newChat, chatList, loadChat, deleteChat } = useChatHistory();
 
   useEffect(() => {
+    // Close the sidebar when the viewport becomes NARROW — but only on a real
+    // width change.
+    //
+    // On Android, opening the soft keyboard fires a window `resize`: the height
+    // shrinks while the width stays put (measured 412x915 -> 412x480). The old
+    // check only looked at innerWidth < 768, which is still true on a phone, so
+    // simply focusing the rename input closed the sidebar out from under the
+    // user and the edit was lost. iOS does not do this — it adjusts
+    // visualViewport instead of resizing the window — which is exactly why the
+    // bug was Android-only.
+    //
+    // Tracking the last width and bailing when it is unchanged keeps the real
+    // case working (rotate, or resize a desktop window across the breakpoint)
+    // while ignoring every keyboard show/hide.
+    let lastWidth = window.innerWidth;
     const handleResize = () => {
-      if (window.innerWidth < 768) setSidebarOpen(false);
+      const width = window.innerWidth;
+      if (width === lastWidth) return;   // height-only change: keyboard, URL bar
+      lastWidth = width;
+      if (width < 768) setSidebarOpen(false);
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
