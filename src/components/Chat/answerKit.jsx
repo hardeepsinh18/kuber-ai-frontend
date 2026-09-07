@@ -758,7 +758,10 @@ export const IndicatorsTable = ({ rows, asOfDate }) => {
                                         className="border-b border-[#FDD405] last:border-0 hover:bg-zinc-50 dark:hover:bg-zinc-800/20 transition-colors"
                                     >
                                         <td className="px-4 py-2 font-medium text-zinc-800 dark:text-zinc-200 text-center">
-                                            {row.indicator}
+                                            <span className="inline-flex items-center gap-1">
+                                                {row.indicator}
+                                                {hasTerm(row.indicator) && <InfoTip term={row.indicator} />}
+                                            </span>
                                         </td>
                                         <td className="px-4 py-2 text-center font-mono text-zinc-900 dark:text-white">
                                             {row.value || '—'}

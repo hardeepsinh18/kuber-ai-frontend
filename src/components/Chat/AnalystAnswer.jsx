@@ -13,6 +13,23 @@ import {
 } from './FundamentalCard';
 import { answerSections, firstParagraph, metricAnswer } from './answerSections';
 import { fmtNum, fmtPct, fmtMultiple, fmtRatio } from '../../utils/metricFormat';
+import { InfoTip } from './FundamentalCard/InfoTip';
+import { lookupTerm } from '../../utils/glossaryLookup';
+
+/**
+ * Resolve a markdown node's text to a glossary term, or null.
+ * Markdown children arrive as strings or nested elements; only a plain-text
+ * header can be a term, so anything else is left alone. Returns the sheet's
+ * term so the caller passes a known-good key to InfoTip.
+ */
+const glossaryTermOf = (children) => {
+    const text = React.Children.toArray(children)
+        .map(c => (typeof c === 'string' || typeof c === 'number' ? String(c) : ''))
+        .join('')
+        .trim();
+    if (!text || text.length > 40) return null;
+    return lookupTerm(text)?.term ?? null;
+};
 
 /**
  * AnalystAnswer — "one tap deeper" layout for Analyst mode.
@@ -75,7 +92,20 @@ export const proseComponents = {
         </div>
     ),
     thead: ({ children }) => <thead className="bg-[#FDD405]">{children}</thead>,
-    th: ({ children }) => <th className="px-3 py-2 text-left font-bold text-black">{children}</th>,
+    /* Markdown table headers carry metric names ("P/E Ratio", "ROE", "RSI") in
+       comparison and scorecard tables, so the glossary is attached here — this
+       one renderer covers every markdown table across all answer types. */
+    th: ({ children }) => {
+        const term = glossaryTermOf(children);
+        return (
+            <th className="px-3 py-2 text-left font-bold text-black">
+                <span className="inline-flex items-center gap-1">
+                    {children}
+                    {term && <InfoTip term={term} />}
+                </span>
+            </th>
+        );
+    },
     td: ({ children }) => <td className="px-3 py-2 text-zinc-600 dark:text-zinc-300 border-t border-zinc-100 dark:border-zinc-800">{children}</td>,
     blockquote: ({ children }) => <div className="my-2 pl-3 border-l-2 border-[#FDD405] text-zinc-600 dark:text-zinc-300">{children}</div>,
     hr: () => <hr className="my-3 border-zinc-200 dark:border-zinc-800" />,

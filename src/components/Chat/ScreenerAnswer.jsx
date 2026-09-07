@@ -17,6 +17,8 @@
  * misparse degrades to the original markdown rather than to a wrong card.
  */
 import { MiniLabel, INNER_CARD, InlineMd, LogoTile } from './answerKit';
+import { InfoTip } from './FundamentalCard/InfoTip';
+import { hasTerm } from '../../utils/glossaryLookup';
 
 /* One result row — logo, rank, symbol, metric chips. Mirrors the metric-cell
  * treatment used across the Analyst cards (uppercase micro-label above a bold
@@ -34,8 +36,9 @@ const ResultRow = ({ row, rank }) => (
                 <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 mt-1">
                     {row.metrics.map((m) => (
                         <span key={m.label} className="flex items-baseline gap-1.5">
-                            <span className="text-[9px] font-extrabold uppercase tracking-[0.12em] text-zinc-500 dark:text-zinc-400">
+                            <span className="text-[9px] font-extrabold uppercase tracking-[0.12em] text-zinc-500 dark:text-zinc-400 inline-flex items-center gap-1">
                                 {m.label}
+                                {hasTerm(m.label) && <InfoTip term={m.label} />}
                             </span>
                             <span className="text-[13px] font-bold tabular-nums text-zinc-900 dark:text-white">
                                 {m.value}
