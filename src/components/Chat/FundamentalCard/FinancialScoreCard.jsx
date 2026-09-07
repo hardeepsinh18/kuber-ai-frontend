@@ -154,41 +154,41 @@ export const FinancialScoreCard = ({ fund, symbol, flat = false }) => {
                         get one full-width card; the pair returns at 640px. */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {pe != null && (
-                        <MetricCard title="Price tag" subtitle="P/E RATIO" badge={peLabel}
+                        <MetricCard title="Price tag" subtitle="P/E RATIO" badge={peLabel} term="P/E ratio"
                             bottomLabel={`You pay ~${fmtNum(pe)} yrs of profit`}
                             bottomValue={fmtMultiple(pe)}>
                             <PEGradientBar pe={pe} sectorPe={sectorPe || 28} symbol={symbol} />
                         </MetricCard>
                     )}
                     {roe != null && (
-                        <MetricCard title="Money engine" subtitle="RETURN ON EQUITY" badge={roeLabel}
+                        <MetricCard title="Money engine" subtitle="RETURN ON EQUITY" badge={roeLabel} term="ROE"
                             bottomLabel="Benchmark 15% · Elite 30%+"
                             bottomValue={pct2(roe)}>
                             <ROEViz roe={roe} />
                         </MetricCard>
                     )}
                     {roce != null && (
-                        <MetricCard title="Capital muscle" subtitle="RETURN ON CAPITAL EMPLOYED" badge={roceLabel}
+                        <MetricCard title="Capital muscle" subtitle="RETURN ON CAPITAL EMPLOYED" badge={roceLabel} term="ROCE"
                             bottomLabel="Benchmark 20%"
                             bottomValue={pct2(roce)}>
                             <SmallGauge value={roce} size={88} sublabel="ROCE" />
                         </MetricCard>
                     )}
                     {margin != null && (
-                        <MetricCard title="Profit slice" subtitle="NET MARGIN" badge={marginLabel}
+                        <MetricCard title="Profit slice" subtitle="NET MARGIN" badge={marginLabel} term="NPM"
                             bottomValue={pct2(margin)}>
                             <ProfitSliceBar netMargin={margin} />
                         </MetricCard>
                     )}
                     {debt != null && (
-                        <MetricCard title="Debt stress" subtitle="DEBT / EQUITY" badge={debtLabel}
+                        <MetricCard title="Debt stress" subtitle="DEBT / EQUITY" badge={debtLabel} term="D/E ratio"
                             bottomLabel="Safe < 1.0 · Risky > 2.0"
                             bottomValue={fmtRatio(debt)}>
                             <DebtGauge value={debt} />
                         </MetricCard>
                     )}
                     {revGr != null && (
-                        <MetricCard title="Sales growth" subtitle={`REVENUE · ${cagrLabel}`} badge={revGrLabel}
+                        <MetricCard title="Sales growth" subtitle={`REVENUE · ${cagrLabel}`} badge={revGrLabel} term="CAGR"
                             bottomLabel="Goal > 10% per year"
                             bottomValue={pct2(revGr)}>
                             {hist?.revenue_cr?.length
@@ -198,7 +198,7 @@ export const FinancialScoreCard = ({ fund, symbol, flat = false }) => {
                         </MetricCard>
                     )}
                     {profGr != null && (
-                        <MetricCard title="Profit pace" subtitle={`NET PROFIT · ${cagrLabel}`} badge={profGrLabel}
+                        <MetricCard title="Profit pace" subtitle={`NET PROFIT · ${cagrLabel}`} badge={profGrLabel} term="PAT"
                             bottomLabel="Goal > 10% per year"
                             bottomValue={pct2(profGr)}>
                             {hist?.net_profit_cr?.length

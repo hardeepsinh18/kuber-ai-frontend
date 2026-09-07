@@ -17,6 +17,20 @@ const SIGNAL_NAMES = {
     sma_regime:      'SMA Regime',
 };
 
+/* Signal key -> VENTY glossary term. The tooltip leads with the sheet's
+ * plain-English definition and analogy, then appends the existing per-rating
+ * detail from METRIC_INFO. Keys absent here (sentiment, risk_flags,
+ * price_structure) have no single sheet term and keep their old tooltip. */
+const SIGNAL_TERMS = {
+    ema_stack:      'EMA',
+    breakout:       'Breakout',
+    volume_context: 'Volume',
+    rsi:            'RSI',
+    macd:           'MACD',
+    volatility:     'Volatility',
+    sma_regime:     'Moving average',
+};
+
 /* Metric definitions + what each rating means */
 const METRIC_INFO = {
     ema_stack: {
@@ -206,8 +220,16 @@ export const TechnicalScoreCard = ({ tech }) => {
                             {Object.entries(signals).map(([key, sig]) => {
                                 const p    = SIG_PALETTE[sig.label] || SIG_PALETTE.Average;
                                 const info = METRIC_INFO[key];
+                                const gTerm = SIGNAL_TERMS[key];
+                                // When the glossary covers this signal it supplies the
+                                // definition (plain English + analogy), so we drop
+                                // METRIC_INFO.def — which explains e.g. RSI using
+                                // "momentum/overbought/oversold", themselves glossary
+                                // terms — and keep only the per-rating detail.
                                 const tipText = info
-                                    ? `${info.def}${info[sig.label] ? `\n\n${sig.label}: ${info[sig.label]}` : ''}`
+                                    ? (gTerm
+                                        ? (info[sig.label] ? `${sig.label}: ${info[sig.label]}` : null)
+                                        : `${info.def}${info[sig.label] ? `\n\n${sig.label}: ${info[sig.label]}` : ''}`)
                                     : null;
                                 return (
                                     <div key={key}
@@ -218,7 +240,7 @@ export const TechnicalScoreCard = ({ tech }) => {
                                                 <div className="text-[9px] uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
                                                     {SIGNAL_NAMES[key] || key}
                                                 </div>
-                                                {tipText && <InfoTip text={tipText} />}
+                                                {(tipText || gTerm) && <InfoTip term={gTerm} text={tipText} />}
                                             </div>
                                             <div className="text-[11px] font-bold" style={{ color: p.color }}>{sig.label}</div>
                                         </div>

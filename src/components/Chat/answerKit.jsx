@@ -9,6 +9,8 @@ import {
     deriveVerdict, hasVerdict, extractLevelsFromText, extractNearbyLevels,
     MAIN_CARD_DARK, INNER_CARD_DARK, getScores, buildMarketStats,
 } from './answerKitCore';
+import { InfoTip } from './FundamentalCard/InfoTip';
+import { hasTerm } from '../../utils/glossaryLookup';
 
 /**
  * answerKit — shared building blocks for the structured answer layouts
@@ -776,10 +778,21 @@ export const IndicatorsTable = ({ rows, asOfDate }) => {
 };
 
 /* ─── metric cell — tiny label / big value / footnote ────────────────────── */
-export const MetricCell = ({ label, value, note }) => (
-    <div className="rounded-xl border border-zinc-200 dark:border-zinc-800/80 bg-zinc-50 dark:bg-[#0d0c0b] px-3 py-2.5 min-w-0">
-        <p className="text-[8.5px] font-extrabold uppercase tracking-[0.15em] text-zinc-400 dark:text-zinc-500 mb-1 truncate">{label}</p>
-        <p className="text-[17px] font-extrabold text-zinc-900 dark:text-white leading-none truncate">{value}</p>
-        {note && <p className="text-[9px] text-zinc-500 dark:text-zinc-500 mt-1.5 uppercase tracking-wide truncate">{note}</p>}
-    </div>
-);
+/* `label` here comes from backend indicator rows ("RSI 14", "EMA 200", "ATR 14"),
+ * so the glossary is resolved automatically rather than wired per call site.
+ * lookupTerm is exact-match only — an indicator the sheet doesn't cover renders
+ * exactly as before. The "i" sits outside the truncating <p> so a long label
+ * still ellipsises without clipping the control. */
+export const MetricCell = ({ label, value, note }) => {
+    const term = hasTerm(label) ? label : null;
+    return (
+        <div className="rounded-xl border border-zinc-200 dark:border-zinc-800/80 bg-zinc-50 dark:bg-[#0d0c0b] px-3 py-2.5 min-w-0">
+            <div className="flex items-center gap-1 mb-1 min-w-0">
+                <p className="text-[8.5px] font-extrabold uppercase tracking-[0.15em] text-zinc-400 dark:text-zinc-500 truncate">{label}</p>
+                {term && <InfoTip term={term} />}
+            </div>
+            <p className="text-[17px] font-extrabold text-zinc-900 dark:text-white leading-none truncate">{value}</p>
+            {note && <p className="text-[9px] text-zinc-500 dark:text-zinc-500 mt-1.5 uppercase tracking-wide truncate">{note}</p>}
+        </div>
+    );
+};

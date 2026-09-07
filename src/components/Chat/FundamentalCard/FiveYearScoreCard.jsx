@@ -57,7 +57,7 @@ export const FiveYearScoreCard = ({ fund }) => {
                 // chart, which is unreadable at the ~165px an xs two-column gives.
                 <div className={`p-3 grid grid-cols-1 sm:grid-cols-2 gap-3 bg-zinc-50 dark:bg-[${INNER_CARD_DARK}]`}>
                     {hist.revenue_cr?.length > 0 && (
-                        <MetricCard title="Revenue" subtitle="TOP LINE · ₹ CR"
+                        <MetricCard title="Revenue" subtitle="TOP LINE · ₹ CR" term="Revenue"
                             badge={hist.revenue_cagr != null ? signed(hist.revenue_cagr, '% CAGR') : null}
                             bottomLabel={first(hist.revenue_cr) ? `From ${fmtCr(first(hist.revenue_cr))} (${years[0]})` : null}
                             bottomValue={fmtCr(last(hist.revenue_cr))}>
@@ -65,7 +65,7 @@ export const FiveYearScoreCard = ({ fund }) => {
                         </MetricCard>
                     )}
                     {hist.net_profit_cr?.length > 0 && (
-                        <MetricCard title="Net Profit" subtitle="BOTTOM LINE · ₹ CR"
+                        <MetricCard title="Net Profit" subtitle="BOTTOM LINE · ₹ CR" term="PAT"
                             badge={hist.profit_cagr != null ? signed(hist.profit_cagr, '% CAGR') : null}
                             bottomLabel={first(hist.net_profit_cr) ? `From ${fmtCr(first(hist.net_profit_cr))} (${years[0]})` : null}
                             bottomValue={fmtCr(last(hist.net_profit_cr))}>
@@ -73,7 +73,7 @@ export const FiveYearScoreCard = ({ fund }) => {
                         </MetricCard>
                     )}
                     {hist.eps?.length > 0 && (
-                        <MetricCard title="EPS" subtitle="EARNINGS PER SHARE · ₹"
+                        <MetricCard title="EPS" subtitle="EARNINGS PER SHARE · ₹" term="EPS"
                             badge={hist.eps_cagr != null ? signed(hist.eps_cagr, '% CAGR') : null}
                             bottomLabel={first(hist.eps) != null ? `From ₹${first(hist.eps)} (${years[0]})` : null}
                             bottomValue={last(hist.eps) != null ? `₹${last(hist.eps)}` : null}>
@@ -81,7 +81,7 @@ export const FiveYearScoreCard = ({ fund }) => {
                         </MetricCard>
                     )}
                     {hist.roce_pct?.length > 0 && (
-                        <MetricCard title="ROCE" subtitle="CAPITAL EFFICIENCY · %"
+                        <MetricCard title="ROCE" subtitle="CAPITAL EFFICIENCY · %" term="ROCE"
                             badge={hist.roce_label ?? null}
                             bottomLabel={first(hist.roce_pct) != null ? `${fmtPct(first(hist.roce_pct))} → ${fmtPct(last(hist.roce_pct))}` : null}
                             bottomValue={first(hist.roce_pct) != null && last(hist.roce_pct) != null
@@ -90,7 +90,7 @@ export const FiveYearScoreCard = ({ fund }) => {
                         </MetricCard>
                     )}
                     {hist.roe_pct?.length > 0 && (
-                        <MetricCard title="ROE" subtitle="RETURN ON EQUITY · %"
+                        <MetricCard title="ROE" subtitle="RETURN ON EQUITY · %" term="ROE"
                             badge={hist.roe_label ?? null}
                             bottomLabel={first(hist.roe_pct) != null ? `${fmtPct(first(hist.roe_pct))} → ${fmtPct(last(hist.roe_pct))}` : null}
                             bottomValue={fmtPct(last(hist.roe_pct))}>
@@ -98,14 +98,14 @@ export const FiveYearScoreCard = ({ fund }) => {
                         </MetricCard>
                     )}
                     {hist.net_margin_pct?.length > 0 && (
-                        <MetricCard title="Net Margin" subtitle="PROFITABILITY · %"
+                        <MetricCard title="Net Margin" subtitle="PROFITABILITY · %" term="NPM"
                             badge={hist.margin_label ?? null}
                             bottomValue={fmtPct(last(hist.net_margin_pct))}>
                             <MiniLine data={hist.net_margin_pct} color="#22c55e" years={years} />
                         </MetricCard>
                     )}
                     {hist.dividend_yield_pct?.length > 0 && hist.dividend_yield_pct.some(v => v > 0) && (
-                        <MetricCard title="Dividend Yield" subtitle="INCOME TO INVESTOR · %"
+                        <MetricCard title="Dividend Yield" subtitle="INCOME TO INVESTOR · %" term="Dividend yield"
                             badge={hist.divyld_label ?? null}
                             bottomValue={fmtPct(last(hist.dividend_yield_pct))}>
                             <MiniBar data={hist.dividend_yield_pct.map(v => v || 0)} color="#22c55e" years={years} />

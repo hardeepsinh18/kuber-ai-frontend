@@ -1,9 +1,15 @@
 import { clsx } from 'clsx';
 import { INNER_CARD_DARK } from '../answerKit';
 import { RatingBadge } from './RatingBadge';
+import { InfoTip } from './InfoTip';
 
-/* ─── Metric card shell ──────────────────────────────────────────────────── */
-export const MetricCard = ({ title, subtitle, badge, children, bottomLabel, bottomValue, className }) => (
+/* ─── Metric card shell ──────────────────────────────────────────────────────
+ * `term` is optional and opt-in: pass the glossary term for this metric and a
+ * tappable "i" appears beside the subtitle carrying the plain-English
+ * definition and its real-life analogy. Omit it (or pass one the sheet doesn't
+ * cover) and the card renders exactly as it did before.
+ */
+export const MetricCard = ({ title, subtitle, badge, children, bottomLabel, bottomValue, className, term }) => (
     <div className={clsx(
         `bg-zinc-50 dark:bg-[${INNER_CARD_DARK}] rounded-xl border border-zinc-200 dark:border-zinc-800/80 p-3 flex flex-col`,
         className
@@ -13,7 +19,12 @@ export const MetricCard = ({ title, subtitle, badge, children, bottomLabel, bott
             leading-none clipped the descenders once the subtitle wrapped. */}
         <div className="flex flex-wrap items-start justify-between mb-2 gap-x-2 gap-y-1">
             <div className="min-w-0 flex-1">
-                {subtitle && <p className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wide leading-tight">{subtitle}</p>}
+                {subtitle && (
+                    <p className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wide leading-tight">
+                        {subtitle}
+                        {term && <span className="ml-1 align-middle inline-flex"><InfoTip term={term} /></span>}
+                    </p>
+                )}
                 <p className="text-[11px] font-normal text-zinc-500 dark:text-zinc-400 mt-0.5 leading-tight">{title}</p>
             </div>
             {badge && <RatingBadge label={badge} />}
