@@ -11,6 +11,8 @@ import {
 } from './answerKitCore';
 import { InfoTip } from './FundamentalCard/InfoTip';
 import { hasTerm } from '../../utils/glossaryLookup';
+import { annotateProse } from '../../utils/glossaryProse';
+import { GlossaryText, GlossarySegments } from './GlossaryText';
 
 /**
  * answerKit — shared building blocks for the structured answer layouts
@@ -28,22 +30,35 @@ export {
 };
 
 /* ─── inline markdown (bold/italic/links only, no block wrappers) ────────── */
-export const InlineMd = ({ children }) => (
-    <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        components={{
-            p: ({ children: c }) => <>{c}</>,
-            strong: ({ children: c }) => <strong className="font-bold text-zinc-900 dark:text-white">{c}</strong>,
-            em: ({ children: c }) => <em className="italic">{c}</em>,
-            a: ({ href, children: c }) => (
-                <a href={href} target="_blank" rel="noopener noreferrer"
-                   className="underline underline-offset-2 font-semibold text-zinc-900 dark:text-[#FDD405]">{c}</a>
-            ),
-        }}
-    >
-        {typeof children === 'string' ? stripAiDashes(children) : children}
-    </ReactMarkdown>
-);
+/**
+ * `glossary` (optional) enables in-prose glossary marking: jargon in the
+ * rendered text gets a quiet dotted underline and a tap-for-definition panel,
+ * first mention per text node. Omit it and the markdown renders exactly as it
+ * always has.
+ */
+export const InlineMd = ({ children, glossary = false }) => {
+    // Only text nodes are annotated; links and code are left alone so we never
+    // wrap a term inside an anchor or alter a ticker/level string.
+    const T = glossary
+        ? ({ children: c }) => <GlossaryText>{c}</GlossaryText>
+        : ({ children: c }) => <>{c}</>;
+    return (
+        <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={{
+                p: ({ children: c }) => <T>{c}</T>,
+                strong: ({ children: c }) => <strong className="font-bold text-zinc-900 dark:text-white"><T>{c}</T></strong>,
+                em: ({ children: c }) => <em className="italic"><T>{c}</T></em>,
+                a: ({ href, children: c }) => (
+                    <a href={href} target="_blank" rel="noopener noreferrer"
+                       className="underline underline-offset-2 font-semibold text-zinc-900 dark:text-[#FDD405]">{c}</a>
+                ),
+            }}
+        >
+            {typeof children === 'string' ? stripAiDashes(children) : children}
+        </ReactMarkdown>
+    );
+};
 
 /* ─── primitives ─────────────────────────────────────────────────────────────
  * Uniform two-shade system for the whole answer UI:
@@ -550,16 +565,33 @@ const buildSentBullets = (ms) => {
     return out.slice(0, 3);
 };
 
-const PanelBullets = ({ items }) => (
-    <ul className="mt-2 space-y-1.5">
-        {items.map((t, i) => (
-            <li key={i} className="flex items-start gap-2 text-[11.5px] text-zinc-600 dark:text-zinc-300 leading-snug">
-                <span className="mt-[6px] w-1 h-1 rounded-full flex-shrink-0 bg-zinc-400 dark:bg-zinc-500" />
-                <span className="flex-1 min-w-0"><InlineMd>{t}</InlineMd></span>
-            </li>
-        ))}
-    </ul>
-);
+/* One shared `seen` set per bullet list so a term is marked once per card,
+   not once per line — three bullets all mentioning MACD underline only the
+   first. Rebuilt on each render so the marking is stable for given content. */
+const PanelBullets = ({ items }) => {
+    /* Annotate the whole list up-front, as a pure function of `items`.
+       A Set mutated during render looked equivalent but was not: StrictMode
+       double-invokes render, so the second pass found every term already
+       "seen" and emitted no marks at all — the DOM kept that empty second
+       pass. Precomputing keeps first-mention-only de-duplication while
+       leaving render itself side-effect free and idempotent. */
+    const marked = React.useMemo(() => {
+        const seen = new Set();
+        return items.map(t => annotateProse(stripAiDashes(t), seen));
+    }, [items]);
+    return (
+        <ul className="mt-2 space-y-1.5">
+            {items.map((t, i) => (
+                <li key={i} className="flex items-start gap-2 text-[11.5px] text-zinc-600 dark:text-zinc-300 leading-snug">
+                    <span className="mt-[6px] w-1 h-1 rounded-full flex-shrink-0 bg-zinc-400 dark:bg-zinc-500" />
+                    <span className="flex-1 min-w-0">
+                        <GlossarySegments segments={marked[i]} />
+                    </span>
+                </li>
+            ))}
+        </ul>
+    );
+};
 
 const PanelTitle = ({ children }) => (
     <p className="text-[13px] font-bold text-zinc-900 dark:text-[#FDD405]">{children}</p>

@@ -14,7 +14,8 @@ import {
 import { answerSections, firstParagraph, metricAnswer } from './answerSections';
 import { fmtNum, fmtPct, fmtMultiple, fmtRatio } from '../../utils/metricFormat';
 import { InfoTip } from './FundamentalCard/InfoTip';
-import { lookupTerm } from '../../utils/glossaryLookup';
+import { lookupTerm, hasTerm } from '../../utils/glossaryLookup';
+import { GlossaryText } from './GlossaryText';
 
 /**
  * Resolve a markdown node's text to a glossary term, or null.
@@ -68,7 +69,7 @@ const labelFor = (providedLabel, ownScore, shownScore, kind) => {
 /* Compact markdown for the expandable full analysis.
    Exported: ComparisonAnswer renders the head-to-head body with the same theme. */
 export const proseComponents = {
-    p: ({ children }) => <p className="mb-3 last:mb-0 text-[12.5px] leading-relaxed text-zinc-600 dark:text-zinc-300">{children}</p>,
+    p: ({ children }) => <p className="mb-3 last:mb-0 text-[12.5px] leading-relaxed text-zinc-600 dark:text-zinc-300"><GlossaryText>{children}</GlossaryText></p>,
     strong: ({ children }) => <strong className="font-bold text-zinc-900 dark:text-white">{children}</strong>,
     em: ({ children }) => <em className="italic text-zinc-500 dark:text-zinc-400">{children}</em>,
     h1: ({ children }) => <p className="mt-4 mb-1.5 text-[11px] font-extrabold uppercase tracking-wider text-zinc-800 dark:text-zinc-100">{children}</p>,
@@ -76,10 +77,13 @@ export const proseComponents = {
     h3: ({ children }) => <p className="mt-3 mb-1 text-[11px] font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-200">{children}</p>,
     ul: ({ children }) => <ul className="my-2 space-y-1.5 list-none pl-0">{children}</ul>,
     ol: ({ children }) => <ol className="my-2 space-y-1.5 list-decimal list-inside">{children}</ol>,
+    /* Markdown bullets carry the bulk of an answer's prose — the Overview and
+       Technical/Fundamental/Sentimental lines a first-time reader actually
+       reads. Annotated here so jargon in them is tappable. */
     li: ({ children }) => (
         <li className="flex items-start gap-2 text-[12.5px] leading-relaxed text-zinc-600 dark:text-zinc-300">
             <span className="mt-[7px] w-1 h-1 rounded-full flex-shrink-0" style={{ backgroundColor: BRAND }} />
-            <span className="flex-1 min-w-0">{children}</span>
+            <span className="flex-1 min-w-0"><GlossaryText>{children}</GlossaryText></span>
         </li>
     ),
     a: ({ href, children }) => (
@@ -329,13 +333,18 @@ const SignalBreakdown = ({ signals }) => {
                             <span className="mt-[4px] w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: st.dot }} />
                             <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-2">
-                                    <span className="text-[11.5px] font-bold text-zinc-800 dark:text-zinc-100">{s.name}</span>
+                                    <span className="text-[11.5px] font-bold text-zinc-800 dark:text-zinc-100 inline-flex items-center gap-1">
+                                        {s.name}
+                                        {hasTerm(s.name) && <InfoTip term={s.name} />}
+                                    </span>
                                     <span className={clsx('px-1.5 py-[1px] rounded text-[9px] font-extrabold uppercase tracking-wider border', st.chip)}>
                                         {st.label}
                                     </span>
                                 </div>
                                 {s.detail && (
-                                    <p className="mt-0.5 text-[11px] leading-snug text-zinc-500 dark:text-zinc-400">{stripAiDashes(s.detail)}</p>
+                                    <p className="mt-0.5 text-[11px] leading-snug text-zinc-500 dark:text-zinc-400">
+                                        <GlossaryText>{stripAiDashes(s.detail)}</GlossaryText>
+                                    </p>
                                 )}
                             </div>
                         </div>
@@ -378,14 +387,16 @@ const TechnicalScorecard = ({ tech, technicalSummary, indicatorsTable, score }) 
             )}
             <SignalBreakdown signals={signals} />
             {commentary.length > 0 && (
-                <ul className="mt-3 space-y-1.5">
-                    {commentary.map((t, i) => (
-                        <li key={i} className="flex items-start gap-2 text-[11.5px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                            <span className="mt-[6px] w-1 h-1 rounded-full flex-shrink-0" style={{ backgroundColor: BRAND }} />
-                            {stripAiDashes(t)}
-                        </li>
-                    ))}
-                </ul>
+                    <ul className="mt-3 space-y-1.5">
+                        {commentary.map((t, i) => (
+                            <li key={i} className="flex items-start gap-2 text-[11.5px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                                <span className="mt-[6px] w-1 h-1 rounded-full flex-shrink-0" style={{ backgroundColor: BRAND }} />
+                                <span className="flex-1 min-w-0">
+                                    <GlossaryText>{stripAiDashes(t)}</GlossaryText>
+                                </span>
+                            </li>
+                        ))}
+                    </ul>
             )}
         </CollapsibleScorecard>
     );
