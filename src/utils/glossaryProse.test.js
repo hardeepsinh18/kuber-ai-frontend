@@ -89,3 +89,46 @@ describe('annotateProse', () => {
         expect(annotateProse(t)).toEqual([{ text: t, term: null }]);
     });
 });
+
+describe('full-sheet coverage', () => {
+    it('every PROSE_TERMS entry resolves to a real sheet row', async () => {
+        const { PROSE_TERMS } = await import('./glossaryProse');
+        const { lookupTerm } = await import('./glossaryLookup');
+        const unresolvable = PROSE_TERMS.filter(t => !lookupTerm(t));
+        expect(unresolvable).toEqual([]);
+    });
+
+    it('covers 131 of the 156 sheet terms in prose', async () => {
+        const { PROSE_TERMS } = await import('./glossaryProse');
+        const { lookupTerm, GLOSSARY } = await import('./glossaryLookup');
+        const covered = new Set(PROSE_TERMS.map(t => lookupTerm(t)?.term).filter(Boolean));
+        expect(covered.size).toBe(131);
+        expect(GLOSSARY.length).toBe(156);
+    });
+
+    it('marks the newly added categories', () => {
+        expect(marked(annotateProse('The IPO opens next week.'))).toEqual(['IPO']);
+        expect(marked(annotateProse('Start an SIP in an index fund.'))).toEqual(['SIP', 'Index fund']);
+        expect(marked(annotateProse('SEBI requires a demat account and KYC.'))).toEqual(['SEBI', 'Demat account', 'KYC']);
+        expect(marked(annotateProse('STT and brokerage apply on every trade.'))).toEqual(['STT', 'Brokerage']);
+        expect(marked(annotateProse('Nifty and Sensex both fell.'))).toEqual(['Nifty', 'Sensex']);
+        expect(marked(annotateProse('A buyback was announced after the stock split.'))).toEqual(['Buyback', 'Stock split']);
+        expect(marked(annotateProse('Check the bid price against the ask price.'))).toEqual(['Bid price', 'Ask price']);
+    });
+
+    // The 25 held back must stay held back — this is the false-positive guard.
+    it('still refuses the ambiguous everyday words', () => {
+        expect(marked(annotateProse('There was strong support from the board.'))).toEqual([]);
+        expect(marked(annotateProse('We cover that in the next section.'))).toEqual([]);
+        expect(marked(annotateProse('He held a senior position for a long time.'))).toEqual([]);
+        expect(marked(annotateProse('The volume of complaints rose.'))).toEqual([]);
+        expect(marked(annotateProse('A correction was issued to the report.'))).toEqual([]);
+        expect(marked(annotateProse('Delivery of the goods was delayed.'))).toEqual([]);
+        expect(marked(annotateProse('There are several options to consider.'))).toEqual([]);
+    });
+
+    it('still matches the unambiguous compounds of held-back words', () => {
+        expect(marked(annotateProse('Buy a call option before expiry.'))).toEqual(['Call option', 'Expiry']);
+        expect(marked(annotateProse('The listing gain was 20%.'))).toEqual(['Listing gain']);
+    });
+});

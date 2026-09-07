@@ -23,17 +23,32 @@
 import { lookupTerm } from './glossaryLookup';
 
 /**
- * Terms eligible for in-prose annotation. Deliberately a subset: each of these
- * reads as jargon wherever it appears in a market sentence, so a match is
- * almost certainly the financial sense rather than the everyday one.
+ * Terms eligible for in-prose annotation: every sheet term whose financial
+ * sense is the only sense it plausibly carries inside a market sentence.
  *
- * Excluded on purpose — too ambiguous in ordinary prose: Support, Resistance,
- * Volume, Correction, Position, Short, Long, Cover, Premium, Delivery, Rally,
- * Spread, Beta, Liquid, Guidance, Revenue, Valuation.
+ * 131 of the sheet's 156 terms are listed. The 25 left out are ordinary English
+ * first and jargon second, so matching them in prose produces confident wrong
+ * tooltips ("strong support from the board", "a correction to the report",
+ * "the volume of complaints", "we cover that in the report"):
+ *
+ *   Support, Resistance, Revenue, Valuation, Guidance, Index, Liquid, Delivery,
+ *   Spread, Listing, Options, Premium, Short, Long, Cover, Portfolio, Rally,
+ *   Correction, Book profit, Book loss, Holding, Watchlist, Volume, Position,
+ *   Beta.
+ *
+ * Their unambiguous compounds ARE included, so nothing is really lost: Call
+ * option / Put option cover "Options", Listing gain covers "Listing", Upper and
+ * Lower circuit cover the circuit rules, and so on.
+ *
+ * All 25 remain fully available for LABEL lookup via glossaryLookup, where the
+ * surrounding UI already guarantees the financial sense — a column header
+ * reading "Volume" is never about loudness. This list governs prose only.
  */
 const PROSE_TERMS = [
     // Technical — unambiguous indicator names
-    'RSI', 'MACD', 'EMA', 'ADX', 'VWAP', 'ATR',
+    // NB: VWAP is deliberately absent — it has no row in the sheet, so there is
+    // no approved copy for it. Add the row first, then list it here.
+    'RSI', 'MACD', 'EMA', 'ADX', 'ATR',
     'Bollinger Bands', 'Moving average', 'Candlestick', 'Candlesticks',
     'Oversold', 'Overbought', 'Crossover', 'Momentum', 'Volatility',
     'Downtrend', 'Uptrend', 'Trend reversal', 'Breakout', 'Consolidation',
@@ -49,6 +64,31 @@ const PROSE_TERMS = [
     'Entry zone', 'Stop loss', 'Target price', 'Drawdown', 'Liquidity',
     '52 week high and low', 'Circuit', 'Upper circuit', 'Lower circuit',
     'Intraday', 'Diversification', 'Compounding', 'Hedging',
+    'Accumulate', 'Tranches', 'Averaging down', 'Crash',
+    // Market structure — index names are proper nouns, never everyday words
+    'Nifty', 'Sensex', 'Sectoral index',
+    // Fundamentals — the rest of the reporting vocabulary
+    'Promoter', 'Cash flow', 'Quarterly results', 'Balance sheet',
+    'FII', 'DII', 'Dividend',
+    // Corporate actions — all unambiguous in a market sentence
+    'IPO', 'FPO', 'Listing gain', 'Bonus shares', 'Stock split',
+    'Rights issue', 'Buyback', 'Ex date', 'Delisting',
+    // Derivatives — the contract vocabulary (bare Short/Long/Cover/Premium
+    // stay out below; these compounds are unambiguous)
+    'Futures', 'Call option', 'Put option', 'Strike price',
+    'Open interest', 'Expiry',
+    // Mutual funds
+    'Mutual fund', 'SIP', 'NAV', 'Expense ratio', 'ELSS', 'Index fund',
+    'ETF', 'Lump sum',
+    // Orders & charges — acronyms and compounds with no everyday sense
+    'LTP', 'Market order', 'Limit order', 'Trigger price', 'Square off',
+    'CNC', 'MIS', 'Lot size', 'Bid price', 'Ask price', 'Previous close',
+    'Day change', 'Gap up', 'Gap down',
+    'Brokerage', 'STT', 'DP charges', 'Stamp duty', 'T plus one',
+    'Contract note', 'Auction penalty',
+    // Account & regulator — proper nouns and fixed terms
+    'Demat account', 'Trading account', 'KYC', 'Depository',
+    'CDSL', 'NSDL', 'NSE', 'BSE', 'SEBI', 'Nominee',
 ];
 
 /* Longest first so "Moving average" wins over "average", "P/E ratio" over "P/E". */
