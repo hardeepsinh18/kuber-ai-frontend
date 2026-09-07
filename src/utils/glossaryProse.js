@@ -26,23 +26,21 @@ import { lookupTerm } from './glossaryLookup';
  * Terms eligible for in-prose annotation: every sheet term whose financial
  * sense is the only sense it plausibly carries inside a market sentence.
  *
- * 131 of the sheet's 156 terms are listed. The 25 left out are ordinary English
- * first and jargon second, so matching them in prose produces confident wrong
- * tooltips ("strong support from the board", "a correction to the report",
- * "the volume of complaints", "we cover that in the report"):
+ * ALL 156 sheet terms are listed, including the 25 that double as ordinary
+ * English (Support, Volume, Correction, Position, Cover, Options, Delivery,
+ * Beta, ...). Product decision: this text is a stock answer, so "support" is a
+ * price level and "volume" is shares traded — the reader takes the meaning from
+ * the sentence around it, and a new user meeting those words is exactly who the
+ * glossary is for.
  *
- *   Support, Resistance, Revenue, Valuation, Guidance, Index, Liquid, Delivery,
- *   Spread, Listing, Options, Premium, Short, Long, Cover, Portfolio, Rally,
- *   Correction, Book profit, Book loss, Holding, Watchlist, Volume, Position,
- *   Beta.
+ * What still protects against the everyday sense:
+ *   - the quote rule (rule 4 below) keeps every mark out of management
+ *     commentary, which is where these words most often mean the ordinary thing;
+ *   - first-mention-only caps how often any one term can appear;
+ *   - whole-word matching stops "Shortly"/"Longer"/"Covered" from firing.
  *
- * Their unambiguous compounds ARE included, so nothing is really lost: Call
- * option / Put option cover "Options", Listing gain covers "Listing", Upper and
- * Lower circuit cover the circuit rules, and so on.
- *
- * All 25 remain fully available for LABEL lookup via glossaryLookup, where the
- * surrounding UI already guarantees the financial sense — a column header
- * reading "Volume" is never about loudness. This list governs prose only.
+ * If a specific term proves noisy in real answers, remove that one line rather
+ * than reinstating a blanket exclusion list.
  */
 const PROSE_TERMS = [
     // Technical — unambiguous indicator names
@@ -73,8 +71,7 @@ const PROSE_TERMS = [
     // Corporate actions — all unambiguous in a market sentence
     'IPO', 'FPO', 'Listing gain', 'Bonus shares', 'Stock split',
     'Rights issue', 'Buyback', 'Ex date', 'Delisting',
-    // Derivatives — the contract vocabulary (bare Short/Long/Cover/Premium
-    // stay out below; these compounds are unambiguous)
+    // Derivatives — the contract vocabulary
     'Futures', 'Call option', 'Put option', 'Strike price',
     'Open interest', 'Expiry',
     // Mutual funds
@@ -89,6 +86,16 @@ const PROSE_TERMS = [
     // Account & regulator — proper nouns and fixed terms
     'Demat account', 'Trading account', 'KYC', 'Depository',
     'CDSL', 'NSDL', 'NSE', 'BSE', 'SEBI', 'Nominee',
+    // Everyday-English words that are nonetheless the market sense here.
+    // Included by product decision: inside a stock answer "support" is a price
+    // level, not encouragement, and a reader takes the meaning from the
+    // sentence around it. The quote rule below still protects management
+    // commentary, where these words genuinely carry their ordinary sense.
+    'Support', 'Resistance', 'Revenue', 'Valuation', 'Guidance', 'Index',
+    'Liquid', 'Delivery', 'Spread', 'Listing', 'Options', 'Premium',
+    'Short', 'Long', 'Cover', 'Portfolio', 'Rally', 'Correction',
+    'Book profit', 'Book loss', 'Holding', 'Watchlist', 'Volume',
+    'Position', 'Beta',
 ];
 
 /* Longest first so "Moving average" wins over "average", "P/E ratio" over "P/E". */
@@ -123,6 +130,30 @@ const quotedSpans = (text) => {
  * @returns {Array<{text: string, term: string|null}>} - `term` is the sheet's
  *          canonical term when this segment should be annotated, else null.
  */
+/**
+ * Split a sentence on `**bold**` runs, annotating the plain parts.
+ *
+ * These bullets carry light markdown, and dropping it printed literal asterisks
+ * ("volume **1.4x** the daily average"). Rendering the emphasis here — rather
+ * than delegating to ReactMarkdown — keeps annotation operating on plain
+ * strings, which is what makes the marking predictable.
+ *
+ * @returns {Array<{bold: boolean, segments: Array<{text,term}>}>}
+ */
+export function annotateRichProse(text, seen = new Set()) {
+    if (!text || typeof text !== 'string') return [{ bold: false, segments: annotateProse(text, seen) }];
+    const out = [];
+    const re = /\*\*([^*]+)\*\*/g;
+    let last = 0, m;
+    while ((m = re.exec(text)) !== null) {
+        if (m.index > last) out.push({ bold: false, segments: annotateProse(text.slice(last, m.index), seen) });
+        out.push({ bold: true, segments: annotateProse(m[1], seen) });
+        last = m.index + m[0].length;
+    }
+    if (last < text.length) out.push({ bold: false, segments: annotateProse(text.slice(last), seen) });
+    return out.length ? out : [{ bold: false, segments: annotateProse(text, seen) }];
+}
+
 export function annotateProse(text, seen = new Set()) {
     if (!text || typeof text !== 'string') return [{ text: String(text ?? ''), term: null }];
 

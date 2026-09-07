@@ -2,6 +2,9 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { render, cleanup, fireEvent, within } from '@testing-library/react';
 import { IndicatorsTable } from './answerKit';
 import ScreenerAnswer from './ScreenerAnswer';
+import { proseComponents } from './AnalystAnswer';
+import { VentyScorePanel } from './answerKit';
+import { GlossaryText } from './GlossaryText';
 
 afterEach(cleanup);
 const body = () => within(document.body);
@@ -44,15 +47,13 @@ describe('ScreenerAnswer metric chips', () => {
 });
 
 describe('markdown tables (comparison + analyst prose)', () => {
-    it('attaches the glossary to table headers via proseComponents', async () => {
-        const { proseComponents } = await import('./AnalystAnswer');
+    it('attaches the glossary to table headers via proseComponents', () => {
         const Th = proseComponents.th;
         const { container } = render(<table><thead><tr><Th>ROCE</Th></tr></thead></table>);
         expect(within(container).getByRole('button', { name: /what does roce mean/i })).toBeTruthy();
     });
 
-    it('leaves a non-metric header alone', async () => {
-        const { proseComponents } = await import('./AnalystAnswer');
+    it('leaves a non-metric header alone', () => {
         const Th = proseComponents.th;
         const { container } = render(<table><thead><tr><Th>Company</Th></tr></thead></table>);
         expect(within(container).queryByRole('button')).toBeNull();
@@ -61,8 +62,7 @@ describe('markdown tables (comparison + analyst prose)', () => {
 });
 
 describe('in-prose glossary (the surface a new user actually reads)', () => {
-    it('underlines jargon inside VentyScorePanel commentary bullets', async () => {
-        const { VentyScorePanel } = await import('./answerKit');
+    it('underlines jargon inside VentyScorePanel commentary bullets', () => {
         const { container } = render(
             <VentyScorePanel scoreCard={{
                 technical: { score: 23, commentary: [
@@ -77,8 +77,7 @@ describe('in-prose glossary (the surface a new user actually reads)', () => {
         expect(scope.getByRole('button', { name: /what does ema mean/i })).toBeTruthy();
     });
 
-    it('marks a repeated term only once across sibling bullets', async () => {
-        const { VentyScorePanel } = await import('./answerKit');
+    it('marks a repeated term only once across sibling bullets', () => {
         const { container } = render(
             <VentyScorePanel scoreCard={{
                 technical: { score: 23, commentary: [
@@ -89,8 +88,7 @@ describe('in-prose glossary (the surface a new user actually reads)', () => {
         expect(within(container).getAllByRole('button', { name: /what does macd mean/i })).toHaveLength(1);
     });
 
-    it('opens the definition when an inline term is clicked', async () => {
-        const { GlossaryText } = await import('./GlossaryText');
+    it('opens the definition when an inline term is clicked', () => {
         const { getByRole } = render(
             <GlossaryText seen={new Set()}>{'RSI 24.6 and falling.'}</GlossaryText>
         );
@@ -98,8 +96,7 @@ describe('in-prose glossary (the surface a new user actually reads)', () => {
         expect(body().getByText(/crowded local train/i)).toBeTruthy();
     });
 
-    it('renders the sentence unchanged when it holds no jargon', async () => {
-        const { GlossaryText } = await import('./GlossaryText');
+    it('renders the sentence unchanged when it holds no jargon', () => {
         const { container, queryByRole } = render(
             <GlossaryText seen={new Set()}>{'The company filed its report on Tuesday.'}</GlossaryText>
         );

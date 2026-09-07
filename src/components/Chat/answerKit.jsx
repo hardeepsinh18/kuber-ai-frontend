@@ -11,7 +11,7 @@ import {
 } from './answerKitCore';
 import { InfoTip } from './FundamentalCard/InfoTip';
 import { hasTerm } from '../../utils/glossaryLookup';
-import { annotateProse } from '../../utils/glossaryProse';
+import { annotateRichProse } from '../../utils/glossaryProse';
 import { GlossaryText, GlossarySegments } from './GlossaryText';
 
 /**
@@ -577,7 +577,7 @@ const PanelBullets = ({ items }) => {
        leaving render itself side-effect free and idempotent. */
     const marked = React.useMemo(() => {
         const seen = new Set();
-        return items.map(t => annotateProse(stripAiDashes(t), seen));
+        return items.map(t => annotateRichProse(stripAiDashes(t), seen));
     }, [items]);
     return (
         <ul className="mt-2 space-y-1.5">
@@ -585,7 +585,11 @@ const PanelBullets = ({ items }) => {
                 <li key={i} className="flex items-start gap-2 text-[11.5px] text-zinc-600 dark:text-zinc-300 leading-snug">
                     <span className="mt-[6px] w-1 h-1 rounded-full flex-shrink-0 bg-zinc-400 dark:bg-zinc-500" />
                     <span className="flex-1 min-w-0">
-                        <GlossarySegments segments={marked[i]} />
+                        {marked[i].map((run, j) => run.bold
+                            ? <strong key={j} className="font-bold text-zinc-900 dark:text-white">
+                                  <GlossarySegments segments={run.segments} />
+                              </strong>
+                            : <GlossarySegments key={j} segments={run.segments} />)}
                     </span>
                 </li>
             ))}

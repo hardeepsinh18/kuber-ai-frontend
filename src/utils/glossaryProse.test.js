@@ -67,11 +67,14 @@ describe('annotateProse', () => {
         expect(marked(annotateProse(t))).toEqual(['RSI']);
     });
 
-    // Rule 5 — ambiguous everyday words stay out
-    it('does not fire on ambiguous everyday words', () => {
-        expect(marked(annotateProse('There is strong support from the board.'))).toEqual([]);
-        expect(marked(annotateProse('A correction to the report was issued.'))).toEqual([]);
-        expect(marked(annotateProse('Trading volume of conversation was high.'))).toEqual([]);
+    // Rule 5 — the whole sheet is eligible, everyday-English terms included.
+    // They are marked wherever they appear outside a quote; the reader takes
+    // the sense from the surrounding stock answer.
+    it('marks the everyday-English terms too', () => {
+        // 'holding' is itself a sheet term, so both are legitimately marked.
+        expect(marked(annotateProse('Price is holding above support.'))).toEqual(['Holding', 'Support']);
+        expect(marked(annotateProse('Volume was heavy today.'))).toEqual(['Volume']);
+        expect(marked(annotateProse('A correction after the rally.'))).toEqual(['Correction', 'Rally']);
     });
 
     it('is case-insensitive but reports the sheet term', () => {
@@ -98,12 +101,13 @@ describe('full-sheet coverage', () => {
         expect(unresolvable).toEqual([]);
     });
 
-    it('covers 131 of the 156 sheet terms in prose', async () => {
+    it('covers every sheet term except VWAP, which has no row', async () => {
         const { PROSE_TERMS } = await import('./glossaryProse');
         const { lookupTerm, GLOSSARY } = await import('./glossaryLookup');
         const covered = new Set(PROSE_TERMS.map(t => lookupTerm(t)?.term).filter(Boolean));
-        expect(covered.size).toBe(131);
         expect(GLOSSARY.length).toBe(156);
+        const uncovered = GLOSSARY.filter(e => !covered.has(e.term)).map(e => e.term);
+        expect(uncovered).toEqual([]);
     });
 
     it('marks the newly added categories', () => {
@@ -116,15 +120,18 @@ describe('full-sheet coverage', () => {
         expect(marked(annotateProse('Check the bid price against the ask price.'))).toEqual(['Bid price', 'Ask price']);
     });
 
-    // The 25 held back must stay held back — this is the false-positive guard.
-    it('still refuses the ambiguous everyday words', () => {
-        expect(marked(annotateProse('There was strong support from the board.'))).toEqual([]);
-        expect(marked(annotateProse('We cover that in the next section.'))).toEqual([]);
-        expect(marked(annotateProse('He held a senior position for a long time.'))).toEqual([]);
-        expect(marked(annotateProse('The volume of complaints rose.'))).toEqual([]);
-        expect(marked(annotateProse('A correction was issued to the report.'))).toEqual([]);
-        expect(marked(annotateProse('Delivery of the goods was delayed.'))).toEqual([]);
-        expect(marked(annotateProse('There are several options to consider.'))).toEqual([]);
+    // With every term eligible, the quote rule is what keeps the everyday sense
+    // safe: management commentary is never annotated.
+    it('never marks everyday-English terms inside quoted commentary', () => {
+        expect(marked(annotateProse('He said "we have strong support from the board".'))).toEqual([]);
+        expect(marked(annotateProse('"Delivery of the goods was delayed," he said.'))).toEqual([]);
+        expect(marked(annotateProse('“We cover that later”, per management.'))).toEqual([]);
+    });
+
+    it('whole-word matching still stops near-miss words', () => {
+        expect(marked(annotateProse('Shortly afterwards it recovered.'))).toEqual([]);
+        expect(marked(annotateProse('A longer horizon suits them.'))).toEqual([]);
+        expect(marked(annotateProse('Positions were covered quickly.'))).toEqual([]);
     });
 
     it('still matches the unambiguous compounds of held-back words', () => {
