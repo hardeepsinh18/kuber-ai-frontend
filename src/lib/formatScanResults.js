@@ -1,9 +1,12 @@
 import { getScannerSignal } from './scannerSignal';
 
 // Formats a scanner's results into the markdown message shown in chat.
-// ratiosBasis (VENTY-6): a fundamental scanner's provenance note, when the
-// backend supplies one — see app/api/scanner.py.
-export function formatResults(name, scannerNames, results, universe, seconds, ratiosBasis = null) {
+// This used to append a data-provenance note ("Cached broker snapshot — may lag
+// the live figure shown elsewhere"). Removed by product decision: it named
+// internal sources that mean nothing to a reader and undermined the numbers it
+// sat beneath. Do not reinstate it as UI copy — if two snapshots disagree, fix
+// the snapshots. The backend still sends `ratios_basis`; it is simply not shown.
+export function formatResults(name, scannerNames, results, universe, seconds) {
     if (results.length === 0) {
         return `**${name}** found no matching stocks in ${universe} today (scanned in ${seconds}s).`;
     }
@@ -12,6 +15,5 @@ export function formatResults(name, scannerNames, results, universe, seconds, ra
         return `${i + 1}. **${r.Symbol}**${sig ? ` ${sig.label}` : ''}`;
     }).join('\n');
     const lines = [`## ${name} — ${results.length} stocks found`, `_${universe} · scanned in ${seconds}s_`, '', rows];
-    if (ratiosBasis) lines.push('', `_${ratiosBasis}_`);
     return lines.join('\n');
 }

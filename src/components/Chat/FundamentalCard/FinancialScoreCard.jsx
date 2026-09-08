@@ -137,15 +137,14 @@ export const FinancialScoreCard = ({ fund, symbol, flat = false }) => {
                         </div>
                     )}
 
-                    {/* VENTY-6: ROE/ROCE/margin here can legitimately differ from the
-                        Scanner's numbers for the same stock — they're read from
-                        different snapshots. Labeling which one fed this card beats
-                        pretending there's one source of truth. */}
-                    {fund?.ratios_basis && (
-                        <p className="text-[10px] text-zinc-400 dark:text-zinc-500 -mt-1">
-                            Ratios: {fund.ratios_basis}
-                        </p>
-                    )}
+                    {/* The "Ratios: <source>" provenance note that used to sit here was
+                        removed by product decision: it named internal data sources
+                        ("Cached broker snapshot", "Screener.in") that mean nothing to a
+                        reader and, by warning a figure "may lag the live figure shown
+                        elsewhere", undermined the number directly above it. The backend
+                        still sends `ratios_basis` and it is still useful for debugging;
+                        it is simply not shown. Do not reinstate this as UI copy — if the
+                        two snapshots disagree, fix the snapshots. */}
 
                     {/* sm:, not xs: — at the 375px xs breakpoint two columns leave each
                         card ~165px, which is not enough for an uppercase subtitle
