@@ -10,6 +10,7 @@ import { useChatHistory } from '../../context/ChatHistoryContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useChatMode } from '../../context/ChatModeContext';
 import { getApiBase } from '../../lib/apiBase';
+import { errorCopy } from '../../data/errorMessages';
 import { streamChatRequest } from '../../lib/streamChat';
 import { extractChartResolution, extractChartPeriod, extractQueryIntent, extractStockSymbols } from '../../lib/queryIntent';
 
@@ -762,14 +763,19 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                     const errorData = await response.json().catch(() => ({}));
                     const detail = errorData.detail || errorData.message || errorData.error;
                     let msg;
+                    // `code` carries the reason past the catch block below, which used to
+                    // decide what to show by regex-matching the message text. That
+                    // allowlist silently replaced any wording it didn't recognise with
+                    // "Something went wrong" — so every copy change risked being eaten.
+                    // Tagging the error means copy and routing are independent.
+                    let code = null;
                     if (response.status === 401 || response.status === 403) {
                         // SEC-001: /chat now requires authentication (CHAT_AUTH_MODE=enforce),
                         // so a 401 means EITHER an expired session OR a visitor who was
                         // never signed in. "Session expired" is wrong and confusing for the
                         // second case, which is now the common one.
-                        msg = accessToken
-                            ? 'Session expired. Please sign in again.'
-                            : 'Please sign in to use Venty.';
+                        code = accessToken ? 'SESSION_EXPIRED' : 'NOT_LOGGED_IN';
+                        msg = errorCopy(code).message;
                     } else if (response.status === 429) {
                         // VENTY-9: /chat's 429 body nests its message one level deeper
                         // than the other error shapes here -- detail is the whole
@@ -778,16 +784,27 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                         // though the backend already distinguishes "you're sending too
                         // fast" from "you're out of free-plan questions for today" with
                         // its own specific, actionable copy (see credit_control.py).
+                        // The backend's own credit-limit copy is already VENTY's voice
+                        // (credit_control.py BURST/DAILY_LIMIT_MESSAGE) — pass it through.
+                        code = 'RATE_LIMITED';
                         msg = (detail && typeof detail === 'object' && detail.message)
                             || 'Too many requests. Please wait a moment and try again.';
                     } else if (response.status === 404) {
-                        msg = detail || 'The requested resource was not found. Please try again.';
+                        // Backend "not found" copy is specific (a symbol it couldn't
+                        // resolve, say) and better than anything generic we'd substitute.
+                        code = 'NOT_FOUND';
+                        msg = detail || errorCopy('GENERIC').message;
                     } else if (response.status >= 500) {
-                        msg = detail || 'The server encountered an error. Please retry in a moment.';
+                        // Never surface a raw 5xx `detail` — it can leak internals.
+                        code = 'SERVER_ERROR';
+                        msg = errorCopy(code).message;
                     } else {
-                        msg = detail || `Request failed (${response.status})`;
+                        code = 'GENERIC';
+                        msg = detail || errorCopy(code).message;
                     }
-                    throw new Error(msg);
+                    const httpErr = new Error(msg);
+                    httpErr.ventyCode = code;
+                    throw httpErr;
                 }
 
                 responseData = await response.json();
@@ -991,7 +1008,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 setMessages(prev => [...prev, {
                     id: genId(),
                     role: 'ai',
-                    content: '⏱️ Request timed out. The query may be too complex — try asking about one stock at a time, or retry in a moment.',
+                    content: `⏱️ ${errorCopy('TIMEOUT').message}`,
                     isError: true,
                     failedQuery: normalized,
                 }]);
@@ -1005,20 +1022,26 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             }
             setShowThinking(false);
             setThinkingSteps([]);
-            // Sanitize error message — never expose raw internal errors to users
-            let userErrorMsg = "Something went wrong. Please try again.";
-            if (err.message) {
-                // Already-mapped HTTP errors (from the !response.ok block above) are safe to show.
-                // VENTY-9: "free plan"/"firing faster" cover the backend's own credit-limit
-                // copy (DAILY_LIMIT_MESSAGE / BURST_LIMIT_MESSAGE) surfaced above -- without
-                // them this allowlist discarded that specific, actionable message and fell
-                // through to the generic "Something went wrong" even though the 429 branch
-                // above had already extracted the real one.
-                const safe = /session expired|too many requests|not found|server encountered|request failed|timed out|free plan|firing faster/i.test(err.message);
-                if (safe) userErrorMsg = err.message;
-                else if (/network|fetch|failed to fetch|load failed|networkerror/i.test(err.message)) {
-                    userErrorMsg = "Network error — check your connection and try again.";
-                }
+            // Sanitize error message — never expose raw internal errors to users.
+            //
+            // This used to allowlist by REGEX over the message text, which coupled the
+            // copy to the routing: any wording the pattern didn't recognise was silently
+            // replaced by the generic fallback. (Hence the old "free plan|firing faster"
+            // entries — bolted on so the backend's credit-limit copy could get through.)
+            // Now the !response.ok block tags each error with `ventyCode`, so a message
+            // is shown because we classified it, not because it happened to contain a
+            // keyword. Untagged errors — a genuine JS bug, say — still fall through to
+            // the generic line rather than leaking a stack message to the user.
+            let userErrorMsg = errorCopy('GENERIC').message;
+            if (err.ventyCode) {
+                userErrorMsg = err.message || errorCopy(err.ventyCode).message;
+            } else if (err.message && /network|fetch|failed to fetch|load failed|networkerror/i.test(err.message)) {
+                // A failed fetch is either the user's connection or our server, and we
+                // cannot yet tell which. Blame our side: telling someone to check their
+                // wifi while our server is down is the worse mistake. Split this into
+                // the sheet's "no internet"/"weak signal" lines once navigator.onLine
+                // is wired up.
+                userErrorMsg = errorCopy('SERVER_ERROR').message;
             }
             const errorMessageId = genId();
             setMessages(prev => [...prev, {
