@@ -202,7 +202,22 @@ export default function AuthPage() {
             setMode('reset');
             setInfo('We emailed you a reset code.');
         } catch (err) {
-            setError(err.message || 'Could not send reset code');
+            if (err.name === 'InvalidParameterException') {
+                // Cognito refuses to send a reset code when the account has no verified
+                // channel — the same state as a signup that never entered its OTP. Same
+                // recovery as the sign-in/signup dead ends above: resend the confirmation
+                // code and drop them into the confirm screen instead of a raw AWS error.
+                try {
+                    await resendConfirmationCode(email.trim());
+                    setMode('confirm');
+                    setInfo("This account hasn't verified its email yet — we've sent a confirmation code.");
+                } catch (_) {
+                    setMode('confirm');
+                    setInfo("This account hasn't verified its email yet. Enter the code we sent, or resend it below.");
+                }
+            } else {
+                setError(err.message || 'Could not send reset code');
+            }
         } finally { setLoading(false); }
     };
 
