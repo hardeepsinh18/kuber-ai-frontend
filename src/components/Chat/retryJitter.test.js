@@ -71,7 +71,15 @@ describe('PERF-F-006: retry backoff is jittered', () => {
     it('does not change WHETHER a retry happens', () => {
         // Guards the blast radius: the retry conditions and the abort checks that make a
         // user-initiated Stop cancel the retry must all survive this change.
+        //
+        // K-BUG fix (per-chat concurrency): the staleness check this test guards
+        // used to compare against a single global activeRequestIdRef — that ref
+        // no longer exists (comparing across DIFFERENT chats' requests was itself
+        // part of the bug being fixed). The same check now reads a per-chat map
+        // via isStaleRequest(), still called at every retry site below.
         expect(src).toContain('[502, 503, 504].includes(response.status)');
-        expect(src).toContain('requestId !== activeRequestIdRef.current');
+        expect(src).toContain('const isStaleRequest = () => chatRequestsRef.current.get(sendChatId)?.requestId !== requestId;');
+        const staleChecks = (src.match(/if \(isStaleRequest\(\)\) return;/g) || []).length;
+        expect(staleChecks).toBeGreaterThanOrEqual(4); // the 4 retry-path sites this test originally guarded
     });
 });

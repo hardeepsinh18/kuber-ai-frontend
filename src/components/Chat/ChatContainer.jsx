@@ -210,8 +210,27 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
     const streamingTopRef = useRef(null); // marks top of the incoming AI message
     const abortControllerRef = useRef(null);
     const streamingTimeoutRef = useRef(null);
-    const activeRequestIdRef = useRef(0);
     const isLoadingRef = useRef(false);
+    // K-BUG "New Chat while generating blocks the new chat's send" fix.
+    //
+    // isLoading/isLoadingRef/abortControllerRef above stay as the CURRENTLY-VIEWED
+    // chat's visible state (unchanged meaning, still used by InputBar's disabled
+    // prop, the scroll-button check, etc.) — but the actual in-flight bookkeeping,
+    // including per-request staleness (formerly a single global activeRequestIdRef,
+    // now removed — it was comparing requestIds across DIFFERENT chats, which was
+    // itself part of this bug), now lives HERE, per chat id, so that chat B's
+    // request can start (and can't be mistaken for stale by chat A's request, or
+    // vice versa) while chat A's is still running in the background. chatId -> {
+    // abortController, requestId }. A chat with no entry (or an entry whose
+    // abortController is null) has nothing in flight.
+    //
+    // Deliberately NOT restoring showThinking/thinkingSteps/streamingMessageId on
+    // switching back to a still-in-flight chat — only the sendability (isLoading)
+    // is kept correct per chat. The old behaviour (an answer that arrives while
+    // you've navigated away is silently saved via persistOrphanedMessage, not
+    // shown) is completely unchanged — this fix only stops that background
+    // request from blocking a DIFFERENT chat's ability to send.
+    const chatRequestsRef = useRef(new Map());
     const messagesRef = useRef(messages);
     const lastSendAtRef = useRef(0);
     const lastSendTextRef = useRef('');
@@ -225,6 +244,19 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
     useEffect(() => {
         messagesRef.current = messages;
     }, [messages]);
+
+    // K-BUG fix: whenever the OPEN chat changes (New Chat, or switching to an
+    // existing chat), immediately reflect THAT chat's own in-flight status —
+    // not whatever isLoading happened to be left at by the chat just left.
+    // Without this, switching to a free chat right after leaving a busy one
+    // left the composer looking (and, before the other fixes above, actually
+    // being) stuck disabled until the abandoned request timed out.
+    useEffect(() => {
+        const busy = Boolean(chatRequestsRef.current.get(currentChatId)?.abortController);
+        setIsLoading(busy);
+        isLoadingRef.current = busy;
+        abortControllerRef.current = busy ? chatRequestsRef.current.get(currentChatId).abortController : null;
+    }, [currentChatId]);
 
     // Keep follow-up stock context in sync with the OPEN chat:
     // - switching to a new/other chat must not leak the previous chat's stock
@@ -252,8 +284,17 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
     }, []);
 
     useEffect(() => {
+        // chatRequestsRef.current is the same persistent Map for the component's
+        // whole lifetime (created once via useRef(new Map()), never reassigned),
+        // so this isn't a stale-DOM-ref situation — but reading .current() inside
+        // the cleanup, per the lint rule's own recommendation.
+        const chatRequests = chatRequestsRef.current;
         return () => {
             if (abortControllerRef.current) abortControllerRef.current.abort();
+            // With per-chat concurrency, more than one chat can have a request in
+            // flight when the whole component unmounts (route away from chat
+            // entirely) — abort all of them, not just whichever chat is visible.
+            chatRequests.forEach((entry) => entry.abortController?.abort());
             clearStreamingTimeout();
         };
     }, [clearStreamingTimeout]);
@@ -264,16 +305,25 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
     }, [clearStreamingTimeout]);
 
     const handleStopRequest = useCallback(() => {
-        activeRequestIdRef.current += 1;
+        // Stop always means "stop what I'm currently looking at" — bump and clear
+        // THIS chat's map entry, not a global one, so a Stop in chat A can never
+        // reach into chat B's still-running background request.
+        const chatId = currentChatIdRef.current;
+        const entry = chatRequestsRef.current.get(chatId);
+        if (entry) {
+            entry.requestId += 1; // any in-flight continuation for this chat now sees itself as stale
+            entry.abortController?.abort();
+            entry.abortController = null; // Must clear so next send in this chat isn't blocked
+        }
         if (abortControllerRef.current) abortControllerRef.current.abort();
-        abortControllerRef.current = null; // Must clear so next send isn't blocked
+        abortControllerRef.current = null;
         clearStreamingTimeout();
         setStreamingMessageId(null);
         setShowThinking(false);
         setThinkingSteps([]);
         isLoadingRef.current = false;
         setIsLoading(false);
-    }, [clearStreamingTimeout]);
+    }, [clearStreamingTimeout, currentChatIdRef]);
 
     // When opening /chat/:chatId, load that chat.
     //
@@ -436,14 +486,35 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             .trim();
 
         if (!normalized || !visible) return;
-        if (isLoadingRef.current || abortControllerRef.current) return;
+        // K-BUG fix: block on whether THIS chat has something in flight, not
+        // whether ANY chat does. currentChatIdRef.current is null for a chat that
+        // has never sent a message yet, which correctly has no map entry (never
+        // blocked). For an existing chat it's already the definitive id — the
+        // same one ensureCurrentChat() will return below, synchronously known
+        // before that await, which is what closes the double-click race for it.
+        const provisionalChatKey = currentChatIdRef.current;
+        if (chatRequestsRef.current.get(provisionalChatKey)?.abortController) return;
+        if (isLoadingRef.current || abortControllerRef.current) return; // belt-and-suspenders for the visible chat
         if ((now - lastSendAtRef.current) < 350 && lastSendTextRef.current === normalized) return;
 
         lastSendAtRef.current = now;
         lastSendTextRef.current = normalized;
         setLastQuery(normalized);   // remember for the mode-switch "re-run same question?" prompt
         setModeSwitchPrompt(null);  // any send dismisses the mode-switch popover
-        const requestId = ++activeRequestIdRef.current;
+        // Reserve this chat's slot in the map SYNCHRONOUSLY (before the
+        // ensureCurrentChat() await below) — this is what closes the same
+        // double-click race the old global isLoadingRef=true did, just scoped to
+        // this one chat instead of every chat. abortController is filled in once
+        // the actual fetch/stream starts (below); requestId is usable immediately.
+        const requestId = (chatRequestsRef.current.get(provisionalChatKey)?.requestId || 0) + 1;
+        chatRequestsRef.current.set(provisionalChatKey, { abortController: null, requestId });
+        // NOTE: requestId is now scoped per chat (each chat counts from its own 1),
+        // so it is NOT globally unique across chats — every staleness check below
+        // must compare against THIS chat's map entry (chatRequestsRef.current.get
+        // (sendChatId)), never the old global activeRequestIdRef. Comparing
+        // against a global counter here would reintroduce the exact cross-chat
+        // bug this fix removes: chat A's requestId=1 and chat B's requestId=1
+        // are unrelated and must never be compared against each other.
         isLoadingRef.current = true;
         setShowScrollButton(false);
 
@@ -461,10 +532,37 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
         // a const inside the try is out of scope there — every request error
         // became a ReferenceError that skipped the wrong-chat guard entirely.
         const sendChatId = await ensureCurrentChat();
+        // Brand-new chat: ensureCurrentChat() just minted sendChatId, which
+        // differs from the provisionalChatKey (null) the slot above was reserved
+        // under. Migrate the reservation to the real id so every check below
+        // (which all key off sendChatId) finds it.
+        if (sendChatId !== provisionalChatKey) {
+            const reserved = chatRequestsRef.current.get(provisionalChatKey);
+            chatRequestsRef.current.delete(provisionalChatKey);
+            if (reserved) chatRequestsRef.current.set(sendChatId, reserved);
+        }
         // The one and only signal that re-sorts the sidebar. Opening, hydrating or
         // switching away from a chat must never move it; sending a message must.
         markChatTouched(sendChatId);
         const isSameChat = () => currentChatIdRef.current === sendChatId;
+        // Per-chat staleness check, replacing the old `requestId !==
+        // activeRequestIdRef.current` (global) comparisons throughout this
+        // function. Reads live from the map so a Stop (which bumps requestId in
+        // place) is seen immediately by any in-flight continuation for this chat.
+        const isStaleRequest = () => chatRequestsRef.current.get(sendChatId)?.requestId !== requestId;
+        // Records the real AbortController once the fetch/stream actually starts
+        // (the map entry above only has requestId until now). Also mirrors it
+        // into the single abortControllerRef ONLY while this is still the
+        // visible chat — that ref exists purely for the few peripheral spots
+        // (unmount cleanup, the guard's belt-and-suspenders check) that only
+        // ever care about "what's the currently-viewed chat doing", not for any
+        // staleness logic, which reads the map exclusively.
+        const registerAbortController = (controller) => {
+            const entry = chatRequestsRef.current.get(sendChatId);
+            if (entry) entry.abortController = controller;
+            else chatRequestsRef.current.set(sendChatId, { abortController: controller, requestId });
+            if (isSameChat()) abortControllerRef.current = controller;
+        };
 
         try {
             const userMsgId = genId();
@@ -649,7 +747,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             }
             const doFetch = async () => {
                 const controller = new AbortController();
-                abortControllerRef.current = controller;
+                registerAbortController(controller);
                 const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
                 try {
                     return await fetch(API_ENDPOINT, {
@@ -687,9 +785,9 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                         payload,
                         headers,
                         timeoutMs: REQUEST_TIMEOUT_MS,
-                        registerAbort: (c) => { abortControllerRef.current = c; },
+                        registerAbort: (c) => { registerAbortController(c); },
                         onStep: (ev) => {
-                            if (requestId !== activeRequestIdRef.current || !isSameChat()) return;
+                            if (isStaleRequest() || !isSameChat()) return;
                             setLiveSteps(prev => {
                                 const at = prev.findIndex(s => s.id === ev.id);
                                 if (at === -1) return [...prev, ev];
@@ -700,7 +798,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                         },
                         onData: () => { setShowThinking(false); },
                         onToken: (delta) => {
-                            if (requestId !== activeRequestIdRef.current || !isSameChat()) return;
+                            if (isStaleRequest() || !isSameChat()) return;
                             setShowThinking(false);
                             setMessages(prev => prev.map(m => m.id === streamPreviewId
                                 ? { ...m, content: (m.content || '') + delta } : m));
@@ -713,7 +811,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                     // Streaming failed — drop the preview and fall back to /chat.
                     setMessages(prev => prev.filter(m => m.id !== streamPreviewId));
                     if (streamErr.name === 'AbortError') {
-                        if (requestId !== activeRequestIdRef.current) return;
+                        if (isStaleRequest()) return;
                         throw new Error('The request timed out — the server may be busy. Please retry.');
                     }
                     if (import.meta.env.DEV) console.warn('[Venty] stream failed → /chat fallback:', streamErr?.message);
@@ -726,22 +824,23 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 // Resilient fetch: backend deploy restarts (~30s) and gateway blips
                 // surface as dropped connections or 502/503/504. Retry ONCE after a
                 // short pause instead of instantly failing the user's query. A
-                // user-initiated Stop bumps activeRequestIdRef, so it never retries.
+                // user-initiated Stop bumps this chat's requestId (see
+                // handleStopRequest), so it never retries.
                 let response;
                 try {
                     response = await doFetch();
                 } catch (e) {
-                    if (requestId !== activeRequestIdRef.current) return;
+                    if (isStaleRequest()) return;
                     if (e.name === 'AbortError') {
                         throw new Error('The request timed out — the server may be busy. Please retry.');
                     }
                     await new Promise(r => setTimeout(r, retryDelay()));
-                    if (requestId !== activeRequestIdRef.current) return;
+                    if (isStaleRequest()) return;
                     response = await doFetch();
                 }
                 if ([502, 503, 504].includes(response.status)) {
                     await new Promise(r => setTimeout(r, retryDelay()));
-                    if (requestId !== activeRequestIdRef.current) return;
+                    if (isStaleRequest()) return;
                     response = await doFetch();
                 }
 
@@ -749,7 +848,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 // and retry once before surfacing "session expired" to the user.
                 if (response.status === 401 && accessToken && typeof refreshSession === 'function') {
                     const freshToken = await refreshSession();
-                    if (requestId !== activeRequestIdRef.current) return;
+                    if (isStaleRequest()) return;
                     if (freshToken) {
                         headers.Authorization = `Bearer ${freshToken}`;
                         response = await doFetch();
@@ -820,14 +919,17 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             // skipped, but the answer is still built and saved to the chat it actually
             // belongs to — see persistOrphanedMessage below — just not displayed, since
             // the view has already moved on.
-            const superseded = !isSameChat() || requestId !== activeRequestIdRef.current;
-            if (!isSameChat()) {
-                if (import.meta.env.DEV) console.warn('[Context] Chat switched mid-request — answer will be saved silently, not shown');
-                setShowThinking(false);
-                setThinkingSteps([]);
-                isLoadingRef.current = false;
-                setIsLoading(false);
+            const superseded = !isSameChat() || isStaleRequest();
+            if (!isSameChat() && import.meta.env.DEV) {
+                console.warn('[Context] Chat switched mid-request — answer will be saved silently, not shown');
             }
+            // NOTE: deliberately not touching showThinking/thinkingSteps/isLoading
+            // here — those belong to whatever chat is CURRENTLY being viewed, which
+            // by definition (!isSameChat()) is a DIFFERENT chat than this response.
+            // Blindly clearing them here would stomp on that other chat's own,
+            // unrelated in-flight state. The currentChatId-watching effect below
+            // is what keeps isLoading correct for whichever chat is actually on
+            // screen, regardless of which background request finishes when.
 
             if (import.meta.env.DEV) {
                 console.log('[Venty] Response content:', responseData?.content || responseData?.answer);
@@ -988,19 +1090,20 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             }
 
         } catch (err) {
-            if (requestId !== activeRequestIdRef.current) return;
+            if (isStaleRequest()) return;
             // A chat switch or route unmount aborts the request. Without this
             // guard the AbortError below appended a bogus "timed out" bubble to
             // whichever chat the user had just opened.
-            if (!isSameChat()) {
-                setShowThinking(false);
-                setThinkingSteps([]);
-                isLoadingRef.current = false;
-                setIsLoading(false);
-                return;
-            }
+            //
+            // Deliberately not touching showThinking/thinkingSteps/isLoading here
+            // — same reasoning as the success path above: this chat (sendChatId)
+            // isn't the one on screen, so those visible states belong to a
+            // different chat entirely. The finally block below still releases
+            // THIS chat's own map slot regardless, so returning early here is safe.
+            if (!isSameChat()) return;
             if (err.name === 'AbortError') {
-                // Timeout — user-initiated stop already returned early via requestId check above
+                // Timeout — user-initiated stop already returned early via the
+                // isStaleRequest() check above (Stop bumps this chat's requestId).
                 setShowThinking(false);
                 setThinkingSteps([]);
                 setStreamingMessageId(null);
@@ -1052,7 +1155,18 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 failedQuery: normalized,
             }]);
         } finally {
-            if (requestId === activeRequestIdRef.current) {
+            // Authoritative per-chat cleanup — always release THIS chat's slot in
+            // the map once its own request settles, regardless of whether it's
+            // the chat currently on screen. Guarded by isStaleRequest() so a Stop
+            // (which already bumped this chat's requestId and cleared its
+            // abortController itself) doesn't get its cleanup redone/raced here.
+            if (!isStaleRequest()) {
+                chatRequestsRef.current.delete(sendChatId);
+            }
+            // Only touch the VISIBLE loading state if sendChatId is still what's
+            // on screen — otherwise it belongs to a different chat and must be
+            // left alone (see the two notes above).
+            if (isSameChat()) {
                 abortControllerRef.current = null;
                 isLoadingRef.current = false;
                 setIsLoading(false);
