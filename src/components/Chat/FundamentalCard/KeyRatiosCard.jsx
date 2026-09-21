@@ -83,6 +83,9 @@ export const KeyRatiosCard = ({
     peerRatios = null,      // { SYMBOL: { pe_ratio: n, ... } } — per-peer values
     sectorMedians = null,   // { pe_ratio: n, ... } — precomputed, when supplied
     sectorName = 'Sector',
+    // Still accepted so the existing call site keeps working, but no longer
+    // rendered: it only fed the removed "· 130 stocks" tally footer.
+    // eslint-disable-next-line no-unused-vars
     peerCount = null,
     symbol = '',
     flat = false,
@@ -131,19 +134,6 @@ export const KeyRatiosCard = ({
         if (given != null && sane(key, given)) return given;
         return median(key, pools[key]);
     };
-
-    // Tally drives the summary line. Only judged rows count, so a table full of
-    // unusable benchmarks reports "not comparable" rather than a flattering 0-0.
-    const tally = rows.reduce((acc, { key, value }) => {
-        const v = ratioVerdict(key, value, benchmarkFor(key));
-        if (v === 'better') acc.better += 1;
-        else if (v === 'worse') acc.worse += 1;
-        else if (v === 'similar') acc.similar += 1;
-        else acc.unknown += 1;
-        return acc;
-    }, { better: 0, worse: 0, similar: 0, unknown: 0 });
-
-    const judged = tally.better + tally.worse + tally.similar;
 
     const body = (
         <div className={flat ? '' : 'p-3'}>
@@ -237,39 +227,12 @@ export const KeyRatiosCard = ({
                 </table>
             </div>
 
-            {/* Summary. States the sample size, because "median of 42" and
-                "median of 4" deserve very different levels of trust — and names
-                the unjudged rows rather than quietly dropping them from the count. */}
-            <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5">
-                <span className="inline-flex items-center gap-1.5 text-[11px] text-zinc-600 dark:text-zinc-400">
-                    <span className="w-2 h-2 rounded-sm bg-emerald-500 flex-shrink-0" />
-                    Better in comparison
-                </span>
-                <span className="inline-flex items-center gap-1.5 text-[11px] text-zinc-600 dark:text-zinc-400">
-                    <span className="w-2 h-2 rounded-sm bg-rose-500 flex-shrink-0" />
-                    Worse in comparison
-                </span>
-                {tally.unknown > 0 && (
-                    <span className="inline-flex items-center gap-1.5 text-[11px] text-zinc-600 dark:text-zinc-400">
-                        <span className="w-2 h-2 rounded-sm bg-zinc-300 dark:bg-zinc-600 flex-shrink-0" />
-                        No comparable data
-                    </span>
-                )}
-            </div>
-
-            {/* Sample size sits under the legend, because "median of 42" and
-                "median of 4" deserve very different levels of trust — and the
-                unjudged rows are named rather than dropped from the count. */}
-            <div className="mt-2 pt-2 border-t border-zinc-200 dark:border-zinc-800 text-center">
-                <span className="text-[10px] text-zinc-500 dark:text-zinc-400">
-                    {judged === 0
-                        ? 'No comparable benchmark for these ratios'
-                        : <>Ahead on <strong className="text-emerald-600 dark:text-emerald-400">{tally.better}</strong> of {judged}{' '}
-                           vs {comparedLabel}
-                           {comparingSector && peerCount ? ` · ${peerCount} stocks` : ''}
-                           {tally.unknown > 0 ? ` · ${tally.unknown} not comparable` : ''}</>}
-                </span>
-            </div>
+            {/* The colour legend ("Better/Worse in comparison") and the tally
+                footer ("Ahead on 5 of 5 vs Sector · 130 stocks") were removed by
+                product decision. The green/red values and the trend arrow already
+                carry that meaning row by row, so both lines restated what the
+                table showed. The per-row colouring is unaffected — it comes from
+                ratioVerdict() on each row, not from the removed tally. */}
         </div>
     );
 

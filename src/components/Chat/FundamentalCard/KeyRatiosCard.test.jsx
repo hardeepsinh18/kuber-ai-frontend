@@ -98,9 +98,11 @@ describe('the -180.1 sector P/E must not produce a verdict', () => {
         expect(screen.queryByText(/904/)).toBeNull();
     });
 
-    it('counts unusable rows in the summary instead of hiding them', () => {
+    it('does not print a tally footer counting unusable rows', () => {
+        // The summary footer was removed by product decision; the per-row
+        // treatment already says which rows have no benchmark.
         renderCard();
-        expect(screen.getByText(/not comparable/i)).toBeTruthy();
+        expect(screen.queryByText(/not comparable/i)).toBeNull();
     });
 });
 
@@ -199,19 +201,32 @@ describe('benchmark column', () => {
     });
 });
 
-describe('summary line', () => {
-    it('reports the peer count when comparing to a sector', () => {
-        renderCard({ peerCount: 42, sectorName: 'Mining' });
-        expect(screen.getByText(/42 stocks/)).toBeTruthy();
+/* The legend and tally footer were removed by product decision — the green/red
+   values and the trend arrow already carry that meaning row by row. These guard
+   against either being reintroduced. */
+describe('no legend or tally footer', () => {
+    it('does not show the peer count', () => {
+        renderCard({ peerCount: 42, sectorName: 'Sector' });
+        expect(screen.queryByText(/42 stocks/)).toBeNull();
     });
 
-    it('says so plainly when nothing is comparable', () => {
+    it('does not show the colour legend', () => {
+        renderCard();
+        expect(screen.queryByText(/Better in comparison/i)).toBeNull();
+        expect(screen.queryByText(/Worse in comparison/i)).toBeNull();
+    });
+
+    it('does not show an "Ahead on N of N" tally', () => {
+        renderCard();
+        expect(screen.queryByText(/Ahead on/i)).toBeNull();
+    });
+
+    it('still marks an unusable benchmark on the row itself', () => {
+        // Removing the footer must not cost the per-row signal: a nonsense
+        // sector median (-180.1 P/E) still has to read as "no verdict" rather
+        // than being scored. The row shows a dash labelled for screen readers.
         render(<KeyRatiosCard symbol="X" ratios={{ pe_ratio: 19.43 }} sectorMedians={{ pe_ratio: -180.1 }} flat />);
-        // The phrase appears on the row AND in the summary; both are intended,
-        // so assert on the summary copy specifically rather than a bare getByText.
-        const all = screen.getAllByText(/No comparable benchmark/i);
-        expect(all.length).toBeGreaterThan(0);
-        expect(all.some(el => /for these ratios/i.test(el.textContent))).toBe(true);
+        expect(screen.getAllByLabelText(/not comparable/i).length).toBeGreaterThan(0);
     });
 });
 
