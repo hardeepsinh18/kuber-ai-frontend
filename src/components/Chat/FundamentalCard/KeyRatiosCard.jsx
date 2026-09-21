@@ -36,44 +36,63 @@ const fmtByUnit = (key, v) => {
 };
 
 /* ─── Verdict mark ───────────────────────────────────────────────────────────
- * Replaces the reference card's thumbs-up/down. An arrow carries direction
- * without the judgement a thumb implies, and the null case is a visible dash
- * rather than a blank cell, so "we don't know" reads as a deliberate answer.
+ * A thumbs-up/down passes judgement on a company; an arrow states a direction
+ * and lets the reader judge. The null case is a visible dash rather than a
+ * blank cell, so "we don't know" reads as a deliberate answer.
  */
 const VerdictMark = ({ verdict }) => {
     if (verdict === 'better') {
-        return <TrendingUp size={14} className="text-emerald-600 dark:text-emerald-400 flex-shrink-0" aria-label="Better" />;
+        return <TrendingUp size={13} className="text-emerald-600 dark:text-emerald-400 flex-shrink-0" aria-label="Better" />;
     }
     if (verdict === 'worse') {
-        return <TrendingDown size={14} className="text-rose-600 dark:text-rose-400 flex-shrink-0" aria-label="Worse" />;
+        return <TrendingDown size={13} className="text-rose-600 dark:text-rose-400 flex-shrink-0" aria-label="Worse" />;
     }
     if (verdict === 'similar') {
-        return <Minus size={14} className="text-zinc-400 dark:text-zinc-500 flex-shrink-0" aria-label="In line" />;
+        return <Minus size={13} className="text-zinc-400 dark:text-zinc-500 flex-shrink-0" aria-label="In line" />;
     }
-    return <span className="text-zinc-300 dark:text-zinc-600 text-xs flex-shrink-0" aria-label="Not comparable">—</span>;
+    return <span className="text-zinc-300 dark:text-zinc-600 text-xs flex-shrink-0 leading-none" aria-label="Not comparable">—</span>;
 };
 
 /** Value colour follows the verdict; an unjudged value stays neutral. */
 const valueClass = (verdict) => clsx(
-    'text-sm font-semibold tabular-nums',
+    'text-sm font-bold tabular-nums',
     verdict === 'better' ? 'text-emerald-600 dark:text-emerald-400' :
     verdict === 'worse'  ? 'text-rose-600 dark:text-rose-400' :
                            'text-zinc-900 dark:text-white'
 );
 
-/* ─── Percentile bar ─────────────────────────────────────────────────────────
- * The headline improvement over a raw "19.43 vs -180.1" pair: a position in
- * the peer set, which stays meaningful even when the median itself is noisy.
+/* ─── Position track ─────────────────────────────────────────────────────────
+ * The core of the redesign, and the reason this is not a ratio table with
+ * colours on it: instead of printing "19.43 vs -180.1" and leaving the reader
+ * to do the arithmetic, each row draws where the stock SITS among its peers.
+ *
+ * The bar is the peer range, the tick is the sector median, and the dot is
+ * this stock. A reader takes the whole story — cheap or dear, near or far from
+ * typical — in one glance, and it degrades gracefully: with no percentile we
+ * draw nothing rather than an empty track.
  */
-const PercentileBar = ({ pct }) => {
+const PositionTrack = ({ pct, medianPct = 50 }) => {
     if (pct == null) return null;
     const tone = pct >= 67 ? 'bg-emerald-500' : pct >= 34 ? 'bg-amber-500' : 'bg-rose-500';
     return (
-        <div className="flex items-center gap-1.5" title={`${pct}th percentile in peer set`}>
-            <div className="w-10 h-1 rounded-full bg-zinc-200 dark:bg-zinc-700 overflow-hidden">
-                <div className={clsx('h-full rounded-full', tone)} style={{ width: `${Math.max(pct, 3)}%` }} />
-            </div>
-            <span className="text-[10px] text-zinc-500 dark:text-zinc-400 tabular-nums w-7 text-right">{pct}%</span>
+        <div
+            className="relative h-1.5 w-full rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-visible"
+            title={`${pct}th percentile among peers`}
+        >
+            {/* Median tick — the "typical" line the dot is read against. */}
+            <span
+                className="absolute top-1/2 -translate-y-1/2 w-px h-2.5 bg-zinc-300 dark:bg-zinc-600"
+                style={{ left: `${medianPct}%` }}
+            />
+            {/* This stock. Ringed in the card background so it stays legible
+                when it lands on top of the median tick. */}
+            <span
+                className={clsx(
+                    'absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full ring-2',
+                    'ring-white dark:ring-[#0d0c0b]', tone
+                )}
+                style={{ left: `${Math.min(Math.max(pct, 2), 98)}%` }}
+            />
         </div>
     );
 };
@@ -184,16 +203,11 @@ export const KeyRatiosCard = ({
                 </div>
             )}
 
-            {/* Column header. The percentile column is hidden on narrow screens
-                rather than squeezed — the value and verdict matter more. */}
-            <div className="flex items-center gap-2 px-2 py-1.5 text-[10px] uppercase tracking-wide text-zinc-500 dark:text-zinc-400 border-b border-zinc-200 dark:border-zinc-800">
-                <span className="flex-1 min-w-0">Ratio</span>
-                <span className="w-20 text-right truncate" title={symbol}>{symbol || 'Stock'}</span>
-                <span className="w-20 text-right truncate" title={comparedLabel}>{comparedLabel}</span>
-                <span className="hidden sm:block w-[4.5rem] text-right">Rank</span>
-            </div>
-
-            <div className="divide-y divide-zinc-100 dark:divide-zinc-800/70">
+            {/* Rows are self-describing cards, not a grid under a header strip:
+                each states its own comparison in words ("vs 22.40x median"), so
+                nothing depends on a column title scrolled off the top, and a
+                narrow phone never has to squeeze four columns side by side. */}
+            <div className="space-y-1">
                 {rows.map(({ key, meta, value }) => {
                     const bench = benchmarkFor(key);
                     const v = ratioVerdict(key, value, bench);
@@ -203,52 +217,72 @@ export const KeyRatiosCard = ({
                     const benchText = fmtByUnit(key, bench);
                     const banded = meta.dir === 'band';
 
+                    // The one line under the value that says what the number is
+                    // being held against — a healthy range, a named peer, the
+                    // sector median, or nothing usable at all.
+                    const context = banded
+                        ? `${meta.band[0]}–${meta.band[1]} is healthy`
+                        : benchText
+                            ? `vs ${benchText} ${comparingSector ? 'median' : comparedLabel}`
+                            : 'No comparable benchmark';
+
                     return (
-                        <div key={key} className="flex items-center gap-2 px-2 py-2">
-                            <span className="flex-1 min-w-0 text-xs text-zinc-700 dark:text-zinc-300 flex items-center gap-1">
-                                <span className="truncate">{meta.label}</span>
-                                {meta.term && <InfoTip term={meta.term} />}
-                            </span>
+                        <div
+                            key={key}
+                            className="rounded-lg px-2.5 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors"
+                        >
+                            <div className="flex items-baseline justify-between gap-3">
+                                <span className="text-xs font-medium text-zinc-600 dark:text-zinc-300 flex items-center gap-1 min-w-0">
+                                    <span className="truncate">{meta.label}</span>
+                                    {meta.term && <InfoTip term={meta.term} />}
+                                </span>
+                                <span className="flex items-center gap-1.5 flex-shrink-0">
+                                    <span className={valueClass(v)}>{fmtByUnit(key, value)}</span>
+                                    <VerdictMark verdict={v} />
+                                </span>
+                            </div>
 
-                            <span className="w-20 text-right flex items-center justify-end gap-1">
-                                <span className={valueClass(v)}>{fmtByUnit(key, value)}</span>
-                                <VerdictMark verdict={v} />
-                            </span>
-
-                            {/* A banded ratio has no meaningful peer column — it is
-                                judged against a healthy range, so we name that range
-                                instead of printing a comparison we don't use. */}
-                            <span className="w-20 text-right text-xs tabular-nums text-zinc-500 dark:text-zinc-400 truncate">
-                                {banded
-                                    ? <span className="text-[10px]" title="Judged against a healthy range, not the peer set">
-                                        {meta.band[0]}–{meta.band[1]} ideal
-                                      </span>
-                                    : (benchText ?? <span className="text-zinc-300 dark:text-zinc-600">n/a</span>)}
-                            </span>
-
-                            <span className="hidden sm:flex w-[4.5rem] justify-end">
-                                {pct != null ? <PercentileBar pct={pct} /> : null}
-                            </span>
+                            <div className="flex items-center gap-2.5 mt-1.5">
+                                <span className={clsx(
+                                    'text-[10px] flex-shrink-0 tabular-nums',
+                                    v == null ? 'text-zinc-400 dark:text-zinc-600 italic'
+                                              : 'text-zinc-500 dark:text-zinc-400'
+                                )}>
+                                    {context}
+                                </span>
+                                <span className="flex-1 min-w-0">
+                                    <PositionTrack pct={pct} />
+                                </span>
+                                {pct != null && (
+                                    <span className="text-[10px] text-zinc-400 dark:text-zinc-500 tabular-nums flex-shrink-0 w-8 text-right">
+                                        {pct}%
+                                    </span>
+                                )}
+                            </div>
                         </div>
                     );
                 })}
             </div>
 
-            {/* Summary + legend. States the sample size, because "median of 42"
-                and "median of 4" deserve very different levels of trust. */}
-            <div className="mt-2 pt-2 border-t border-zinc-200 dark:border-zinc-800 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+            {/* Summary. States the sample size, because "median of 42" and
+                "median of 4" deserve very different levels of trust — and names
+                the unjudged rows rather than quietly dropping them from the count. */}
+            <div className="mt-2.5 pt-2.5 border-t border-zinc-200 dark:border-zinc-800 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
                 <span className="text-[10px] text-zinc-500 dark:text-zinc-400">
                     {judged === 0
                         ? 'No comparable benchmark for these ratios'
-                        : <>Better on <strong className="text-emerald-600 dark:text-emerald-400">{tally.better}</strong> of {judged}{' '}
+                        : <>Ahead on <strong className="text-emerald-600 dark:text-emerald-400">{tally.better}</strong> of {judged}{' '}
                            vs {comparedLabel}
-                           {comparingSector && peerCount ? ` (${peerCount} stocks)` : ''}
+                           {comparingSector && peerCount ? ` · ${peerCount} stocks` : ''}
                            {tally.unknown > 0 ? ` · ${tally.unknown} not comparable` : ''}</>}
                 </span>
-                <span className="flex items-center gap-2 text-[10px] text-zinc-400 dark:text-zinc-500">
-                    <span className="flex items-center gap-0.5"><TrendingUp size={10} className="text-emerald-500" />Better</span>
-                    <span className="flex items-center gap-0.5"><TrendingDown size={10} className="text-rose-500" />Worse</span>
-                    <span className="flex items-center gap-0.5">—<span>No data</span></span>
+                {/* The dot legend explains the track, which is the part a reader
+                    has not seen on other cards; arrows are self-evident. */}
+                <span className="flex items-center gap-1.5 text-[10px] text-zinc-400 dark:text-zinc-500">
+                    <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 dark:bg-zinc-500" />
+                    <span>{symbol || 'Stock'}</span>
+                    <span className="mx-0.5 w-px h-2.5 bg-zinc-300 dark:bg-zinc-600" />
+                    <span>median</span>
                 </span>
             </div>
         </div>

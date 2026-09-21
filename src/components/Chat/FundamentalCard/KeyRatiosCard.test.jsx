@@ -44,11 +44,11 @@ const renderCard = (props = {}) => render(
  * The row container for a ratio.
  *
  * Exact match, because 'ROE' is a substring of 'ROCE' and a loose matcher picks
- * up both; the label lives in a `.truncate` span whose row is its grandparent.
+ * up both; the label lives in a `.truncate` span inside the row card.
  */
 const rowFor = (label) =>
     screen.getByText((t, el) => el?.classList.contains('truncate') && t === label)
-        .closest('div.flex.items-center.gap-2.px-2.py-2');
+        .closest('div.rounded-lg');
 
 describe('rendering', () => {
     it('renders a row for every ratio present in the payload', () => {
@@ -131,7 +131,7 @@ describe('banded liquidity ratios', () => {
 
     it('shows the healthy range rather than a peer comparison', () => {
         renderCard();
-        expect(within(rowFor('Quick ratio')).getByText(/1–2 ideal/)).toBeTruthy();
+        expect(within(rowFor('Quick ratio')).getByText(/1–2 is healthy/)).toBeTruthy();
     });
 
     it('still judges a banded ratio when no sector data exists at all', () => {
@@ -182,6 +182,30 @@ describe('peer tabs', () => {
     });
 });
 
+describe('position track', () => {
+    const peers = {
+        A: { pe_ratio: 10 }, B: { pe_ratio: 20 },
+        C: { pe_ratio: 30 }, D: { pe_ratio: 40 },
+    };
+
+    it('draws a track once there are enough peers to rank against', () => {
+        render(<KeyRatiosCard symbol="X" ratios={{ pe_ratio: 12 }} peerRatios={peers} flat />);
+        expect(rowFor('P/E').querySelector('[title$="percentile among peers"]')).toBeTruthy();
+    });
+
+    it('draws no track when the peer set is too thin to rank', () => {
+        render(<KeyRatiosCard symbol="X" ratios={{ pe_ratio: 12 }} peerRatios={{ A: { pe_ratio: 10 } }} flat />);
+        expect(rowFor('P/E').querySelector('[title$="percentile among peers"]')).toBeNull();
+    });
+
+    it('states the benchmark in prose on the row itself', () => {
+        // The row must carry its own comparison, so it reads correctly with no
+        // column header above it.
+        render(<KeyRatiosCard symbol="X" ratios={{ pe_ratio: 12 }} peerRatios={peers} flat />);
+        expect(within(rowFor('P/E')).getByText(/vs 25\.00x median/)).toBeTruthy();
+    });
+});
+
 describe('summary line', () => {
     it('reports the peer count when comparing to a sector', () => {
         renderCard({ peerCount: 42, sectorName: 'Mining' });
@@ -190,7 +214,11 @@ describe('summary line', () => {
 
     it('says so plainly when nothing is comparable', () => {
         render(<KeyRatiosCard symbol="X" ratios={{ pe_ratio: 19.43 }} sectorMedians={{ pe_ratio: -180.1 }} flat />);
-        expect(screen.getByText(/No comparable benchmark/i)).toBeTruthy();
+        // The phrase appears on the row AND in the summary; both are intended,
+        // so assert on the summary copy specifically rather than a bare getByText.
+        const all = screen.getAllByText(/No comparable benchmark/i);
+        expect(all.length).toBeGreaterThan(0);
+        expect(all.some(el => /for these ratios/i.test(el.textContent))).toBe(true);
     });
 });
 
