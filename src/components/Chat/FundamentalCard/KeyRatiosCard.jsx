@@ -5,7 +5,7 @@ import { fmtPct, fmtMultiple, fmtRatio } from '../../../utils/metricFormat';
 import { INNER_CARD_DARK } from '../answerKit';
 import { InfoTip } from './InfoTip';
 import {
-    RATIO_META, RATIO_ORDER, sane, verdict as ratioVerdict, percentile, median,
+    RATIO_META, RATIO_ORDER, sane, verdict as ratioVerdict, median,
 } from '../../../utils/ratioPolarity';
 
 /* ─── KEY RATIOS — peer / sector comparison table ────────────────────────────
@@ -17,13 +17,10 @@ import {
  * confident red mark.
  *
  * It renders whatever the payload actually carries. Every ratio, the peer
- * tabs, the percentile bars and the summary line are independently optional,
+ * tabs, the benchmark column and the summary line are independently optional,
  * so a thin payload degrades to a short honest table rather than an empty
  * shell — and nothing here throws when a field is absent.
  */
-
-/** Percentiles below this are not shown: too few peers to mean anything. */
-const MIN_PEERS_FOR_PERCENTILE = 4;
 
 /** Print a value using the shared formatter, chosen by the ratio's unit. */
 const fmtByUnit = (key, v) => {
@@ -60,42 +57,6 @@ const valueClass = (verdict) => clsx(
     verdict === 'worse'  ? 'text-rose-600 dark:text-rose-400' :
                            'text-zinc-900 dark:text-white'
 );
-
-/* ─── Position track ─────────────────────────────────────────────────────────
- * The core of the redesign, and the reason this is not a ratio table with
- * colours on it: instead of printing "19.43 vs -180.1" and leaving the reader
- * to do the arithmetic, each row draws where the stock SITS among its peers.
- *
- * The bar is the peer range, the tick is the sector median, and the dot is
- * this stock. A reader takes the whole story — cheap or dear, near or far from
- * typical — in one glance, and it degrades gracefully: with no percentile we
- * draw nothing rather than an empty track.
- */
-const PositionTrack = ({ pct, medianPct = 50 }) => {
-    if (pct == null) return null;
-    const tone = pct >= 67 ? 'bg-emerald-500' : pct >= 34 ? 'bg-amber-500' : 'bg-rose-500';
-    return (
-        <div
-            className="relative h-1.5 w-full rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-visible"
-            title={`${pct}th percentile among peers`}
-        >
-            {/* Median tick — the "typical" line the dot is read against. */}
-            <span
-                className="absolute top-1/2 -translate-y-1/2 w-px h-2.5 bg-zinc-300 dark:bg-zinc-600"
-                style={{ left: `${medianPct}%` }}
-            />
-            {/* This stock. Ringed in the card background so it stays legible
-                when it lands on top of the median tick. */}
-            <span
-                className={clsx(
-                    'absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full ring-2',
-                    'ring-white dark:ring-[#0d0c0b]', tone
-                )}
-                style={{ left: `${Math.min(Math.max(pct, 2), 98)}%` }}
-            />
-        </div>
-    );
-};
 
 /**
  * Normalise one ratio value out of the payload.
@@ -140,7 +101,7 @@ export const KeyRatiosCard = ({
         [ratios]
     );
 
-    // Peer pools per ratio, used for both the median and the percentile.
+    // Peer pools per ratio — the sample each sector median is taken over.
     const pools = React.useMemo(() => {
         const out = {};
         if (!peerRatios) return out;
@@ -203,71 +164,78 @@ export const KeyRatiosCard = ({
                 </div>
             )}
 
-            {/* Rows are self-describing cards, not a grid under a header strip:
-                each states its own comparison in words ("vs 22.40x median"), so
-                nothing depends on a column title scrolled off the top, and a
-                narrow phone never has to squeeze four columns side by side. */}
-            <div className="space-y-1">
-                {rows.map(({ key, meta, value }) => {
-                    const bench = benchmarkFor(key);
-                    const v = ratioVerdict(key, value, bench);
-                    const pool = pools[key];
-                    const pct = (pool && pool.length >= MIN_PEERS_FOR_PERCENTILE)
-                        ? percentile(key, value, pool) : null;
-                    const benchText = fmtByUnit(key, bench);
-                    const banded = meta.dir === 'band';
+            {/* A real <table>: three plain columns, one row per ratio. Scrolls
+                inside its own container on a narrow screen rather than forcing
+                the card to scroll sideways. */}
+            <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                    <thead>
+                        <tr className="border-b border-zinc-200 dark:border-zinc-800">
+                            <th scope="col" className="py-1.5 pr-2 text-[10px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                                Ratio
+                            </th>
+                            <th scope="col" className="py-1.5 px-2 text-right text-[10px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
+                                {symbol || 'Stock'}
+                            </th>
+                            <th scope="col" className="py-1.5 pl-2 text-right text-[10px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
+                                {comparedLabel}
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {rows.map(({ key, meta, value }) => {
+                            const bench = benchmarkFor(key);
+                            const v = ratioVerdict(key, value, bench);
+                            const benchText = fmtByUnit(key, bench);
+                            const banded = meta.dir === 'band';
 
-                    // The one line under the value that says what the number is
-                    // being held against — a healthy range, a named peer, the
-                    // sector median, or nothing usable at all.
-                    const context = banded
-                        ? `${meta.band[0]}–${meta.band[1]} is healthy`
-                        : benchText
-                            ? `vs ${benchText} ${comparingSector ? 'median' : comparedLabel}`
-                            : 'No comparable benchmark';
+                            return (
+                                <tr key={key} className="border-b border-zinc-100 dark:border-zinc-800/60 last:border-0">
+                                    {/* aria-label pins the header's accessible name to the
+                                        ratio itself. Without it the InfoTip's "i" glyph gets
+                                        appended ("P/Ei") and a screen reader repeats that for
+                                        every cell in the row. The tip keeps its own label and
+                                        stays reachable — hiding it here instead would leave a
+                                        focusable control that announces nothing. */}
+                                    <th
+                                        scope="row"
+                                        aria-label={meta.label}
+                                        className="py-2 pr-2 text-xs font-normal text-zinc-700 dark:text-zinc-300"
+                                    >
+                                        <span className="flex items-center gap-1">
+                                            <span>{meta.label}</span>
+                                            {meta.term && <InfoTip term={meta.term} />}
+                                        </span>
+                                    </th>
 
-                    return (
-                        <div
-                            key={key}
-                            className="rounded-lg px-2.5 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors"
-                        >
-                            <div className="flex items-baseline justify-between gap-3">
-                                <span className="text-xs font-medium text-zinc-600 dark:text-zinc-300 flex items-center gap-1 min-w-0">
-                                    <span className="truncate">{meta.label}</span>
-                                    {meta.term && <InfoTip term={meta.term} />}
-                                </span>
-                                <span className="flex items-center gap-1.5 flex-shrink-0">
-                                    <span className={valueClass(v)}>{fmtByUnit(key, value)}</span>
-                                    <VerdictMark verdict={v} />
-                                </span>
-                            </div>
+                                    <td className="py-2 px-2 text-right whitespace-nowrap">
+                                        <span className="inline-flex items-center justify-end gap-1.5">
+                                            <span className={valueClass(v)}>{fmtByUnit(key, value)}</span>
+                                            <VerdictMark verdict={v} />
+                                        </span>
+                                    </td>
 
-                            <div className="flex items-center gap-2.5 mt-1.5">
-                                <span className={clsx(
-                                    'text-[10px] flex-shrink-0 tabular-nums',
-                                    v == null ? 'text-zinc-400 dark:text-zinc-600 italic'
-                                              : 'text-zinc-500 dark:text-zinc-400'
-                                )}>
-                                    {context}
-                                </span>
-                                <span className="flex-1 min-w-0">
-                                    <PositionTrack pct={pct} />
-                                </span>
-                                {pct != null && (
-                                    <span className="text-[10px] text-zinc-400 dark:text-zinc-500 tabular-nums flex-shrink-0 w-8 text-right">
-                                        {pct}%
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-                    );
-                })}
+                                    {/* A banded ratio has no peer comparison — it is judged
+                                        against a healthy range, so the column names that
+                                        range instead of a number we never compare to. */}
+                                    <td className="py-2 pl-2 text-right text-xs tabular-nums text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
+                                        {banded
+                                            ? <span className="text-[11px]" title="Judged against a healthy range, not the peer set">
+                                                {meta.band[0]}–{meta.band[1]} ideal
+                                              </span>
+                                            : (benchText ?? <span className="text-zinc-300 dark:text-zinc-600" title="No usable benchmark for this ratio">n/a</span>)}
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
             </div>
 
             {/* Summary. States the sample size, because "median of 42" and
                 "median of 4" deserve very different levels of trust — and names
                 the unjudged rows rather than quietly dropping them from the count. */}
-            <div className="mt-2.5 pt-2.5 border-t border-zinc-200 dark:border-zinc-800 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+            <div className="mt-2 pt-2 border-t border-zinc-200 dark:border-zinc-800">
                 <span className="text-[10px] text-zinc-500 dark:text-zinc-400">
                     {judged === 0
                         ? 'No comparable benchmark for these ratios'
@@ -275,14 +243,6 @@ export const KeyRatiosCard = ({
                            vs {comparedLabel}
                            {comparingSector && peerCount ? ` · ${peerCount} stocks` : ''}
                            {tally.unknown > 0 ? ` · ${tally.unknown} not comparable` : ''}</>}
-                </span>
-                {/* The dot legend explains the track, which is the part a reader
-                    has not seen on other cards; arrows are self-evident. */}
-                <span className="flex items-center gap-1.5 text-[10px] text-zinc-400 dark:text-zinc-500">
-                    <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 dark:bg-zinc-500" />
-                    <span>{symbol || 'Stock'}</span>
-                    <span className="mx-0.5 w-px h-2.5 bg-zinc-300 dark:bg-zinc-600" />
-                    <span>median</span>
                 </span>
             </div>
         </div>

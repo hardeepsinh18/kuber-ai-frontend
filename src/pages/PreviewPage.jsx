@@ -328,7 +328,7 @@ export default function PreviewPage() {
                     <p className="text-xs uppercase tracking-widest text-zinc-500 mb-1">Preview · Key Ratios</p>
                     <p className="text-[11px] text-zinc-500 mb-3">
                         LLOYDSME vs a mining sector with a poisoned P/E median (-180.1) and an
-                        unusable quick ratio (904.15). Both must read “not comparable”.
+                        unusable quick ratio (904.15). Both must read “n/a”, not a red mark.
                     </p>
                     <KeyRatiosCard
                         symbol="LLOYDSME"

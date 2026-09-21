@@ -43,12 +43,11 @@ const renderCard = (props = {}) => render(
 /**
  * The row container for a ratio.
  *
- * Exact match, because 'ROE' is a substring of 'ROCE' and a loose matcher picks
- * up both; the label lives in a `.truncate` span inside the row card.
+ * Queried by its row-header role, which is what a table gives us — and exact,
+ * because 'ROE' is a substring of 'ROCE' and a loose matcher picks up both.
  */
 const rowFor = (label) =>
-    screen.getByText((t, el) => el?.classList.contains('truncate') && t === label)
-        .closest('div.rounded-lg');
+    screen.getByRole('rowheader', { name: label }).closest('tr');
 
 describe('rendering', () => {
     it('renders a row for every ratio present in the payload', () => {
@@ -131,7 +130,7 @@ describe('banded liquidity ratios', () => {
 
     it('shows the healthy range rather than a peer comparison', () => {
         renderCard();
-        expect(within(rowFor('Quick ratio')).getByText(/1–2 is healthy/)).toBeTruthy();
+        expect(within(rowFor('Quick ratio')).getByText(/1–2 ideal/)).toBeTruthy();
     });
 
     it('still judges a banded ratio when no sector data exists at all', () => {
@@ -182,27 +181,21 @@ describe('peer tabs', () => {
     });
 });
 
-describe('position track', () => {
+describe('benchmark column', () => {
     const peers = {
         A: { pe_ratio: 10 }, B: { pe_ratio: 20 },
         C: { pe_ratio: 30 }, D: { pe_ratio: 40 },
     };
 
-    it('draws a track once there are enough peers to rank against', () => {
-        render(<KeyRatiosCard symbol="X" ratios={{ pe_ratio: 12 }} peerRatios={peers} flat />);
-        expect(rowFor('P/E').querySelector('[title$="percentile among peers"]')).toBeTruthy();
-    });
-
-    it('draws no track when the peer set is too thin to rank', () => {
+    it('shows n/a when the peer set is too thin for a median', () => {
+        // One peer is not a sector median; the column must say so.
         render(<KeyRatiosCard symbol="X" ratios={{ pe_ratio: 12 }} peerRatios={{ A: { pe_ratio: 10 } }} flat />);
-        expect(rowFor('P/E').querySelector('[title$="percentile among peers"]')).toBeNull();
+        expect(within(rowFor('P/E')).getByText('n/a')).toBeTruthy();
     });
 
-    it('states the benchmark in prose on the row itself', () => {
-        // The row must carry its own comparison, so it reads correctly with no
-        // column header above it.
+    it('prints the benchmark in the comparison column', () => {
         render(<KeyRatiosCard symbol="X" ratios={{ pe_ratio: 12 }} peerRatios={peers} flat />);
-        expect(within(rowFor('P/E')).getByText(/vs 25\.00x median/)).toBeTruthy();
+        expect(within(rowFor('P/E')).getByText('25.00x')).toBeTruthy();
     });
 });
 
@@ -231,5 +224,75 @@ describe('collapsible shell', () => {
         expect(screen.queryByText('ROE')).toBeNull();
         fireEvent.click(toggle);
         expect(screen.getByText('ROE')).toBeTruthy();
+    });
+});
+
+describe('accuracy — what is shown must be what the data says', () => {
+    it('never invents a benchmark the payload did not supply', () => {
+        // No sector medians, no peers: the comparison column must be n/a on
+        // every row rather than falling back to a default "typical" figure.
+        render(<KeyRatiosCard symbol="X" ratios={{ pe_ratio: 19.43, roe: 37.66 }} flat />);
+        expect(within(rowFor('P/E')).getByText('n/a')).toBeTruthy();
+        expect(within(rowFor('ROE')).getByText('n/a')).toBeTruthy();
+    });
+
+    it('prefers a backend-supplied median over one computed from visible peers', () => {
+        // The backend medians the WHOLE sector; the peer tabs carry only a few
+        // names. Recomputing from those few would silently narrow the sample.
+        render(
+            <KeyRatiosCard
+                symbol="X"
+                ratios={{ pe_ratio: 19.43 }}
+                sectorMedians={{ pe_ratio: 22.4 }}
+                peerRatios={{ A: { pe_ratio: 8 }, B: { pe_ratio: 9 }, C: { pe_ratio: 10 } }}
+                flat
+            />
+        );
+        expect(within(rowFor('P/E')).getByText('22.40x')).toBeTruthy();
+        expect(within(rowFor('P/E')).queryByText('9.00x')).toBeNull();
+    });
+
+    it('falls back to a peer-computed median only when the backend sent none', () => {
+        render(
+            <KeyRatiosCard
+                symbol="X"
+                ratios={{ pe_ratio: 19.43 }}
+                peerRatios={{ A: { pe_ratio: 8 }, B: { pe_ratio: 9 }, C: { pe_ratio: 10 } }}
+                flat
+            />
+        );
+        expect(within(rowFor('P/E')).getByText('9.00x')).toBeTruthy();
+    });
+
+    it('ignores a backend median that is itself out of range', () => {
+        // Defence in depth: the backend filters before taking a median, but the
+        // card must not trust a poisoned one if it ever arrives.
+        render(
+            <KeyRatiosCard
+                symbol="X"
+                ratios={{ pe_ratio: 19.43 }}
+                sectorMedians={{ pe_ratio: -180.1 }}
+                peerRatios={{ A: { pe_ratio: 18 }, B: { pe_ratio: 20 }, C: { pe_ratio: 22 } }}
+                flat
+            />
+        );
+        // Falls through to the honest peer median rather than showing -180.1.
+        expect(within(rowFor('P/E')).getByText('20.00x')).toBeTruthy();
+        expect(screen.queryByText(/-180/)).toBeNull();
+    });
+
+    it('renders every value at the shared 2dp precision', () => {
+        // Guards the ROE 16-vs-15.90 class of regression: one number, one
+        // rounding, sourced from metricFormat.
+        render(<KeyRatiosCard symbol="X" ratios={{ roe: 15.8951, pe_ratio: 19.4 }} flat />);
+        expect(screen.getByText('15.90%')).toBeTruthy();
+        expect(screen.getByText('19.40x')).toBeTruthy();
+    });
+
+    it('does not round a value into or out of a verdict', () => {
+        // 19.999 vs 20 is 'similar' (inside the 2% dead-band), not 'better',
+        // even though it prints as 20.00x.
+        render(<KeyRatiosCard symbol="X" ratios={{ pe_ratio: 19.999 }} sectorMedians={{ pe_ratio: 20 }} flat />);
+        expect(within(rowFor('P/E')).getByLabelText('In line')).toBeTruthy();
     });
 });
