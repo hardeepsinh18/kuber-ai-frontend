@@ -72,3 +72,51 @@ describe('error routing by code', () => {
         }
     });
 });
+
+/**
+ * Regressions found by probing the LIVE api (aws.72street.ai) rather than by
+ * reading the code — each of these actually reached a user.
+ */
+describe('malformed backend payloads', () => {
+    // Mirrors the filter in ChatContainer: only a non-empty string is showable.
+    const showable = (raw) => (typeof raw === 'string' && raw.trim() ? raw.trim() : null);
+
+    it('never renders a Pydantic 422 detail array to the user', () => {
+        // Live response: {"detail":[{"type":"missing","loc":["body","query"],...}]}
+        const raw = [{ type: 'missing', loc: ['body', 'query'], msg: 'Field required' }];
+        expect(showable(raw)).toBeNull();
+        // Before the fix this produced the literal string "[object Object]".
+        expect(String(showable(raw) ?? errorCopy('BAD_REQUEST').message)).not.toContain('[object Object]');
+    });
+
+    it('shows the "over my head" line for a 400/422', () => {
+        expect(errorCopy('BAD_REQUEST').message)
+            .toBe('That one went over my head. Say it a little differently and I will catch it.');
+    });
+
+    it('treats a bodyless 404 as our infrastructure, not "not found"', () => {
+        // Live: the CloudFront edge returns 404 + Content-Length 0 for every path
+        // until an access cookie is set. That is not a missing resource.
+        const detail = showable('');
+        expect(detail).toBeNull();
+        const msg = detail ? detail : errorCopy('SERVER_ERROR').message;
+        expect(msg).toContain('broke on my side, not yours');
+    });
+
+    it('still passes a 404 WITH a real reason straight through', () => {
+        const detail = showable('No listed company matches "ZZZZ".');
+        expect(detail).toBe('No listed company matches "ZZZZ".');
+    });
+
+    it('keeps the 429 object-shaped detail working', () => {
+        // credit_control.py sends {error, message, retry_after, remaining_daily}
+        const raw = { error: 'daily_limit', message: "You've used up today's questions on the free plan." };
+        const msg = (raw && typeof raw === 'object' && typeof raw.message === 'string' && raw.message)
+            || showable(raw) || 'Too many requests. Please wait a moment and try again.';
+        expect(msg).toContain('free plan');
+    });
+
+    it('drops a whitespace-only detail rather than showing a blank message', () => {
+        expect(showable('   ')).toBeNull();
+    });
+});

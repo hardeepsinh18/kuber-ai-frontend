@@ -38,6 +38,15 @@ export const ERROR_COPY = {
         message: 'That did not go through. Say it again and I will sort it out.',
     },
 
+    // ── Input ─────────────────────────────────────────────────────────────────
+    // Sheet row "Query not understood". Shown on a 400/422 — the request was
+    // rejected as malformed, which from the user's side means the message didn't
+    // land. The raw validation detail is Pydantic internals and never shown.
+    BAD_REQUEST: {
+        humour: 'light',
+        message: 'That one went over my head. Say it a little differently and I will catch it.',
+    },
+
     // ── Account ───────────────────────────────────────────────────────────────
     NOT_LOGGED_IN: {
         humour: 'light',

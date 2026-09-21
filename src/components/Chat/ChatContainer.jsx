@@ -860,7 +860,16 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
 
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
-                    const detail = errorData.detail || errorData.message || errorData.error;
+                    const rawDetail = errorData.detail || errorData.message || errorData.error;
+                    // Only a plain string is safe to show. FastAPI/Pydantic returns
+                    // `detail` as an ARRAY of validation objects on a 422, which
+                    // stringified to "[object Object]" on screen. Anything that is not
+                    // a string is dropped here and the branch below falls back to its
+                    // own copy. (429 is the deliberate exception: its detail is an
+                    // object whose .message is the backend's own user-facing copy.)
+                    const detail = typeof rawDetail === 'string' && rawDetail.trim()
+                        ? rawDetail.trim()
+                        : null;
                     let msg;
                     // `code` carries the reason past the catch block below, which used to
                     // decide what to show by regex-matching the message text. That
@@ -886,16 +895,34 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                         // The backend's own credit-limit copy is already VENTY's voice
                         // (credit_control.py BURST/DAILY_LIMIT_MESSAGE) — pass it through.
                         code = 'RATE_LIMITED';
-                        msg = (detail && typeof detail === 'object' && detail.message)
+                        msg = (rawDetail && typeof rawDetail === 'object' && typeof rawDetail.message === 'string' && rawDetail.message)
+                            || detail
                             || 'Too many requests. Please wait a moment and try again.';
-                    } else if (response.status === 404) {
-                        // Backend "not found" copy is specific (a symbol it couldn't
-                        // resolve, say) and better than anything generic we'd substitute.
+                    } else if (response.status === 404 && detail) {
+                        // A 404 WITH a body is the backend explaining itself (a symbol it
+                        // couldn't resolve, say) — more specific than anything we'd
+                        // substitute, so pass it through.
                         code = 'NOT_FOUND';
-                        msg = detail || errorCopy('GENERIC').message;
+                        msg = detail;
+                    } else if (response.status === 404) {
+                        // A 404 with NO body is not a real "not found": it is the request
+                        // never reaching the API — a CDN/edge rule or a bad base URL. That
+                        // is our infrastructure failing, so say so rather than showing the
+                        // vaguest line we have. Observed live: the CloudFront edge returns
+                        // a bodyless 404 for every path until an access cookie is set.
+                        code = 'SERVER_ERROR';
+                        msg = errorCopy(code).message;
                     } else if (response.status >= 500) {
                         // Never surface a raw 5xx `detail` — it can leak internals.
                         code = 'SERVER_ERROR';
+                        msg = errorCopy(code).message;
+                    } else if (response.status === 400 || response.status === 422) {
+                        // The request itself was rejected as malformed. `detail` here is
+                        // Pydantic's validation array — internals, never for the user —
+                        // so it is already filtered to null above. The sheet's
+                        // "didn't understand that" line fits this far better than the
+                        // generic "did not go through".
+                        code = 'BAD_REQUEST';
                         msg = errorCopy(code).message;
                     } else {
                         code = 'GENERIC';
