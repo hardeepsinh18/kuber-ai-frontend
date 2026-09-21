@@ -214,12 +214,18 @@ export const FinancialScoreCard = ({ fund, symbol, flat = false }) => {
 
                     {/* Key Ratios — the peer/sector comparison table. Renders
                         itself only when the payload carries a ratio it knows, so
-                        an older backend response simply shows nothing here. */}
+                        an older backend response simply shows nothing here.
+
+                        sectorName is the literal word "Sector", never the industry
+                        name (fund.sector = "Software Services", peer_group = "IT").
+                        That column holds the sector MEDIAN, so naming the industry
+                        read as if "Software Services" were a company sitting beside
+                        TCS in the comparison. */}
                     <KeyRatiosCard
                         ratios={ratios}
                         peerRatios={fund?.peer_ratios ?? null}
                         sectorMedians={fund?.sector_medians ?? null}
-                        sectorName={fund?.sector ?? peerGroup ?? 'Sector'}
+                        sectorName="Sector"
                         peerCount={fund?.sector_peer_count ?? null}
                         symbol={symbol}
                         flat
