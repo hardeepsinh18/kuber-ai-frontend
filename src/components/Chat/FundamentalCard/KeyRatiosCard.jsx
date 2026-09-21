@@ -33,26 +33,31 @@ const fmtByUnit = (key, v) => {
 };
 
 /* ─── Verdict mark ───────────────────────────────────────────────────────────
- * A thumbs-up/down passes judgement on a company; an arrow states a direction
- * and lets the reader judge. The null case is a visible dash rather than a
- * blank cell, so "we don't know" reads as a deliberate answer.
+ * An arrow, not a thumb: a thumb passes judgement on the company, while an
+ * arrow states which way the number went and leaves the judgement to the
+ * reader. Colour carries the same signal the reference card's thumbs do, so
+ * the row still reads green/red at a glance.
+ *
+ * The null case is a visible dash rather than a blank cell, so "we have no
+ * comparable benchmark" reads as a deliberate answer instead of a rendering
+ * gap — that distinction is the whole point of the card.
  */
 const VerdictMark = ({ verdict }) => {
     if (verdict === 'better') {
-        return <TrendingUp size={13} className="text-emerald-600 dark:text-emerald-400 flex-shrink-0" aria-label="Better" />;
+        return <TrendingUp size={15} strokeWidth={2.5} className="text-emerald-600 dark:text-emerald-400 flex-shrink-0" aria-label="Better" />;
     }
     if (verdict === 'worse') {
-        return <TrendingDown size={13} className="text-rose-600 dark:text-rose-400 flex-shrink-0" aria-label="Worse" />;
+        return <TrendingDown size={15} strokeWidth={2.5} className="text-rose-600 dark:text-rose-400 flex-shrink-0" aria-label="Worse" />;
     }
     if (verdict === 'similar') {
-        return <Minus size={13} className="text-zinc-400 dark:text-zinc-500 flex-shrink-0" aria-label="In line" />;
+        return <Minus size={15} strokeWidth={2.5} className="text-zinc-400 dark:text-zinc-500 flex-shrink-0" aria-label="In line" />;
     }
-    return <span className="text-zinc-300 dark:text-zinc-600 text-xs flex-shrink-0 leading-none" aria-label="Not comparable">—</span>;
+    return <span className="text-zinc-300 dark:text-zinc-600 text-sm flex-shrink-0 leading-none" aria-label="Not comparable">—</span>;
 };
 
 /** Value colour follows the verdict; an unjudged value stays neutral. */
 const valueClass = (verdict) => clsx(
-    'text-sm font-bold tabular-nums',
+    'text-sm font-semibold tabular-nums',
     verdict === 'better' ? 'text-emerald-600 dark:text-emerald-400' :
     verdict === 'worse'  ? 'text-rose-600 dark:text-rose-400' :
                            'text-zinc-900 dark:text-white'
@@ -145,17 +150,17 @@ export const KeyRatiosCard = ({
             {/* Comparator tabs — sector first, then each peer we have data for.
                 Rendered only when there is something to switch between. */}
             {peerSymbols.length > 0 && (
-                <div className="flex gap-1.5 overflow-x-auto pb-2 mb-1 -mx-0.5 px-0.5">
+                <div className="flex gap-2 overflow-x-auto pb-3 -mx-0.5 px-0.5">
                     {['sector', ...peerSymbols].map(t => (
                         <button
                             key={t}
                             onClick={() => setTab(t)}
                             aria-pressed={tab === t}
                             className={clsx(
-                                'px-2.5 py-1 rounded-lg text-[11px] font-semibold whitespace-nowrap flex-shrink-0 border transition-colors',
+                                'px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap flex-shrink-0 border transition-colors',
                                 tab === t
-                                    ? 'bg-[#FDD405] border-[#FDD405] text-black'
-                                    : 'bg-transparent border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-600'
+                                    ? 'border-[#FDD405] bg-[#FDD405]/10 text-zinc-900 dark:text-[#FDD405]'
+                                    : 'border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-600'
                             )}
                         >
                             {t === 'sector' ? sectorName : t}
@@ -167,17 +172,17 @@ export const KeyRatiosCard = ({
             {/* A real <table>: three plain columns, one row per ratio. Scrolls
                 inside its own container on a narrow screen rather than forcing
                 the card to scroll sideways. */}
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
                 <table className="w-full text-left border-collapse">
                     <thead>
-                        <tr className="border-b border-zinc-200 dark:border-zinc-800">
-                            <th scope="col" className="py-1.5 pr-2 text-[10px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-                                Ratio
+                        <tr className="bg-zinc-100 dark:bg-zinc-800/60">
+                            <th scope="col" className="py-2.5 px-3 text-xs font-semibold text-zinc-600 dark:text-zinc-300">
+                                Ratios
                             </th>
-                            <th scope="col" className="py-1.5 px-2 text-right text-[10px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
+                            <th scope="col" className="py-2.5 px-3 text-center text-xs font-semibold text-zinc-900 dark:text-white whitespace-nowrap border-l border-zinc-200 dark:border-zinc-800">
                                 {symbol || 'Stock'}
                             </th>
-                            <th scope="col" className="py-1.5 pl-2 text-right text-[10px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
+                            <th scope="col" className="py-2.5 px-3 text-center text-xs font-semibold text-zinc-600 dark:text-zinc-300 whitespace-nowrap">
                                 {comparedLabel}
                             </th>
                         </tr>
@@ -190,7 +195,7 @@ export const KeyRatiosCard = ({
                             const banded = meta.dir === 'band';
 
                             return (
-                                <tr key={key} className="border-b border-zinc-100 dark:border-zinc-800/60 last:border-0">
+                                <tr key={key} className="border-t border-zinc-100 dark:border-zinc-800/60">
                                     {/* aria-label pins the header's accessible name to the
                                         ratio itself. Without it the InfoTip's "i" glyph gets
                                         appended ("P/Ei") and a screen reader repeats that for
@@ -200,27 +205,27 @@ export const KeyRatiosCard = ({
                                     <th
                                         scope="row"
                                         aria-label={meta.label}
-                                        className="py-2 pr-2 text-xs font-normal text-zinc-700 dark:text-zinc-300"
+                                        className="py-3 px-3 text-xs font-normal text-zinc-700 dark:text-zinc-300"
                                     >
-                                        <span className="flex items-center gap-1">
-                                            <span>{meta.label}</span>
-                                            {meta.term && <InfoTip term={meta.term} />}
+                                        <span className="flex items-center justify-between gap-2">
+                                            <span className="flex items-center gap-1">
+                                                <span>{meta.label}</span>
+                                                {meta.term && <InfoTip term={meta.term} />}
+                                            </span>
+                                            <VerdictMark verdict={v} />
                                         </span>
                                     </th>
 
-                                    <td className="py-2 px-2 text-right whitespace-nowrap">
-                                        <span className="inline-flex items-center justify-end gap-1.5">
-                                            <span className={valueClass(v)}>{fmtByUnit(key, value)}</span>
-                                            <VerdictMark verdict={v} />
-                                        </span>
+                                    <td className="py-3 px-3 text-center whitespace-nowrap border-l border-zinc-100 dark:border-zinc-800/60">
+                                        <span className={valueClass(v)}>{fmtByUnit(key, value)}</span>
                                     </td>
 
                                     {/* A banded ratio has no peer comparison — it is judged
                                         against a healthy range, so the column names that
                                         range instead of a number we never compare to. */}
-                                    <td className="py-2 pl-2 text-right text-xs tabular-nums text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
+                                    <td className="py-3 px-3 text-center text-xs tabular-nums text-zinc-600 dark:text-zinc-300 whitespace-nowrap">
                                         {banded
-                                            ? <span className="text-[11px]" title="Judged against a healthy range, not the peer set">
+                                            ? <span className="text-[11px] text-zinc-500 dark:text-zinc-400" title="Judged against a healthy range, not the peer set">
                                                 {meta.band[0]}–{meta.band[1]} ideal
                                               </span>
                                             : (benchText ?? <span className="text-zinc-300 dark:text-zinc-600" title="No usable benchmark for this ratio">n/a</span>)}
@@ -235,7 +240,27 @@ export const KeyRatiosCard = ({
             {/* Summary. States the sample size, because "median of 42" and
                 "median of 4" deserve very different levels of trust — and names
                 the unjudged rows rather than quietly dropping them from the count. */}
-            <div className="mt-2 pt-2 border-t border-zinc-200 dark:border-zinc-800">
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5">
+                <span className="inline-flex items-center gap-1.5 text-[11px] text-zinc-600 dark:text-zinc-400">
+                    <span className="w-2 h-2 rounded-sm bg-emerald-500 flex-shrink-0" />
+                    Better in comparison
+                </span>
+                <span className="inline-flex items-center gap-1.5 text-[11px] text-zinc-600 dark:text-zinc-400">
+                    <span className="w-2 h-2 rounded-sm bg-rose-500 flex-shrink-0" />
+                    Worse in comparison
+                </span>
+                {tally.unknown > 0 && (
+                    <span className="inline-flex items-center gap-1.5 text-[11px] text-zinc-600 dark:text-zinc-400">
+                        <span className="w-2 h-2 rounded-sm bg-zinc-300 dark:bg-zinc-600 flex-shrink-0" />
+                        No comparable data
+                    </span>
+                )}
+            </div>
+
+            {/* Sample size sits under the legend, because "median of 42" and
+                "median of 4" deserve very different levels of trust — and the
+                unjudged rows are named rather than dropped from the count. */}
+            <div className="mt-2 pt-2 border-t border-zinc-200 dark:border-zinc-800 text-center">
                 <span className="text-[10px] text-zinc-500 dark:text-zinc-400">
                     {judged === 0
                         ? 'No comparable benchmark for these ratios'
