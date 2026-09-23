@@ -291,7 +291,6 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
                                 className="w-full bg-transparent border-none outline-none text-[13px] leading-relaxed py-0.5
                                            text-zinc-900 placeholder:text-zinc-400
                                            dark:text-white dark:placeholder:text-zinc-500"
-                                autoFocus
                             />
                         </div>
 

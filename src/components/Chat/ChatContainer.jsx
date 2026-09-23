@@ -158,7 +158,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
     const { chatId: routeChatIdParam } = useParams();
     const { accessToken, refreshSession, loading: authLoading } = useAuth();
     const { theme } = useTheme();
-    const { setChatActive } = useChatMode();
+    const { setChatActive, setBackgroundActivity } = useChatMode();
     const { messages, setMessages, ensureCurrentChat, loadChat, currentChatId, currentChatIdRef, isChatLoading, chatLoadError, setChatLoadError, persistOrphanedMessage, markChatTouched } = useChatHistory();
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -231,6 +231,11 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
     // shown) is completely unchanged — this fix only stops that background
     // request from blocking a DIFFERENT chat's ability to send.
     const chatRequestsRef = useRef(new Map());
+    // Bug 11 (UAT): mirror chatRequestsRef's occupancy into React state so
+    // BackgroundEffect can suppress the start-screen video while any chat —
+    // not just the one on screen — still has a request in flight. Call after
+    // every chatRequestsRef.current.set/delete.
+    const syncBackgroundActivity = () => setBackgroundActivity(chatRequestsRef.current.size > 0);
     const messagesRef = useRef(messages);
     const lastSendAtRef = useRef(0);
     const lastSendTextRef = useRef('');
@@ -508,6 +513,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
         // the actual fetch/stream starts (below); requestId is usable immediately.
         const requestId = (chatRequestsRef.current.get(provisionalChatKey)?.requestId || 0) + 1;
         chatRequestsRef.current.set(provisionalChatKey, { abortController: null, requestId });
+        syncBackgroundActivity();
         // NOTE: requestId is now scoped per chat (each chat counts from its own 1),
         // so it is NOT globally unique across chats — every staleness check below
         // must compare against THIS chat's map entry (chatRequestsRef.current.get
@@ -540,6 +546,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             const reserved = chatRequestsRef.current.get(provisionalChatKey);
             chatRequestsRef.current.delete(provisionalChatKey);
             if (reserved) chatRequestsRef.current.set(sendChatId, reserved);
+            syncBackgroundActivity();
         }
         // The one and only signal that re-sorts the sidebar. Opening, hydrating or
         // switching away from a chat must never move it; sending a message must.
@@ -1189,6 +1196,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             // abortController itself) doesn't get its cleanup redone/raced here.
             if (!isStaleRequest()) {
                 chatRequestsRef.current.delete(sendChatId);
+                syncBackgroundActivity();
             }
             // Only touch the VISIBLE loading state if sendChatId is still what's
             // on screen — otherwise it belongs to a different chat and must be

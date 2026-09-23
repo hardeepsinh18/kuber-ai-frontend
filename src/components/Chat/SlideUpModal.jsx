@@ -17,7 +17,7 @@ const SlideUpModal = ({
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm px-2 sm:px-4 pb-4 sm:pb-0">
         <div
             ref={panelRef}
-            className={`relative w-full max-w-2xl max-h-[85dvh] sm:max-h-[78vh] flex flex-col rounded-2xl border shadow-2xl overflow-hidden
+            className={`relative w-full max-w-2xl modal-sheet-height flex flex-col rounded-2xl border shadow-2xl overflow-hidden
                        bg-white border-zinc-200
                        ${darkPanelClass}`}
         >

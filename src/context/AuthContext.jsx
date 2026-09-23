@@ -161,10 +161,22 @@ export function AuthProvider({ children }) {
           // Retry before treating this as a sign-out — see retryTokenRefresh above.
           retryTokenRefresh().then((recovered) => {
             if (recovered) { syncFromCognito(); return; }
-            // Retries exhausted: the session is genuinely gone (revoked or
-            // expired refresh token), not a network blip. Same teardown as
-            // signedOut, below.
-            clearAllLocalChats();
+            // Bug 3 (UAT, "chat history not getting saved"): retryTokenRefresh
+            // exhausting its retries does NOT mean the session is actually
+            // revoked — it only means the last ~2-5s of attempts all failed,
+            // which is exactly what a backgrounded mobile app sees while its
+            // network is suspended (phone locked, OS Doze/background-refresh
+            // limits, the vendor's native container backgrounded). That is the
+            // common case here, not the rare one — a chat app running inside a
+            // native panel gets backgrounded constantly mid-conversation. This
+            // used to call clearAllLocalChats() on that assumption, wiping every
+            // locally-cached chat the moment the phone came back online, even
+            // though the underlying Cognito session was still perfectly valid.
+            // Clear the identity/token (correctly reflects "not signed in right
+            // now" in the UI, and stops syncing to a dead session) WITHOUT
+            // deleting the cache — matching what syncFromCognito's own catch
+            // block above already does for the same failure. A genuine sign-out
+            // is the separate 'signedOut' event below, which still wipes it.
             setStorageIdentity(null);
             setUser(null); setIdToken(null);
           });

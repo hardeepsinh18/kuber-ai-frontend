@@ -6,7 +6,7 @@ import useSkipHeavyBackdrop from '../hooks/useSkipHeavyBackdrop';
 
 const BackgroundEffect = memo(() => {
     const { theme } = useTheme();
-    const { isChatActive } = useChatMode();
+    const { isChatActive, hasBackgroundActivity } = useChatMode();
     // QA-C-004: honour the OS reduced-motion setting. Not rendering the element at
     // all (rather than pausing it) also skips the ~7 MB download for these users.
     const reducedMotion = usePrefersReducedMotion();
@@ -15,7 +15,11 @@ const BackgroundEffect = memo(() => {
     // QA-C-005: also skip the 5.7-6.8 MB download on narrow viewports and when the user
     // has asked the browser to save data. Decorative backdrop, real bandwidth.
     const skipHeavy = useSkipHeavyBackdrop();
-    const showVideo = !isChatActive && !reducedMotion && !skipHeavy;
+    // Bug 11 (UAT): also gated on hasBackgroundActivity. Opening a new (empty)
+    // chat while a PREVIOUS chat's query is still resolving used to flip
+    // isChatActive to false and pop the start-screen video back in right over
+    // still-processing work, reading as the app losing track of it.
+    const showVideo = !isChatActive && !hasBackgroundActivity && !reducedMotion && !skipHeavy;
 
     // Chat active: solid bg with subtle yellow tint, no video
     const solidBg = isDark
@@ -24,7 +28,7 @@ const BackgroundEffect = memo(() => {
 
     return (
         <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden"
-             style={{ background: isChatActive ? solidBg : (isDark ? '#0A0A0A' : '#F5F2E8') }}>
+             style={{ background: (isChatActive || hasBackgroundActivity) ? solidBg : (isDark ? '#0A0A0A' : '#F5F2E8') }}>
 
             {/* Video — only shown on start screen, and never under reduced motion */}
             {showVideo && (
@@ -43,7 +47,7 @@ const BackgroundEffect = memo(() => {
             )}
 
             {/* Readability overlay — only with video */}
-            {!isChatActive && (
+            {showVideo && (
                 <div className="absolute inset-0"
                      style={{ background: isDark ? 'rgba(10,10,10,0.25)' : 'rgba(245,242,232,0.20)' }} />
             )}

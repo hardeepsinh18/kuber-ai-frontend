@@ -90,10 +90,13 @@ const ScannerDrawer = ({ data, onAnalyze, onClose, collapsed = false, onToggleCo
                 className={clsx(
                     'fixed z-50 flex flex-col overflow-hidden',
                     // mobile bottom sheet — DEFINITE height (h-, not max-h) so the inner
-                    // list gets a real scroll boundary on iOS Safari.
-                    'inset-x-0 bottom-0 top-auto w-full h-[85dvh] rounded-t-2xl',
+                    // list gets a real scroll boundary on iOS Safari. scanner-drawer-mobile-height
+                    // (index.css) carries a plain-vh fallback for WebViews that don't parse dvh —
+                    // see Bug 9 (UAT) — since Tailwind can't guarantee two arbitrary-value
+                    // classes for the same property land in the right cascade order.
+                    'inset-x-0 bottom-0 top-auto w-full scanner-drawer-mobile-height rounded-t-2xl',
                     // desktop side drawer
-                    'md:inset-x-auto md:right-0 md:top-0 md:bottom-auto md:h-full md:rounded-t-none md:transition-all md:duration-300 md:ease-in-out',
+                    'md:inset-x-auto md:right-0 md:top-0 md:bottom-auto md:rounded-t-none md:transition-all md:duration-300 md:ease-in-out',
                     collapsed ? 'md:w-[48px]' : 'md:w-[300px]'
                 )}
                 style={{

@@ -92,6 +92,18 @@ html {
   text-size-adjust: 100%;
   /* Smooth scrolling for better UX */
   scroll-behavior: smooth;
+  /* Bug 13 (UAT, iOS): the app shell (#root below) is a fixed-height flex
+     column that manages its own internal scroll regions (message list,
+     panels, etc). Without this, html/body had no height cap of their own, so
+     content that briefly overflowed #root's box (the keyboard resizing the
+     visual viewport, a transient layout spike) made the WHOLE PAGE
+     scrollable — and iOS then applies its native rubber-band bounce to that
+     outer page instead of the intended inner container. Capping html/body to
+     the viewport and hiding their own overflow keeps scrolling confined to
+     the elements actually designed for it.
+   */
+  height: 100%;
+  overflow: hidden;
 }
 
 body {
@@ -99,9 +111,10 @@ body {
   display: flex;
   place-items: center;
   min-width: 320px;
-  min-height: 100vh;      /* fallback for browsers without dvh */
-  min-height: 100dvh;     /* dynamic viewport — avoids the iOS 100vh overflow that unpins fixed bars */
+  height: 100vh;      /* fallback for browsers without dvh */
+  height: 100dvh;     /* dynamic viewport — avoids the iOS 100vh overflow that unpins fixed bars */
   width: 100%;
+  overflow: hidden;
   transition: background-color 0.3s, color 0.3s;
   /* Prevent overscroll bounce on iOS */
   overscroll-behavior-y: none;
@@ -128,6 +141,61 @@ body {
   height: 100dvh;
   display: flex;
   flex-direction: column;
+}
+
+/* Bugs 1 & 9 (UAT, Android): SlideUpModal (Scanner/IPO panels) sized itself with
+   the Tailwind arbitrary class `max-h-[85dvh]` and no plain-vh fallback at the
+   same breakpoint. dvh is only understood by newer engines; Android's WebView
+   component updates independently of the OS (unlike iOS's WKWebView, which is
+   tied to it) and a real slice of Android devices run one old enough not to
+   parse it — an invalid CSS value is DROPPED, not substituted, so those devices
+   got no max-height at all on the sheet, on the one breakpoint phones actually
+   hit. A plain class (not two Tailwind utility classes, whose relative order in
+   the compiled stylesheet Tailwind controls, not us) guarantees the vh line
+   applies first and is only overridden by dvh where that's actually understood —
+   same pattern already used for #root/body above. */
+.modal-sheet-height {
+  max-height: 85vh;
+  max-height: 85dvh;
+}
+@media (min-width: 640px) {
+  .modal-sheet-height {
+    max-height: 78vh;
+  }
+}
+
+/* Bug 9 (UAT, Android): ScannerDrawer's mobile results sheet — same dvh-with-
+   no-fallback problem as .modal-sheet-height above, but with NO other height
+   declared at this breakpoint at all (a deliberate switch from max-height to a
+   definite height, to fix an iOS Safari scroll issue — see the comment in
+   ScannerDrawer.jsx). On a WebView old enough not to parse dvh, this element
+   got height:auto with overflow:hidden, i.e. a scan that completed successfully
+   (confirmed in backend logs) with a results panel that could render at zero
+   effective height — indistinguishable from "the scanner doesn't work" to
+   whoever's tapping the button.
+   */
+.scanner-drawer-mobile-height {
+  height: 85vh;
+  height: 85dvh;
+}
+@media (min-width: 768px) {
+  .scanner-drawer-mobile-height {
+    height: 100%;
+  }
+}
+
+/* App shell root (Layout.jsx). Was written as Tailwind's `h-screen h-[100dvh]`
+   (i.e. two SEPARATE utility classes, not one declaration with a fallback) on
+   the assumption that source order in the className string controls cascade
+   order. It doesn't — Tailwind sorts its generated stylesheet independently,
+   and .h-screen{height:100vh} happens to land AFTER .h-\[100dvh\] in the
+   compiled CSS (confirmed against dist/assets/*.css), so height:100vh has been
+   winning unconditionally, on every browser, and the dvh class has never once
+   taken effect. This is the plain, single-rule fallback that actually works —
+   same technique as #root/body above. */
+.app-shell-height {
+  height: 100vh;
+  height: 100dvh;
 }
 
 /* Safe area handling for notched devices */

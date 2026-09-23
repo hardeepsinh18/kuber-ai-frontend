@@ -23,7 +23,11 @@ export default function CompanySuggest({ results, open, active, onHover, onPick,
             role="option"
             aria-selected={isActive}
             // onMouseDown (not onClick) so selection fires before textarea blur.
+            // Also bound to touchstart: some Android WebViews (the app's embedded
+            // container in particular) don't synthesize mouse events from touch,
+            // so a tap never reached onMouseDown and the picker silently did nothing.
             onMouseDown={(e) => { e.preventDefault(); onPick(item); }}
+            onTouchStart={(e) => { e.preventDefault(); onPick(item); }}
             onMouseEnter={() => onHover(i)}
             className={`w-full flex items-center gap-3 px-3 py-2 text-left transition-colors
                         ${isActive ? 'bg-amber-50 dark:bg-amber-950/25' : 'hover:bg-zinc-50 dark:hover:bg-zinc-800/50'}`}

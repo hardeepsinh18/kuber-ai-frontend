@@ -11,7 +11,7 @@ const Layout = ({ children, onNewThread, sidebarOpen, setSidebarOpen, showLogin,
     const { theme } = useTheme();
     const isDark = theme === 'dark';
     return (
-        <div className="relative h-screen h-[100dvh] w-full overflow-hidden font-sans flex transition-colors duration-300 bg-[#F5F2E8] text-zinc-900 dark:bg-[#0A0A0A] dark:text-zinc-100">
+        <div className="relative app-shell-height w-full overflow-hidden font-sans flex transition-colors duration-300 bg-[#F5F2E8] text-zinc-900 dark:bg-[#0A0A0A] dark:text-zinc-100">
             <BackgroundEffect />
 
             <Sidebar
