@@ -11,6 +11,7 @@ import { SmallGauge } from './SmallGauge';
 import { DebtGauge } from './DebtGauge';
 import { ProfitSliceBar } from './ProfitSliceBar';
 import { PeerRankCard } from './PeerRankCard';
+import { KeyRatiosCard } from './KeyRatiosCard';
 import { InfoTip } from './InfoTip';
 
 /* ─── FINANCIAL SCORE CARD (collapsible 2-col grid) ─────────────────────── */
@@ -210,6 +211,25 @@ export const FinancialScoreCard = ({ fund, symbol, flat = false }) => {
                         <PeerRankCard peers={peers} group={peerGroup} rank={peerRank} />
                     )}
                     </div>
+
+                    {/* Key Ratios — the peer/sector comparison table. Renders
+                        itself only when the payload carries a ratio it knows, so
+                        an older backend response simply shows nothing here.
+
+                        sectorName is the literal word "Sector", never the industry
+                        name (fund.sector = "Software Services", peer_group = "IT").
+                        That column holds the sector MEDIAN, so naming the industry
+                        read as if "Software Services" were a company sitting beside
+                        TCS in the comparison. */}
+                    <KeyRatiosCard
+                        ratios={ratios}
+                        peerRatios={fund?.peer_ratios ?? null}
+                        sectorMedians={fund?.sector_medians ?? null}
+                        sectorName="Sector"
+                        peerCount={fund?.sector_peer_count ?? null}
+                        symbol={symbol}
+                        flat
+                    />
                 </div>
             )}
         </div>

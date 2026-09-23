@@ -1,4 +1,5 @@
 import MessageBubble from '../components/Chat/MessageBubble';
+import { KeyRatiosCard } from '../components/Chat/FundamentalCard/KeyRatiosCard';
 
 const MOCK_METADATA = {
     symbols: ['TCS'],
@@ -113,6 +114,39 @@ const MOCK_SCORE_CARD = {
         ],
         peer_group: 'INDIAN IT',
         peer_rank:  1,
+
+        /* Key Ratios inputs. `peer_ratios` drives both the comparator tabs and
+           the percentile bars; `sector_medians` is deliberately left out here so
+           the preview exercises the median-computed-from-peers path. */
+        sector: 'IT Services',
+        sector_peer_count: 38,
+        peer_ratios: {
+            INFOSYS:     { pe_ratio: 24.1, pb_ratio: 7.2,  roe: 31.2, roce: 39.5, net_margin: 17.4, debt_equity: 0.09, dividend_yield: 2.610, current_ratio: 2.4 },
+            'HCL TECH':  { pe_ratio: 26.4, pb_ratio: 6.1,  roe: 23.8, roce: 29.7, net_margin: 14.2, debt_equity: 0.08, dividend_yield: 3.42, current_ratio: 2.1 },
+            LTIMINDTREE: { pe_ratio: 33.7, pb_ratio: 8.4,  roe: 21.5, roce: 27.1, net_margin: 12.8, debt_equity: 0.05, dividend_yield: 1.48, current_ratio: 2.8 },
+            WIPRO:       { pe_ratio: 21.9, pb_ratio: 3.6,  roe: 14.9, roce: 18.3, net_margin: 11.6, debt_equity: 0.21, dividend_yield: 0.28, current_ratio: 2.6 },
+        },
+    },
+};
+
+/* ── Key Ratios: the reference-screenshot payload, kept as a preview case ──
+   LLOYDSME against a mining sector whose P/E median arrives negative (-180.1)
+   and whose quick ratio arrives as 904.15. Both are unusable, and the card must
+   show "not comparable" rather than the confident red marks the original does. */
+const MOCK_RATIOS_POISONED = {
+    ratios: {
+        pe_ratio: 19.43, pb_ratio: 5.16, roa: 10.24, roe: 37.66,
+        roce: 26.65, quick_ratio: 0.59, ev_ebitda: 13.64,
+    },
+    sectorMedians: {
+        pe_ratio: -180.1, pb_ratio: 1.9, roa: 4.81, roe: 5.42,
+        roce: 10.6, quick_ratio: 904.15, ev_ebitda: 7.53,
+    },
+    peerRatios: {
+        COALINDIA: { pe_ratio: 7.2,  pb_ratio: 2.4, roa: 14.1, roe: 38.1, roce: 45.2, ev_ebitda: 4.1 },
+        NMDC:      { pe_ratio: 9.8,  pb_ratio: 2.1, roa: 16.8, roe: 22.5, roce: 30.4, ev_ebitda: 5.6 },
+        KIOCL:     { pe_ratio: 55.0, pb_ratio: 6.8, roa: 1.9,  roe: 3.2,  roce: 4.8,  ev_ebitda: 31.2 },
+        GMDCLTD:   { pe_ratio: 14.2, pb_ratio: 1.7, roa: 6.4,  roe: 11.4, roce: 14.9, ev_ebitda: 8.3 },
     },
 };
 
@@ -289,6 +323,26 @@ export default function PreviewPage() {
     return (
         <div className="min-h-screen bg-[#090A07] py-10">
             <div className="max-w-4xl mx-auto px-4">
+                {/* ── KEY RATIOS: the reference-screenshot case ──────────────── */}
+                <div className="rounded-xl border border-zinc-800 bg-[#0d0c0b] p-4 mb-6">
+                    <p className="text-xs uppercase tracking-widest text-zinc-500 mb-1">Preview · Key Ratios</p>
+                    <p className="text-[11px] text-zinc-500 mb-3">
+                        LLOYDSME vs a mining sector with a poisoned P/E median (-180.1) and an
+                        unusable quick ratio (904.15). Both must read “n/a”, not a red mark.
+                    </p>
+                    <KeyRatiosCard
+                        symbol="LLOYDSME"
+                        ratios={MOCK_RATIOS_POISONED.ratios}
+                        sectorMedians={MOCK_RATIOS_POISONED.sectorMedians}
+                        peerRatios={MOCK_RATIOS_POISONED.peerRatios}
+                        sectorName="Mining"
+                        peerCount={42}
+                        flat
+                    />
+                </div>
+
+                <div className="my-10 border-t border-zinc-800" />
+
                 {/* ── QUICK ANSWER: no signal, no pattern → text-nearby levels ── */}
                 <MessageBubble role="user" content="gael analysis" isStreaming={false} />
                 <MessageBubble

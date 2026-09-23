@@ -46,6 +46,10 @@ export default function FundamentalScoreCard({ scoreCard, symbol }) {
 // Individual detail cards — embedded by AnalystAnswer inside its scorecard sections
 export { TechnicalScoreCard, FinancialScoreCard, FiveYearScoreCard };
 
+// Standalone peer/sector ratio table. Exported so a surface that wants only the
+// comparison (the preview harness, a future compare screen) can mount it alone.
+export { KeyRatiosCard } from './KeyRatiosCard';
+
 // Re-exported so external consumers importing from './FundamentalCard' (the
 // folder) keep resolving exactly the same named exports the old flat file had.
 // cagrSpan is a plain function, not a component — same reasoning as the
