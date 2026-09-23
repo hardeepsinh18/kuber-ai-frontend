@@ -19,7 +19,16 @@ const baseProps = {
     metadata: { at_a_glance: { price: 1280.5, symbol: 'RELIANCE', company_name: 'Reliance', pe_ratio: 22.4 } },
     signal: { recommendation: 'HOLD', why: ['strong moat'] },
     scoreCard: {
-        verdict: 'HOLD',
+        // Realistic shape from verdict_engine.compute_verdict: hasVerdict/VerdictBand
+        // only recognise a verdict via verdict.SHORT/.LONG (the only path that runs
+        // the required risk:reward check) — a bare string like the old 'HOLD' fixture
+        // no longer counts as a verdict at all.
+        verdict: {
+            SHORT: {
+                verdict: 'HOLD', confidence: 55, blend: 55,
+                levels: null, reason_codes: [], data_sufficiency: 'full',
+            },
+        },
         overall: { score: 62, components: { technical: 55, financial: 60, management: 58 } },
         technical: { score: 55 },
         fundamental: { score: 60 },

@@ -6,8 +6,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {
     BRAND, fmtINR, fmtNum, fmtVol, fmtDate, stripAiDashes, scoreColor,
-    deriveVerdict, hasVerdict, extractLevelsFromText, extractNearbyLevels,
-    MAIN_CARD_DARK, INNER_CARD_DARK, getScores, buildMarketStats,
+    hasVerdict, MAIN_CARD_DARK, INNER_CARD_DARK, getScores, buildMarketStats,
 } from './answerKitCore';
 import { InfoTip } from './FundamentalCard/InfoTip';
 import { hasTerm } from '../../utils/glossaryLookup';
@@ -26,7 +25,7 @@ import { GlossaryText, GlossarySegments } from './GlossaryText';
  */
 export {
     BRAND, fmtINR, fmtNum, fmtVol, fmtDate, stripAiDashes, scoreColor, hasVerdict,
-    extractLevelsFromText, MAIN_CARD_DARK, INNER_CARD_DARK, getScores, buildMarketStats,
+    MAIN_CARD_DARK, INNER_CARD_DARK, getScores, buildMarketStats,
 };
 
 /* ─── inline markdown (bold/italic/links only, no block wrappers) ────────── */
@@ -180,9 +179,8 @@ export const ScoreRing = ({ score, size = 88, stroke = 9, color, animate = false
 };
 
 /* ─── verdict/level helpers ──────────────────────────────────────────────────
- * deriveVerdict, hasVerdict, extractLevelsFromText, extractNearbyLevels now
- * live in answerKitCore.js (imported above); hasVerdict and
- * extractLevelsFromText are re-exported unchanged. */
+ * hasVerdict lives in answerKitCore.js (imported above) and is re-exported
+ * unchanged. */
 
 /* Inner sub-card shell — a raised, bordered card meant to sit INSIDE the padded
  * summary hero (cards-inside-a-card). Slightly lighter than the hero background
@@ -364,111 +362,20 @@ const DeterministicVerdictBand = ({ verdict, flush = false, raised = false }) =>
     );
 };
 
-export const VerdictBand = ({ verdict, verdictIntent, signal, verdictText, content, aiTake, price, patternSummary = null, flush = false, raised = false }) => {
-    // Preferred: the deterministic VentyAI Verdict engine (score_card.verdict).
-    if (verdict && (verdict.SHORT || verdict.LONG)) {
-        return <DeterministicVerdictBand verdict={verdict} flush={flush} raised={raised} />;
-    }
-    // The backend explicitly says this wasn't an investment question (verdict_intent
-    // === false) — don't fall through to text-parsing below, which would otherwise
-    // spawn a BUY/SELL card from incidental words in the prose (e.g. "analysts remain
-    // bullish on IT" in a purely informational answer). Old messages predating this
-    // field have verdictIntent === undefined and keep the previous fallback behavior.
-    if (verdictIntent === false) return null;
-    // Fallback (messages with no computed verdict): parse the text. Levels shown
-    // only when they come from the pattern engine or the text — the old ±5%/+10%
-    // fabrication has been removed (levels are computed or absent, never invented).
-    const rec = signal?.recommendation
-        ? String(signal.recommendation).toUpperCase()
-        : deriveVerdict(verdictText || content);
-    if (!rec) return null;
-
-    const levelSourceText = [
-        verdictText,
-        content,
-        ...(Array.isArray(signal?.why) ? signal.why : []),
-        ...(Array.isArray(aiTake?.bullets) ? aiTake.bullets.map(b => b?.text) : []),
-    ].filter(Boolean).join('\n');
-    const textLevels = extractLevelsFromText(levelSourceText, price);
-
-    // Fallback levels — pattern engine (support → stop, resistance → target;
-    // swapped for SELL) or price levels named in the text. NO fabricated %-based
-    // levels: if neither yields a value, the cell is simply omitted (computed or
-    // absent, never invented).
-    const support = patternSummary?.support != null ? Number(patternSummary.support) : null;
-    const resistance = patternSummary?.resistance != null ? Number(patternSummary.resistance) : null;
-    const isSell = rec === 'SELL';
-    const below = (v) => (v != null && (price == null || v < price) ? v : null);
-    const above = (v) => (v != null && (price == null || v > price) ? v : null);
-
-    const fbEntry = price;
-    let fbStop = isSell ? above(resistance) : below(support);
-    let fbTarget = isSell ? below(support) : above(resistance);
-    if (fbStop == null || fbTarget == null) {
-        const nearby = extractNearbyLevels(levelSourceText, price);
-        if (fbStop == null) fbStop = isSell ? nearby.above : nearby.below;
-        if (fbTarget == null) fbTarget = isSell ? nearby.below : nearby.above;
-    }
-
-    // AI-002/AI-011: track WHERE each level came from, not just its value.
-    // 'computed' = a typed field from the signal/verdict engine. 'model-text' = a
-    // number scraped out of LLM prose by extractLevelsFromText/extractNearbyLevels.
-    // The two were rendered identically in an authoritative band, so a figure the
-    // model invented was indistinguishable from one the engine computed — the exact
-    // violation of this file's own asserted contract that levels are "computed or
-    // absent, never invented". Until the backend populates the typed fields (it
-    // currently emits no `signal` object at all on the live API), prose-derived
-    // levels are still shown — losing them would strip the band entirely — but they
-    // are now visibly marked as model narrative rather than presented as computed.
-    const fmtLevel = (sigVal, parsed, fb) => {
-        if (sigVal != null) return { value: fmtINR(sigVal, 2), source: 'computed' };
-        if (parsed) {
-            return {
-                value: parsed.hi ? `₹${fmtNum(parsed.lo)}–${fmtNum(parsed.hi)}` : fmtINR(parsed.lo, 2),
-                source: 'model-text',
-            };
-        }
-        // Pattern-engine support/resistance are computed; a bare current price is too.
-        return fb != null ? { value: fmtINR(fb, 2), source: 'computed' } : null;
-    };
-    const levels = [
-        { label: 'Entry', ...(fmtLevel(signal?.ideal_entry, textLevels.entry, fbEntry) || {}) },
-        { label: 'Stop Loss', ...(fmtLevel(signal?.stop_loss, textLevels.stop, fbStop) || {}) },
-        { label: 'Target', ...(fmtLevel(signal?.target, textLevels.target, fbTarget) || {}) },
-    ].filter(l => l.value);
-    const hasModelText = levels.some(l => l.source === 'model-text');
-
-    return (
-        <div className={clsx('overflow-hidden', (flush && !raised) ? '' : 'rounded-xl')} style={{ backgroundColor: BRAND }}>
-            <div className={clsx('grid divide-x divide-black/15',
-                levels.length === 3 ? 'grid-cols-2 sm:grid-cols-4' : levels.length === 2 ? 'grid-cols-3' : levels.length === 1 ? 'grid-cols-2' : 'grid-cols-1')}>
-                <div className="px-4 py-3">
-                    <p className="text-[9px] font-extrabold uppercase tracking-[0.2em] text-black/60 mb-1">
-                        VentyAI Verdict
-                    </p>
-                    <p className="text-[26px] font-black text-black leading-none">{rec}</p>
-                </div>
-                {levels.map(({ label, value, source }) => (
-                    <div key={label} className="px-4 py-3">
-                        <p className="text-[9px] font-extrabold uppercase tracking-[0.2em] text-black/60 mb-1">
-                            {label}
-                            {source === 'model-text' && (
-                                <span title="Read from the written analysis, not computed by the engine"> *</span>
-                            )}
-                        </p>
-                        <p className="text-[20px] font-extrabold text-black leading-none">{value}</p>
-                    </div>
-                ))}
-            </div>
-            {/* AI-002: provenance footnote — a level lifted from the model's prose must
-                not look identical to one the engine computed. */}
-            {hasModelText && (
-                <p className="px-4 pb-2.5 -mt-0.5 text-[10px] font-semibold text-black/55 leading-snug">
-                    * Read from the written analysis, not computed by the engine. Verify before acting.
-                </p>
-            )}
-        </div>
-    );
+export const VerdictBand = ({ verdict, flush = false, raised = false }) => {
+    // Mandate: a verdict card renders ONLY from the deterministic VentyAI Verdict
+    // engine (verdict_engine.py, compute_verdict), because that is the ONLY place
+    // the required risk:reward check runs (ACTIONABLE_RR — a trade is never
+    // flagged actionable, and its levels never surface, below 1.5:1). There used
+    // to be a fallback here that derived a BUY/SELL/HOLD call from LLM prose and
+    // filled Stop Loss / Target from scraped text or a single pattern-engine
+    // support/resistance point — none of that path ever computed or checked an
+    // R:R ratio, so a real case reached production showing a ₹3 stop next to a
+    // ₹0.5 target with no ratio checked at all. Removed rather than patched: the
+    // only way to guarantee the R:R check always runs is to never show a verdict
+    // that didn't come from the engine that runs it.
+    if (!verdict || (!verdict.SHORT && !verdict.LONG)) return null;
+    return <DeterministicVerdictBand verdict={verdict} flush={flush} raised={raised} />;
 };
 
 /* ─── Today's Market Stats card ──────────────────────────────────────────────

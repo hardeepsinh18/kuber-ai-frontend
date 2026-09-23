@@ -881,7 +881,6 @@ const AnalystAnswer = ({
     // focused view — direct answer + fundamental scorecard — not the whole wall.
     const sections = answerSections(queryIntent);
     const aag = metadata?.at_a_glance || {};
-    const price = aag.price != null ? Number(aag.price) : null;
     const stats = buildMarketStats(aag);
     const scores = getScores(scoreCard, managementSentiment);
 
@@ -894,10 +893,7 @@ const AnalystAnswer = ({
 
     // A real BUY/SELL/HOLD verdict present? Drives the summary heading:
     // "Why this verdict" when yes, "VentyAI says" for informational answers.
-    const verdictExists = hasVerdict({
-        verdict: scoreCard?.verdict, verdictIntent: scoreCard?.verdict_intent,
-        signal, verdictText, content,
-    });
+    const verdictExists = hasVerdict({ verdict: scoreCard?.verdict });
 
     // Freeze the decision to animate at mount. The parent clears its streaming id the
     // moment we report done, and a mid-flight flip would otherwise snap the remaining
@@ -961,9 +957,7 @@ const AnalystAnswer = ({
                 <CompanyCard metadata={metadata} symbolLabel={symbolLabel} raised />
 
                 {sections.verdictBand && (
-                    <VerdictBand verdict={scoreCard?.verdict} verdictIntent={scoreCard?.verdict_intent} signal={signal}
-                                 verdictText={verdictText} content={content}
-                                 aiTake={aiTake} price={price} patternSummary={patternSummary} raised />
+                    <VerdictBand verdict={scoreCard?.verdict} raised />
                 )}
 
                 <WhyThisVerdict summary={answerText}

@@ -73,96 +73,18 @@ export const stripAiDashes = (s) => {
 export const scoreColor = (s) => (s >= 70 ? '#22c55e' : s >= 50 ? BRAND : '#ef4444');
 
 /* ─── verdict helpers ────────────────────────────────────────────────────── */
-export const deriveVerdict = (text) => {
-    let raw = String(text || '').toLowerCase();
-    if (!raw) return null;
-    // Negated calls must not trigger the verdict word they contain —
-    // "not a screaming buy", "isn't a sell" etc.
-    raw = raw.replace(/\b(?:not|isn'?t|is\s+not|no\s+longer|don'?t|do\s+not)\s+(?:a\s+|an\s+)?(?:screaming\s+|clear\s+|strong\s+|obvious\s+)?(?:buy|sell)\b/g, ' ');
-    if (/\b(buy|accumulate|bullish|breakout)\b/.test(raw)) return 'BUY';
-    if (/\b(sell|exit|avoid|bearish|breakdown)\b/.test(raw)) return 'SELL';
-    if (/\b(hold|wait|neutral|sideways|cautious)\b/.test(raw)) return 'HOLD';
-    return null;
-};
-
 /* Does this answer actually carry a verdict (a BUY/SELL/HOLD call)? Mirrors the
- * render conditions of VerdictBand so the "Why this verdict" heading only shows
+ * render condition of VerdictBand so the "Why this verdict" heading only shows
  * when a verdict really rendered — otherwise the answer is informational and the
- * heading reads "VentyAI says" instead. */
-export const hasVerdict = ({ verdict, verdictIntent, signal, verdictText, content } = {}) => {
-    if (verdict && (verdict.SHORT || verdict.LONG)) return true;   // deterministic engine verdict
-    if (verdictIntent === false) return false;                     // backend: not an investment question
-    if (signal?.recommendation) return true;                       // structured signal call
-    return deriveVerdict(verdictText || content) != null;          // parsed from the prose
-};
-
-/* Parse ₹ levels (entry / stop loss / target) out of the answer text when the
-   structured signal doesn't carry them. Handles "Entry ₹818", "🛑 Stop ₹802",
-   "**Target** ₹850", "target of Rs 1,850" and ranges like "₹810–818". */
-// Pipe included in the pad so markdown-table rows parse: "| **Entry** | ₹8,650 |"
-const LEVEL_PAD = '[\\*_|]*\\s*[:=–—-]?\\s*[\\*_|]*\\s*';
-// Up to two connect words: "entry zone near ₹X", "target of about ₹X"
-const LEVEL_CONNECT = '(?:\\s+(?:price|zone|level|point|of|at|near|around|about|below|under|above)){0,2}' + LEVEL_PAD;
-const LEVEL_NUM = '(?:rs\\.?|₹)?\\s*([\\d,]+(?:\\.\\d+)?)(?!\\s*%)(?:\\s*[–—-]\\s*(?:rs\\.?|₹)?\\s*([\\d,]+(?:\\.\\d+)?))?';
-const LEVEL_RES = {
-    entry: [
-        new RegExp('\\bentry' + LEVEL_CONNECT + LEVEL_NUM, 'i'),
-        new RegExp('\\b(?:buy|accumulate)\\s+(?:below|under|zone|at|near|around|above|between|on\\s+dips\\s+to)' + LEVEL_PAD + LEVEL_NUM, 'i'),
-    ],
-    stop: [
-        new RegExp('\\bstop(?:[\\s-]*loss)?' + LEVEL_CONNECT + LEVEL_NUM, 'i'),
-        new RegExp('\\bsl\\b' + LEVEL_CONNECT + LEVEL_NUM, 'i'),
-    ],
-    target: [
-        new RegExp('\\btargets?' + LEVEL_CONNECT + LEVEL_NUM, 'i'),
-        new RegExp('\\btgt\\b' + LEVEL_CONNECT + LEVEL_NUM, 'i'),
-        new RegExp('\\bbook\\s+profits?\\s+(?:at|near|around)' + LEVEL_PAD + LEVEL_NUM, 'i'),
-    ],
-};
-
-export const extractLevelsFromText = (text, refPrice = null) => {
-    const t = String(text || '');
-    const toNum = (s) => {
-        const n = Number(String(s ?? '').replace(/,/g, ''));
-        return Number.isFinite(n) && n > 0 ? n : null;
-    };
-    // Sanity: a real trading level sits in the vicinity of the current price —
-    // rejects years ("2026"), percentages and stray small numbers.
-    const plausible = (n) => n != null && (refPrice == null || (n >= refPrice * 0.3 && n <= refPrice * 3));
-    const grab = (regexes) => {
-        for (const re of regexes) {
-            const m = t.match(re);
-            if (!m) continue;
-            const lo = toNum(m[1]);
-            if (!plausible(lo)) continue;
-            const hi = toNum(m[2]);
-            return { lo, hi: plausible(hi) ? hi : null };
-        }
-        return null;
-    };
-    return {
-        entry: grab(LEVEL_RES.entry),
-        stop: grab(LEVEL_RES.stop),
-        target: grab(LEVEL_RES.target),
-    };
-};
-
-/* Generic price-level scan: every ₹/Rs amount near the live price mentioned in
-   the text ("bounce above ₹162", "if ₹145 breaks"). The nearest one below the
-   price reads as the downside level, the nearest above as the upside level. */
-export const extractNearbyLevels = (text, price) => {
-    if (price == null) return { below: null, above: null };
-    const re = /(?:rs\.?|₹)\s*([\d,]+(?:\.\d+)?)/gi;
-    let below = null, above = null, m;
-    while ((m = re.exec(String(text || ''))) !== null) {
-        const n = Number(m[1].replace(/,/g, ''));
-        if (!Number.isFinite(n) || n <= 0) continue;
-        if (n < price * 0.7 || n > price * 1.3) continue; // trading levels sit near the price
-        if (n < price && (below == null || n > below)) below = n;
-        if (n > price && (above == null || n < above)) above = n;
-    }
-    return { below, above };
-};
+ * heading reads "VentyAI says" instead.
+ *
+ * A verdict counts ONLY when the deterministic engine (verdict_engine.py,
+ * compute_verdict) produced it. That engine is also the only place the
+ * required risk:reward check (ACTIONABLE_RR) runs — a verdict derived from
+ * LLM prose or a scraped price level never went through that check, so it
+ * must never be treated as a real verdict here. See VerdictBand in
+ * answerKit.jsx, which enforces the same rule for the trade-levels card. */
+export const hasVerdict = ({ verdict } = {}) => !!(verdict && (verdict.SHORT || verdict.LONG));
 
 /* ─── shared card color tokens ───────────────────────────────────────────── */
 export const MAIN_CARD_DARK = '#181613';

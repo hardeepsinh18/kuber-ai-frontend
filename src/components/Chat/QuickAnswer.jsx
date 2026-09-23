@@ -66,7 +66,6 @@ const QuickAnswer = ({
             || (Array.isArray(signal?.why) && signal.why.length ? signal.why.join(' ') : null))
         : null;
     const aag = metadata?.at_a_glance || {};
-    const price = aag.price != null ? Number(aag.price) : null;
 
     /* chart — single primary chart in quick view */
     const chart = Array.isArray(chartData)
@@ -90,9 +89,7 @@ const QuickAnswer = ({
                 <CompanyCard metadata={metadata} symbolLabel={symbolLabel} raised />
 
                 {sections.verdictBand && (
-                    <VerdictBand verdict={scoreCard?.verdict} verdictIntent={scoreCard?.verdict_intent} signal={signal}
-                                 verdictText={verdictText} content={content}
-                                 aiTake={aiTake} price={price} patternSummary={patternSummary} raised />
+                    <VerdictBand verdict={scoreCard?.verdict} raised />
                 )}
 
                 {/* ── Direct answer — focused intents lead with what was asked ─ */}
