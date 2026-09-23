@@ -45,7 +45,11 @@ const InputBar = ({ input, setInput, handleSend, onStopRequest, isLoading, horiz
     });
 
     useEffect(() => {
-        if (!isLoading && inputRef.current) inputRef.current.focus();
+        // Desktop only: refocusing after every response is convenient when a
+        // physical keyboard is already there, but on mobile it pops the on-screen
+        // keyboard open and covers half the screen after every single reply,
+        // with no user interaction asking for it.
+        if (!isLoading && inputRef.current && window.innerWidth >= 768) inputRef.current.focus();
     }, [isLoading]);
 
     useEffect(() => {

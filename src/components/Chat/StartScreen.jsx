@@ -55,6 +55,13 @@ const StartScreen = ({ onStartChat, onScannerResult, responseMode, setResponseMo
         },
     });
 
+    useEffect(() => {
+        // Desktop only -- see the matching note in InputBar.jsx. Autofocusing this
+        // on mount pops the on-screen keyboard the moment Venty opens on mobile,
+        // before the user has touched anything.
+        if (window.innerWidth >= 768) inputRef.current?.focus();
+    }, []);
+
     const send = useCallback(() => { if (input.trim()) onStartChat(input, 'stock'); }, [input, onStartChat]);
     // See InputBar.jsx's matching ref for why this is tracked manually: the
     // native beforeinput event used below has no shiftKey of its own.
@@ -133,7 +140,6 @@ const StartScreen = ({ onStartChat, onScannerResult, responseMode, setResponseMo
                                     className="w-full px-4 pt-3.5 pb-2 bg-transparent outline-none border-none
                                                text-[13.5px] text-zinc-900 dark:text-zinc-100
                                                placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
-                                    autoFocus
                                 />
 
 
