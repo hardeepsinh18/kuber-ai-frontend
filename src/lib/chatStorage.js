@@ -23,6 +23,7 @@
 const CHAT_LIST_BASE = 'stockhug_chat_list';
 const CHAT_PREFIX = 'stockhug_chat_';
 const PENDING_DELETES_BASE = 'stockhug_pending_deletes';
+const LAST_ACTIVE_CHAT_BASE = 'stockhug_last_active_chat';
 // No artificial caps — the server (RDS, via lib/chatsApi.js) is the permanent store;
 // localStorage is a fast local cache, not the authoritative limit.
 const MAX_MESSAGES_PER_CHAT = 2000; // guard only against single-chat runaway
@@ -67,6 +68,33 @@ function pendingDeletesKey() {
     return ns(PENDING_DELETES_BASE);
 }
 
+function lastActiveChatKey() {
+    return ns(LAST_ACTIVE_CHAT_BASE);
+}
+
+// Remembers which chat was open, so a fresh mount (e.g. the vendor's native
+// container reloading the iframe on tab switch/app backgrounding) can return
+// to it instead of always landing on a blank new-chat screen -- the
+// conversation was never actually lost, nothing was restoring the user to it.
+export function getLastActiveChatId() {
+    const key = lastActiveChatKey();
+    if (!key) return null;
+    try {
+        return localStorage.getItem(key) || null;
+    } catch {
+        return null;
+    }
+}
+
+export function saveLastActiveChatId(chatId) {
+    const key = lastActiveChatKey();
+    if (!key) return;
+    try {
+        if (chatId) localStorage.setItem(key, chatId);
+        else localStorage.removeItem(key);
+    } catch { /* ignore -- non-critical convenience state */ }
+}
+
 /**
  * SEC-C-002: purge every locally cached chat for every identity. Called on sign-out
  * so the bytes are gone, not merely unreachable — namespacing alone leaves them on
@@ -78,6 +106,7 @@ export function clearAllLocalChats() {
             (k) => k.startsWith(CHAT_PREFIX)
                 || k === CHAT_LIST_BASE || k.startsWith(`${CHAT_LIST_BASE}::`)
                 || k === PENDING_DELETES_BASE || k.startsWith(`${PENDING_DELETES_BASE}::`)
+                || k === LAST_ACTIVE_CHAT_BASE || k.startsWith(`${LAST_ACTIVE_CHAT_BASE}::`)
         );
         doomed.forEach((k) => {
             try { localStorage.removeItem(k); } catch { /* ignore */ }

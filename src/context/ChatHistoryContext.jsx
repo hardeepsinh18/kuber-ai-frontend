@@ -474,6 +474,21 @@ export function ChatHistoryProvider({ children }) {
         isLoadedRef.current = true;
         setIsListLoading(!!accessToken);
 
+        // Restore whichever chat was open last, so a fresh mount with no route
+        // param (the vendor's native container reloading the iframe on tab
+        // switch/app backgrounding, not a real "new chat" action) returns to the
+        // conversation instead of landing on a blank start screen. Guarded on
+        // the LIVE ref, not the closed-over currentChatId state: ChatContainer's
+        // own mount effect (a child, so it commits first) may have already
+        // loaded a chat from a /chat/:id route URL, and this must never
+        // override that.
+        if (!currentChatIdRef.current) {
+            const lastId = chatStorage.getLastActiveChatId();
+            if (lastId && localList.some((c) => c.id === lastId)) {
+                loadChat(lastId);
+            }
+        }
+
         if (accessToken) {
             // Retry pending deletes so server eventually catches up, THEN fetch —
             // otherwise the list fetch can race an in-flight delete and read a
@@ -586,6 +601,23 @@ export function ChatHistoryProvider({ children }) {
                 });
         }
     }, []);
+
+    // Remember whichever chat is open, purely so a future fresh mount (see the
+    // restore-on-mount logic above) has something to return to. Skips its own
+    // very first invocation unconditionally: that first run always carries the
+    // pre-restore initial value (null, or a mid-flight one) no matter how this
+    // effect's timing lines up against the restore's async loadChat() call --
+    // writing it would overwrite the very key the restore logic just read.
+    // Every subsequent run (the restore landing, or any real user action) is a
+    // genuine change and gets saved normally.
+    const hasSavedOnceRef = useRef(false);
+    useEffect(() => {
+        if (!hasSavedOnceRef.current) {
+            hasSavedOnceRef.current = true;
+            return;
+        }
+        chatStorage.saveLastActiveChatId(currentChatId);
+    }, [currentChatId]);
 
     // Debounce persisting while messages are actively changing (e.g. tokens
     // streaming in) so we're not hitting localStorage/the API on every token.
