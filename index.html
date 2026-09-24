@@ -36,6 +36,18 @@
   <link rel="icon" type="image/png" sizes="192x192" href="/brand/favicon-v3-192.png" />
   <link rel="apple-touch-icon" href="/brand/favicon-v3-180.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover" />
+  <!-- UAT bug (2026-09-24): "Venty opens in dark theme only" on Android inside
+       Sunday Tech's app, even on a fresh install with light correctly the
+       default in ThemeContext.jsx. Root cause is unrelated to our theme logic:
+       Android WebView has a built-in "force dark" feature that automatically
+       darkens any page that doesn't explicitly say it manages its own
+       light/dark theming, overriding the page's real CSS at the rendering
+       layer. This meta tag is the standard opt-out signal (mirrored in
+       index.css as the `color-scheme` CSS property on :root, since some
+       engines check that instead of/in addition to the meta tag). A plain
+       Chrome tab mostly ignores this either way -- which is exactly why the
+       bug never showed up there. -->
+  <meta name="color-scheme" content="light dark" />
   <!-- QA-C-013: the PWA meta tags (mobile-web-app-capable, apple-mobile-web-app-*)
        were removed. They advertise a standalone installable app, but there is no web
        app manifest in the project, so installation never worked — the tags promised

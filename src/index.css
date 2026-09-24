@@ -90,6 +90,12 @@ html {
   -moz-text-size-adjust: 100%;
   -ms-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  /* Mirrors the color-scheme meta tag in index.html -- the CSS-property form
+     of the same "this page manages its own light/dark theming" signal, which
+     is what tells Android WebView's force-dark feature to back off instead of
+     algorithmically darkening our actual light theme. See the meta tag's
+     comment for the full explanation. */
+  color-scheme: light dark;
   /* Smooth scrolling for better UX */
   scroll-behavior: smooth;
   /* Bug 13 (UAT, iOS): the app shell (#root below) is a fixed-height flex
