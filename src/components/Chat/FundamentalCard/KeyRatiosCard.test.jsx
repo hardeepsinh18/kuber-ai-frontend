@@ -349,9 +349,11 @@ describe('KeyRatiosCard — absolute rating', () => {
         expect(screen.getByRole('columnheader', { name: 'Rating' })).toBeTruthy();
     });
 
-    it('explains that colour compares while rating judges', () => {
+    it('renders no legend paragraph under the table', () => {
+        // Removed by product decision — the worded pills carry the meaning now.
         renderAtalreal();
-        expect(document.body.textContent).toContain('beat a weak');
+        expect(document.body.textContent).not.toContain('beat a weak');
+        expect(document.body.textContent).not.toContain('Colour & arrow');
     });
 
     it('uses the full five-tier scale at the backend cutoffs', () => {
@@ -393,8 +395,51 @@ describe('KeyRatiosCard — absolute rating', () => {
         expect(rowFor('ROE').textContent).toContain('Poor');
     });
 
-    it('omits the legend when nothing on the card is graded', () => {
-        render(<KeyRatiosCard symbol="X" ratios={{ pb_ratio: 5.16 }} flat />);
-        expect(document.body.textContent).not.toContain('beat a weak');
+    it('still rates P/E and dividend yield — the TCS gap', () => {
+        // Reported on TCS: P/E and Dividend yield rendered a bare dash, which read
+        // as broken rather than as a deliberate "no scale". Both are rated now.
+        render(
+            <KeyRatiosCard
+                symbol="TCS"
+                ratios={{ pe_ratio: 14.00, roe: 51.80, roce: 63.00, net_margin: 22.22, dividend_yield: 3.08 }}
+                sectorMedians={{ pe_ratio: 24.24, roe: 12.32, roce: 20.67, net_margin: 10.21, dividend_yield: 0.18 }}
+                flat
+            />
+        );
+        // 14.00 / 24.24 = 0.58 -> well under the backend's 0.75 cheap cutoff.
+        expect(rowFor('P/E').textContent).toContain('Cheap');
+        expect(rowFor('Dividend yield').textContent).toContain('Good');
+        for (const label of ['ROE', 'ROCE', 'Net margin']) {
+            expect(rowFor(label).textContent, label).toContain('Excellent');
+        }
+    });
+
+    it('uses valuation words for P/E, never quality words', () => {
+        // "Excellent" on a cheap P/E would imply cheap = good. It does not.
+        render(<KeyRatiosCard symbol="X" ratios={{ pe_ratio: 8 }} sectorMedians={{ pe_ratio: 30 }} flat />);
+        const txt = rowFor('P/E').textContent;
+        expect(txt).toContain('Cheap');
+        expect(txt).not.toContain('Excellent');
+    });
+
+    it('judges P/E against the benchmark, falling back to absolute cutoffs', () => {
+        // Same P/E, opposite verdicts, because valuation is inherently relative.
+        render(<KeyRatiosCard symbol="X" ratios={{ pe_ratio: 20 }} sectorMedians={{ pe_ratio: 60 }} flat />);
+        expect(rowFor('P/E').textContent).toContain('Cheap');
+        cleanup();
+        render(<KeyRatiosCard symbol="X" ratios={{ pe_ratio: 20 }} sectorMedians={{ pe_ratio: 10 }} flat />);
+        expect(rowFor('P/E').textContent).toContain('Expensive');
+        cleanup();
+        // No benchmark at all -> backend's absolute _pe_label scale (>35 expensive).
+        render(<KeyRatiosCard symbol="X" ratios={{ pe_ratio: 40 }} flat />);
+        expect(rowFor('P/E').textContent).toContain('Expensive');
+    });
+
+    it('rates dividend yield across its range', () => {
+        for (const [dy, label] of [[6, 'Excellent'], [3.08, 'Good'], [2, 'Average'], [0.8, 'Weak'], [0.1, 'Poor']]) {
+            cleanup();
+            render(<KeyRatiosCard symbol="X" ratios={{ dividend_yield: dy }} flat />);
+            expect(rowFor('Dividend yield').textContent, `dy ${dy}`).toContain(label);
+        }
     });
 });

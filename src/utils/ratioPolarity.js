@@ -234,6 +234,19 @@ export const GRADE_LABEL = {
 };
 
 /**
+ * P/E is rated on a VALUATION scale, not a quality one, and deliberately keeps
+ * the backend's own vocabulary (_v4_valuation_label / _pe_label: CHEAP / FAIR /
+ * EXPENSIVE). Calling a low P/E "Excellent" would be wrong — cheap is not good,
+ * it is cheap, and it is just as often a market verdict on a struggling business.
+ * Separate words keep the two claims from blurring into one.
+ *
+ * The backend judges it RELATIVE to the industry P/E (rel_pe = pe / industry_pe)
+ * and only falls back to absolute cutoffs when no industry benchmark exists. This
+ * mirrors both, choosing whichever the payload can support.
+ */
+export const VALUATION_LABEL = { 5: 'Cheap', 3: 'Fair', 1: 'Expensive' };
+
+/**
  * Descending [floor, tier] cutoffs for HIGHER_BETTER ratios and ascending
  * [ceiling, tier] for LOWER_BETTER ones. Read top-down; first match wins.
  */
@@ -251,6 +264,13 @@ const GRADE_SCALE = {
     // which is why current_ratio grades DIFFERENTLY from how verdict() bands it:
     // the band asks "is liquidity healthy", the grade asks "how strong is it".
     current_ratio:    { dir: 'higher', steps: [[2, 5], [1.5, 4], [1.0, 3], [0.8, 2]] },
+    // The backend has no dividend rating function, so these cutoffs are ours.
+    // Anchored to the Indian market rather than invented: the Nifty 50's yield
+    // has sat near 1.2-1.5% for years, so ~1.5% is genuinely average, 3%+ is a
+    // real income payer and 5%+ is top-decile. A zero/near-zero yield rates Poor
+    // as an INCOME measure only — it says nothing about the business, which is
+    // why the tooltip names the question being answered.
+    dividend_yield:   { dir: 'higher', steps: [[5, 5], [3, 4], [1.5, 3], [0.5, 2]] },
 };
 
 /**
@@ -261,13 +281,31 @@ const GRADE_SCALE = {
  * "no grade", never as a neutral/average pass — the whole point is to stop implying
  * a judgement we have not made.
  */
-export const grade = (key, value) => {
-    const scale = GRADE_SCALE[key];
+export const grade = (key, value, benchmark = null) => {
     const v = num(value);
-    if (!scale || v == null || !sane(key, v)) return null;
+    if (v == null || !sane(key, v)) return null;
+
+    // P/E takes the valuation vocabulary and, where possible, the backend's
+    // RELATIVE test. `benchmark` is the sector/industry P/E when the caller has
+    // one; without it we fall back to the backend's own absolute cutoffs
+    // (_pe_label: >35 expensive, >20 fair) so the column still says something.
+    if (key === 'pe_ratio') {
+        const b = num(benchmark);
+        let tier;
+        if (b != null && sane(key, b) && b > 0) {
+            const rel = v / b;                       // mirrors _v4_valuation_label
+            tier = rel <= 0.75 ? 5 : rel <= 1.10 ? 3 : 1;
+        } else {
+            tier = v > 35 ? 1 : v > 20 ? 3 : 5;      // mirrors _pe_label
+        }
+        return { tier, label: VALUATION_LABEL[tier], kind: 'valuation' };
+    }
+
+    const scale = GRADE_SCALE[key];
+    if (!scale) return null;
     let tier = 1;
     for (const [bound, t] of scale.steps) {
         if (scale.dir === 'higher' ? v >= bound : v <= bound) { tier = t; break; }
     }
-    return { tier, label: GRADE_LABEL[tier] };
+    return { tier, label: GRADE_LABEL[tier], kind: 'quality' };
 };

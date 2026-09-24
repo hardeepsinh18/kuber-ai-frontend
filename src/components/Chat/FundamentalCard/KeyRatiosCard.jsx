@@ -72,6 +72,17 @@ const GRADE_STYLE = {
     1: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 ring-rose-500/30',
 };
 
+/* Valuation is a different KIND of claim from quality, so it gets its own
+ * palette rather than borrowing the green/red one. "Cheap" in emerald would
+ * read as "good", which is exactly the conflation this card exists to stop —
+ * a cheap stock is often cheap for a reason. Sky/slate/violet stays legible
+ * in both themes while carrying no good-or-bad charge of its own. */
+const VALUATION_STYLE = {
+    5: 'bg-sky-500/15 text-sky-700 dark:text-sky-300 ring-sky-500/30',
+    3: 'bg-slate-500/15 text-slate-700 dark:text-slate-300 ring-slate-500/30',
+    1: 'bg-violet-500/15 text-violet-700 dark:text-violet-300 ring-violet-500/30',
+};
+
 const GradePill = ({ g, title }) => {
     // No defensible absolute scale for this ratio — say nothing rather than
     // imply an average pass. The dash matches the not-comparable mark used by
@@ -89,7 +100,7 @@ const GradePill = ({ g, title }) => {
             title={title}
             className={clsx(
                 'inline-block px-2 py-0.5 rounded-md text-[11px] font-semibold whitespace-nowrap ring-1',
-                GRADE_STYLE[g.tier]
+                (g.kind === 'valuation' ? VALUATION_STYLE : GRADE_STYLE)[g.tier]
             )}
         >
             {g.label}
@@ -232,13 +243,16 @@ export const KeyRatiosCard = ({
                             const v = ratioVerdict(key, value, bench);
                             const benchText = fmtByUnit(key, bench);
                             const banded = meta.dir === 'band';
-                            // Absolute quality, independent of the comparator tab —
-                            // switching from Sector to a peer changes the middle column
-                            // and the arrow, never this.
-                            const g = grade(key, value);
-                            const gradeTitle = g
-                                ? `${fmtByUnit(key, value)} is ${g.label.toLowerCase()} for ${meta.label} on its own merits, regardless of ${comparedLabel}`
-                                : undefined;
+                            // Quality ratings are absolute — switching the comparator tab
+                            // changes the middle column and the arrow, never the grade.
+                            // P/E is the one exception by design: valuation only means
+                            // anything against a benchmark, so it takes `bench` and does
+                            // move with the tab (mirroring the backend's rel_pe test).
+                            const g = grade(key, value, bench);
+                            const gradeTitle = !g ? undefined
+                                : g.kind === 'valuation'
+                                    ? `At ${fmtByUnit(key, value)}, ${symbol || 'this stock'} looks ${g.label.toLowerCase()} against ${comparedLabel}${benchText ? ` (${benchText})` : ''}. Cheap is not automatically good — it can also mean the market expects trouble.`
+                                    : `${fmtByUnit(key, value)} is ${g.label.toLowerCase()} for ${meta.label} on its own merits, regardless of ${comparedLabel}`;
 
                             return (
                                 <tr key={key} className="border-t border-zinc-100 dark:border-zinc-800/60">
@@ -287,21 +301,11 @@ export const KeyRatiosCard = ({
                 </table>
             </div>
 
-            {/* One line naming what the two judgements MEAN. The earlier
-                "Better/Worse in comparison" legend was removed because it merely
-                restated the arrow; this one does not restate anything — it draws
-                the distinction the table would otherwise leave the reader to infer,
-                which is the entire reason a green arrow on a weak ROE was being
-                misread as "good". Shown only when at least one row is actually
-                graded, so an ungraded payload doesn't advertise a column of dashes. */}
-            {rows.some(({ key, value }) => grade(key, value)) && (
-                <p className="mt-2.5 px-0.5 text-[11px] leading-relaxed text-zinc-500 dark:text-zinc-400">
-                    <span className="font-semibold text-zinc-600 dark:text-zinc-300">Colour &amp; arrow</span> compare
-                    this stock with {comparedLabel}. <span className="font-semibold text-zinc-600 dark:text-zinc-300">Rating</span> judges
-                    the number on its own — Excellent, Good, Average, Weak or Poor — so a stock can beat a weak
-                    sector and still rate Poor.
-                </p>
-            )}
+            {/* No legend line. The earlier "Colour & arrow compare… Rating judges…"
+                paragraph was removed by product decision: with every row now carrying
+                a worded pill, the column speaks for itself, and the sentence added a
+                block of small print under every card. The per-row tooltips (title on
+                each pill) still spell the distinction out for anyone who wants it. */}
         </div>
     );
 
