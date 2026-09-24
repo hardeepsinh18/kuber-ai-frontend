@@ -406,33 +406,40 @@ describe('KeyRatiosCard — absolute rating', () => {
                 flat
             />
         );
-        // 14.00 / 24.24 = 0.58 -> well under the backend's 0.75 cheap cutoff.
-        expect(rowFor('P/E').textContent).toContain('Cheap');
+        // 14.00 / 24.24 = 0.58 -> well under the backend's 0.75 cutoff.
+        expect(rowFor('P/E').textContent).toContain('Below sector');
         expect(rowFor('Dividend yield').textContent).toContain('Good');
         for (const label of ['ROE', 'ROCE', 'Net margin']) {
             expect(rowFor(label).textContent, label).toContain('Excellent');
         }
     });
 
-    it('uses valuation words for P/E, never quality words', () => {
-        // "Excellent" on a cheap P/E would imply cheap = good. It does not.
+    it('states where the P/E sits and passes no verdict on it', () => {
+        // Neither quality words nor valuation verdicts: "Excellent" would imply a
+        // low multiple is good, and "Cheap" implies the same thing more quietly.
         render(<KeyRatiosCard symbol="X" ratios={{ pe_ratio: 8 }} sectorMedians={{ pe_ratio: 30 }} flat />);
         const txt = rowFor('P/E').textContent;
-        expect(txt).toContain('Cheap');
-        expect(txt).not.toContain('Excellent');
+        expect(txt).toContain('Below sector');
+        for (const banned of ['Excellent', 'Good', 'Cheap', 'Expensive']) {
+            expect(txt, banned).not.toContain(banned);
+        }
     });
 
     it('judges P/E against the benchmark, falling back to absolute cutoffs', () => {
         // Same P/E, opposite verdicts, because valuation is inherently relative.
         render(<KeyRatiosCard symbol="X" ratios={{ pe_ratio: 20 }} sectorMedians={{ pe_ratio: 60 }} flat />);
-        expect(rowFor('P/E').textContent).toContain('Cheap');
+        expect(rowFor('P/E').textContent).toContain('Below sector');
         cleanup();
         render(<KeyRatiosCard symbol="X" ratios={{ pe_ratio: 20 }} sectorMedians={{ pe_ratio: 10 }} flat />);
-        expect(rowFor('P/E').textContent).toContain('Expensive');
-        cleanup();
-        // No benchmark at all -> backend's absolute _pe_label scale (>35 expensive).
+        expect(rowFor('P/E').textContent).toContain('Above sector');
+    });
+
+    it('describes the multiple itself when there is no sector to sit against', () => {
+        // "Below sector" would be a claim about a sector figure we do not have.
         render(<KeyRatiosCard symbol="X" ratios={{ pe_ratio: 40 }} flat />);
-        expect(rowFor('P/E').textContent).toContain('Expensive');
+        const txt = rowFor('P/E').textContent;
+        expect(txt).toContain('High');
+        expect(txt).not.toContain('sector');
     });
 
     it('rates dividend yield across its range', () => {

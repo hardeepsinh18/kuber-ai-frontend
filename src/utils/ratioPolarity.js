@@ -234,17 +234,28 @@ export const GRADE_LABEL = {
 };
 
 /**
- * P/E is rated on a VALUATION scale, not a quality one, and deliberately keeps
- * the backend's own vocabulary (_v4_valuation_label / _pe_label: CHEAP / FAIR /
- * EXPENSIVE). Calling a low P/E "Excellent" would be wrong — cheap is not good,
- * it is cheap, and it is just as often a market verdict on a struggling business.
- * Separate words keep the two claims from blurring into one.
+ * P/E states WHERE THE MULTIPLE SITS, and nothing more.
  *
- * The backend judges it RELATIVE to the industry P/E (rel_pe = pe / industry_pe)
- * and only falls back to absolute cutoffs when no industry benchmark exists. This
- * mirrors both, choosing whichever the payload can support.
+ * Deliberately not the quality words, and deliberately not the backend's own
+ * CHEAP / FAIR / EXPENSIVE either. Every one of those carries a verdict: "cheap"
+ * reads as a buy signal when a low multiple just as often means the market
+ * expects earnings to fall, and "expensive" reads as a sell signal when a high
+ * multiple is normal for a fast compounder. Neither is a call this table is in a
+ * position to make, so the label reports the position and leaves the conclusion
+ * to the reader.
+ *
+ * Tier numbers are kept (5/3/1) purely so the pill can be coloured on a scale;
+ * the palette for these is neutral, NOT the green/red quality one — see
+ * VALUATION_STYLE in KeyRatiosCard.
+ *
+ * The backend judges P/E RELATIVE to the industry (rel_pe = pe / industry_pe)
+ * and falls back to absolute cutoffs when no benchmark exists. This mirrors both,
+ * choosing whichever the payload can support — only the wording differs.
  */
-export const VALUATION_LABEL = { 5: 'Cheap', 3: 'Fair', 1: 'Expensive' };
+export const VALUATION_LABEL = { 5: 'Below sector', 3: 'In line', 1: 'Above sector' };
+
+/** Wording when there is no benchmark to sit below or above — the absolute path. */
+export const VALUATION_LABEL_ABSOLUTE = { 5: 'Low', 3: 'Moderate', 1: 'High' };
 
 /**
  * Descending [floor, tier] cutoffs for HIGHER_BETTER ratios and ascending
@@ -291,14 +302,18 @@ export const grade = (key, value, benchmark = null) => {
     // (_pe_label: >35 expensive, >20 fair) so the column still says something.
     if (key === 'pe_ratio') {
         const b = num(benchmark);
+        const relative = b != null && sane(key, b) && b > 0;
         let tier;
-        if (b != null && sane(key, b) && b > 0) {
+        if (relative) {
             const rel = v / b;                       // mirrors _v4_valuation_label
             tier = rel <= 0.75 ? 5 : rel <= 1.10 ? 3 : 1;
         } else {
             tier = v > 35 ? 1 : v > 20 ? 3 : 5;      // mirrors _pe_label
         }
-        return { tier, label: VALUATION_LABEL[tier], kind: 'valuation' };
+        // "Below sector" is only truthful when a sector figure actually went into
+        // the decision; without one the label describes the multiple itself.
+        const labels = relative ? VALUATION_LABEL : VALUATION_LABEL_ABSOLUTE;
+        return { tier, label: labels[tier], kind: 'valuation' };
     }
 
     const scale = GRADE_SCALE[key];

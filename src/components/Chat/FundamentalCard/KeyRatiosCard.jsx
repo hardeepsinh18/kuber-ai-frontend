@@ -73,9 +73,9 @@ const GRADE_STYLE = {
 };
 
 /* Valuation is a different KIND of claim from quality, so it gets its own
- * palette rather than borrowing the green/red one. "Cheap" in emerald would
- * read as "good", which is exactly the conflation this card exists to stop —
- * a cheap stock is often cheap for a reason. Sky/slate/violet stays legible
+ * palette rather than borrowing the green/red one. A low multiple in emerald
+ * would read as "good", which is exactly the conflation this card exists to
+ * stop — a low P/E is often low for a reason. Sky/slate/violet stays legible
  * in both themes while carrying no good-or-bad charge of its own. */
 const VALUATION_STYLE = {
     5: 'bg-sky-500/15 text-sky-700 dark:text-sky-300 ring-sky-500/30',
@@ -251,7 +251,7 @@ export const KeyRatiosCard = ({
                             const g = grade(key, value, bench);
                             const gradeTitle = !g ? undefined
                                 : g.kind === 'valuation'
-                                    ? `At ${fmtByUnit(key, value)}, ${symbol || 'this stock'} looks ${g.label.toLowerCase()} against ${comparedLabel}${benchText ? ` (${benchText})` : ''}. Cheap is not automatically good — it can also mean the market expects trouble.`
+                                    ? `${meta.label} of ${fmtByUnit(key, value)} sits ${g.label.toLowerCase()}${benchText ? ` (${comparedLabel} ${benchText})` : ''}. A lower multiple is not automatically better — it can mean the market expects earnings to fall, just as a higher one can be normal for a faster-growing business.`
                                     : `${fmtByUnit(key, value)} is ${g.label.toLowerCase()} for ${meta.label} on its own merits, regardless of ${comparedLabel}`;
 
                             return (
