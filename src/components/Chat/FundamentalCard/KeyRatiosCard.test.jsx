@@ -311,3 +311,142 @@ describe('accuracy — what is shown must be what the data says', () => {
         expect(within(rowFor('P/E')).getByLabelText('In line')).toBeTruthy();
     });
 });
+
+/* ─── Absolute rating column ──────────────────────────────────────────────────
+ *
+ * The bug this column exists to fix: the table answered "better or worse than
+ * the sector?" while looking like it answered "is this good?". ATALREAL showed
+ * ROE 7.96% in GREEN with an up-arrow purely because its sector median was
+ * 6.37% — but a 7.96% ROE is a poor absolute return. Beating a weak sector is
+ * not the same as being good, and the card must now say both things separately.
+ */
+describe('KeyRatiosCard — absolute rating', () => {
+    // The exact payload from the reported screenshot.
+    const ATALREAL = { pe_ratio: 26.50, roe: 7.96, roce: 10.70 };
+    const ATALREAL_SECTOR = { pe_ratio: 25.55, roe: 6.37, roce: 15.81 };
+
+    const renderAtalreal = (props = {}) => render(
+        <KeyRatiosCard symbol="ATALREAL" ratios={ATALREAL} sectorMedians={ATALREAL_SECTOR} flat {...props} />
+    );
+
+    const rowFor = (label) => screen.getByRole('rowheader', { name: label }).closest('tr');
+
+    it('rates an ROE that beats a weak sector as Poor, not good', () => {
+        renderAtalreal();
+        // Green/up-arrow against the sector...
+        expect(within(rowFor('ROE')).getByLabelText('Better')).toBeTruthy();
+        // ...but the absolute rating tells the truth.
+        expect(rowFor('ROE').textContent).toContain('Poor');
+    });
+
+    it('rates ROCE 10.70% as Weak', () => {
+        renderAtalreal();
+        expect(rowFor('ROCE').textContent).toContain('Weak');
+    });
+
+    it('renders the Rating column header', () => {
+        renderAtalreal();
+        expect(screen.getByRole('columnheader', { name: 'Rating' })).toBeTruthy();
+    });
+
+    it('renders no legend paragraph under the table', () => {
+        // Removed by product decision — the worded pills carry the meaning now.
+        renderAtalreal();
+        expect(document.body.textContent).not.toContain('beat a weak');
+        expect(document.body.textContent).not.toContain('Colour & arrow');
+    });
+
+    it('uses the full five-tier scale at the backend cutoffs', () => {
+        // Mirrors _rate_roce_roe in app/services/fundamental_engine.py.
+        for (const [roe, label] of [[30, 'Excellent'], [20, 'Good'], [14, 'Average'], [9, 'Weak'], [3, 'Poor']]) {
+            cleanup();
+            render(<KeyRatiosCard symbol="X" ratios={{ roe }} flat />);
+            expect(rowFor('ROE').textContent, `roe ${roe}`).toContain(label);
+        }
+    });
+
+    it('grades debt/equity on its lower-is-better scale', () => {
+        render(<KeyRatiosCard symbol="X" ratios={{ debt_equity: 0.2 }} flat />);
+        expect(rowFor('Debt / Equity').textContent).toContain('Excellent');
+    });
+
+    it('shows no rating for a ratio with no defensible absolute scale', () => {
+        // P/B has no backend rating function — it must stay ungraded rather than
+        // invent a threshold, so the row carries the not-comparable dash.
+        render(<KeyRatiosCard symbol="X" ratios={{ pb_ratio: 5.16 }} flat />);
+        const cells = rowFor('P/B').querySelectorAll('td');
+        expect(cells[cells.length - 1].textContent.trim()).toBe('—');
+    });
+
+    it('keeps the rating fixed when the comparator tab changes', () => {
+        // The rating is absolute: switching Sector → peer may flip the arrow, but
+        // must never change the verdict on the number itself.
+        render(
+            <KeyRatiosCard
+                symbol="ATALREAL"
+                ratios={ATALREAL}
+                sectorMedians={ATALREAL_SECTOR}
+                peerRatios={{ PEER1: { roe: 40, roce: 30, pe_ratio: 12 } }}
+                flat
+            />
+        );
+        expect(rowFor('ROE').textContent).toContain('Poor');
+        fireEvent.click(screen.getByRole('button', { name: 'PEER1' }));
+        expect(rowFor('ROE').textContent).toContain('Poor');
+    });
+
+    it('still rates P/E and dividend yield — the TCS gap', () => {
+        // Reported on TCS: P/E and Dividend yield rendered a bare dash, which read
+        // as broken rather than as a deliberate "no scale". Both are rated now.
+        render(
+            <KeyRatiosCard
+                symbol="TCS"
+                ratios={{ pe_ratio: 14.00, roe: 51.80, roce: 63.00, net_margin: 22.22, dividend_yield: 3.08 }}
+                sectorMedians={{ pe_ratio: 24.24, roe: 12.32, roce: 20.67, net_margin: 10.21, dividend_yield: 0.18 }}
+                flat
+            />
+        );
+        // 14.00 / 24.24 = 0.58 -> well under the backend's 0.75 cutoff.
+        expect(rowFor('P/E').textContent).toContain('Below sector');
+        expect(rowFor('Dividend yield').textContent).toContain('Good');
+        for (const label of ['ROE', 'ROCE', 'Net margin']) {
+            expect(rowFor(label).textContent, label).toContain('Excellent');
+        }
+    });
+
+    it('states where the P/E sits and passes no verdict on it', () => {
+        // Neither quality words nor valuation verdicts: "Excellent" would imply a
+        // low multiple is good, and "Cheap" implies the same thing more quietly.
+        render(<KeyRatiosCard symbol="X" ratios={{ pe_ratio: 8 }} sectorMedians={{ pe_ratio: 30 }} flat />);
+        const txt = rowFor('P/E').textContent;
+        expect(txt).toContain('Below sector');
+        for (const banned of ['Excellent', 'Good', 'Cheap', 'Expensive']) {
+            expect(txt, banned).not.toContain(banned);
+        }
+    });
+
+    it('judges P/E against the benchmark, falling back to absolute cutoffs', () => {
+        // Same P/E, opposite verdicts, because valuation is inherently relative.
+        render(<KeyRatiosCard symbol="X" ratios={{ pe_ratio: 20 }} sectorMedians={{ pe_ratio: 60 }} flat />);
+        expect(rowFor('P/E').textContent).toContain('Below sector');
+        cleanup();
+        render(<KeyRatiosCard symbol="X" ratios={{ pe_ratio: 20 }} sectorMedians={{ pe_ratio: 10 }} flat />);
+        expect(rowFor('P/E').textContent).toContain('Above sector');
+    });
+
+    it('describes the multiple itself when there is no sector to sit against', () => {
+        // "Below sector" would be a claim about a sector figure we do not have.
+        render(<KeyRatiosCard symbol="X" ratios={{ pe_ratio: 40 }} flat />);
+        const txt = rowFor('P/E').textContent;
+        expect(txt).toContain('High');
+        expect(txt).not.toContain('sector');
+    });
+
+    it('rates dividend yield across its range', () => {
+        for (const [dy, label] of [[6, 'Excellent'], [3.08, 'Good'], [2, 'Average'], [0.8, 'Weak'], [0.1, 'Poor']]) {
+            cleanup();
+            render(<KeyRatiosCard symbol="X" ratios={{ dividend_yield: dy }} flat />);
+            expect(rowFor('Dividend yield').textContent, `dy ${dy}`).toContain(label);
+        }
+    });
+});
