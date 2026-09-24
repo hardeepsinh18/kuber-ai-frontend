@@ -5,7 +5,7 @@ import { fmtPct, fmtMultiple, fmtRatio } from '../../../utils/metricFormat';
 import { INNER_CARD_DARK } from '../answerKit';
 import { InfoTip } from './InfoTip';
 import {
-    RATIO_META, RATIO_ORDER, sane, verdict as ratioVerdict, median,
+    RATIO_META, RATIO_ORDER, sane, verdict as ratioVerdict, median, grade,
 } from '../../../utils/ratioPolarity';
 
 /* ─── KEY RATIOS — peer / sector comparison table ────────────────────────────
@@ -53,6 +53,48 @@ const VerdictMark = ({ verdict }) => {
         return <Minus size={15} strokeWidth={2.5} className="text-zinc-400 dark:text-zinc-500 flex-shrink-0" aria-label="In line" />;
     }
     return <span className="text-zinc-300 dark:text-zinc-600 text-sm flex-shrink-0 leading-none" aria-label="Not comparable">—</span>;
+};
+
+/* ─── Rating pill ────────────────────────────────────────────────────────────
+ * Answers the question the comparison column cannot: "is this number good?"
+ *
+ * Five tiers, worded and cut exactly as the backend's fundamental_engine rates
+ * them, so the pill and the score banner above the table always agree. Colour
+ * runs on a genuine scale (emerald → lime → amber → orange → rose) rather than
+ * the two-colour better/worse split, because "Average" is a real, distinct
+ * answer and must not have to borrow green or red.
+ */
+const GRADE_STYLE = {
+    5: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 ring-emerald-500/30',
+    4: 'bg-lime-500/15 text-lime-700 dark:text-lime-300 ring-lime-500/30',
+    3: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 ring-amber-500/30',
+    2: 'bg-orange-500/15 text-orange-700 dark:text-orange-300 ring-orange-500/30',
+    1: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 ring-rose-500/30',
+};
+
+const GradePill = ({ g, title }) => {
+    // No defensible absolute scale for this ratio — say nothing rather than
+    // imply an average pass. The dash matches the not-comparable mark used by
+    // VerdictMark so the two gaps read as the same kind of answer.
+    if (!g) {
+        return (
+            <span
+                className="text-zinc-300 dark:text-zinc-600 text-sm leading-none"
+                title="No absolute quality scale for this ratio — compared to the benchmark only"
+            >—</span>
+        );
+    }
+    return (
+        <span
+            title={title}
+            className={clsx(
+                'inline-block px-2 py-0.5 rounded-md text-[11px] font-semibold whitespace-nowrap ring-1',
+                GRADE_STYLE[g.tier]
+            )}
+        >
+            {g.label}
+        </span>
+    );
 };
 
 /** Value colour follows the verdict; an unjudged value stays neutral. */
@@ -175,6 +217,13 @@ export const KeyRatiosCard = ({
                             <th scope="col" className="py-2.5 px-3 text-center text-xs font-semibold text-zinc-600 dark:text-zinc-300 whitespace-nowrap">
                                 {comparedLabel}
                             </th>
+                            {/* The absolute read. Deliberately the LAST column: the eye
+                                lands on it after the number and its benchmark, which is
+                                the order the question is actually asked in ("what is it?
+                                → versus what? → so is that good?"). */}
+                            <th scope="col" className="py-2.5 px-3 text-center text-xs font-semibold text-zinc-600 dark:text-zinc-300 whitespace-nowrap border-l border-zinc-200 dark:border-zinc-800">
+                                Rating
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
@@ -183,6 +232,13 @@ export const KeyRatiosCard = ({
                             const v = ratioVerdict(key, value, bench);
                             const benchText = fmtByUnit(key, bench);
                             const banded = meta.dir === 'band';
+                            // Absolute quality, independent of the comparator tab —
+                            // switching from Sector to a peer changes the middle column
+                            // and the arrow, never this.
+                            const g = grade(key, value);
+                            const gradeTitle = g
+                                ? `${fmtByUnit(key, value)} is ${g.label.toLowerCase()} for ${meta.label} on its own merits, regardless of ${comparedLabel}`
+                                : undefined;
 
                             return (
                                 <tr key={key} className="border-t border-zinc-100 dark:border-zinc-800/60">
@@ -220,6 +276,10 @@ export const KeyRatiosCard = ({
                                               </span>
                                             : (benchText ?? <span className="text-zinc-300 dark:text-zinc-600" title="No usable benchmark for this ratio">n/a</span>)}
                                     </td>
+
+                                    <td className="py-3 px-3 text-center whitespace-nowrap border-l border-zinc-100 dark:border-zinc-800/60">
+                                        <GradePill g={g} title={gradeTitle} />
+                                    </td>
                                 </tr>
                             );
                         })}
@@ -227,12 +287,21 @@ export const KeyRatiosCard = ({
                 </table>
             </div>
 
-            {/* The colour legend ("Better/Worse in comparison") and the tally
-                footer ("Ahead on 5 of 5 vs Sector · 130 stocks") were removed by
-                product decision. The green/red values and the trend arrow already
-                carry that meaning row by row, so both lines restated what the
-                table showed. The per-row colouring is unaffected — it comes from
-                ratioVerdict() on each row, not from the removed tally. */}
+            {/* One line naming what the two judgements MEAN. The earlier
+                "Better/Worse in comparison" legend was removed because it merely
+                restated the arrow; this one does not restate anything — it draws
+                the distinction the table would otherwise leave the reader to infer,
+                which is the entire reason a green arrow on a weak ROE was being
+                misread as "good". Shown only when at least one row is actually
+                graded, so an ungraded payload doesn't advertise a column of dashes. */}
+            {rows.some(({ key, value }) => grade(key, value)) && (
+                <p className="mt-2.5 px-0.5 text-[11px] leading-relaxed text-zinc-500 dark:text-zinc-400">
+                    <span className="font-semibold text-zinc-600 dark:text-zinc-300">Colour &amp; arrow</span> compare
+                    this stock with {comparedLabel}. <span className="font-semibold text-zinc-600 dark:text-zinc-300">Rating</span> judges
+                    the number on its own — Excellent, Good, Average, Weak or Poor — so a stock can beat a weak
+                    sector and still rate Poor.
+                </p>
+            )}
         </div>
     );
 

@@ -199,3 +199,75 @@ export const median = (key, peers, minPeers = 3) => {
     const mid = pool.length >> 1;
     return pool.length % 2 ? pool[mid] : (pool[mid - 1] + pool[mid]) / 2;
 };
+
+/* ─── ABSOLUTE QUALITY GRADE ──────────────────────────────────────────────────
+ *
+ * The verdict()/percentile() machinery above answers ONE question: "better or
+ * worse than the benchmark?" That is a relative question, and on its own it
+ * misleads — a 7.96% ROE against a 6.37% sector median renders green and
+ * up-arrow, which a reader fairly takes as "this is good." It is not: 7.96% ROE
+ * is a weak absolute return that happens to sit in a weak sector. Relative
+ * strength and absolute quality are different claims, and the card was only
+ * ever making the first one while looking like it made the second.
+ *
+ * These thresholds are a DELIBERATE MIRROR of the backend's rating functions in
+ * app/services/fundamental_engine.py (_rate_roce_roe, _rate_debt_equity,
+ * _rate_net_margin, _rate_current_ratio, _rate_peg …) and its
+ * RATING_LABEL = {5:"Exceptional",4:"Strong",3:"Average",2:"Weak",1:"Poor"}.
+ * The score banner a user sees above this table is computed from those exact
+ * cutoffs, so any other numbers here would let the table and the score contradict
+ * each other on the same stock. If the backend scale changes, change it here too.
+ *
+ * Ratios NOT rated here (pb_ratio, roa, ev_ebitda, dividend_yield, quick_ratio)
+ * deliberately have no entry: the backend defines no absolute scale for them, and
+ * inventing one client-side would be a number we cannot defend. They keep the
+ * peer comparison alone and render no grade — an honest gap, not a silent pass.
+ */
+
+/** 5 = best. Mirrors the backend's RATING_LABEL, wording included. */
+export const GRADE_LABEL = {
+    5: 'Excellent',
+    4: 'Good',
+    3: 'Average',
+    2: 'Weak',
+    1: 'Poor',
+};
+
+/**
+ * Descending [floor, tier] cutoffs for HIGHER_BETTER ratios and ascending
+ * [ceiling, tier] for LOWER_BETTER ones. Read top-down; first match wins.
+ */
+const GRADE_SCALE = {
+    // _rate_roce_roe — one scale for both, as the backend does.
+    roe:              { dir: 'higher', steps: [[25, 5], [18, 4], [12, 3], [8, 2]] },
+    roce:             { dir: 'higher', steps: [[25, 5], [18, 4], [12, 3], [8, 2]] },
+    // _rate_net_margin
+    net_margin:       { dir: 'higher', steps: [[20, 5], [10, 4], [5, 3], [2, 2]] },
+    // _rate_ebitda — the closest backend analogue for an operating margin.
+    operating_margin: { dir: 'higher', steps: [[25, 5], [15, 4], [10, 3], [5, 2]] },
+    // _rate_debt_equity — lower is better, so these are ceilings.
+    debt_equity:      { dir: 'lower',  steps: [[0.30, 5], [0.75, 4], [1.50, 3], [2.50, 2]] },
+    // _rate_current_ratio. Note this is a floor scale in the backend (>=2 is best),
+    // which is why current_ratio grades DIFFERENTLY from how verdict() bands it:
+    // the band asks "is liquidity healthy", the grade asks "how strong is it".
+    current_ratio:    { dir: 'higher', steps: [[2, 5], [1.5, 4], [1.0, 3], [0.8, 2]] },
+};
+
+/**
+ * Absolute quality tier for a ratio, independent of any peer or sector.
+ *
+ * Returns { tier, label } with tier 1-5, or null when this ratio has no defensible
+ * absolute scale (see the note above) or the value is unusable. Null must render as
+ * "no grade", never as a neutral/average pass — the whole point is to stop implying
+ * a judgement we have not made.
+ */
+export const grade = (key, value) => {
+    const scale = GRADE_SCALE[key];
+    const v = num(value);
+    if (!scale || v == null || !sane(key, v)) return null;
+    let tier = 1;
+    for (const [bound, t] of scale.steps) {
+        if (scale.dir === 'higher' ? v >= bound : v <= bound) { tier = t; break; }
+    }
+    return { tier, label: GRADE_LABEL[tier] };
+};
