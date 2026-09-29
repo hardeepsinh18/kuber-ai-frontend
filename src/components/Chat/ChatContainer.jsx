@@ -13,6 +13,7 @@ import { getApiBase } from '../../lib/apiBase';
 import { errorCopy } from '../../data/errorMessages';
 import { streamChatRequest } from '../../lib/streamChat';
 import { extractChartResolution, extractChartPeriod, extractQueryIntent, extractStockSymbols } from '../../lib/queryIntent';
+import { usePullToRefresh } from '../../hooks/usePullToRefresh';
 
 // API base — '' = same-origin relative /api/* (behind CloudFront/ALB). Set VITE_API_BASE for dev.
 // PERF-F-006: retry backoff with FULL JITTER.
@@ -207,6 +208,17 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
 
     const bottomRef = useRef(null);
     const chatContainerRef = useRef(null);
+    // Bug 8 (UAT): pull-to-refresh, scoped to the message scroller. Re-pulls
+    // the OPEN chat from the server -- the same fetch loadChat() already does
+    // on a normal open, just re-triggered on demand instead of waiting for a
+    // chat switch. No-ops harmlessly if there's no chat open yet (guest/new
+    // chat) or no server copy to pull (guest has none).
+    const { pullDistance, isRefreshing: isPullRefreshing, threshold: pullThreshold } = usePullToRefresh(
+        chatContainerRef,
+        useCallback(() => {
+            if (currentChatIdRef.current) loadChat(currentChatIdRef.current);
+        }, [loadChat, currentChatIdRef])
+    );
     const streamingTopRef = useRef(null); // marks top of the incoming AI message
     const abortControllerRef = useRef(null);
     const streamingTimeoutRef = useRef(null);
@@ -1296,6 +1308,31 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
             )}
 
             <div className="flex-1 overflow-hidden flex flex-col relative">
+                {/* Bug 8 (UAT): pull-to-refresh indicator. Fades/scales in with the
+                    pull, spins once actually refreshing. Purely visual -- the gesture
+                    logic lives in usePullToRefresh. */}
+                {(pullDistance > 0 || isPullRefreshing) && (
+                    <div
+                        className="absolute top-2 left-1/2 -translate-x-1/2 z-20 w-8 h-8 rounded-full
+                                   flex items-center justify-center bg-white dark:bg-zinc-900
+                                   border border-zinc-200 dark:border-zinc-700 shadow-sm pointer-events-none
+                                   transition-opacity"
+                        style={{
+                            opacity: isPullRefreshing ? 1 : Math.min(pullDistance / pullThreshold, 1),
+                            transform: `translateX(-50%) scale(${isPullRefreshing ? 1 : Math.min(0.6 + (pullDistance / pullThreshold) * 0.4, 1)})`,
+                        }}
+                    >
+                        <svg
+                            width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                            className={`text-zinc-500 dark:text-zinc-400 ${isPullRefreshing ? 'animate-spin' : ''}`}
+                            style={isPullRefreshing ? undefined : { transform: `rotate(${Math.min(pullDistance / pullThreshold, 1) * 360}deg)` }}
+                        >
+                            <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+                            <path d="M21 3v6h-6" />
+                        </svg>
+                    </div>
+                )}
                 <main
                     ref={chatContainerRef}
                     /* QA-C-008: the conversation is the main content of this screen, so it carries

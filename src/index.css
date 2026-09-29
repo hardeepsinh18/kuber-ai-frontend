@@ -121,12 +121,26 @@ body {
   height: 100dvh;     /* dynamic viewport — avoids the iOS 100vh overflow that unpins fixed bars */
   width: 100%;
   overflow: hidden;
+  /* Bug 12 (UAT, iOS): "keyboard appears with a white background". BackgroundEffect
+     (the app's actual background layer) is a `fixed inset-0` div, which is normally
+     always full-bleed -- but iOS Safari/WKWebView has a well-documented quirk where
+     fixed-position elements can visually desync from the real viewport for a moment
+     during the keyboard open/close transition (the visual viewport resizes; layout
+     viewport-based `fixed` positioning doesn't always follow in the same frame).
+     Whatever that gap briefly exposes is body's OWN background -- which had none set,
+     so it defaulted to browser white. This is the safety net underneath the real
+     background layer, not a replacement for it. */
+  background-color: #F5F2E8;
   transition: background-color 0.3s, color 0.3s;
   /* Prevent overscroll bounce on iOS */
   overscroll-behavior-y: none;
   /* Improve font rendering */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+html.dark body {
+  background-color: #0A0A0A;
 }
 
 /* Stop mobile browsers (esp. iOS Safari) from auto-zooming when a field is

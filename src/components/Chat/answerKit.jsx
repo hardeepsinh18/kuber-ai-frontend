@@ -12,6 +12,7 @@ import { InfoTip } from './FundamentalCard/InfoTip';
 import { hasTerm } from '../../utils/glossaryLookup';
 import { annotateRichProse } from '../../utils/glossaryProse';
 import { GlossaryText, GlossarySegments } from './GlossaryText';
+import { getApiBase } from '../../lib/apiBase';
 
 /**
  * answerKit — shared building blocks for the structured answer layouts
@@ -199,9 +200,18 @@ const Monogram = ({ text }) => {
     );
 };
 
-/* Logo tile — the company logo served at /api/logos/<SYM>.png (same-origin, so
- * CSP-safe), falling back to the monogram when we ship no logo for that symbol
- * (onError) or there is no symbol. Uses the FULL ticker (incl. .NS/.BO). */
+/* Logo tile — the company logo served at /api/logos/<SYM>.png, falling back
+ * to the monogram when we ship no logo for that symbol (onError) or there is
+ * no symbol. Uses the FULL ticker (incl. .NS/.BO).
+ *
+ * getApiBase() (not a bare '/api/...' path): this file is also consumed
+ * embedded inside a partner's own app (a different origin than ours), where
+ * a relative path resolves against THEIR origin -- which has no /api/logos/
+ * route -- instead of ours. getApiBase() returns '' (same-origin, correct)
+ * for our own standalone deployment, and the partner's build sets
+ * VITE_API_BASE to point at our real API host for their embedded build.
+ * Every other API call in this codebase already goes through this same
+ * helper for the same reason; this was the one spot that didn't. */
 export const LogoTile = ({ symbol, text }) => {
     if (!symbol) return <Monogram text={text} />;
     const initials = String(text || '?').replace(/[^A-Za-z0-9]/g, '').slice(0, 3).toUpperCase() || '?';
@@ -209,7 +219,7 @@ export const LogoTile = ({ symbol, text }) => {
         <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden
                         bg-zinc-100 dark:bg-white/[0.06] border border-zinc-200 dark:border-white/10">
             <img
-                src={`/api/logos/${symbol}.png`}
+                src={`${getApiBase()}/api/logos/${symbol}.png`}
                 alt={initials}
                 className="w-full h-full object-contain p-1"
                 onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'flex'; }}

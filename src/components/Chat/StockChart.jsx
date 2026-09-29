@@ -7,6 +7,7 @@ import { normalizeOhlc } from '../../lib/chart/normalize';
 import { formatVolume, formatShortDate } from '../../lib/chart/formatters';
 import { buildRenko } from '../../lib/chartTransforms';
 import { useTheme } from '../../context/ThemeContext';
+import { getApiBase } from '../../lib/apiBase';
 
 /**
  * StockChart — TradingView-grade price chart.
@@ -159,7 +160,7 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
     // Logo derived from the symbol (full ticker incl. .NS/.BO) so it resolves even for chats
     // saved before logo_url existed; a symbol we don't ship 404s → onError shows the trend icon.
     const chartLogoSym = atAGlance?.symbol || chart_metadata?.symbol || symbol;
-    const chartLogoSrc = chartLogoSym ? `/api/logos/${chartLogoSym}.png` : atAGlance?.logo_url;
+    const chartLogoSrc = chartLogoSym ? `${getApiBase()}/api/logos/${chartLogoSym}.png` : atAGlance?.logo_url;
 
     return (
         <div className={clsx(

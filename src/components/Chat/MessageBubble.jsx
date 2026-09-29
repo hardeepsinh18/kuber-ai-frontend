@@ -18,6 +18,7 @@ import ScreenerAnswer from './ScreenerAnswer';
 import GeneralAnswer from './GeneralAnswer';
 import { parseScreenerRows, screenerProse } from './screenerRows';
 import { IndicatorsTable, stripAiDashes, fmtVol } from './answerKit';
+import { getApiBase } from '../../lib/apiBase';
 
 const normalizeSymbol = (s) => {
     const raw = String(s || "").trim();
@@ -1078,7 +1079,7 @@ const MessageBubble = (props) => {
                         // (old Supabase). The API serves /api/logos/<SYM>.png; a symbol we don't ship
                         // 404s → onError falls back to the letter avatar.
                         const logoSym = aag.symbol || metadata?.symbols?.[0];
-                        const logoSrc = logoSym ? `/api/logos/${logoSym}.png` : aag.logo_url;
+                        const logoSrc = logoSym ? `${getApiBase()}/api/logos/${logoSym}.png` : aag.logo_url;
                         return (
                             <div className="mb-4 rounded-xl border border-zinc-200/60 dark:border-zinc-700/60 bg-zinc-50 dark:bg-[#1C1B15] overflow-hidden">
                                 {/* Main row: logo, name, price, change */}
