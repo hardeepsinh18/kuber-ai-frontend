@@ -450,3 +450,70 @@ describe('KeyRatiosCard — absolute rating', () => {
         }
     });
 });
+
+/**
+ * GVT&D, 2026-09-30. The card published "P/E 578.00x" against a real ~81,
+ * because a stale fiscal-year EPS fed the ratio. The backend fix suppressed the
+ * value — and the whole P/E row then vanished from the card, because the row
+ * filter tested `value != null`.
+ *
+ * Both halves are wrong in different ways, and these pin both:
+ *   - showing 578x asserts a false fact about a real company;
+ *   - dropping the row asserts the metric does not exist, when in truth we
+ *     looked and could not establish it.
+ * The right answer is the row, present, with an em-dash.
+ */
+describe('a suppressed ratio keeps its row', () => {
+    const rowFor = (label) => screen
+        .getAllByRole('row')
+        .find(r => within(r).queryByText(label));
+
+    it('keeps the P/E row when the backend nulls an implausible value', () => {
+        renderCard({ ratios: { ...LLOYDSME, pe_ratio: null } });
+        expect(rowFor('P/E')).toBeTruthy();
+    });
+
+    it('shows an em-dash instead of the number', () => {
+        renderCard({ ratios: { ...LLOYDSME, pe_ratio: null } });
+        expect(rowFor('P/E').textContent).toContain('—');
+        expect(rowFor('P/E').textContent).not.toMatch(/\d+\.\d+x/);
+    });
+
+    it('suppresses an out-of-band P/E the backend let through', () => {
+        // RATIO_META.pe_ratio.sane is [0, 500] and was already documented as
+        // ">500 is an earnings artefact" — but was only ever applied to peer
+        // pools and benchmarks, never to the displayed value. 578x is the case.
+        renderCard({ ratios: { ...LLOYDSME, pe_ratio: 578.0 } });
+        expect(rowFor('P/E').textContent).not.toContain('578');
+        expect(rowFor('P/E').textContent).toContain('—');
+    });
+
+    it('does not grade a value it has declared unusable', () => {
+        renderCard({ ratios: { ...LLOYDSME, pe_ratio: 578.0 } });
+        const row = rowFor('P/E');
+        for (const verdict of ['Cheap', 'Fair', 'Expensive', 'Good', 'Excellent', 'Poor']) {
+            expect(row.textContent).not.toContain(verdict);
+        }
+    });
+
+    it('still renders a genuinely expensive P/E', () => {
+        // The real GVT&D figure. Suppressing true-but-high valuations would be
+        // its own bug — the bound exists for artefacts, not for pricey stocks.
+        renderCard({ ratios: { ...LLOYDSME, pe_ratio: 81.21 } });
+        expect(rowFor('P/E').textContent).toContain('81.21');
+    });
+
+    it('omits the row entirely when the key is absent', () => {
+        // Absent key and present-but-unusable value are different claims: the
+        // first was never offered, the second we looked at and could not judge.
+        const { pe_ratio, ...withoutPe } = LLOYDSME;
+        renderCard({ ratios: withoutPe });
+        expect(rowFor('P/E')).toBeFalsy();
+    });
+
+    it('leaves the other rows untouched', () => {
+        renderCard({ ratios: { ...LLOYDSME, pe_ratio: null } });
+        expect(rowFor('ROE').textContent).toContain('37.66');
+        expect(rowFor('ROCE').textContent).toContain('26.65');
+    });
+});

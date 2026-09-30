@@ -155,10 +155,35 @@ export const KeyRatiosCard = ({
     // Rows are derived from what the payload actually carries, in the fixed
     // display order — never from Object.keys, so ordering can't drift with
     // whatever sequence the backend happens to serialise.
+    // A row is kept when the payload CARRIES the key at all, even if its value is
+    // unusable. `unusable` then splits two cases the table must not conflate:
+    //
+    //   - key absent entirely        -> no row (we were never asked about it)
+    //   - key present, value bad     -> row with an em-dash (we looked, and cannot say)
+    //
+    // The second case used to be dropped along with the first, because the filter
+    // tested `value != null`. When the backend began suppressing GVT&D's implausible
+    // 578x P/E by nulling it, the whole P/E row vanished from the card — the most-read
+    // ratio silently disappearing reads as "this metric does not exist" rather than
+    // "this figure could not be established", which is a different and worse claim.
+    //
+    // A value outside RATIO_META[key].sane is treated as unusable too. That bound was
+    // already declared (pe_ratio: [0, 500], commented ">500 is an earnings artefact")
+    // but only ever applied to peer pools and benchmarks, never to the stock's own
+    // displayed number — which is how 578.00x reached the screen in the first place.
     const rows = React.useMemo(
         () => RATIO_ORDER
-            .map(key => ({ key, meta: RATIO_META[key], value: readRatio(ratios[key]) }))
-            .filter(r => r.value != null && Number.isFinite(Number(r.value))),
+            .filter(key => key in ratios)
+            .map(key => {
+                const value = readRatio(ratios[key]);
+                const finite = value != null && Number.isFinite(Number(value));
+                return {
+                    key,
+                    meta: RATIO_META[key],
+                    value: finite ? value : null,
+                    unusable: !finite || !sane(key, value),
+                };
+            }),
         [ratios]
     );
 
@@ -238,9 +263,15 @@ export const KeyRatiosCard = ({
                         </tr>
                     </thead>
                     <tbody>
-                        {rows.map(({ key, meta, value }) => {
+                        {rows.map(({ key, meta, value, unusable }) => {
                             const bench = benchmarkFor(key);
-                            const v = ratioVerdict(key, value, bench);
+                            // An unusable value must not be graded, ranked or compared:
+                            // every downstream read of it would be a judgement built on a
+                            // number we have just declared untrustworthy. Forcing the
+                            // verdict and grade to null routes the row through the card's
+                            // existing "not comparable" path — an em-dash in the arrow and
+                            // Rating columns, exactly as a missing benchmark renders.
+                            const v = unusable ? null : ratioVerdict(key, value, bench);
                             const benchText = fmtByUnit(key, bench);
                             const banded = meta.dir === 'band';
                             // Quality ratings are absolute — switching the comparator tab
@@ -248,7 +279,7 @@ export const KeyRatiosCard = ({
                             // P/E is the one exception by design: valuation only means
                             // anything against a benchmark, so it takes `bench` and does
                             // move with the tab (mirroring the backend's rel_pe test).
-                            const g = grade(key, value, bench);
+                            const g = unusable ? null : grade(key, value, bench);
                             const gradeTitle = !g ? undefined
                                 : g.kind === 'valuation'
                                     ? `${meta.label} of ${fmtByUnit(key, value)} sits ${g.label.toLowerCase()}${benchText ? ` (${comparedLabel} ${benchText})` : ''}. A lower multiple is not automatically better — it can mean the market expects earnings to fall, just as a higher one can be normal for a faster-growing business.`
@@ -277,7 +308,12 @@ export const KeyRatiosCard = ({
                                     </th>
 
                                     <td className="py-3 px-3 text-center whitespace-nowrap border-l border-zinc-100 dark:border-zinc-800/60">
-                                        <span className={valueClass(v)}>{fmtByUnit(key, value)}</span>
+                                        {unusable
+                                            ? <span
+                                                className="text-zinc-300 dark:text-zinc-600"
+                                                title="We could not establish a reliable figure for this ratio, so none is shown"
+                                              >—</span>
+                                            : <span className={valueClass(v)}>{fmtByUnit(key, value)}</span>}
                                     </td>
 
                                     {/* A banded ratio has no peer comparison — it is judged
