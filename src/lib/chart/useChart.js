@@ -46,16 +46,31 @@ export const useChart = (containerRef, { theme }) => {
                 tickMarkFormatter: formatTickMark,
                 rightOffset: 4,
                 barSpacing: 8,
-                // No bound was set here at all, so a scroll/pinch gesture (the
-                // price-axis drag that rescales the Y axis has nothing to do
-                // with it — handleScale's time-axis gesture is independent)
-                // could pan the visible range past the first/last bar,
-                // leaving the chart showing mostly empty space.
+                // Keep horizontal panning bounded to the actual data range too
+                // (belt-and-suspenders alongside the price-axis fix below).
                 fixLeftEdge: true,
                 fixRightEdge: true,
             },
             handleScroll: true,
-            handleScale: true,
+            handleScale: {
+                mouseWheel: true,
+                pinch: true,
+                axisPressedMouseMove: {
+                    time: true,
+                    // Confirmed via screen recording: dragging the right-side
+                    // price axis manually rescales the Y range with NO limit —
+                    // drag far enough and the real candles scroll entirely off
+                    // the visible range (price axis ends up showing e.g.
+                    // ₹17,500–21,745 while the actual data sits at
+                    // ₹22,000–25,600), leaving a totally empty chart. There is
+                    // no "snap back" once that happens short of a page reload.
+                    // Disabling this one gesture removes the failure mode
+                    // outright; autoScale (the default) already keeps the
+                    // price axis correctly fit to the visible candles, so nothing
+                    // is lost — this was never a feature anyone was relying on.
+                    price: false,
+                },
+            },
         });
 
         chartRef.current = chart;
