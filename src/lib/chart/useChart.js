@@ -46,6 +46,13 @@ export const useChart = (containerRef, { theme }) => {
                 tickMarkFormatter: formatTickMark,
                 rightOffset: 4,
                 barSpacing: 8,
+                // No bound was set here at all, so a scroll/pinch gesture (the
+                // price-axis drag that rescales the Y axis has nothing to do
+                // with it — handleScale's time-axis gesture is independent)
+                // could pan the visible range past the first/last bar,
+                // leaving the chart showing mostly empty space.
+                fixLeftEdge: true,
+                fixRightEdge: true,
             },
             handleScroll: true,
             handleScale: true,
