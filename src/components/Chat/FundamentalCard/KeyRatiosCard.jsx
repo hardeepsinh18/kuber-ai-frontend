@@ -60,20 +60,18 @@ const VerdictMark = ({ verdict }) => {
  *
  * Five tiers, worded and cut exactly as the backend's fundamental_engine rates
  * them, so the pill and the score banner above the table always agree. Colour
- * runs on the 72 Street palette rather than Tailwind's emerald/lime/orange,
- * which read as a different product next to the rest of the answer: brand
- * green for the good end (solid for Excellent, tinted for Good), brand yellow
- * for Average — a real, distinct answer that must not borrow green or red —
- * and rose for the weak end, the one non-brand hue, kept because a negative
- * read needs a signal the palette doesn't carry. Solid fills take brand-black
- * ink: white on #0e9e37 fails AA at pill size, #121315 passes.
+ * runs on the 72 Street palette — brand green for the good end, brand yellow
+ * for Average (a real, distinct answer that must not borrow green or red),
+ * rose for the weak end. Every tier is a soft tint: solid fills shouted over
+ * the numbers and looked out of place beside the answer's markdown tables.
+ * Strength reads from tint depth, not from switching to a solid block.
  */
 const GRADE_STYLE = {
-    5: 'bg-street-green text-street-black ring-street-green',
-    4: 'bg-street-green/15 text-street-green-dark dark:text-street-green ring-street-green/40',
-    3: 'bg-street-yellow/15 text-street-yellow-ink dark:text-street-yellow ring-street-yellow/40',
-    2: 'bg-rose-500/10 text-rose-700 dark:text-rose-300 ring-rose-500/30',
-    1: 'bg-rose-600 text-white ring-rose-600',
+    5: 'bg-street-green/20 text-street-green-dark dark:text-[#3ccb66] ring-street-green/40',
+    4: 'bg-street-green/10 text-street-green-dark dark:text-street-green ring-street-green/25',
+    3: 'bg-street-yellow/15 text-street-yellow-ink dark:text-street-yellow ring-street-yellow/30',
+    2: 'bg-rose-500/10 text-rose-600 dark:text-rose-300 ring-rose-500/25',
+    1: 'bg-rose-500/20 text-rose-700 dark:text-rose-400 ring-rose-500/40',
 };
 
 /* Valuation is a different KIND of claim from quality, so it gets its own
@@ -83,7 +81,7 @@ const GRADE_STYLE = {
  * and plain neutrals stay legible in both themes while carrying no
  * good-or-bad charge of their own. */
 const VALUATION_STYLE = {
-    5: 'bg-street-gunmetal/10 text-street-gunmetal dark:bg-street-gunmetal dark:text-[#cfe1e3] ring-street-gunmetal/40',
+    5: 'bg-street-gunmetal/10 text-street-gunmetal dark:bg-street-gunmetal/60 dark:text-[#cfe1e3] ring-street-gunmetal/40',
     3: 'bg-zinc-500/10 text-zinc-700 dark:text-zinc-200 ring-zinc-500/30',
     1: 'bg-transparent text-zinc-700 dark:text-zinc-200 ring-zinc-400 dark:ring-zinc-500',
 };
@@ -232,7 +230,7 @@ export const KeyRatiosCard = ({
                             className={clsx(
                                 'px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap flex-shrink-0 border transition-colors',
                                 tab === t
-                                    ? 'border-street-yellow bg-street-yellow text-street-black'
+                                    ? 'border-street-yellow bg-street-yellow/10 text-zinc-900 dark:text-street-yellow'
                                     : 'border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:border-street-yellow/60 hover:text-zinc-900 dark:hover:text-white'
                             )}
                         >
@@ -244,32 +242,33 @@ export const KeyRatiosCard = ({
 
             {/* A real <table>: three plain columns, one row per ratio. Scrolls
                 inside its own container on a narrow screen rather than forcing
-                the card to scroll sideways. Styled as answerKit's IndicatorsTable
-                — brand-yellow outline and header band with brand-black ink — so
-                the two tables read as one system inside the same answer. */}
-            <div className="overflow-x-auto rounded-lg border border-street-yellow">
+                the card to scroll sideways. Drawn in exactly the format of the
+                chat's markdown tables (MessageBubble's table renderers) — soft
+                yellow-wash header, small uppercase labels, zebra rows, yellow
+                hover, no vertical rules — so every table in an answer matches. */}
+            <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-700/50 bg-white dark:bg-[#201d19]">
                 <table className="w-full text-left border-collapse">
-                    <thead>
-                        <tr className="bg-street-yellow">
-                            <th scope="col" className="py-2.5 px-3 text-[13px] font-bold text-street-black">
+                    <thead className="bg-gradient-to-b from-[#FDD405]/[0.18] to-[#FDD405]/[0.07] dark:from-[#FDD405]/[0.16] dark:to-[#FDD405]/[0.05] border-b border-[#FDD405]/70">
+                        <tr>
+                            <th scope="col" className="py-3 px-3.5 text-[9px] font-extrabold uppercase tracking-[0.16em] text-zinc-900 dark:text-[#FDD405] whitespace-nowrap">
                                 Ratios
                             </th>
-                            <th scope="col" className="py-2.5 px-3 text-center text-[13px] font-bold text-street-black whitespace-nowrap border-l border-street-black/10">
+                            <th scope="col" className="py-3 px-3.5 text-center text-[9px] font-extrabold uppercase tracking-[0.16em] text-zinc-900 dark:text-[#FDD405] whitespace-nowrap">
                                 {symbol || 'Stock'}
                             </th>
-                            <th scope="col" className="py-2.5 px-3 text-center text-[13px] font-bold text-street-black whitespace-nowrap">
+                            <th scope="col" className="py-3 px-3.5 text-center text-[9px] font-extrabold uppercase tracking-[0.16em] text-zinc-900 dark:text-[#FDD405] whitespace-nowrap">
                                 {comparedLabel}
                             </th>
                             {/* The absolute read. Deliberately the LAST column: the eye
                                 lands on it after the number and its benchmark, which is
                                 the order the question is actually asked in ("what is it?
                                 → versus what? → so is that good?"). */}
-                            <th scope="col" className="py-2.5 px-3 text-center text-[13px] font-bold text-street-black whitespace-nowrap border-l border-street-black/10">
+                            <th scope="col" className="py-3 px-3.5 text-center text-[9px] font-extrabold uppercase tracking-[0.16em] text-zinc-900 dark:text-[#FDD405] whitespace-nowrap">
                                 Rating
                             </th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="divide-y divide-zinc-200/80 dark:divide-white/[0.06]">
                         {rows.map(({ key, meta, value, unusable }) => {
                             const bench = benchmarkFor(key);
                             // An unusable value must not be graded, ranked or compared:
@@ -293,7 +292,7 @@ export const KeyRatiosCard = ({
                                     : `${fmtByUnit(key, value)} is ${g.label.toLowerCase()} for ${meta.label} on its own merits, regardless of ${comparedLabel}`;
 
                             return (
-                                <tr key={key} className="border-t border-street-yellow/25 hover:bg-zinc-50 dark:hover:bg-zinc-800/20 transition-colors">
+                                <tr key={key} className="transition-colors even:bg-black/[0.02] dark:even:bg-white/[0.02] hover:bg-[#FDD405]/[0.08] dark:hover:bg-[#FDD405]/[0.07]">
                                     {/* aria-label pins the header's accessible name to the
                                         ratio itself. Without it the InfoTip's "i" glyph gets
                                         appended ("P/Ei") and a screen reader repeats that for
@@ -303,7 +302,7 @@ export const KeyRatiosCard = ({
                                     <th
                                         scope="row"
                                         aria-label={meta.label}
-                                        className="py-3 px-3 text-[13px] font-medium text-zinc-800 dark:text-zinc-200"
+                                        className="py-3 px-3.5 text-[13px] font-medium text-zinc-700 dark:text-zinc-200"
                                     >
                                         <span className="flex items-center justify-between gap-2">
                                             <span className="flex items-center gap-1">
@@ -314,7 +313,7 @@ export const KeyRatiosCard = ({
                                         </span>
                                     </th>
 
-                                    <td className="py-3 px-3 text-center whitespace-nowrap border-l border-zinc-200 dark:border-zinc-800/80">
+                                    <td className="py-3 px-3.5 text-center whitespace-nowrap">
                                         {unusable
                                             ? <span
                                                 className="text-zinc-300 dark:text-zinc-600"
@@ -326,7 +325,7 @@ export const KeyRatiosCard = ({
                                     {/* A banded ratio has no peer comparison — it is judged
                                         against a healthy range, so the column names that
                                         range instead of a number we never compare to. */}
-                                    <td className="py-3 px-3 text-center text-xs tabular-nums text-zinc-600 dark:text-zinc-300 whitespace-nowrap">
+                                    <td className="py-3 px-3.5 text-center text-[13px] tabular-nums text-zinc-700 dark:text-zinc-200 whitespace-nowrap">
                                         {banded
                                             ? <span className="text-xs text-zinc-500 dark:text-zinc-400" title="Judged against a healthy range, not the peer set">
                                                 {meta.band[0]}–{meta.band[1]} ideal
@@ -334,7 +333,7 @@ export const KeyRatiosCard = ({
                                             : (benchText ?? <span className="text-zinc-300 dark:text-zinc-600" title="No usable benchmark for this ratio">n/a</span>)}
                                     </td>
 
-                                    <td className="py-3 px-3 text-center whitespace-nowrap border-l border-zinc-200 dark:border-zinc-800/80">
+                                    <td className="py-3 px-3.5 text-center whitespace-nowrap">
                                         <GradePill g={g} title={gradeTitle} />
                                     </td>
                                 </tr>
