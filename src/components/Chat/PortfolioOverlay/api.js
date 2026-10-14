@@ -9,6 +9,12 @@ export const HISTORY_ENDPOINT  = `${API_BASE}/api/v1/portfolio/history`
 export const SNAPSHOT_ENDPOINT = (id) => `${API_BASE}/api/v1/portfolio/history/${id}`
 export const DETAIL_URL = (sym) => `${API_BASE}/api/v1/portfolio/stock-detail/${sym}`
 
+// Smallcase Gateway — broker holdings import
+export const SMALLCASE_STATUS_ENDPOINT      = `${API_BASE}/api/v1/smallcase/status`
+export const SMALLCASE_CREATE_TXN_ENDPOINT  = `${API_BASE}/api/v1/smallcase/create-transaction`
+export const SMALLCASE_TXN_STATUS_ENDPOINT  = (id) => `${API_BASE}/api/v1/smallcase/transaction-status/${id}`
+export const SMALLCASE_FETCH_ENDPOINT       = `${API_BASE}/api/v1/smallcase/fetch-holdings`
+
 export async function getAuthHeader() {
   try {
     const token = await getIdToken()

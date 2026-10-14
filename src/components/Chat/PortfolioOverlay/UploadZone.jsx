@@ -1,9 +1,9 @@
 import { useState, useRef } from 'react'
-import { FileSpreadsheet } from 'lucide-react'
+import { FileSpreadsheet, Link2 } from 'lucide-react'
 
 // ── Upload Zone ───────────────────────────────────────────────────────────────
 
-export function UploadZone({ onFile }) {
+export function UploadZone({ onFile, onConnectSmallcase }) {
   const fileRef = useRef()
   const [dragging, setDragging] = useState(false)
 
@@ -73,6 +73,20 @@ export function UploadZone({ onFile }) {
       <p className="mt-5 text-xs text-zinc-400 dark:text-zinc-600">
         Supports Zerodha, Groww, Angel One, Smallcase exports
       </p>
+
+      {onConnectSmallcase && (
+        <button
+          onClick={onConnectSmallcase}
+          className="mt-4 flex items-center gap-1.5 text-xs font-semibold
+            text-zinc-600 dark:text-zinc-300
+            hover:text-zinc-900 dark:hover:text-white
+            px-3 py-1.5 rounded-lg
+            hover:bg-zinc-200/60 dark:hover:bg-white/5
+            transition-all duration-150">
+          <Link2 size={12} className="text-[#FDD405]" />
+          Or connect your broker via Smallcase
+        </button>
+      )}
     </div>
   )
 }

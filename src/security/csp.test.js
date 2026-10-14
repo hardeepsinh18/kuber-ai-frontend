@@ -18,7 +18,14 @@ describe('CSP artifact', () => {
     const scriptSrc = CSP_DIRECTIVES['script-src'].join(' ');
     expect(scriptSrc).not.toContain("'unsafe-inline'");
     expect(scriptSrc).not.toContain("'unsafe-eval'");
-    expect(CSP_DIRECTIVES['script-src']).toEqual(["'self'"]);
+  });
+
+  it('script-src allows self plus exactly one confirmed third-party origin (Smallcase Gateway SDK)', () => {
+    // A deliberate, documented widening (Smallcase holdings import) — not a
+    // silent one. If this list grows, it should be because a NEW third-party
+    // script was deliberately added in the same commit as its own CSP entry,
+    // per this file's own stated contract — never append blindly.
+    expect(CSP_DIRECTIVES['script-src']).toEqual(["'self'", 'https://gateway.smallcase.com']);
   });
 
   it('blocks object/embed and base-tag hijacking', () => {
@@ -39,13 +46,21 @@ describe('CSP artifact', () => {
     expect(fontSrc).not.toContain('googleapis');
   });
 
-  it('allows only same-origin API plus AWS Cognito for connect-src', () => {
+  it('allows only same-origin API, AWS Cognito, and the Smallcase Gateway SDK for connect-src', () => {
     const connect = CSP_DIRECTIVES['connect-src'];
     expect(connect).toContain("'self'");
     expect(connect.some((v) => v.includes('cognito-idp.ap-south-1.amazonaws.com'))).toBe(true);
+    expect(connect).toContain('https://gateway.smallcase.com');
+    // gatewayapi.smallcase.com is deliberately ABSENT — that's called server-side
+    // by the backend (httpx), the browser never reaches it directly.
+    expect(connect.some((v) => v.includes('gatewayapi.smallcase.com'))).toBe(false);
     // No wildcard host smuggled in.
     expect(connect).not.toContain('*');
     expect(connect.some((v) => v === 'https://*')).toBe(false);
+  });
+
+  it('frame-src is scoped to self plus the Smallcase Gateway SDK only', () => {
+    expect(CSP_DIRECTIVES['frame-src']).toEqual(["'self'", 'https://gateway.smallcase.com']);
   });
 
   it('serializes to a valid single-line policy', () => {

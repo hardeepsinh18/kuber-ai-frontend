@@ -5,6 +5,7 @@ import { UploadZone } from './UploadZone'
 import { LoadingState } from './LoadingState'
 import { Results } from './Results'
 import { HistoryView } from './HistoryView'
+import { SmallcaseConnect } from './SmallcaseConnect'
 
 // ── Main Overlay ──────────────────────────────────────────────────────────────
 
@@ -55,13 +56,24 @@ export default function PortfolioOverlay({ onClose }) {
     setFileName('')
   }
 
+  const handleSmallcaseComplete = useCallback((data) => {
+    setFileName('Smallcase import')
+    setResult(data)
+    setPhase('results')
+  }, [])
+
+  const handleSmallcaseError = useCallback((msg) => {
+    setErrorMsg(msg || 'Broker connection failed. Please try again.')
+    setPhase('error')
+  }, [])
+
   const loadFromHistory = useCallback((data, name) => {
     setResult(data)
     setFileName(name || 'Saved analysis')
     setPhase('results')
   }, [])
 
-  const showHistory = phase !== 'loading'
+  const showHistory = phase !== 'loading' && phase !== 'smallcase'
 
   return (
     <div
@@ -138,10 +150,11 @@ export default function PortfolioOverlay({ onClose }) {
 
         {/* ── Body ── */}
         <div className="p-5 md:p-6">
-          {phase === 'upload'   && <UploadZone onFile={handleFile} />}
-          {phase === 'loading'  && <LoadingState fileName={fileName} />}
-          {phase === 'results'  && result && <Results data={result} />}
-          {phase === 'history'  && <HistoryView onLoad={loadFromHistory} />}
+          {phase === 'upload'    && <UploadZone onFile={handleFile} onConnectSmallcase={() => setPhase('smallcase')} />}
+          {phase === 'loading'   && <LoadingState fileName={fileName} />}
+          {phase === 'smallcase' && <SmallcaseConnect onComplete={handleSmallcaseComplete} onError={handleSmallcaseError} />}
+          {phase === 'results'   && result && <Results data={result} />}
+          {phase === 'history'   && <HistoryView onLoad={loadFromHistory} />}
 
           {phase === 'error' && (
             <div className="flex flex-col items-center justify-center py-24 text-center"
