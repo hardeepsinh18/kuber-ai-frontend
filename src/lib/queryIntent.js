@@ -526,13 +526,25 @@ export const extractStockSymbols = (query) => {
     // receives "tell about SAIL" instead of "tell about sail" — prevents fuzzy mismatch
     let rewrittenQuery = query;
 
+    // Several bank/AMC names (SBI, Axis, Kotak, ICICI, ...) are BOTH a listed stock
+    // and a mutual fund house. "SBI Large Cap Fund" must reach the backend as literal
+    // text so fund_resolver.py's token match can see "sbi" -- rewriting it to the
+    // stock ticker "SBIN" here breaks that match entirely: SBI's fund then loses its
+    // AMC-name token and ties with every other unrelated "Large Cap Fund", which is
+    // exactly the live ambiguous-match bug traced on 2026-10-16 (ticket: user saw
+    // Bandhan/DSP/Edelweiss/HDFC/ITI candidates with SBI itself missing). Skip all
+    // alias rewriting (and the confident-symbol push) whenever the query looks like
+    // a fund question -- a false stock-ticker hint for a fund query serves nothing
+    // downstream either way, since fund routing matches on query text, not symbols.
+    const looksLikeFundQuery = /\b(mutual\s*funds?|\bmf\b|elss|index\s+fund|\bnav\b|funds?)\b/i.test(query);
+
     // 1. Check multi-word aliases first (most reliable), longest match wins
     const multiWordAliases = Object.entries(stockAliases)
         .filter(([a]) => a.includes(' '))
         .sort((a, b) => b[0].length - a[0].length); // longest first
 
     for (const [alias, symbol] of multiWordAliases) {
-        if (queryLower.includes(alias)) {
+        if (!looksLikeFundQuery && queryLower.includes(alias)) {
             if (!confident.includes(symbol)) confident.push(symbol);
             // Only rewrite when the alias is NOT the head of a longer company name the
             // user actually typed. Replacing "tata consultancy" inside the full legal
@@ -574,7 +586,7 @@ export const extractStockSymbols = (query) => {
             && nextWord
             && !GROUP_HEAD_OK_NEXT.has(nextWord);
 
-        if (stockAliases[cleanedLower] && !headSwallowsNext
+        if (stockAliases[cleanedLower] && !headSwallowsNext && !looksLikeFundQuery
             && !confident.includes(stockAliases[cleanedLower])) {
             confident.push(stockAliases[cleanedLower]);
             rewrittenQuery = rewrittenQuery.replace(
