@@ -15,6 +15,9 @@ import QuickAnswer from './QuickAnswer';
 import AnalystAnswer from './AnalystAnswer';
 import ComparisonAnswer from './ComparisonAnswer';
 import ScreenerAnswer from './ScreenerAnswer';
+import FundAnswer from './FundAnswer';
+import FundComparisonAnswer from './FundComparisonAnswer';
+import FundRankingAnswer from './FundRankingAnswer';
 import GeneralAnswer from './GeneralAnswer';
 import { parseScreenerRows, screenerProse } from './screenerRows';
 import { IndicatorsTable, stripAiDashes, fmtVol } from './answerKit';
@@ -756,7 +759,19 @@ const MessageBubble = (props) => {
         && (metadata?.comparison === true
             || (((metadata?.comparison_symbols?.length || 0) >= 2 || (metadata?.symbols?.length || 0) >= 2)
                 && /head to head|## comparison scorecard/i.test(content || '')));
-    const isStructuredLayout = !isComparisonAnswer && (isQuickLayout || isAnalystLayout);
+
+    // Mutual fund rich cards — own metadata flags (fund_comparison, fund_ranking,
+    // fund_analysis), deliberately separate from the stock flags above: funds
+    // don't have per-symbol chart data or scoreCard, so reusing the stock flags
+    // would route a fund answer into ComparisonAnswer/QuickAnswer, which expect
+    // a different shape. See app/core/fund_answer.py for the backend side.
+    const isFundComparisonAnswer = !isUser && !isScannerResult && metadata?.fund_comparison === true;
+    const isFundRankingAnswer = !isUser && !isScannerResult && metadata?.fund_ranking === true;
+    const isFundAnswer = !isUser && !isScannerResult && metadata?.fund_analysis === true
+        && !metadata?.fetch_failed;
+    const isFundRichAnswer = isFundComparisonAnswer || isFundRankingAnswer || isFundAnswer;
+
+    const isStructuredLayout = !isComparisonAnswer && !isFundRichAnswer && (isQuickLayout || isAnalystLayout);
 
     // Screener/list answers only — never touches a message that already has a
     // layout, and never a user turn or a Scanners result (which has its own
@@ -766,6 +781,7 @@ const MessageBubble = (props) => {
         && !isScannerResult
         && !isStructuredLayout
         && !isComparisonAnswer
+        && !isFundRichAnswer
         && !metadata?.disambiguation?.ambiguous;
     const screenerRows = useMemo(
         () => (screenerEligible ? parseScreenerRows(content) : []),
@@ -786,7 +802,7 @@ const MessageBubble = (props) => {
     // read", so they skip the typewriter and render the whole screen at once.
     const { displayedText, isComplete } = useStreamingText(
         bodyForTyping,
-        !isUser && isStreaming && !isStructuredLayout && !isComparisonAnswer,
+        !isUser && isStreaming && !isStructuredLayout && !isComparisonAnswer && !isFundRichAnswer,
         'line',
         2,
         30
@@ -880,6 +896,7 @@ const MessageBubble = (props) => {
         && !isError
         && !isStructuredLayout
         && !isComparisonAnswer
+        && !isFundRichAnswer
         && screenerRows.length === 0
         && !metadata?.disambiguation?.ambiguous
         && !hasHorizonQuestion(content || '')
@@ -1004,6 +1021,21 @@ const MessageBubble = (props) => {
                         metadata={metadata}
                         chartData={chartData}
                     />
+                    {showDisclaimer && <DisclaimerBox />}
+                    {Array.isArray(suggestedFollowUps) && suggestedFollowUps.length > 0 && onFollowUpClick && (
+                        <FollowUpChips chips={suggestedFollowUps} onClick={onFollowUpClick} />
+                    )}
+                </div>
+            ) : isFundRichAnswer ? (
+                // Mutual fund rich cards — single fund / comparison / category ranking
+                <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 md:px-8">
+                    {isFundComparisonAnswer ? (
+                        <FundComparisonAnswer metadata={metadata} />
+                    ) : isFundRankingAnswer ? (
+                        <FundRankingAnswer metadata={metadata} />
+                    ) : (
+                        <FundAnswer metadata={metadata} />
+                    )}
                     {showDisclaimer && <DisclaimerBox />}
                     {Array.isArray(suggestedFollowUps) && suggestedFollowUps.length > 0 && onFollowUpClick && (
                         <FollowUpChips chips={suggestedFollowUps} onClick={onFollowUpClick} />
