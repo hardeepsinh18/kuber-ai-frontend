@@ -8,8 +8,21 @@ import { Card, CardHeader, MiniLabel, ScoreRing } from './answerKit';
  * since that data is already clean per-field.
  */
 
-const pct = (v) => (v === null || v === undefined ? '—' : `${v > 0 ? '+' : ''}${v.toFixed(2)}%`);
-const num = (v, suffix = '') => (v === null || v === undefined ? '—' : `${v.toFixed(2)}${suffix}`);
+// Number(v), not v.toFixed() directly -- a value that looks numeric in JSON
+// isn't guaranteed to arrive as a JS number (e.g. a DB Decimal serialized as
+// a string through a different code path than the one already tested live).
+// v.toFixed() throws on a string and takes the whole message down with it;
+// Number(v) coerces a numeric string safely and NaN falls back to '—'.
+const pct = (v) => {
+    if (v === null || v === undefined) return '—';
+    const n = Number(v);
+    return Number.isNaN(n) ? '—' : `${n > 0 ? '+' : ''}${n.toFixed(2)}%`;
+};
+const num = (v, suffix = '') => {
+    if (v === null || v === undefined) return '—';
+    const n = Number(v);
+    return Number.isNaN(n) ? '—' : `${n.toFixed(2)}${suffix}`;
+};
 
 const FundAnswer = ({ metadata = {} }) => {
     const {
@@ -110,7 +123,7 @@ const FundAnswer = ({ metadata = {} }) => {
                             <div key={i} className="flex justify-between text-[13px]">
                                 <span className="text-zinc-800 dark:text-zinc-100">{h.stock_name}</span>
                                 <span className="text-zinc-500 dark:text-zinc-400">
-                                    {h.weight_pct != null ? `${h.weight_pct.toFixed(2)}%` : '—'}
+                                    {num(h.weight_pct, '%')}
                                 </span>
                             </div>
                         ))}

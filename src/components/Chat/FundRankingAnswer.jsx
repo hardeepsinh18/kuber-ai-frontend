@@ -7,8 +7,26 @@ import { Card } from './answerKit';
  * rows directly.
  */
 
-const pct = (v) => (v === null || v === undefined ? '—' : `${v > 0 ? '+' : ''}${v.toFixed(2)}%`);
-const num = (v, suffix = '') => (v === null || v === undefined ? '—' : `${v.toFixed(2)}${suffix}`);
+// Number(v), not v.toFixed() directly -- a value that looks numeric in JSON
+// isn't guaranteed to arrive as a JS number (e.g. a DB Decimal serialized as
+// a string through a different code path than the one already tested live).
+// v.toFixed() throws on a string and takes the whole message down with it;
+// Number(v) coerces a numeric string safely and NaN falls back to '—'.
+const pct = (v) => {
+    if (v === null || v === undefined) return '—';
+    const n = Number(v);
+    return Number.isNaN(n) ? '—' : `${n > 0 ? '+' : ''}${n.toFixed(2)}%`;
+};
+const num = (v, suffix = '') => {
+    if (v === null || v === undefined) return '—';
+    const n = Number(v);
+    return Number.isNaN(n) ? '—' : `${n.toFixed(2)}${suffix}`;
+};
+const scoreStr = (v) => {
+    if (v === null || v === undefined) return '—';
+    const n = Number(v);
+    return Number.isNaN(n) ? '—' : `${n.toFixed(0)}/100`;
+};
 
 const FundRankingAnswer = ({ metadata = {} }) => {
     const funds = Array.isArray(metadata?.funds) ? metadata.funds : [];
@@ -46,7 +64,7 @@ const FundRankingAnswer = ({ metadata = {} }) => {
                                     <span className="block text-[11px] text-zinc-500 dark:text-zinc-400">{f.amc_name}</span>
                                 </td>
                                 <td className="text-right py-2 px-3 text-zinc-800 dark:text-zinc-100 font-bold">
-                                    {f.venty_score != null ? `${f.venty_score.toFixed(0)}/100` : '—'}
+                                    {scoreStr(f.venty_score)}
                                 </td>
                                 <td className="text-right py-2 px-3 text-zinc-800 dark:text-zinc-100">{num(f.sharpe_ratio)}</td>
                                 <td className="text-right py-2 px-3 text-zinc-800 dark:text-zinc-100">{pct(f.return_3y)}</td>
