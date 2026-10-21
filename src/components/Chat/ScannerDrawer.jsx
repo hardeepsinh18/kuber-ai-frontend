@@ -3,6 +3,7 @@ import { clsx } from 'clsx';
 import { X, TrendingUp, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { getScannerSignal } from '../../lib/scannerSignal';
+import ScannerComboList from './ScannerComboList';
 
 const METRIC_STYLES = {
     bull:    'bg-emerald-500/10 text-emerald-600 border border-emerald-500/25 dark:bg-emerald-500/12 dark:text-emerald-400 dark:border-emerald-500/20',
@@ -19,7 +20,9 @@ const RAIL_W = 48;    // px — collapsed rail width
 // `collapsed` + `onToggleCollapsed` are owned by the parent (ChatContainer) so the
 // chat's right-padding can track the drawer's actual width (300 vs 48) and re-center.
 const ScannerDrawer = ({ data, onAnalyze, onClose, collapsed = false, onToggleCollapsed }) => {
-    const { emoji, scanner, universe, count, date, raw } = data;
+    const { emoji, scanner, universe, count, raw, combo } = data;
+    // Combo (2-3 scanners): results can be capped, so say how many there were.
+    const totalMatches = combo?.totalMatches ?? count;
     const drawerRef = useRef(null);
     const { theme } = useTheme();
     const isDark = theme === 'dark';
@@ -179,7 +182,9 @@ const ScannerDrawer = ({ data, onAnalyze, onClose, collapsed = false, onToggleCo
                             reproduced it exactly. The list only ever scrolls vertically, so
                             there is nothing to lose by pinning X. */}
                         <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
-                            {raw.length === 0 ? (
+                            {combo ? (
+                                <ScannerComboList rows={raw} combo={combo} isDark={isDark} onAnalyze={onAnalyze} />
+                            ) : raw.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center h-full gap-3 px-6 text-center">
                                     <span className="text-4xl">🔍</span>
                                     <p className="text-[13px] font-semibold text-zinc-700 dark:text-zinc-300">No matches today</p>
@@ -274,8 +279,10 @@ const ScannerDrawer = ({ data, onAnalyze, onClose, collapsed = false, onToggleCo
                              style={{ borderTop: isDark ? '1px solid rgba(255,255,255,0.07)' : '1px solid rgba(0,0,0,0.08)' }}>
                             <p className="text-[10px] text-zinc-500 dark:text-zinc-600 text-center">
                                 {count > 0
-                                    ? `${count} stock${count > 1 ? 's' : ''} matched · click any to analyze`
-                                    : 'Try a different scanner or universe'}
+                                    ? (combo && totalMatches > count
+                                        ? `Top ${count} of ${totalMatches} matches · click any to analyze`
+                                        : `${count} stock${count > 1 ? 's' : ''} matched · click any to analyze`)
+                                    : combo ? 'Try a different mode or scanner' : 'Try a different scanner or universe'}
                             </p>
                         </div>
                     </div>

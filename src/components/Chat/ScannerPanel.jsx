@@ -1,12 +1,20 @@
-import { useEffect, useRef, useState } from 'react';
-import { TrendingUp, BarChart2, CandlestickChart, BookOpen, Check } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { TrendingUp, BarChart2, BookOpen, Check, Star, X, AlertTriangle, Bookmark } from 'lucide-react';
 import { getApiBase } from '../../lib/apiBase';
-import { formatResults } from '../../lib/formatScanResults';
+import { formatResults, formatComboResults } from '../../lib/formatScanResults';
+import {
+    MAX_SCANNERS, MIN_COMBO, MODES, conflictPairs, comboLabel, comboSummary,
+    loadSavedCombos, saveCombo, deleteCombo, isComboSaved,
+} from '../../lib/scannerCombos';
 import { useAuth } from '../../context/AuthContext';
 import SlideUpModal from './SlideUpModal';
 
 const API_BASE = getApiBase();
 const SCANNER_ENDPOINT = `${API_BASE}/api/v1/scanner`;
+// 2-3 scanners are combined server-side over their FULL match lists. The single
+// endpoint caps output at 10-15, so intersecting its results here dropped real
+// overlaps and was almost always empty.
+const COMBO_ENDPOINT   = `${SCANNER_ENDPOINT}/combo`;
 
 const CANDLESTICK_PATTERNS = [
     { name: 'Morning Star'           },
@@ -36,29 +44,6 @@ const FUNDAMENTAL_SCANNER_NAMES = [
     'Low P/E', 'High ROE', 'Low Debt', 'Revenue Growth',
     'EPS Growth', 'High Dividend', 'Value Pick', 'Growth Pick', 'Quality Pick',
 ];
-
-// Hard contradictions — scanners that physically cannot fire on the same stock simultaneously.
-const CONFLICTS = {
-    'RSI Oversold':           new Set(['RSI Overbought']),
-    'RSI Overbought':         new Set(['RSI Oversold']),
-    'MACD Bullish Crossover': new Set(['MACD Bearish Crossover']),
-    'MACD Bearish Crossover': new Set(['MACD Bullish Crossover']),
-    'Supertrend Buy':         new Set(['Supertrend Sell']),
-    'Supertrend Sell':        new Set(['Supertrend Buy']),
-    'Golden Cross':           new Set(['Death Cross']),
-    'Death Cross':            new Set(['Golden Cross']),
-    'BB Breakout Bullish':    new Set(['BB Squeeze']),
-    'BB Squeeze':             new Set(['BB Breakout Bullish', 'Short Term Breakouts', '52-Week High Breakout']),
-    'Short Term Breakouts':   new Set(['BB Squeeze']),
-    '52-Week High Breakout':  new Set(['BB Squeeze']),
-    // Candlestick opposites
-    'Morning Star':           new Set(['Evening Star', 'Bearish Engulfing', 'Hanging Man', 'Shooting Star']),
-    'Evening Star':           new Set(['Morning Star', 'Hammer']),
-    'Bearish Engulfing':      new Set(['Morning Star', 'Hammer']),
-    'Hammer':                 new Set(['Hanging Man', 'Shooting Star', 'Evening Star', 'Bearish Engulfing']),
-    'Hanging Man':            new Set(['Hammer', 'Morning Star']),
-    'Shooting Star':          new Set(['Hammer', 'Morning Star']),
-};
 
 const SCANNER_EMOJI = {
     // Candlestick patterns
@@ -115,8 +100,11 @@ const SCAN_MESSAGES = [
     'Fetching the freshest market data…',
 ];
 
+const HOVER_CLASS = 'hover:border-[#FDD405]/50 hover:bg-[#FDD405]/8 hover:text-zinc-900 dark:hover:bg-[#FDD405]/8 dark:hover:border-[#FDD405]/50 dark:hover:text-white';
+
 const ScannerPanel = ({ onSelectScanner, onClose }) => {
-    const { accessToken } = useAuth();
+    const { accessToken, user } = useAuth();
+    const userId   = user?.id || null;
     const panelRef = useRef(null);
     const pollRef  = useRef(null);
     const msgRef   = useRef(null);
@@ -128,28 +116,58 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
     const [universe, setUniverse]           = useState('nifty500');
     const [msgIdx, setMsgIdx]               = useState(0);
     const [scanDone, setScanDone]           = useState(null);
+    const [progress, setProgress]           = useState(null);   // combo: { done, total }
 
-    // Multi-select state
+    // Multi-select, up to MAX_SCANNERS. A Set keeps insertion order, which is the
+    // order the scanners appear in the label and in each result row.
     const [selected, setSelected] = useState(new Set());
+    const [mode, setMode]         = useState('all');            // all | any | exclude
+    const [exclude, setExclude]   = useState(null);             // exclude mode only
+    const [saved, setSaved]       = useState(() => loadSavedCombos(userId));
 
-    // Single-select mode: nothing is ever blocked by conflicts — only one scanner can be
-    // picked at a time, so every scanner stays selectable (clicking replaces the current pick).
-    const disabledByConflict = new Set();
+    useEffect(() => { setSaved(loadSavedCombos(userId)); }, [userId]);
 
-    const conflictReasonFor = (name) => {
-        const reasons = [];
-        for (const sel of selected) {
-            if (CONFLICTS[sel]?.has(name)) reasons.push(sel);
-        }
-        return reasons.length ? `Conflicts with: ${reasons.join(', ')}` : undefined;
-    };
+    const names   = useMemo(() => [...selected], [selected]);
+    const isCombo = names.length >= MIN_COMBO;
+    const atMax   = names.length >= MAX_SCANNERS;
+    // The excluded scanner must always be one of the selected ones; default to the
+    // most recently added.
+    const excludeEff = mode === 'exclude' && isCombo
+        ? (selected.has(exclude) ? exclude : names[names.length - 1])
+        : null;
+    // In "Match all" a contradictory pair can never fully match, so warn. Never
+    // disable: the same pair is meaningful under ANY / EXCLUDE.
+    const conflicts    = mode === 'all' && isCombo ? conflictPairs(names) : [];
+    const currentCombo = isCombo ? { scanners: names, mode, exclude: excludeEff, universe } : null;
+    const alreadySaved = isComboSaved(saved, currentCombo);
 
-    // Single-select: only ONE scanner at a time. Clicking a scanner selects just that one
-    // (replacing any previous pick); clicking the already-selected one clears the selection.
+    // Click to add, click again to remove. Once MAX_SCANNERS are picked the rest
+    // are disabled until one is removed.
     const toggleScanner = (name) => {
         if (scanning) return;
-        setSelected(prev => (prev.has(name) ? new Set() : new Set([name])));
+        setSelected(prev => {
+            const next = new Set(prev);
+            if (next.has(name)) next.delete(name);
+            else if (next.size < MAX_SCANNERS) next.add(name);
+            return next;
+        });
     };
+
+    const applySaved = (c) => {
+        if (scanning) return;
+        setSelected(new Set(c.scanners));
+        setMode(c.mode);
+        setExclude(c.exclude || null);
+        setUniverse(c.universe || 'nifty500');
+        setError('');
+    };
+
+    const handleSave = () => {
+        if (!currentCombo || alreadySaved) return;
+        setSaved(saveCombo(userId, currentCombo));
+    };
+
+    const handleDeleteSaved = (id) => setSaved(deleteCombo(userId, id));
 
     // Rotate loading messages
     useEffect(() => {
@@ -178,176 +196,188 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
         return () => document.removeEventListener('keydown', handler);
     }, [onClose, scanning]);
 
-    // Start all selected scanners in parallel, intersect by Symbol
-    const handleRunScan = async () => {
-        const names = [...selected];
-        if (names.length === 0) return;
-
-        const displayName = names.length === 1
-            ? names[0]
-            : `${names.length}-Scanner Combo`;
-
-        setScanning(true);
-        setScannerName(displayName);
-        setElapsed(0);
-        setError('');
-
-        // Launch all jobs in parallel
-        const toRequestBody = (name) => ({ scanner: name, universe });
-
-        let jobs;
-        try {
-            const launches = await Promise.all(
-                names.map(name =>
-                    fetch(SCANNER_ENDPOINT, {
-                        method:  'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-                        },
-                        body:    JSON.stringify(toRequestBody(name)),
-                    }).then(async r => {
-                        const data = await r.json().catch(() => ({}));
-                        if (!r.ok || !data.job_id) {
-                            const detail = data?.detail;
-                            const msg = typeof detail === 'string' ? detail
-                                : detail?.message || `HTTP ${r.status}`;
-                            throw new Error(msg);
-                        }
-                        return data;
-                    })
-                )
-            );
-            jobs = names.map((name, i) => ({ name, jobId: launches[i].job_id }));
-        } catch (e) {
-            setError(`Failed to start scan: ${e.message}`);
-            setScanning(false);
-            return;
+    // POST a job and return its id. Throws with a user-facing message.
+    const startJob = async (url, body) => {
+        const r = await fetch(url, {
+            method:  'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+            },
+            body: JSON.stringify(body),
+        });
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok || !data.job_id) {
+            if (url === COMBO_ENDPOINT && (r.status === 404 || r.status === 405)) {
+                throw new Error('Combined scans are not available yet. Try a single scanner.');
+            }
+            const detail = data?.detail;
+            const msg = typeof detail === 'string' ? detail
+                : detail?.message || `HTTP ${r.status}`;
+            throw new Error(msg);
         }
+        return data.job_id;
+    };
 
-        // Poll until all jobs finish
+    // Poll a job until done. Rejects on error / stale / expired / timeout.
+    // pollRef is cleared on unmount, which is what Cancel relies on.
+    const pollJob = (jobId) => new Promise((resolve, reject) => {
         const startedAt = Date.now();
-        const jobResults = new Map(); // name → job result
-
+        const fail = (msg) => { clearInterval(pollRef.current); reject(new Error(msg)); };
+        clearInterval(pollRef.current);
         pollRef.current = setInterval(async () => {
             const waited = Date.now() - startedAt;
             setElapsed(Math.round(waited / 1000));
-
             if (waited > MAX_WAIT_MS) {
-                clearInterval(pollRef.current);
-                setError('Scan timed out after 3 minutes. Please try again.');
-                setScanning(false);
+                fail('Scan timed out after 3 minutes. Please try again.');
                 return;
             }
-
             try {
-                const statuses = await Promise.all(
-                    jobs
-                        .filter(j => !jobResults.has(j.name))
-                        .map(j =>
-                            fetch(`${SCANNER_ENDPOINT}/status/${j.jobId}`)
-                                .then(async r => {
-                                    const data = await r.json().catch(() => ({}));
-                                    // job expired/missing from Redis (404) — treat as a
-                                    // hard error instead of polling a dead id for 3 minutes.
-                                    if (!r.ok) return { status: 'error', error: data?.detail || `HTTP ${r.status}`, _name: j.name };
-                                    return { ...data, _name: j.name };
-                                })
-                        )
-                );
-
-                for (const res of statuses) {
-                    if (res.status === 'done')  jobResults.set(res._name, res);
-                    if (res.status === 'error') {
-                        clearInterval(pollRef.current);
-                        setError(`Scan error in ${res._name}: ${res.error || 'unknown'}`);
-                        setScanning(false);
-                        return;
-                    }
+                const r = await fetch(`${SCANNER_ENDPOINT}/status/${jobId}`);
+                const data = await r.json().catch(() => ({}));
+                // Job expired/missing (404/410): a hard error instead of polling a
+                // dead id for 3 minutes.
+                if (!r.ok) {
+                    const d = data?.detail;
+                    fail(typeof d === 'string' ? d : `HTTP ${r.status}`);
+                    return;
                 }
-
-                if (jobResults.size < jobs.length) return; // still waiting
-
-                // All done — intersect results by Symbol
-                clearInterval(pollRef.current);
-
-                const allResults = [...jobResults.values()];
-                const symbolSets = allResults.map(r => new Set((r.results || []).map(s => s.Symbol)));
-
-                // Start with first set, intersect with rest
-                const intersection = new Set(symbolSets[0]);
-                for (const s of symbolSets.slice(1)) {
-                    for (const sym of [...intersection]) {
-                        if (!s.has(sym)) intersection.delete(sym);
-                    }
+                if (data.progress) setProgress(data.progress);
+                if (data.status === 'done') {
+                    clearInterval(pollRef.current);
+                    resolve(data);
+                    return;
                 }
-
-                // Build result rows from first scanner, annotated with matched scanners
-                const firstResults = allResults[0]?.results || [];
-                const intersected  = firstResults
-                    .filter(r => intersection.has(r.Symbol))
-                    .map(r => ({ ...r, matched_scanners: names }));
-
-                const universe_ = allResults[0]?.universe || universe;
-                const dur       = allResults[0]?.duration_seconds || 0;
-                const label = names.length === 1
-                    ? names[0]
-                    : `${names.join(' + ')}`;
-
-                const msg = formatResults(label, names, intersected, universe_, dur);
-                setScanning(false);
-                setScanDone({ count: intersected.length, msg });
-                setSelected(new Set());
-
-                setTimeout(() => {
-                    onSelectScanner({
-                        type:            'scanner_results',
-                        raw:             intersected,
-                        formatted:       msg,
-                        scanner:         label,
-                        emoji:           names.length === 1 ? (SCANNER_EMOJI[names[0]] || '🔍') : '🎯',
-                        universe:        universe_,
-                        count:           intersected.length,
-                        date:            allResults[0]?.scan_date || new Date().toISOString().split('T')[0],
-                        matchedScanners: names,
-                    });
-                    onClose();
-                }, 1200);
-
+                if (['error', 'stale', 'rejected'].includes(data.status)) {
+                    fail(data.error || 'The scan could not finish. Please run it again.');
+                }
             } catch {
                 // network blip — keep polling
             }
         }, POLL_INTERVAL);
+    });
+
+    const finish = (payload, flash) => {
+        setScanning(false);
+        setScanDone(flash);
+        setTimeout(() => {
+            onSelectScanner(payload);
+            onClose();
+        }, 1200);
     };
 
-    // Render a scanner button (selected = yellow outline + checkmark, conflicted = greyed out)
-    const ScannerBtn = ({ name, hoverClass = '' }) => {
-        const isSel       = selected.has(name);
-        const isConflict  = !isSel && disabledByConflict.has(name);
-        const tipText     = isConflict ? conflictReasonFor(name) : undefined;
+    const handleRunScan = async () => {
+        if (names.length === 0) return;
+        const combo = names.length >= MIN_COMBO;
+        const label = combo ? comboLabel(names, mode, excludeEff) : names[0];
+
+        setScanning(true);
+        setScannerName(label);
+        setElapsed(0);
+        setProgress(combo ? { done: 0, total: names.length } : null);
+        setError('');
+
+        let job;
+        try {
+            const jobId = combo
+                ? await startJob(COMBO_ENDPOINT, { scanners: names, mode, exclude: excludeEff, universe })
+                : await startJob(SCANNER_ENDPOINT, { scanner: names[0], universe });
+            job = await pollJob(jobId);
+        } catch (e) {
+            setError(/^Scan timed out/.test(e.message) ? e.message : `Scan failed: ${e.message}`);
+            setScanning(false);
+            return;
+        }
+
+        const universe_ = job.universe || universe;
+        const date      = job.scan_date || new Date().toISOString().split('T')[0];
+
+        if (!combo) {
+            // Single scanner: same payload shape as before.
+            const rows = (job.results || []).map(r => ({ ...r, matched_scanners: names }));
+            finish({
+                type:            'scanner_results',
+                raw:             rows,
+                formatted:       formatResults(label, names, rows, universe_, job.duration_seconds || 0),
+                scanner:         label,
+                emoji:           SCANNER_EMOJI[names[0]] || '🔍',
+                universe:        universe_,
+                count:           rows.length,
+                date,
+                matchedScanners: names,
+            }, { count: rows.length, combo: false });
+            return;
+        }
+
+        const rows      = job.results || [];
+        const jobMode   = job.mode || mode;
+        const scanners_ = job.scanners || names;
+        finish({
+            type:            'scanner_results',
+            raw:             rows,
+            formatted:       formatComboResults(job),
+            scanner:         job.scanner || label,
+            emoji:           '🎯',
+            universe:        universe_,
+            count:           rows.length,
+            date,
+            matchedScanners: scanners_,
+            combo: {
+                scanners:         scanners_,
+                mode:             jobMode,
+                exclude:          job.exclude ?? excludeEff,
+                fallback:         !!job.fallback,
+                required:         job.required,
+                totalMatches:     job.total_matches ?? rows.length,
+                perScannerCounts: job.per_scanner_counts || {},
+            },
+        }, { count: rows.length, combo: true, mode: jobMode, fallback: !!job.fallback, n: scanners_.length });
+    };
+
+    const doneHeadline = (d) => {
+        if (!d.combo) {
+            return d.count > 0
+                ? <><span style={{ color: '#FDD405' }}>{d.count} stock{d.count > 1 ? 's' : ''}</span> matched!</>
+                : 'No stocks matched today';
+        }
+        if (d.count === 0) return 'No stocks matched this combination';
+        if (d.fallback) {
+            return <>None matched all {d.n} · <span style={{ color: '#FDD405' }}>{d.count}</span> matched 2 of {d.n}</>;
+        }
+        const tail = d.mode === 'any' ? 'matched at least one' : d.mode === 'exclude' ? 'passed the filter' : `matched all ${d.n}`;
+        return <><span style={{ color: '#FDD405' }}>{d.count} stock{d.count > 1 ? 's' : ''}</span> {tail}!</>;
+    };
+
+    // Render a scanner button. Selected = yellow outline + badge (a check for a
+    // single pick, the pick order 1-3 in a combo). Once 3 are picked the rest grey
+    // out until one is removed.
+    const ScannerBtn = ({ name }) => {
+        const isSel   = selected.has(name);
+        const isMaxed = !isSel && atMax;
 
         return (
             <button
                 key={name}
-                disabled={scanning || isConflict}
-                title={tipText}
+                disabled={scanning || isMaxed}
+                title={isMaxed ? `You can combine up to ${MAX_SCANNERS} scanners` : undefined}
+                aria-pressed={isSel}
                 onClick={() => toggleScanner(name)}
                 className={`relative px-3 py-1.5 rounded-xl text-[12px] font-medium border transition-all
-                            ${isConflict
-                                ? 'opacity-25 cursor-not-allowed select-none border-zinc-200 bg-zinc-50 text-zinc-400 dark:border-zinc-800/60 dark:bg-zinc-900/40 dark:text-zinc-600'
+                            ${isMaxed
+                                ? 'opacity-40 cursor-not-allowed select-none border-zinc-200 bg-zinc-50 text-zinc-400 dark:border-zinc-800/60 dark:bg-zinc-900/40 dark:text-zinc-600'
                                 : scanning
                                 ? 'opacity-40 cursor-not-allowed'
                                 : isSel
                                 ? 'cursor-pointer border-[#FDD405] bg-[#FDD405]/10 text-zinc-900 dark:text-white'
                                 : `cursor-pointer bg-zinc-50 border-zinc-200 text-zinc-600
                                    dark:bg-zinc-800/60 dark:border-white/8 dark:text-zinc-300
-                                   ${hoverClass}`
+                                   ${HOVER_CLASS}`
                             }`}
             >
                 {isSel && (
-                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center"
+                    <span aria-hidden="true" className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-black"
                           style={{ backgroundColor: '#FDD405' }}>
-                        <Check size={9} strokeWidth={3} className="text-black" />
+                        {isCombo ? names.indexOf(name) + 1 : <Check size={9} strokeWidth={3} className="text-black" />}
                     </span>
                 )}
                 {name}
@@ -366,7 +396,7 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                 <div className="min-w-0">
                     <h2 className="text-[15px] font-semibold text-zinc-900 dark:text-white">Stock Scanners</h2>
                     <p className="text-[12px] text-zinc-400 dark:text-zinc-500 mt-0.5">
-                        Select a scanner · run scan
+                        Pick up to {MAX_SCANNERS} · combine · run scan
                     </p>
                 </div>
             }
@@ -392,17 +422,17 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                 {scanning && (
                     <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 rounded-2xl bg-white dark:bg-[#1a1a1a]">
                         <div className="text-5xl" style={{ animation: 'bounce 2s infinite' }}>
-                            {selected.size === 1 ? (SCANNER_EMOJI[scannerName] || '🔍') : '🎯'}
+                            {isCombo ? '🎯' : (SCANNER_EMOJI[scannerName] || '🔍')}
                         </div>
                         <div className="flex flex-col items-center gap-1.5 text-center px-6">
                             <p className="text-[16px] font-bold text-zinc-900 dark:text-white">
-                                {selected.size > 1
+                                {isCombo
                                     ? <>Running <span style={{ color: '#FDD405' }}>{scannerName}</span></>
                                     : <>Scanning for <span style={{ color: '#FDD405' }}>{scannerName}</span></>}
                             </p>
                             <p className="text-[12px] text-zinc-400 dark:text-zinc-500">
                                 {universe === 'nifty500' ? 'Nifty 500' : 'All NSE'} stocks
-                                {[...selected].length > 1 && ` · will intersect ${[...selected].length} results`}
+                                {isCombo && progress && ` · ${progress.done} of ${progress.total} scanners done`}
                             </p>
                             <p key={msgIdx} className="text-[12px] text-zinc-500 dark:text-zinc-400 italic" style={{ animation: 'fadeIn 0.4s ease-in' }}>
                                 {SCAN_MESSAGES[msgIdx]}
@@ -431,15 +461,13 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
 
                 {/* Scan-complete flash */}
                 {scanDone && (
-                    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-2xl bg-white dark:bg-[#1a1a1a]"
+                    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-2xl bg-white dark:bg-[#1a1a1a] px-6 text-center"
                          style={{ animation: 'fadeIn 0.3s ease-out' }}>
                         <div className="text-5xl" style={{ animation: 'popIn 0.4s cubic-bezier(0.34,1.56,0.64,1)' }}>
                             {scanDone.count > 0 ? '🎯' : '🔍'}
                         </div>
                         <p className="text-[18px] font-bold text-zinc-900 dark:text-white" style={{ animation: 'fadeIn 0.3s 0.15s ease-out both' }}>
-                            {scanDone.count > 0
-                                ? <><span style={{ color: '#FDD405' }}>{scanDone.count} stocks</span> matched all signals!</>
-                                : 'No stocks matched all criteria'}
+                            {doneHeadline(scanDone)}
                         </p>
                         <p className="text-[12px] text-zinc-400 dark:text-zinc-500" style={{ animation: 'fadeIn 0.3s 0.25s ease-out both' }}>
                             Opening results panel…
@@ -456,6 +484,46 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
 
                 {/* Scrollable body */}
                 <div className="overflow-y-auto flex-1 px-5 py-5 space-y-6">
+
+                    {/* ── SAVED COMBOS ── */}
+                    {saved.length > 0 && (
+                        <>
+                            <div data-testid="scanner-saved-combos">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <div className="w-0.5 h-4 rounded-full" style={{ backgroundColor: '#FDD405' }} />
+                                    <Bookmark size={13} style={{ color: '#FDD405' }} />
+                                    <span className="text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: '#FDD405' }}>Saved Combos</span>
+                                </div>
+                                <div className="flex flex-wrap gap-1.5 pl-3">
+                                    {saved.map(c => (
+                                        <span key={c.id}
+                                              className="group inline-flex items-center max-w-full rounded-xl border border-zinc-200 bg-zinc-50 dark:border-white/8 dark:bg-zinc-800/60">
+                                            <button
+                                                disabled={scanning}
+                                                onClick={() => applySaved(c)}
+                                                title={`${c.name} · ${c.universe === 'all_nse' ? 'All NSE' : 'Nifty 500'}`}
+                                                className="min-w-0 truncate pl-3 pr-1.5 py-1.5 text-[12px] font-medium text-zinc-700 dark:text-zinc-200 hover:text-zinc-950 dark:hover:text-white disabled:opacity-40"
+                                            >
+                                                <span className="mr-1 text-[9px] font-bold text-zinc-400 dark:text-zinc-500">
+                                                    {MODES.find(m => m.key === c.mode)?.short}
+                                                </span>
+                                                {c.name}
+                                            </button>
+                                            <button
+                                                disabled={scanning}
+                                                onClick={() => handleDeleteSaved(c.id)}
+                                                aria-label={`Delete saved combo ${c.name}`}
+                                                className="pr-2 pl-0.5 py-1.5 text-zinc-400 hover:text-red-500 disabled:opacity-40"
+                                            >
+                                                <X size={11} />
+                                            </button>
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="border-t border-zinc-100 dark:border-white/8" />
+                        </>
+                    )}
 
                     {/* ── TECHNICAL PATTERNS ── */}
                     <div>
@@ -474,11 +542,7 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                                     <span className="text-[11.5px] font-semibold uppercase tracking-[0.08em] text-zinc-500 dark:text-zinc-300">Candlestick Patterns</span>
                                 </div>
                                 <div className="flex flex-wrap gap-1.5">
-                                    {CANDLESTICK_PATTERNS.map(s => (
-                                        <ScannerBtn key={s.name} name={s.name}
-                                            hoverClass="hover:border-[#FDD405]/50 hover:bg-[#FDD405]/8 hover:text-zinc-900 dark:hover:bg-[#FDD405]/8 dark:hover:border-[#FDD405]/50 dark:hover:text-white"
-                                        />
-                                    ))}
+                                    {CANDLESTICK_PATTERNS.map(s => <ScannerBtn key={s.name} name={s.name} />)}
                                 </div>
                             </div>
                         </div>
@@ -495,11 +559,7 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                             <span className="text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: '#FDD405' }}>Momentum Indicators</span>
                         </div>
                         <div className="flex flex-wrap gap-1.5 pl-3">
-                            {MOMENTUM_SCANNERS.map(s => (
-                                <ScannerBtn key={s.name} name={s.name}
-                                    hoverClass="hover:border-[#FDD405]/50 hover:bg-[#FDD405]/8 hover:text-zinc-900 dark:hover:bg-[#FDD405]/8 dark:hover:border-[#FDD405]/50 dark:hover:text-white"
-                                />
-                            ))}
+                            {MOMENTUM_SCANNERS.map(s => <ScannerBtn key={s.name} name={s.name} />)}
                         </div>
                     </div>
 
@@ -514,11 +574,7 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                             <span className="text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: '#FDD405' }}>Fundamental Screens</span>
                         </div>
                         <div className="flex flex-wrap gap-1.5 pl-3">
-                            {FUNDAMENTAL_SCANNER_NAMES.map(name => (
-                                <ScannerBtn key={name} name={name}
-                                    hoverClass="hover:border-[#FDD405]/50 hover:bg-[#FDD405]/8 hover:text-zinc-900 dark:hover:bg-[#FDD405]/8 dark:hover:border-[#FDD405]/50 dark:hover:text-white"
-                                />
-                            ))}
+                            {FUNDAMENTAL_SCANNER_NAMES.map(name => <ScannerBtn key={name} name={name} />)}
                         </div>
                     </div>
 
@@ -526,27 +582,77 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
 
                 {/* Run bar — appears when anything is selected */}
                 {selected.size > 0 && !scanning && !scanDone && (
-                    <div className="px-4 py-3 border-t flex-shrink-0"
+                    <div className="px-4 py-3 border-t flex-shrink-0 space-y-2.5"
                          style={{ borderColor: 'rgba(253,212,5,0.3)', background: 'rgba(253,212,5,0.06)' }}>
+
+                        {/* Combine mode — only meaningful with 2+ scanners */}
+                        {isCombo && (
+                            <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-zinc-100 dark:bg-zinc-900" role="radiogroup" aria-label="Combine mode">
+                                {MODES.map(m => (
+                                    <button
+                                        key={m.key}
+                                        role="radio"
+                                        aria-checked={mode === m.key}
+                                        data-testid={`scanner-mode-${m.key}`}
+                                        onClick={() => setMode(m.key)}
+                                        className={`flex-1 px-2 py-1.5 rounded-md text-[11px] font-semibold whitespace-nowrap transition-all
+                                            ${mode === m.key
+                                                ? 'text-zinc-900 shadow-sm'
+                                                : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'}`}
+                                        style={mode === m.key ? { backgroundColor: '#FDD405' } : {}}
+                                    >{m.label}</button>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Exclude target — which selected scanner is the NOT */}
+                        {isCombo && mode === 'exclude' && (
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="text-[11px] text-zinc-500 dark:text-zinc-400">Exclude:</span>
+                                {names.map(n => (
+                                    <button
+                                        key={n}
+                                        onClick={() => setExclude(n)}
+                                        aria-pressed={excludeEff === n}
+                                        className={`px-2 py-0.5 rounded-md text-[11px] font-medium border transition-all
+                                            ${excludeEff === n
+                                                ? 'border-red-400/60 bg-red-500/10 text-red-600 line-through dark:text-red-400'
+                                                : 'border-zinc-200 text-zinc-600 hover:border-zinc-400 dark:border-zinc-700 dark:text-zinc-300'}`}
+                                    >{n}</button>
+                                ))}
+                            </div>
+                        )}
+
                         <div className="flex items-center gap-3">
                             <div className="flex-1 min-w-0">
-                                <p className="text-[12px] font-semibold text-zinc-900 dark:text-white leading-tight">
-                                    {selected.size === 1
-                                        ? [...selected][0]
-                                        : `${selected.size} signals selected — stocks must match ALL`}
+                                <p className="text-[12px] font-semibold text-zinc-900 dark:text-white leading-tight truncate"
+                                   title={isCombo ? comboLabel(names, mode, excludeEff) : names[0]}>
+                                    {isCombo ? comboLabel(names, mode, excludeEff) : names[0]}
                                 </p>
-                                {selected.size > 1 && (
-                                    <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5 truncate">
-                                        {[...selected].join(' · ')}
-                                    </p>
-                                )}
+                                <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5 truncate">
+                                    {isCombo
+                                        ? comboSummary(names, mode, excludeEff)
+                                        : `Add up to ${MAX_SCANNERS - 1} more to combine`}
+                                </p>
                             </div>
                             <button
                                 onClick={() => setSelected(new Set())}
-                                className="text-[11px] text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors px-2 py-1 flex-shrink-0"
+                                className="text-[11px] text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors px-1 py-1 flex-shrink-0"
                             >
                                 Clear
                             </button>
+                            {isCombo && (
+                                <button
+                                    onClick={handleSave}
+                                    disabled={alreadySaved || !userId}
+                                    data-testid="scanner-save-combo"
+                                    title={alreadySaved ? 'Saved' : 'Save this combination'}
+                                    aria-label={alreadySaved ? 'Combination saved' : 'Save this combination'}
+                                    className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg border border-zinc-300 dark:border-zinc-700 text-zinc-500 hover:text-zinc-900 dark:hover:text-white disabled:cursor-default transition-colors"
+                                >
+                                    <Star size={13} fill={alreadySaved ? '#FDD405' : 'none'} style={alreadySaved ? { color: '#FDD405' } : {}} />
+                                </button>
+                            )}
                             <button
                                 onClick={handleRunScan}
                                 data-testid="scanner-run-button"
@@ -556,6 +662,16 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                                 Run Scan →
                             </button>
                         </div>
+
+                        {conflicts.length > 0 && (
+                            <p className="flex items-start gap-1.5 text-[10.5px] leading-snug text-amber-700 dark:text-amber-400">
+                                <AlertTriangle size={11} className="mt-[1px] flex-shrink-0" />
+                                <span>
+                                    {conflicts.map(([a, b]) => `${a} and ${b}`).join('; ')} can't fire on the same stock.
+                                    {' '}Try “Match any” or “Exclude one”.
+                                </span>
+                            </p>
+                        )}
                     </div>
                 )}
 
@@ -563,7 +679,7 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                 {selected.size === 0 && (
                     <div className="px-5 py-3 border-t border-zinc-100 dark:border-white/8 flex-shrink-0">
                         <p className="text-[11px] text-zinc-400 dark:text-zinc-600 text-center">
-                            Nifty 500 or All NSE · Real market data · Top results by signal strength
+                            Combine up to {MAX_SCANNERS} scanners · Nifty 500 or All NSE · Real market data
                         </p>
                     </div>
                 )}

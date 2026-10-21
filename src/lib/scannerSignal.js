@@ -131,3 +131,46 @@ export function getScannerSignal(scannerNames, row) {
     }
     return null;
 }
+
+// ── Combo rows: each scanner's OWN value ─────────────────────────────────────
+// In a single-scanner list the "Triggered at" column shows price for technical
+// scanners. In a combo row every matched scanner gets its own line, so price
+// would repeat 2-3 times and say nothing about WHY the stock matched. These are
+// the indicator columns each technical scanner emits (app/scanners/engine.py);
+// a scanner without a distinctive metric (Supertrend, Hammer, …) falls back to
+// getScannerSignal, i.e. price, and fundamentals already show their metric there.
+const signed = v => `${Number(v) >= 0 ? '+' : ''}${v}`;
+const TECH_METRICS = {
+    'RSI Oversold':          { col: 'RSI',          make: v => `RSI ${v}`,             type: 'neutral' },
+    'RSI Overbought':        { col: 'RSI',          make: v => `RSI ${v}`,             type: 'neutral' },
+    'MACD Bullish Crossover':{ col: 'Hist',         make: v => `Hist ${signed(v)}`,    type: 'bull' },
+    'MACD Bearish Crossover':{ col: 'Hist',         make: v => `Hist ${signed(v)}`,    type: 'bear' },
+    'Volume Surge':          { col: 'Vol_Ratio',    make: v => `Vol ×${v}`,            type: 'bull' },
+    'Short Term Breakouts':  { col: 'Chg_%',        make: v => `${signed(v)}% today`,  type: 'bull' },
+    '52-Week High Breakout': { col: 'Breakout_%',   make: v => `${signed(v)}% > 52W`,  type: 'bull' },
+    'Inside Bar Breakout':   { col: 'Breakout_%',   make: v => `${signed(v)}%`,        type: 'bull' },
+    'SMA 200 Reclaim':       { col: 'Above_By_%',   make: v => `${signed(v)}% > SMA200`, type: 'bull' },
+    'Golden Cross':          { col: 'Gap_%',        make: v => `50/200 ${signed(v)}%`, type: 'bull' },
+    'Death Cross':           { col: 'Gap_%',        make: v => `50/200 ${signed(v)}%`, type: 'bear' },
+    'BB Squeeze':            { col: 'BB_Width',     make: v => `BB width ${v}`,        type: 'neutral' },
+    'Morning Star':          { col: 'Gap_Up_%',     make: v => `Gap ↑ ${v}%`,          type: 'bull' },
+    'Evening Star':          { col: 'Gap_Down_%',   make: v => `Gap ↓ ${v}%`,          type: 'bear' },
+    'Bullish Engulfing':     { col: 'Engulf_Ratio', make: v => `Engulf ×${v}`,         type: 'bull' },
+    'Bearish Engulfing':     { col: 'Engulf_Ratio', make: v => `Engulf ×${v}`,         type: 'bear' },
+    'Doji':                  { col: 'Body_Pct_Rng', make: v => `Body ${v}% of range`,  type: 'neutral' },
+};
+
+/**
+ * The value a single scanner matched on, for one combo row.
+ * @param {string} name  scanner name
+ * @param {object} row   that scanner's own result row (combo `signals[name]`)
+ */
+export function getComboMetric(name, row) {
+    if (!row) return null;
+    const spec = TECH_METRICS[name];
+    if (spec) {
+        const v = fmtNum(row[spec.col]);
+        if (v != null) return { label: spec.make(v), type: spec.type };
+    }
+    return getScannerSignal([name], row);
+}
