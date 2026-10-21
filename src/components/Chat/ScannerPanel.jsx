@@ -349,8 +349,8 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
     };
 
     // Render a scanner button. Selected = yellow outline + badge (a check for a
-    // single pick, the pick order 1-3 in a combo). Once 3 are picked the rest grey
-    // out until one is removed.
+    // single pick, the pick order 1-3 in a combo). Once 3 are picked the rest keep
+    // their normal look but can't be selected until one is removed.
     const ScannerBtn = ({ name }) => {
         const isSel   = selected.has(name);
         const isMaxed = !isSel && atMax;
@@ -364,7 +364,10 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                 onClick={() => toggleScanner(name)}
                 className={`relative px-3 py-1.5 rounded-xl text-[12px] font-medium border transition-all
                             ${isMaxed
-                                ? 'opacity-40 cursor-not-allowed select-none border-zinc-200 bg-zinc-50 text-zinc-400 dark:border-zinc-800/60 dark:bg-zinc-900/40 dark:text-zinc-600'
+                                // Same resting look as any unpicked scanner (no grey-out),
+                                // just unclickable and with no hover highlight.
+                                ? `cursor-not-allowed select-none bg-zinc-50 border-zinc-200 text-zinc-600
+                                   dark:bg-zinc-800/60 dark:border-white/8 dark:text-zinc-300`
                                 : scanning
                                 ? 'opacity-40 cursor-not-allowed'
                                 : isSel

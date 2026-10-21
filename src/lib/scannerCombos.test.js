@@ -143,6 +143,13 @@ describe('panel contract', () => {
         expect(panel).not.toMatch(/intersection/);
     });
 
+    it('blocks a 4th pick without greying the other scanners out', () => {
+        expect(panel).toContain('disabled={scanning || isMaxed}');
+        const maxedStyle = panel.slice(panel.indexOf('${isMaxed'), panel.indexOf(': scanning', panel.indexOf('${isMaxed')));
+        expect(maxedStyle).toContain('cursor-not-allowed');
+        expect(maxedStyle).not.toMatch(/opacity-|text-zinc-400|dark:text-zinc-600/);
+    });
+
     it('keeps one scanner on the original endpoint and payload', () => {
         expect(panel).toContain("startJob(SCANNER_ENDPOINT, { scanner: names[0], universe })");
         expect(panel).toContain('data-testid="scanner-run-button"');
