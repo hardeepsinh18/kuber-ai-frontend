@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { LayoutGrid } from 'lucide-react';
 import HeatmapPanel from './HeatmapPanel';
 
@@ -22,11 +23,14 @@ const HeatmapLauncher = ({ onAnalyze, hidden }) => {
                     <span className="hidden sm:inline">Heat Map</span>
                 </button>
             )}
-            {open && (
+            {/* Portalled to <body>: Layout's content column is its own stacking context
+                (relative z-10), so a fixed overlay rendered inside it sits under the sidebar. */}
+            {open && createPortal(
                 <HeatmapPanel
                     onClose={() => setOpen(false)}
                     onAnalyze={(sym) => { setOpen(false); onAnalyze(sym); }}
-                />
+                />,
+                document.body,
             )}
         </>
     );
