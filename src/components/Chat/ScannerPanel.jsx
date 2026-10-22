@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { TrendingUp, BarChart2, BookOpen, Check, Star, X, AlertTriangle, Bookmark } from 'lucide-react';
+import { TrendingUp, BarChart2, BookOpen, Check, Star, X, AlertTriangle, Bookmark, Info } from 'lucide-react';
 import { getApiBase } from '../../lib/apiBase';
 import { formatResults, formatComboResults } from '../../lib/formatScanResults';
 import {
     MAX_SCANNERS, MIN_COMBO, MODES, conflictPairs, comboLabel, comboSummary,
     loadSavedCombos, saveCombo, deleteCombo, isComboSaved,
 } from '../../lib/scannerCombos';
+import { SCAN_MESSAGES as SCAN_ERRORS, startErrorMessage, pollOutcome } from '../../lib/scannerErrors';
 import { useAuth } from '../../context/AuthContext';
 import SlideUpModal from './SlideUpModal';
 
@@ -84,6 +85,9 @@ const SCANNER_EMOJI = {
 
 const POLL_INTERVAL = 4000;
 const MAX_WAIT_MS   = 180_000;
+// Consecutive failed status checks before giving up as "can't reach the
+// scanners". A single blip (gateway timeout, restart) is retried silently.
+const MAX_POLL_BLIPS = 6;
 
 const SCAN_MESSAGES = [
     'Crunching price action across every candle…',
@@ -145,6 +149,7 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
     // are disabled until one is removed.
     const toggleScanner = (name) => {
         if (scanning) return;
+        setError('');
         setSelected(prev => {
             const next = new Set(prev);
             if (next.has(name)) next.delete(name);
@@ -196,25 +201,25 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
         return () => document.removeEventListener('keydown', handler);
     }, [onClose, scanning]);
 
-    // POST a job and return its id. Throws with a user-facing message.
+    // POST a job and return its id. Throws with a user-facing message only:
+    // never a status code (see lib/scannerErrors.js).
     const startJob = async (url, body) => {
-        const r = await fetch(url, {
-            method:  'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-            },
-            body: JSON.stringify(body),
-        });
-        const data = await r.json().catch(() => ({}));
+        let r;
+        try {
+            r = await fetch(url, {
+                method:  'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+                },
+                body: JSON.stringify(body),
+            });
+        } catch {
+            throw new Error(startErrorMessage(0));          // offline / unreachable
+        }
+        const data = await r.json().catch(() => ({}));   // gateway errors are HTML, not JSON
         if (!r.ok || !data.job_id) {
-            if (url === COMBO_ENDPOINT && (r.status === 404 || r.status === 405)) {
-                throw new Error('Combined scans are not available yet. Try a single scanner.');
-            }
-            const detail = data?.detail;
-            const msg = typeof detail === 'string' ? detail
-                : detail?.message || `HTTP ${r.status}`;
-            throw new Error(msg);
+            throw new Error(startErrorMessage(r.ok ? 500 : r.status, data, { combo: url === COMBO_ENDPOINT }));
         }
         return data.job_id;
     };
@@ -224,24 +229,36 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
     const pollJob = (jobId) => new Promise((resolve, reject) => {
         const startedAt = Date.now();
         const fail = (msg) => { clearInterval(pollRef.current); reject(new Error(msg)); };
+        let inFlight = false;     // a hung request (gateway down) must not stack up
+        let blips = 0;            // consecutive transient failures
+        const blip = () => {
+            blips += 1;
+            if (blips >= MAX_POLL_BLIPS) fail(SCAN_ERRORS.unavailable);
+        };
         clearInterval(pollRef.current);
         pollRef.current = setInterval(async () => {
             const waited = Date.now() - startedAt;
             setElapsed(Math.round(waited / 1000));
             if (waited > MAX_WAIT_MS) {
-                fail('Scan timed out after 3 minutes. Please try again.');
+                fail(SCAN_ERRORS.timeout);
                 return;
             }
+            if (inFlight) return;
+            inFlight = true;
             try {
                 const r = await fetch(`${SCANNER_ENDPOINT}/status/${jobId}`);
-                const data = await r.json().catch(() => ({}));
-                // Job expired/missing (404/410): a hard error instead of polling a
-                // dead id for 3 minutes.
                 if (!r.ok) {
-                    const d = data?.detail;
-                    fail(typeof d === 'string' ? d : `HTTP ${r.status}`);
+                    // A gateway timeout or restart is transient: the job keeps
+                    // running server-side, so keep polling. Expired/missing
+                    // (404/410) is terminal.
+                    const outcome = pollOutcome(r.status);
+                    if (outcome.action === 'fail') fail(outcome.message);
+                    else blip();
                     return;
                 }
+                const data = await r.json().catch(() => null);
+                if (!data) { blip(); return; }           // unreadable body: try again next tick
+                blips = 0;
                 if (data.progress) setProgress(data.progress);
                 if (data.status === 'done') {
                     clearInterval(pollRef.current);
@@ -249,10 +266,12 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                     return;
                 }
                 if (['error', 'stale', 'rejected'].includes(data.status)) {
-                    fail(data.error || 'The scan could not finish. Please run it again.');
+                    fail(SCAN_ERRORS.failed);
                 }
             } catch {
-                // network blip — keep polling
+                blip();                                     // network blip — keep polling
+            } finally {
+                inFlight = false;
             }
         }, POLL_INTERVAL);
     });
@@ -284,7 +303,7 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                 : await startJob(SCANNER_ENDPOINT, { scanner: names[0], universe });
             job = await pollJob(jobId);
         } catch (e) {
-            setError(/^Scan timed out/.test(e.message) ? e.message : `Scan failed: ${e.message}`);
+            setError(e.message || SCAN_ERRORS.generic);
             setScanning(false);
             return;
         }
@@ -478,10 +497,32 @@ const ScannerPanel = ({ onSelectScanner, onClose }) => {
                     </div>
                 )}
 
-                {/* Error bar */}
-                {error && (
-                    <div className="px-5 py-2 text-[12px] text-red-600 bg-red-50 dark:bg-red-950/30 dark:text-red-400 border-b border-red-100 dark:border-red-900/40">
-                        {error}
+                {/* Scan problem notice: plain-language copy only (lib/scannerErrors.js),
+                    never a status code. Calm amber, not alarm red: nothing the user did
+                    was wrong, and the fix is almost always "try again". */}
+                {error && !scanning && (
+                    <div role="status" data-testid="scanner-error"
+                         className="flex items-center gap-2.5 px-5 py-2.5 border-b text-[12px] leading-snug
+                                    bg-amber-50 text-amber-900 border-amber-200/70
+                                    dark:bg-amber-500/10 dark:text-amber-200 dark:border-amber-500/20">
+                        <Info size={14} className="flex-shrink-0 text-amber-600 dark:text-amber-400" />
+                        <span className="flex-1 min-w-0">{error}</span>
+                        {selected.size > 0 && (
+                            <button
+                                onClick={handleRunScan}
+                                className="flex-shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-zinc-900 transition-all hover:opacity-90 active:scale-95"
+                                style={{ backgroundColor: '#FDD405' }}
+                            >
+                                Try again
+                            </button>
+                        )}
+                        <button
+                            onClick={() => setError('')}
+                            aria-label="Dismiss"
+                            className="flex-shrink-0 p-1 rounded-md text-amber-700/70 hover:text-amber-900 dark:text-amber-300/70 dark:hover:text-amber-100"
+                        >
+                            <X size={12} />
+                        </button>
                     </div>
                 )}
 
