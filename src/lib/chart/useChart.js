@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { createChart, CrosshairMode } from 'lightweight-charts';
-import { formatPriceCompact, formatCrosshairDate, formatTickMark } from './formatters';
+import { formatCrosshairDate, formatTickMark } from './formatters';
 
 // LWC has no CSS awareness — every colour is passed explicitly and re-applied
 // when the app theme flips.
@@ -36,9 +36,11 @@ export const useChart = (containerRef, { theme }) => {
                 vertLine: { labelVisible: true },
                 horzLine: { labelVisible: true },
             },
+            // No chart-wide priceFormatter: LWC lets it override every
+            // series, which put ₹ on the RSI/MACD/Volume panes. The ₹ format
+            // is set per price series instead (PRICE_FORMAT in ChartPanel).
             localization: {
                 locale: 'en-IN',
-                priceFormatter: formatPriceCompact,
                 timeFormatter: formatCrosshairDate,
             },
             timeScale: {

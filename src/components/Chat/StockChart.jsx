@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useRef } from 'react';
-import { TrendingUp, TrendingDown, Activity, Calendar, ChartCandlestick, Waves, BrickWall, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { TrendingUp, TrendingDown, Activity, Calendar, ChartCandlestick, Waves, BrickWall, ZoomIn, ZoomOut, Maximize2, ChartLine, Check } from 'lucide-react';
 import { clsx } from 'clsx';
 import ChartPanel from './ChartPanel';
 import ChartFullscreen from './ChartFullscreen';
@@ -8,6 +8,9 @@ import { formatVolume, formatShortDate } from '../../lib/chart/formatters';
 import { buildRenko } from '../../lib/chartTransforms';
 import { useTheme } from '../../context/ThemeContext';
 import { getApiBase } from '../../lib/apiBase';
+import { TIMEFRAMES, TIMEFRAME_DEFS, RANGES_BY_TIMEFRAME, DEFAULT_RANGE_BY_TIMEFRAME, toTimeframe } from '../../lib/chart/timeframes';
+import { INDICATOR_DEFS, INDICATOR_ORDER, computeIndicators } from '../../lib/chart/indicators';
+import { useChartHistory } from '../../lib/chart/chartHistory';
 
 /**
  * StockChart — TradingView-grade price chart.
@@ -31,17 +34,10 @@ const MAX_PATTERN_AGE_DAYS = 45;
 // in sync with AnalystAnswer's PatternSection, which applies the same cutoff.
 const MAX_CANDLESTICK_AGE_DAYS = 5;
 
-const RANGES = [
-    { label: '1M', bars: 22 },
-    { label: '3M', bars: 66 },
-    { label: '6M', bars: 132 },
-    { label: '1Y', bars: 252 },
-];
-
 // Maps the backend's requested `period` (chartData.period, e.g. from a CHART
-// card like "last 6 months") onto the matching range button's bar count, so
-// the chart opens on the period the user actually asked for.
-const PERIOD_TO_BARS = RANGES.reduce((acc, { label, bars }) => {
+// card like "last 6 months") onto the matching daily range button's bar
+// count, so the chart opens on the period the user actually asked for.
+const PERIOD_TO_BARS = RANGES_BY_TIMEFRAME.D.reduce((acc, { label, bars }) => {
     acc[label.toLowerCase()] = bars;
     return acc;
 }, {});
@@ -56,18 +52,65 @@ const TYPE_DEFS = {
 // a non-default option reads as incoherent.
 const TYPE_ORDER = ['candle', 'area', 'heikin', 'renko'];
 
+// Extra chart height per indicator pane (RSI / MACD / Volume), so adding one
+// doesn't squash the candles.
+const INDICATOR_PANE_PX = 90;
+
 const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAGlance = null, variant = 'default', defaultType = null }) => {
     const isQuick = variant === 'quick';
     const { theme } = useTheme();
     const [chartType, setChartType] = useState(defaultType || 'candle');
     const [userRange, setUserRange] = useState(null);
     const [expanded, setExpanded] = useState(false);
+    // D / W / M. Indicator selection lives beside it, not inside it, so
+    // switching timeframe keeps the selected indicators (BRD).
+    const [tf, setTf] = useState('D');
+    const [selectedIndicators, setSelectedIndicators] = useState([]);
+    const [indicatorMenuOpen, setIndicatorMenuOpen] = useState(false);
+    const indicatorMenuRef = useRef(null);
     const panelRef = useRef(null);
 
     const { timeframe = 'daily', chart_metadata = {}, period: requestedPeriod = null } = chartData && !chartData.error ? chartData : {};
 
-    const bars = useMemo(() => normalizeOhlc(chartData), [chartData]);
+    // ~1Y of daily bars shipped with the chat answer.
+    const baseBars = useMemo(() => normalizeOhlc(chartData), [chartData]);
+
+    // Up to 10Y of split/bonus-adjusted daily bars, fetched only once the user
+    // asks for something the chat payload can't cover (W/M, or 5Y daily).
+    const historySymbol = chart_metadata?.symbol || atAGlance?.symbol || symbol;
+    const requestedRange = requestedPeriod ? PERIOD_TO_BARS[String(requestedPeriod).toLowerCase()] : null;
+    const needLongHistory = tf !== 'D' || (userRange ?? requestedRange ?? 0) > baseBars.length;
+    const history = useChartHistory(historySymbol, needLongHistory);
+    const usingHistory = history.status === 'ready' && history.bars.length >= baseBars.length;
+    const dailyBars = usingHistory ? history.bars : baseBars;
+
+    const bars = useMemo(() => toTimeframe(dailyBars, tf), [dailyBars, tf]);
     const renko = useMemo(() => buildRenko(bars.map((b) => ({ ...b, date: b.time }))), [bars]);
+    const indicators = useMemo(
+        () => (selectedIndicators.length ? computeIndicators(bars, selectedIndicators) : null),
+        [bars, selectedIndicators],
+    );
+    const ownPaneCount = chartType === 'renko'
+        ? 0
+        : selectedIndicators.filter((id) => INDICATOR_DEFS[id]?.pane === 'own').length;
+
+    useEffect(() => {
+        if (!indicatorMenuOpen) return;
+        const onDown = (e) => {
+            if (indicatorMenuRef.current && !indicatorMenuRef.current.contains(e.target)) setIndicatorMenuOpen(false);
+        };
+        document.addEventListener('mousedown', onDown);
+        return () => document.removeEventListener('mousedown', onDown);
+    }, [indicatorMenuOpen]);
+
+    const toggleIndicator = (id) => setSelectedIndicators((cur) => (
+        cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]
+    ));
+    const switchTimeframe = (next) => {
+        if (next === tf) return;
+        setTf(next);
+        setUserRange(null); // each timeframe opens on its own default range
+    };
 
     const priceChange = useMemo(() => {
         if (bars.length < 2) return { value: 0, percent: 0 };
@@ -79,8 +122,10 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
 
     const isPositive = priceChange.value >= 0;
 
+    // Pattern geometry and candlestick circles are anchored to DAILY bars, so
+    // they are only drawn on the daily timeframe.
     const patternAnn = useMemo(() => {
-        const cp = (patternOverlays?.chart_pattern_details || [])
+        const cp = (tf === 'D' ? (patternOverlays?.chart_pattern_details || []) : [])
             .find((p) => (p?.bars_ago ?? 0) <= MAX_PATTERN_AGE_DAYS) || null;
         const a = cp?.annotations || {};
         const trendlines = a.trendlines || [];
@@ -97,7 +142,7 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
             windowStartDate: a.window_start_date || null,
             has: !!(trendlines.length || hlines.length || markers.length || curve.length || skeleton.length || band),
         };
-    }, [patternOverlays]);
+    }, [patternOverlays, tf]);
 
     // Candlestick pattern circle (Hammer, Engulfing, Harami, Star, ...) — highlights
     // the exact candle(s) the backend flagged via ohlc_bars. Independent of
@@ -105,11 +150,11 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
     // and date live in the caption cell next to the chart (PatternSection), not
     // on the chart itself, same "no text on the chart" convention as patternAnn.
     const candlestickAnn = useMemo(() => {
-        const cs = (patternOverlays?.candlestick_details || [])
+        const cs = (tf === 'D' ? (patternOverlays?.candlestick_details || []) : [])
             .find((p) => (p?.bars_ago ?? 0) <= MAX_CANDLESTICK_AGE_DAYS && Array.isArray(p?.ohlc_bars) && p.ohlc_bars.length) || null;
         if (!cs) return { has: false, dates: null };
         return { has: true, dates: new Set(cs.ohlc_bars.map((b) => String(b.date).slice(0, 10))) };
-    }, [patternOverlays]);
+    }, [patternOverlays, tf]);
 
     // Auto-frame the pattern: when one is present the chart opens on its window
     // (+~35% context) instead of the default 3M, so the shape fills the frame.
@@ -123,8 +168,19 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
         return Math.min(bars.length, Math.max(40, Math.round(span * 1.35)));
     }, [patternAnn, bars]);
 
-    const requestedRange = requestedPeriod ? PERIOD_TO_BARS[String(requestedPeriod).toLowerCase()] : null;
-    const range = userRange ?? ((chartType === 'candle' && autoFrameRange) || requestedRange || 66);
+    const range = tf === 'D'
+        ? (userRange ?? ((chartType === 'candle' && autoFrameRange) || requestedRange || DEFAULT_RANGE_BY_TIMEFRAME.D))
+        : (userRange ?? DEFAULT_RANGE_BY_TIMEFRAME[tf]);
+    const ranges = RANGES_BY_TIMEFRAME[tf];
+
+    const tfName = TIMEFRAME_DEFS[tf].name;
+    const pointsLabel = tf === 'D' && !usingHistory ? (chart_metadata.data_points || bars.length) : bars.length;
+    const startDate = usingHistory || tf !== 'D' ? bars[0]?.time : chart_metadata.start_date;
+    const endDate = usingHistory || tf !== 'D' ? dailyBars[dailyBars.length - 1]?.time : chart_metadata.end_date;
+    let historyNote = null;
+    if (needLongHistory && history.status === 'loading') historyNote = 'Loading 10Y history…';
+    else if (needLongHistory && history.status === 'error') historyNote = `Longer history unavailable — showing ${bars.length} ${TIMEFRAME_DEFS[tf].unit}s`;
+    else if (usingHistory && history.adjustment === 'none') historyNote = 'Prices not adjusted for splits/bonus';
 
     if (!chartData) return null;
     if (chartData.error) {
@@ -153,6 +209,9 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
             candlestickAnn={candlestickAnn}
             range={range}
             theme={theme}
+            timeframe={tf}
+            indicators={indicators}
+            selectedIndicators={selectedIndicators}
             className="w-full h-full"
         />
     );
@@ -192,7 +251,7 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                                 {symbol || chart_metadata.symbol || 'Chart'}
                             </h3>
                             <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-                                {timeframe} chart • {chart_metadata.data_points || bars.length} points
+                                {tf === 'D' ? timeframe : tfName.toLowerCase()} chart • {pointsLabel} points
                             </p>
                         </div>
                     </div>
@@ -261,7 +320,26 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                             Brick ₹{Number(renko.brickSize.toFixed(2)).toLocaleString('en-IN')}
                         </span>
                     )}
-                    {RANGES.map(({ label, bars: n }) => (
+                    <div role="group" aria-label="Candle timeframe" className="flex items-center rounded-md border border-zinc-200 dark:border-zinc-700 overflow-hidden mr-1">
+                        {TIMEFRAMES.map((key) => (
+                            <button
+                                key={key}
+                                onClick={() => switchTimeframe(key)}
+                                title={`${TIMEFRAME_DEFS[key].name} candles`}
+                                aria-label={`${TIMEFRAME_DEFS[key].name} candles`}
+                                aria-pressed={tf === key}
+                                className={clsx(
+                                    'px-2 py-1 text-[11px] font-semibold transition-all',
+                                    tf === key
+                                        ? 'bg-[#FDD405] text-black'
+                                        : 'text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/60'
+                                )}
+                            >
+                                {TIMEFRAME_DEFS[key].label}
+                            </button>
+                        ))}
+                    </div>
+                    {ranges.map(({ label, bars: n }) => (
                         <button
                             key={label}
                             onClick={() => setUserRange(n)}
@@ -278,7 +356,51 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                     {/* ml-auto on mobile parks zoom/expand at the right edge, so the
                         ranges keep the left edge rather than the two reading as one
                         centred group; ml-1 from sm: up where the whole row is right-aligned. */}
-                    <div className="flex items-center gap-0.5 ml-auto sm:ml-1 border border-zinc-200 dark:border-zinc-700 rounded-lg overflow-hidden">
+                    <div ref={indicatorMenuRef} className="relative ml-auto sm:ml-1">
+                        <button
+                            onClick={() => setIndicatorMenuOpen((o) => !o)}
+                            disabled={chartType === 'renko'}
+                            title={chartType === 'renko' ? 'Indicators are not available on Renko' : 'Indicators'}
+                            aria-label="Indicators"
+                            aria-haspopup="true"
+                            aria-expanded={indicatorMenuOpen}
+                            className={clsx(
+                                'flex items-center gap-1 px-1.5 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700 text-[11px] font-semibold transition-colors',
+                                chartType === 'renko'
+                                    ? 'opacity-40 cursor-not-allowed text-zinc-400'
+                                    : 'text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                            )}
+                        >
+                            <ChartLine className="w-3.5 h-3.5" />
+                            {selectedIndicators.length > 0 && <span>{selectedIndicators.length}</span>}
+                        </button>
+                        {indicatorMenuOpen && (
+                            <div className="absolute right-0 top-full mt-1 z-30 w-52 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-lg py-1">
+                                {INDICATOR_ORDER.map((id) => {
+                                    const on = selectedIndicators.includes(id);
+                                    return (
+                                        <button
+                                            key={id}
+                                            role="menuitemcheckbox"
+                                            aria-checked={on}
+                                            onClick={() => toggleIndicator(id)}
+                                            className="w-full flex items-center gap-2 px-3 py-1.5 text-left text-[12px] text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                                        >
+                                            <span className={clsx(
+                                                'w-3.5 h-3.5 rounded border flex items-center justify-center flex-shrink-0',
+                                                on ? 'bg-[#FDD405] border-[#FDD405]' : 'border-zinc-300 dark:border-zinc-600'
+                                            )}>
+                                                {on && <Check className="w-3 h-3 text-black" />}
+                                            </span>
+                                            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: INDICATOR_DEFS[id].color }} />
+                                            {INDICATOR_DEFS[id].label}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                    <div className="flex items-center gap-0.5 border border-zinc-200 dark:border-zinc-700 rounded-lg overflow-hidden">
                         <button onClick={() => panelRef.current?.zoomIn()} title="Zoom in" aria-label="Zoom in"
                             className="p-1.5 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
                             <ZoomIn className="w-3.5 h-3.5" />
@@ -297,8 +419,15 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                 </div>
             </div>
 
+            {historyNote && (
+                <p className="-mt-2 mb-2 text-[11px] text-zinc-500 dark:text-zinc-400">{historyNote}</p>
+            )}
+
             <div className="flex flex-col sm:flex-row gap-4">
-                <div className={clsx('h-[260px] sm:h-[340px] overflow-hidden', atAGlance ? 'flex-1 min-w-0' : 'w-full')}>
+                <div
+                    style={{ '--ind-h': `${ownPaneCount * INDICATOR_PANE_PX}px` }}
+                    className={clsx('h-[calc(260px+var(--ind-h))] sm:h-[calc(340px+var(--ind-h))] overflow-hidden', atAGlance ? 'flex-1 min-w-0' : 'w-full')}
+                >
                     {renkoEmpty ? emptyRenkoMsg : expanded ? (
                         <div className="flex h-full items-center justify-center text-xs text-zinc-400">Chart expanded</div>
                     ) : panel}
@@ -324,10 +453,13 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                 )}
             </div>
 
-            {!isQuick && chart_metadata.start_date && chart_metadata.end_date && (
+            {!isQuick && startDate && endDate && (
                 <div className="flex items-center gap-2 mt-4 text-xs text-zinc-500 dark:text-zinc-400">
                     <Calendar className="w-3.5 h-3.5" />
-                    <span>{chart_metadata.start_date} to {chart_metadata.end_date}</span>
+                    <span>{startDate} to {endDate}</span>
+                    {usingHistory && history.adjustment === 'split_bonus' && (
+                        <span className="text-zinc-400 dark:text-zinc-500">• adjusted for splits &amp; bonus</span>
+                    )}
                 </div>
             )}
 
