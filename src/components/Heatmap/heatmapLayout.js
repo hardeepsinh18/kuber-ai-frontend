@@ -13,8 +13,11 @@ const SATURATION = { '1D': 3, '1W': 5, '1M': 8, '3M': 15, '6M': 20, '1Y': 30, YT
 
 export const saturationFor = (tf) => SATURATION[tf] ?? 3;
 
-const GREENS = ['#1f5f3a', '#1d7a43', '#16994d', '#0fb858'];
-const REDS = ['#6b2a2a', '#8f2c2c', '#b62f2f', '#d93636'];
+// Light → deep as the move grows, so a bigger move always reads as the stronger
+// colour (the old dark → bright ramp made +2% look deeper than +3%). Every shade
+// keeps white tile text at ≥3:1 contrast.
+const GREENS = ['#4f9e6d', '#2f8753', '#1b6e40', '#0e5530'];
+const REDS = ['#c56565', '#b04444', '#922a2a', '#701919'];
 export const NEUTRAL = '#3f3f46';
 export const MISSING = '#27272a';
 

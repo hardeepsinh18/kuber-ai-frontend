@@ -61,6 +61,19 @@ describe('colorFor', () => {
         // a 3% move over a year is mild, not saturated
         expect(colorFor(3, '1Y')).not.toBe(colorFor(3, '1D'));
     });
+
+    it('gets deeper (darker) as the move grows, on both sides', () => {
+        const luminance = (hex) => {
+            const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+            return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        };
+        for (const sign of [1, -1]) {
+            const shades = [0.5, 1.2, 2, 3].map((p) => luminance(colorFor(sign * p)));
+            for (let i = 1; i < shades.length; i += 1) expect(shades[i]).toBeLessThan(shades[i - 1]);
+        }
+        // the reported case: +3% must read deeper than +2%
+        expect(luminance(colorFor(3))).toBeLessThan(luminance(colorFor(2)));
+    });
 });
 
 describe('formatters', () => {
