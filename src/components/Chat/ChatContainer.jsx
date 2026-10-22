@@ -5,6 +5,7 @@ import InputBar from './InputBar';
 import StartScreen from './StartScreen';
 import ThinkingPaths from './ThinkingPaths';
 import ScannerDrawer from './ScannerDrawer';
+import HeatmapLauncher from '../Heatmap/HeatmapLauncher';
 import { useAuth } from '../../context/AuthContext';
 import { useChatHistory } from '../../context/ChatHistoryContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -1248,6 +1249,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
                 >
                     <StartScreen onStartChat={handleStartChat} onScannerResult={handleScannerResult} responseMode={responseMode} setResponseMode={setResponseMode} />
                 </div>
+                <HeatmapLauncher hidden={!!scannerDrawer} onAnalyze={(sym) => handleSend(`Analyze ${sym}`)} />
                 {scannerDrawer && (
                     <ScannerDrawer
                         data={scannerDrawer}
@@ -1286,6 +1288,7 @@ const ChatContainer = ({ sidebarOpen, routeChatId }) => {
 
     return (
         <>
+        <HeatmapLauncher hidden={!!scannerDrawer} onAnalyze={(sym) => handleSend(`Analyze ${sym}`)} />
         {scannerDrawer && (
             <ScannerDrawer
                 data={scannerDrawer}
