@@ -150,9 +150,16 @@ const MOCK_RATIOS_POISONED = {
     },
 };
 
+// Stored-news shape from the backend news worker (sentiment_service.headlines_for_response):
+// five-way label, category, publish time, every source. Times are relative to page load.
+const hoursAgo = (h) => new Date(Date.now() - h * 3600e3).toISOString();
+
 const MOCK_NEWS = [
-    { title: 'Reliance, TCS, HDFC Bank witness biggest FPI selling since 2022; Eternal, Paytm, Polycab see foreign buying', source: 'mint - markets', url: '#', sentiment: 'bearish' },
-    { title: 'TCS Q1FY27 results preview: Revenue growth expected at 3–5% in constant currency terms', source: 'NDTV Profit', url: '#', sentiment: 'bullish' },
+    { title: 'TCS, Wipro turn to mid-market clients as AI erodes demand from large customers', source: 'Mint', url: '#', sentiment: 'neutral',
+      sentiment_label: 'mixed', category: 'other', published: hoursAgo(41), sources_count: 1, sources: [{ source: 'Mint', url: '#' }], symbol_tag: 'TCS' },
+    { title: 'TCS Q1FY27 results preview: Revenue growth expected at 3–5% in constant currency terms', source: 'NDTV Profit', url: '#', sentiment: 'bullish',
+      sentiment_label: 'positive', category: 'results', published: hoursAgo(5), sources_count: 3,
+      sources: [{ source: 'NDTV Profit', url: '#' }, { source: 'Economic Times', url: '#' }, { source: 'Mint', url: '#' }], symbol_tag: 'TCS' },
 ];
 
 /* ── Quick (snap) mode mocks — mirrors the QUICK ANSWER reference design ── */
@@ -184,9 +191,12 @@ const MOCK_SIGNAL_QUICK = {
 };
 
 const MOCK_NEWS_QUICK = [
-    { title: 'Board approves share buyback worth ₹18,000 crore, record date awaited', source: '2 days ago', url: '#', sentiment: 'bullish' },
-    { title: 'Wins large multi year cloud transformation deal with a European bank', source: '4 days ago', url: '#', sentiment: 'bullish' },
-    { title: 'Q1 operating margin beats street estimates despite currency headwinds', source: '1 week ago', url: '#', sentiment: 'bullish' },
+    { title: 'Board approves share buyback worth ₹18,000 crore, record date awaited', source: 'Economic Times', url: '#', sentiment: 'bullish',
+      sentiment_label: 'positive', category: 'corporate_action', published: hoursAgo(48), sources_count: 4, symbol_tag: 'TCS' },
+    { title: 'Wins large multi year cloud transformation deal with a European bank', source: 'Mint', url: '#', sentiment: 'bullish',
+      sentiment_label: 'positive', category: 'orders', published: hoursAgo(96), sources_count: 1, symbol_tag: 'TCS' },
+    { title: 'Q1 operating margin beats street estimates despite currency headwinds', source: 'NDTV Profit', url: '#', sentiment: 'neutral',
+      sentiment_label: 'mixed', category: 'results', published: hoursAgo(168), sources_count: 2, symbol_tag: 'TCS' },
 ];
 
 const MOCK_FOLLOW_UPS = [

@@ -21,6 +21,7 @@ import FundRankingAnswer from './FundRankingAnswer';
 import GeneralAnswer from './GeneralAnswer';
 import { parseScreenerRows, screenerProse } from './screenerRows';
 import { IndicatorsTable, stripAiDashes, fmtVol } from './answerKit';
+import { newsSentiment, newsMetaParts, newsSourceList } from './newsMeta';
 import { getApiBase } from '../../lib/apiBase';
 
 const normalizeSymbol = (s) => {
@@ -973,6 +974,8 @@ const MessageBubble = (props) => {
         if (!symbols.length && !companyTokens.length) return [];
         return headlines
             .filter((h) => {
+                // Stored news is already mapped to its stock by the backend.
+                if (h?.symbol_tag && symbols.includes(normalizeSymbol(h.symbol_tag))) return true;
                 const titleNorm = normalizeMatchText(h?.title);
                 // Match by ticker symbol
                 if (symbols.some((sym) => titleNorm.includes(sym))) return true;
@@ -1235,15 +1238,11 @@ const MessageBubble = (props) => {
                             </div>
                             <ul>
                                 {relevantNews.map((h, i) => {
-                                    const sentiment = (h?.sentiment || '').toLowerCase();
-                                    const dotColor = sentiment === 'bullish'
-                                        ? 'bg-emerald-400'
-                                        : sentiment === 'bearish'
-                                            ? 'bg-rose-400'
-                                            : 'bg-zinc-300 dark:bg-zinc-600';
+                                    const sentiment = newsSentiment(h);
+                                    const metaParts = newsMetaParts(h);
                                     return (
                                         <li key={h?.url || h?.title || i} className="flex items-start gap-3 px-4 py-3 border-b last:border-b-0 border-zinc-100 dark:border-zinc-800/50 hover:bg-zinc-50/60 dark:hover:bg-zinc-800/20 transition-colors">
-                                            <span className={clsx('mt-[7px] w-2 h-2 rounded-full flex-shrink-0', dotColor)} />
+                                            <span title={sentiment.label} aria-label={`${sentiment.label} news`} className={clsx('mt-[7px] w-2 h-2 rounded-full flex-shrink-0', sentiment.dot)} />
                                             <div className="flex-1 min-w-0">
                                                 {h?.url ? (
                                                     <a href={h.url} target="_blank" rel="noopener noreferrer" className="text-sm text-zinc-800 dark:text-zinc-200 hover:text-street-yellow-ink dark:hover:text-[#FDD405] leading-snug line-clamp-2 transition-colors hover:underline">
@@ -1252,6 +1251,11 @@ const MessageBubble = (props) => {
                                                 ) : (
                                                     <p className="text-sm text-zinc-800 dark:text-zinc-200 leading-snug line-clamp-2">
                                                         {h?.title || 'Untitled'}
+                                                    </p>
+                                                )}
+                                                {metaParts.length > 0 && (
+                                                    <p title={newsSourceList(h) || undefined} className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400 leading-none">
+                                                        {metaParts.join(' · ')}
                                                     </p>
                                                 )}
                                             </div>

@@ -6,6 +6,7 @@ import {
     CompanyCard, VerdictBand, MarketStatsCard, buildMarketStats, VentyScorePanel, getScores,
 } from './answerKit';
 import { answerSections, firstParagraph, metricAnswer } from './answerSections';
+import { newsSentiment, newsSourceList, timeAgo } from './newsMeta';
 
 /**
  * QuickAnswer — the "instant read" layout for Quick (snap) mode.
@@ -139,9 +140,14 @@ const QuickAnswer = ({
                     <CardHeader>Recent News</CardHeader>
                     <div className="mt-1 divide-y divide-zinc-100 dark:divide-zinc-800">
                         {newsItems.map((h, i) => {
-                            const meta = h?.time_ago || h?.published || h?.source || '';
+                            const ago = h?.time_ago || timeAgo(h?.published);
+                            const meta = ago || h?.source || '';
+                            // Source count only from sm up: on a phone it squeezes the headline to an ellipsis.
+                            const sourcesNote = ago && h?.sources_count > 1 ? ` · ${h.sources_count} sources` : '';
+                            const sentiment = newsSentiment(h);
                             return (
                                 <div key={`${i}-${(h?.title || '').slice(0, 40)}`} className="flex items-center justify-between gap-3 py-2.5">
+                                    <span title={sentiment.label} aria-label={`${sentiment.label} news`} className={clsx('w-1.5 h-1.5 rounded-full flex-shrink-0', sentiment.dot)} />
                                     {h?.url ? (
                                         <a href={h.url} target="_blank" rel="noopener noreferrer"
                                            className="text-[12.5px] text-zinc-700 dark:text-zinc-300 leading-snug line-clamp-2 hover:text-zinc-900 dark:hover:text-[#FDD405] hover:underline transition-colors flex-1 min-w-0">
@@ -153,8 +159,9 @@ const QuickAnswer = ({
                                         </p>
                                     )}
                                     {meta && (
-                                        <span className="text-[9px] font-extrabold uppercase tracking-wider flex-shrink-0 text-right text-zinc-600 dark:text-[#FDD405]">
+                                        <span title={newsSourceList(h) || undefined} className="text-[9px] font-extrabold uppercase tracking-wider flex-shrink-0 text-right text-zinc-600 dark:text-[#FDD405]">
                                             {meta}
+                                            {sourcesNote && <span className="hidden sm:inline">{sourcesNote}</span>}
                                         </span>
                                     )}
                                 </div>
