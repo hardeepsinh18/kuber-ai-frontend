@@ -536,7 +536,13 @@ export const extractStockSymbols = (query) => {
     // alias rewriting (and the confident-symbol push) whenever the query looks like
     // a fund question -- a false stock-ticker hint for a fund query serves nothing
     // downstream either way, since fund routing matches on query text, not symbols.
-    const looksLikeFundQuery = /\b(mutual\s*funds?|\bmf\b|elss|index\s+fund|\bnav\b|funds?)\b/i.test(query);
+    //
+    // MUST stay in sync with app/core/query_spec.py's _FUND regex (backend) --
+    // "expense ratio of SBI large cap" reproduced this exact bug again on
+    // 2026-10-23 because the backend's fund-trigger list grew (exit load,
+    // expense ratio, AUM, fund manager) without this guard growing with it,
+    // so queries using those words alone (no "fund") sailed past this check.
+    const looksLikeFundQuery = /\b(mutual\s*funds?|\bmf\b|elss|index\s+fund|\bnav\b|funds?|fund\s*manager|exit\s*load|expense\s*ratio|\baum\b)\b/i.test(query);
 
     // 1. Check multi-word aliases first (most reliable), longest match wins
     const multiWordAliases = Object.entries(stockAliases)

@@ -106,9 +106,14 @@ const FundAnswer = ({ metadata = {} }) => {
         <div className="space-y-3" style={{ animation: 'slideUpFade 0.4s cubic-bezier(0.22,1,0.36,1) both' }}>
             {direct_answer && (
                 <div className="rounded-2xl px-4 py-3 bg-[#FDD405]">
-                    <p className="text-[13.5px] font-semibold text-black leading-snug">
+                    {/* InlineMd renders its own <p> internally (react-markdown) --
+                        wrapping it in another <p> here nests block-in-block, which
+                        browsers silently restructure and was producing a broken
+                        partial-background artifact. Match every other InlineMd call
+                        site in this app: a <div>, not a <p>. */}
+                    <div className="text-[13.5px] font-semibold text-black leading-snug">
                         <InlineMd>{direct_answer}</InlineMd>
-                    </p>
+                    </div>
                 </div>
             )}
 
