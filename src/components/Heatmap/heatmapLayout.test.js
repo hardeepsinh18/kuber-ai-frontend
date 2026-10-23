@@ -1,7 +1,21 @@
 import { describe, it, expect } from 'vitest';
 import {
-    squarify, layoutHeatmap, colorFor, MISSING, NEUTRAL, formatPct, formatVolume,
+    squarify, layoutHeatmap, colorFor, legendStops, MISSING, NEUTRAL, formatPct, formatVolume,
 } from './heatmapLayout';
+
+describe('legendStops', () => {
+    it('shows every shade the map can use, once, in order', () => {
+        const stops = legendStops('1D');
+        expect(stops).toHaveLength(9);
+        expect(new Set(stops.map((s) => s.color)).size).toBe(9);
+        // each band's colour is what colorFor gives a value inside that band
+        expect(stops[0].color).toBe(colorFor(-3));      // deepest red
+        expect(stops[4].color).toBe(NEUTRAL);
+        expect(stops[5].color).toBe(colorFor(0.5));     // lightest green
+        expect(stops[8].color).toBe(colorFor(3));       // deepest green
+        expect(stops[8].label).toBe('+2.25% or more');
+    });
+});
 
 const area = (r) => r.w * r.h;
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { LayoutGrid, RefreshCw, X } from 'lucide-react';
 import { getApiBase } from '../../lib/apiBase';
 import {
@@ -16,18 +16,29 @@ function useHeatmap(index, tf) {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    // Only the newest request may write state — a slow response for a tab the
+    // user already left must not paint over the current one.
+    const reqId = useRef(0);
 
     const load = useCallback(async (silent = false) => {
-        if (!silent) setLoading(true);
-        setError('');
+        const id = ++reqId.current;
+        if (!silent) {
+            setLoading(true);
+            setError('');
+        }
         try {
             const r = await fetch(`${ENDPOINT}?index=${index}&tf=${tf}`);
             if (!r.ok) throw new Error(`HTTP ${r.status}`);
-            setData(await r.json());
+            const d = await r.json();
+            if (id !== reqId.current) return;
+            setData(d);
+            setError('');
         } catch {
-            setError('Could not load the heat map. Please try again.');
+            // A failed background refresh keeps the map on screen; only a
+            // user-initiated load (tab switch, retry) surfaces the error.
+            if (id === reqId.current && !silent) setError('Could not load the heat map. Please try again.');
         } finally {
-            setLoading(false);
+            if (id === reqId.current) setLoading(false);
         }
     }, [index, tf]);
 
@@ -73,16 +84,20 @@ const Pills = ({ items, value, onChange, scroll }) => (
     </div>
 );
 
-const Legend = ({ tf }) => (
-    <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 tabular-nums">
-        {legendStops(tf).map(({ value, color }) => (
-            <span key={value} className="flex items-center gap-1">
-                <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: color }} />
-                {value > 0 ? '+' : ''}{value}%
-            </span>
-        ))}
-    </div>
-);
+// Every shade the map can use, deep red → grey → deep green, labelled at the ends.
+const Legend = ({ tf }) => {
+    const stops = legendStops(tf);
+    const edge = stops[stops.length - 1].from;
+    return (
+        <div className="flex items-center gap-1 text-[10px] text-zinc-500 tabular-nums">
+            <span>−{edge}%</span>
+            {stops.map(({ key, color, label }) => (
+                <span key={key} title={label} className="w-3.5 h-3 rounded-sm" style={{ backgroundColor: color }} />
+            ))}
+            <span>+{edge}%</span>
+        </div>
+    );
+};
 
 const Tooltip = ({ tip, tf, bounds }) => {
     if (!tip) return null;
@@ -111,7 +126,8 @@ const Treemap = ({ sectors, tf, onPick }) => {
     const boxRef = useRef(null);
     const { w, h } = useElementSize(boxRef);
     const [tip, setTip] = useState(null);
-    const layout = w && h ? layoutHeatmap(sectors, w, h) : [];
+    // Memoised: every mouse move re-renders for the tooltip.
+    const layout = useMemo(() => (w && h ? layoutHeatmap(sectors, w, h) : []), [sectors, w, h]);
 
     const move = (e, stock, sector) => {
         const r = boxRef.current.getBoundingClientRect();
@@ -139,6 +155,7 @@ const Treemap = ({ sectors, tf, onPick }) => {
                                 key={c.data.symbol}
                                 onClick={() => onPick(c.data.symbol)}
                                 onMouseMove={(e) => move(e, c.data, sec.data.name)}
+                                onMouseLeave={() => setTip(null)}
                                 className="absolute flex flex-col items-center justify-center overflow-hidden border border-zinc-900/70 text-white hover:brightness-125 hover:z-10 transition-[filter]"
                                 style={{ left: c.x, top: c.y, width: c.w, height: c.h, backgroundColor: colorFor(c.data.pChange, tf) }}
                                 aria-label={`${c.data.symbol} ${formatPct(c.data.pChange)}`}
@@ -223,10 +240,14 @@ const HeatmapPanel = ({ onClose, onAnalyze }) => {
         };
     }, [onClose]);
 
-    const asOf = data?.as_of
-        ? new Date(data.as_of).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+    // Only show data that belongs to the selected tab + timeframe. Right after a
+    // switch the previous payload is still in state; showing it under the new
+    // tab label would be wrong data, so fall back to the skeleton until it lands.
+    const current = data && data.index?.key === index && data.tf === tf ? data : null;
+    const asOf = current?.as_of
+        ? new Date(current.as_of).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
         : '';
-    const sectors = data?.sectors || [];
+    const sectors = current?.sectors || [];
     const tfItems = TIMEFRAMES.map((t) => ({ key: t, label: t }));
 
     return (
@@ -240,12 +261,12 @@ const HeatmapPanel = ({ onClose, onAnalyze }) => {
                             <div className="min-w-0">
                                 <h2 className="text-[15px] font-bold text-zinc-900 dark:text-white">Market Heat Map</h2>
                                 <p className="text-[11.5px] text-zinc-500 truncate tabular-nums">
-                                    {data?.index?.ltp != null && (
-                                        <>{data.index.label} {data.index.ltp.toLocaleString('en-IN')}{' '}
-                                            <span className={pctText(data.index.pChange)}>{formatPct(data.index.pChange)}</span>{' · '}</>
+                                    {current?.index?.ltp != null && (
+                                        <>{current.index.label} {current.index.ltp.toLocaleString('en-IN')}{' '}
+                                            <span className={pctText(current.index.pChange)}>{formatPct(current.index.pChange)}</span>{' · '}</>
                                     )}
-                                    {data && (data.market_open ? `Live · ${asOf}` : `Market closed · as of ${asOf}`)}
-                                    {data?.since && ` · since ${data.since}`}
+                                    {current && (current.market_open ? `Live · ${asOf}` : `Market closed · as of ${asOf}`)}
+                                    {current?.since && ` · since ${current.since}`}
                                 </p>
                             </div>
                         </div>
@@ -272,7 +293,7 @@ const HeatmapPanel = ({ onClose, onAnalyze }) => {
                             {error}
                             <button onClick={reload} className="px-3 py-1.5 rounded-lg text-[12px] font-semibold text-zinc-900" style={{ backgroundColor: '#FDD405' }}>Retry</button>
                         </div>
-                    ) : !data && loading ? (
+                    ) : !current ? (
                         <div className="flex-1 m-3 rounded-xl bg-zinc-100 dark:bg-zinc-800/50 animate-pulse" />
                     ) : isMobile ? (
                         <MobileList sectors={sectors} tf={tf} onPick={onAnalyze} />

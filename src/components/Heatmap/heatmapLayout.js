@@ -31,9 +31,28 @@ export function colorFor(pct, tf = '1D') {
     return pct > 0 ? GREENS[step] : REDS[step];
 }
 
+// One swatch per colour colorFor can return, deep red → grey → deep green, each
+// with its % band (fractions of the timeframe's saturation, matching colorFor).
+const BANDS = [[0.05, 0.25], [0.25, 0.5], [0.5, 0.75], [0.75, null]];
+
 export function legendStops(tf = '1D') {
     const sat = saturationFor(tf);
-    return [-1, -0.5, 0, 0.5, 1].map((f) => ({ value: f * sat, color: colorFor(f * sat, tf) }));
+    const pct = (f) => +(f * sat).toFixed(2);
+    const side = (sign) => BANDS.map(([a, b], step) => {
+        const s = sign > 0 ? '+' : '−';
+        const mid = b == null ? (a + 1) / 2 : (a + b) / 2;
+        return {
+            key: `${sign}:${step}`,
+            color: colorFor(sign * mid * sat, tf),
+            from: pct(a),
+            label: b == null ? `${s}${pct(a)}% or more` : `${s}${pct(a)}% to ${s}${pct(b)}%`,
+        };
+    });
+    return [
+        ...side(-1).reverse(),
+        { key: '0', color: NEUTRAL, from: 0, label: `within ±${pct(0.05)}%` },
+        ...side(1),
+    ];
 }
 
 export const formatPct = (pct) =>
