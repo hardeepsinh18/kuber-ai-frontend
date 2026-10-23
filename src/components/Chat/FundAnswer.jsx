@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { Card, CardHeader, MiniLabel, ScoreRing } from './answerKit';
 
 /**
@@ -24,31 +25,55 @@ const num = (v, suffix = '') => {
     return Number.isNaN(n) ? '—' : `${n.toFixed(2)}${suffix}`;
 };
 
-// Shared label + percentage bar for the Sector/Cap Allocation cards — both are
-// {label, weight_pct} breakdowns of the same holdings data, just grouped
-// differently (by sector vs by market-cap tier), so one renderer covers both.
-const AllocationBars = ({ rows, labelKey }) => (
-    <div className="mt-2 space-y-2">
-        {rows.map((r, i) => {
-            const pctVal = Number(r.weight_pct);
-            const widthPct = Number.isNaN(pctVal) ? 0 : Math.max(0, Math.min(100, pctVal));
-            return (
-                <div key={i}>
-                    <div className="flex justify-between text-[12.5px] mb-1">
-                        <span className="text-zinc-700 dark:text-zinc-200">{r[labelKey]}</span>
-                        <span className="text-zinc-500 dark:text-zinc-400 font-medium">{num(r.weight_pct, '%')}</span>
-                    </div>
-                    <div className="h-1.5 rounded-full bg-zinc-100 dark:bg-white/5 overflow-hidden">
-                        <div
-                            className="h-full rounded-full bg-street-yellow-ink dark:bg-[#FDD405]"
-                            style={{ width: `${widthPct}%` }}
-                        />
-                    </div>
-                </div>
-            );
-        })}
-    </div>
-);
+// One row of a Sector/Cap Allocation breakdown — a label + a percentage bar.
+const AllocationRow = ({ label, weightPct }) => {
+    const pctVal = Number(weightPct);
+    const widthPct = Number.isNaN(pctVal) ? 0 : Math.max(0, Math.min(100, pctVal));
+    return (
+        <div>
+            <div className="flex justify-between text-[12.5px] mb-1">
+                <span className="text-zinc-700 dark:text-zinc-200 truncate pr-2">{label}</span>
+                <span className="text-zinc-500 dark:text-zinc-400 font-medium flex-shrink-0">{num(weightPct, '%')}</span>
+            </div>
+            <div className="h-1.5 rounded-full bg-zinc-100 dark:bg-white/5 overflow-hidden">
+                <div
+                    className="h-full rounded-full bg-street-yellow-ink dark:bg-[#FDD405]"
+                    style={{ width: `${widthPct}%` }}
+                />
+            </div>
+        </div>
+    );
+};
+
+// Sector/Cap Allocation cards share this shape: {label, weight_pct} rows,
+// already sorted by weight descending from the backend. A fund can carry 25+
+// sectors, which turned the card into a wall of bars -- show the top few
+// (useful at a glance) and collapse the long tail behind a toggle instead of
+// dumping everything at once.
+const AllocationBars = ({ rows, labelKey, initialCount = 6 }) => {
+    const [expanded, setExpanded] = useState(false);
+    const visible = expanded ? rows : rows.slice(0, initialCount);
+    const remaining = rows.length - initialCount;
+
+    return (
+        <div className="mt-2 space-y-2">
+            {visible.map((r, i) => (
+                <AllocationRow key={i} label={r[labelKey]} weightPct={r.weight_pct} />
+            ))}
+            {remaining > 0 && (
+                <button
+                    type="button"
+                    onClick={() => setExpanded((e) => !e)}
+                    className="w-full flex items-center justify-center gap-1 pt-1.5 text-[11.5px] font-semibold
+                               text-street-yellow-ink dark:text-[#FDD405] hover:opacity-80 transition-opacity"
+                >
+                    {expanded ? 'Show less' : `Show ${remaining} more`}
+                    <ChevronDown size={13} strokeWidth={2.5} className={expanded ? 'rotate-180 transition-transform' : 'transition-transform'} />
+                </button>
+            )}
+        </div>
+    );
+};
 
 const FundAnswer = ({ metadata = {} }) => {
     const {
@@ -160,7 +185,7 @@ const FundAnswer = ({ metadata = {} }) => {
 
             {sector_allocation.length > 0 && (
                 <Card className="px-4 py-3.5">
-                    <MiniLabel>Sector Allocation</MiniLabel>
+                    <MiniLabel>Sector Allocation ({sector_allocation.length})</MiniLabel>
                     <AllocationBars rows={sector_allocation} labelKey="sector" />
                 </Card>
             )}
