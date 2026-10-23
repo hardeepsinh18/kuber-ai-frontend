@@ -1,7 +1,23 @@
 import { describe, it, expect } from 'vitest';
 import {
-    squarify, layoutHeatmap, colorFor, legendStops, MISSING, NEUTRAL, formatPct, formatVolume,
+    squarify, layoutHeatmap, cellLabel, colorFor, legendStops, MISSING, NEUTRAL, formatPct, formatVolume,
 } from './heatmapLayout';
+
+describe('cellLabel', () => {
+    it('steps labels down with box size instead of blanking mid-size boxes', () => {
+        expect(cellLabel(120, 80)).toMatchObject({ showSymbol: true, showPct: true });
+        // the reported case: a ~35×40 box (TMPV) used to show nothing
+        expect(cellLabel(35, 40)).toMatchObject({ showSymbol: true, showPct: false });
+        expect(cellLabel(60, 18)).toMatchObject({ showSymbol: true, showPct: false });
+        expect(cellLabel(12, 30).showSymbol).toBe(false);
+        expect(cellLabel(40, 8).showSymbol).toBe(false);
+    });
+
+    it('keeps the font readable and bounded', () => {
+        expect(cellLabel(22, 13).fontSize).toBe(8);
+        expect(cellLabel(500, 500).fontSize).toBe(16);
+    });
+});
 
 describe('legendStops', () => {
     it('shows every shade the map can use, once, in order', () => {

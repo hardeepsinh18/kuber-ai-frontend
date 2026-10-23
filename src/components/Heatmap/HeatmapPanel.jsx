@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { LayoutGrid, RefreshCw, X } from 'lucide-react';
 import { getApiBase } from '../../lib/apiBase';
 import {
-    INDEX_TABS, TIMEFRAMES, colorFor, legendStops, layoutHeatmap,
+    INDEX_TABS, TIMEFRAMES, cellLabel, colorFor, legendStops, layoutHeatmap,
     formatPct, formatPrice, formatVolume,
 } from './heatmapLayout';
 
@@ -148,8 +148,7 @@ const Treemap = ({ sectors, tf, onPick }) => {
                         </div>
                     )}
                     {sec.stocks.map((c) => {
-                        const big = c.w > 46 && c.h > 26;
-                        const fs = Math.max(9, Math.min(16, Math.min(c.w / 6, c.h / 3)));
+                        const { showSymbol, showPct, fontSize: fs } = cellLabel(c.w, c.h);
                         return (
                             <button
                                 key={c.data.symbol}
@@ -160,8 +159,8 @@ const Treemap = ({ sectors, tf, onPick }) => {
                                 style={{ left: c.x, top: c.y, width: c.w, height: c.h, backgroundColor: colorFor(c.data.pChange, tf) }}
                                 aria-label={`${c.data.symbol} ${formatPct(c.data.pChange)}`}
                             >
-                                {big && <span className="font-bold leading-tight truncate max-w-full px-0.5" style={{ fontSize: fs }}>{c.data.symbol}</span>}
-                                {big && c.h > 38 && <span className="leading-tight tabular-nums opacity-90" style={{ fontSize: fs * 0.8 }}>{formatPct(c.data.pChange)}</span>}
+                                {showSymbol && <span className="font-bold leading-tight truncate max-w-full px-0.5" style={{ fontSize: fs }}>{c.data.symbol}</span>}
+                                {showPct && <span className="leading-tight tabular-nums opacity-90" style={{ fontSize: fs * 0.8 }}>{formatPct(c.data.pChange)}</span>}
                             </button>
                         );
                     })}

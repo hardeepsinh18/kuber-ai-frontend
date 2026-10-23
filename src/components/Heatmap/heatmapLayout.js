@@ -134,6 +134,16 @@ export function squarify(items, rect) {
     return out;
 }
 
+// What a box of w×h px can show. Labels step down with size instead of vanishing
+// at one cut-off (small constituents like TMPV used to render as blank boxes):
+// symbol + %  →  symbol only (smaller font)  →  nothing (tooltip still works).
+export function cellLabel(w, h) {
+    const fontSize = Math.max(8, Math.min(16, w / 5.5, h / 2.6));
+    const showSymbol = w >= 22 && h >= 13;
+    const showPct = showSymbol && w >= 40 && h >= fontSize * 2.4;
+    return { showSymbol, showPct, fontSize };
+}
+
 const SECTOR_HEADER = 18;
 
 // Two-level layout: sectors tile the canvas, stocks tile each sector below a
