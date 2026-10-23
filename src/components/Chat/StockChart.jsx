@@ -303,7 +303,7 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                     type buttons above them; left-aligned they share one edge.
                     w-full on mobile so the zoom cluster below can ml-auto itself to the
                     opposite edge instead of trailing the ranges as one centred clump. */}
-                <div className="flex items-center gap-1 w-full sm:w-auto sm:ml-auto">
+                <div className="flex flex-wrap items-center gap-1 w-full sm:w-auto sm:ml-auto max-w-full">
                     {chartType === 'renko' && bars.length > 0 && (
                         <span
                             title="Latest trading day loaded — a brick only appears once price moves a full brick size, so the last brick can be dated earlier than this"
@@ -356,7 +356,11 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                     {/* ml-auto on mobile parks zoom/expand at the right edge, so the
                         ranges keep the left edge rather than the two reading as one
                         centred group; ml-1 from sm: up where the whole row is right-aligned. */}
-                    <div ref={indicatorMenuRef} className="relative ml-auto sm:ml-1">
+                    {/* Indicators + zoom + expand wrap as ONE group: in a narrow card (the
+                        side-by-side comparison charts) the row used to overflow and clip
+                        the expand button at the card edge. */}
+                    <div className="flex items-center gap-1 ml-auto sm:ml-1">
+                    <div ref={indicatorMenuRef} className="relative">
                         <button
                             onClick={() => setIndicatorMenuOpen((o) => !o)}
                             disabled={chartType === 'renko'}
@@ -415,6 +419,7 @@ const StockChart = ({ chartData, symbol, className, patternOverlays = null, atAG
                             className="p-1.5 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
                             <Maximize2 className="w-3.5 h-3.5" />
                         </button>
+                    </div>
                     </div>
                 </div>
             </div>
