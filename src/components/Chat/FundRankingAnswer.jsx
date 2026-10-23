@@ -32,12 +32,15 @@ const FundRankingAnswer = ({ metadata = {} }) => {
     const funds = Array.isArray(metadata?.funds) ? metadata.funds : [];
     const category = metadata?.category || '';
     const sort = metadata?.sort || 'Venty Score';
+    const similarTo = metadata?.similar_to || '';
     if (funds.length === 0) return null;
 
     return (
         <div className="space-y-3" style={{ animation: 'slideUpFade 0.4s cubic-bezier(0.22,1,0.36,1) both' }}>
             <div className="rounded-2xl px-4 py-3 flex flex-wrap items-center justify-center gap-2 bg-[#FDD405]">
-                <span className="text-[14px] font-black tracking-wide text-black">Top {category} Funds</span>
+                <span className="text-[14px] font-black tracking-wide text-black">
+                    {similarTo ? `Other ${category} Funds vs ${similarTo}` : `Top ${category} Funds`}
+                </span>
                 <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-[0.15em] bg-black/10 text-black/70">
                     by {sort}
                 </span>
