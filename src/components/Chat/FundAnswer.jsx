@@ -24,11 +24,38 @@ const num = (v, suffix = '') => {
     return Number.isNaN(n) ? '—' : `${n.toFixed(2)}${suffix}`;
 };
 
+// Shared label + percentage bar for the Sector/Cap Allocation cards — both are
+// {label, weight_pct} breakdowns of the same holdings data, just grouped
+// differently (by sector vs by market-cap tier), so one renderer covers both.
+const AllocationBars = ({ rows, labelKey }) => (
+    <div className="mt-2 space-y-2">
+        {rows.map((r, i) => {
+            const pctVal = Number(r.weight_pct);
+            const widthPct = Number.isNaN(pctVal) ? 0 : Math.max(0, Math.min(100, pctVal));
+            return (
+                <div key={i}>
+                    <div className="flex justify-between text-[12.5px] mb-1">
+                        <span className="text-zinc-700 dark:text-zinc-200">{r[labelKey]}</span>
+                        <span className="text-zinc-500 dark:text-zinc-400 font-medium">{num(r.weight_pct, '%')}</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-zinc-100 dark:bg-white/5 overflow-hidden">
+                        <div
+                            className="h-full rounded-full bg-street-yellow-ink dark:bg-[#FDD405]"
+                            style={{ width: `${widthPct}%` }}
+                        />
+                    </div>
+                </div>
+            );
+        })}
+    </div>
+);
+
 const FundAnswer = ({ metadata = {} }) => {
     const {
         scheme_name, amc_name, plan_type, option_type, nav, nav_date, stale,
         returns = {}, risk = {}, venty_score, expense_ratio, aum_cr,
         benchmark_name, fund_manager, exit_load, top_holdings = [],
+        sector_allocation = [], cap_allocation = [],
     } = metadata;
 
     if (!scheme_name) return null;
@@ -128,6 +155,20 @@ const FundAnswer = ({ metadata = {} }) => {
                             </div>
                         ))}
                     </div>
+                </Card>
+            )}
+
+            {sector_allocation.length > 0 && (
+                <Card className="px-4 py-3.5">
+                    <MiniLabel>Sector Allocation</MiniLabel>
+                    <AllocationBars rows={sector_allocation} labelKey="sector" />
+                </Card>
+            )}
+
+            {cap_allocation.length > 0 && (
+                <Card className="px-4 py-3.5">
+                    <MiniLabel>Cap Allocation</MiniLabel>
+                    <AllocationBars rows={cap_allocation} labelKey="cap_tier" />
                 </Card>
             )}
         </div>
