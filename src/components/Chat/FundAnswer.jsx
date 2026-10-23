@@ -111,7 +111,10 @@ const FundAnswer = ({ metadata = {} }) => {
                         browsers silently restructure and was producing a broken
                         partial-background artifact. Match every other InlineMd call
                         site in this app: a <div>, not a <p>. */}
-                    <div className="text-[13.5px] font-semibold text-black leading-snug">
+                    {/* This band is always yellow regardless of light/dark theme, but
+                        InlineMd's <strong> defaults to dark:text-white -- fine on a dark
+                        card, unreadable on yellow. Force bold text black here specifically. */}
+                    <div className="text-[13.5px] font-semibold text-black leading-snug [&_strong]:!text-black">
                         <InlineMd>{direct_answer}</InlineMd>
                     </div>
                 </div>
