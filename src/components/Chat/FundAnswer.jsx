@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { Card, CardHeader, MiniLabel, ScoreRing } from './answerKit';
+import { Card, CardHeader, MiniLabel, ScoreRing, InlineMd } from './answerKit';
 
 /**
  * FundAnswer — single mutual fund rich card, the fund-side equivalent of the
@@ -80,7 +80,7 @@ const FundAnswer = ({ metadata = {} }) => {
         scheme_name, amc_name, plan_type, option_type, nav, nav_date, stale,
         returns = {}, risk = {}, venty_score, expense_ratio, aum_cr,
         benchmark_name, fund_manager, exit_load, top_holdings = [],
-        sector_allocation = [], cap_allocation = [],
+        sector_allocation = [], cap_allocation = [], direct_answer,
     } = metadata;
 
     if (!scheme_name) return null;
@@ -104,6 +104,14 @@ const FundAnswer = ({ metadata = {} }) => {
 
     return (
         <div className="space-y-3" style={{ animation: 'slideUpFade 0.4s cubic-bezier(0.22,1,0.36,1) both' }}>
+            {direct_answer && (
+                <div className="rounded-2xl px-4 py-3 bg-[#FDD405]">
+                    <p className="text-[13.5px] font-semibold text-black leading-snug">
+                        <InlineMd>{direct_answer}</InlineMd>
+                    </p>
+                </div>
+            )}
+
             <Card className="px-4 py-3.5">
                 <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
