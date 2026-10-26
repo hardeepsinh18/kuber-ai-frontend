@@ -1033,9 +1033,9 @@ const MessageBubble = (props) => {
                 // Mutual fund rich cards — single fund / comparison / category ranking
                 <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 md:px-8">
                     {isFundComparisonAnswer ? (
-                        <FundComparisonAnswer metadata={metadata} />
+                        <FundComparisonAnswer metadata={metadata} onFollowUpClick={onFollowUpClick} />
                     ) : isFundRankingAnswer ? (
-                        <FundRankingAnswer metadata={metadata} />
+                        <FundRankingAnswer metadata={metadata} onFollowUpClick={onFollowUpClick} />
                     ) : (
                         <FundAnswer metadata={metadata} />
                     )}

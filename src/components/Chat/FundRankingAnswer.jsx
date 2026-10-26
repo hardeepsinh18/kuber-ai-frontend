@@ -1,4 +1,5 @@
 import React from 'react';
+import { ArrowRight } from 'lucide-react';
 import { Card } from './answerKit';
 
 /**
@@ -28,7 +29,7 @@ const scoreStr = (v) => {
     return Number.isNaN(n) ? '—' : `${n.toFixed(0)}/100`;
 };
 
-const FundRankingAnswer = ({ metadata = {} }) => {
+const FundRankingAnswer = ({ metadata = {}, onFollowUpClick }) => {
     const funds = Array.isArray(metadata?.funds) ? metadata.funds : [];
     const category = metadata?.category || '';
     const sort = metadata?.sort || 'Venty Score';
@@ -56,6 +57,7 @@ const FundRankingAnswer = ({ metadata = {} }) => {
                             <th className="text-right py-2 px-3 text-zinc-500 dark:text-zinc-400 font-medium">Sharpe</th>
                             <th className="text-right py-2 px-3 text-zinc-500 dark:text-zinc-400 font-medium">3Y Return</th>
                             <th className="text-right py-2 px-3 text-zinc-500 dark:text-zinc-400 font-medium">Expense Ratio</th>
+                            {onFollowUpClick && <th className="w-8"></th>}
                         </tr>
                     </thead>
                     <tbody>
@@ -72,6 +74,21 @@ const FundRankingAnswer = ({ metadata = {} }) => {
                                 <td className="text-right py-2 px-3 text-zinc-800 dark:text-zinc-100">{num(f.sharpe_ratio)}</td>
                                 <td className="text-right py-2 px-3 text-zinc-800 dark:text-zinc-100">{pct(f.return_3y)}</td>
                                 <td className="text-right py-2 px-3 text-zinc-800 dark:text-zinc-100">{num(f.expense_ratio, '%')}</td>
+                                {onFollowUpClick && (
+                                    <td className="py-2 pl-1 text-right">
+                                        <button
+                                            type="button"
+                                            onClick={() => onFollowUpClick(`Tell me about ${f.scheme_name}`)}
+                                            title={`Deep dive into ${f.scheme_name}`}
+                                            className="p-1.5 rounded-full text-zinc-400 dark:text-zinc-500
+                                                       hover:text-black dark:hover:text-[#FDD405]
+                                                       hover:bg-street-yellow/10 dark:hover:bg-[#FDD405]/10
+                                                       transition-colors"
+                                        >
+                                            <ArrowRight size={14} strokeWidth={2.5} />
+                                        </button>
+                                    </td>
+                                )}
                             </tr>
                         ))}
                     </tbody>

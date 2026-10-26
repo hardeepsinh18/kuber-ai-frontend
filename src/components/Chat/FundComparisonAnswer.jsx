@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trophy } from 'lucide-react';
+import { Trophy, ArrowRight } from 'lucide-react';
 import { Card, MiniLabel } from './answerKit';
 
 /**
@@ -31,7 +31,7 @@ const scoreStr = (v) => {
     return Number.isNaN(n) ? '—' : `${n.toFixed(0)}/100`;
 };
 
-const FundComparisonAnswer = ({ metadata = {} }) => {
+const FundComparisonAnswer = ({ metadata = {}, onFollowUpClick }) => {
     const funds = Array.isArray(metadata?.funds) ? metadata.funds.slice(0, 3) : [];
     if (funds.length < 2) return null;
 
@@ -89,7 +89,18 @@ const FundComparisonAnswer = ({ metadata = {} }) => {
                             <th className="text-left py-2 pr-3 text-zinc-500 dark:text-zinc-400 font-medium">Metric</th>
                             {names.map((n, i) => (
                                 <th key={n + i} className="text-right py-2 px-3 text-zinc-800 dark:text-zinc-100 font-bold">
-                                    {n}
+                                    {onFollowUpClick ? (
+                                        <button
+                                            type="button"
+                                            onClick={() => onFollowUpClick(`Tell me about ${n}`)}
+                                            title={`Deep dive into ${n}`}
+                                            className="inline-flex items-center gap-1 hover:text-street-yellow-ink
+                                                       dark:hover:text-[#FDD405] transition-colors"
+                                        >
+                                            {n}
+                                            <ArrowRight size={12} strokeWidth={2.5} className="flex-shrink-0" />
+                                        </button>
+                                    ) : n}
                                 </th>
                             ))}
                         </tr>
